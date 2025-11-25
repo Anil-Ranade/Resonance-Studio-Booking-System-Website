@@ -139,14 +139,14 @@ export default function AdminLoginPage() {
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 pointer-events-none" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 pointer-events-none z-10" />
                 <input
                   type="email"
                   id="admin-email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@resonance.studio"
-                  className="w-full input pl-12"
+                  className="w-full input !pl-12"
                   required
                   disabled={loading}
                   autoComplete="email"
@@ -160,14 +160,14 @@ export default function AdminLoginPage() {
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 pointer-events-none" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 pointer-events-none z-10" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="admin-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="w-full input pl-12 pr-12"
+                  className="w-full input !pl-12 !pr-12"
                   required
                   disabled={loading}
                   autoComplete="current-password"
