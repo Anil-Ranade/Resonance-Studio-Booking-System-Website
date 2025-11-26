@@ -22,6 +22,15 @@ export default function AvailabilityPage() {
   const [startDate, setStartDate] = useState(new Date());
   const [availability, setAvailability] = useState<AvailabilityData>({});
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const studios = [
     { id: "Studio A", name: "Studio A", color: "bg-blue-500", key: "A" },
@@ -46,16 +55,17 @@ export default function AvailabilityPage() {
     { label: "9-10 PM", start: "21:00", end: "22:00" },
   ];
 
-  // Get 3 consecutive dates starting from startDate
+  // Get dates - 1 for mobile, 3 for desktop
   const getDates = useCallback(() => {
+    const numDays = isMobile ? 1 : 3;
     const dates = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < numDays; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
       dates.push(date);
     }
     return dates;
-  }, [startDate]);
+  }, [startDate, isMobile]);
 
   const dates = getDates();
 
@@ -72,7 +82,8 @@ export default function AvailabilityPage() {
 
   const goToPreviousDays = () => {
     const newDate = new Date(startDate);
-    newDate.setDate(startDate.getDate() - 3);
+    const daysToMove = isMobile ? 1 : 3;
+    newDate.setDate(startDate.getDate() - daysToMove);
     // Don't go before today
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -83,7 +94,8 @@ export default function AvailabilityPage() {
 
   const goToNextDays = () => {
     const newDate = new Date(startDate);
-    newDate.setDate(startDate.getDate() + 3);
+    const daysToMove = isMobile ? 1 : 3;
+    newDate.setDate(startDate.getDate() + daysToMove);
     setStartDate(newDate);
   };
 
@@ -168,13 +180,14 @@ export default function AvailabilityPage() {
 
     fetchAvailability();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startDate]);
+  }, [startDate, isMobile]);
 
   const canGoPrevious = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const prevDate = new Date(startDate);
-    prevDate.setDate(startDate.getDate() - 3);
+    const daysToMove = isMobile ? 1 : 3;
+    prevDate.setDate(startDate.getDate() - daysToMove);
     return prevDate >= today;
   };
 
@@ -199,7 +212,7 @@ export default function AvailabilityPage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Studio Availability</h1>
-              <div className="flex items-center gap-6">
+              <div className="flex flex-wrap items-center gap-4 md:gap-6">
                 {studios.map((studio) => (
                   <div key={studio.id} className="flex items-center gap-2">
                     <div className={`w-4 h-4 rounded ${studio.color}`} />

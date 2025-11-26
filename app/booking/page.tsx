@@ -146,6 +146,9 @@ function BookingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Mobile step state (1 = session details, 2 = studio, 3 = date/time)
+  const [mobileStep, setMobileStep] = useState(1);
+
   // Form state
   const [sessionType, setSessionType] = useState<SessionType | ''>('');
   const [karaokeOption, setKaraokeOption] = useState<KaraokeOption | ''>('');
@@ -548,6 +551,24 @@ function BookingPageContent() {
     { number: 4, label: 'Review', active: selectedSlot !== null },
   ];
 
+  // Mobile step navigation helpers
+  const canProceedToStep2 = canFetchRates();
+  const canProceedToStep3 = !!studio && canFetchRates();
+
+  const handleMobileNext = () => {
+    if (mobileStep === 1 && canProceedToStep2) {
+      setMobileStep(2);
+    } else if (mobileStep === 2 && canProceedToStep3) {
+      setMobileStep(3);
+    }
+  };
+
+  const handleMobileBack = () => {
+    if (mobileStep > 1) {
+      setMobileStep(mobileStep - 1);
+    }
+  };
+
   return (
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-4xl mx-auto">
@@ -608,13 +629,35 @@ function BookingPageContent() {
           ))}
         </motion.div>
 
+        {/* Mobile Step Indicator */}
+        <div className="lg:hidden mb-6">
+          <div className="glass rounded-xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-zinc-400 text-sm">Step {mobileStep} of 3</span>
+              <span className="text-white font-medium">
+                {mobileStep === 1 && 'Session Details'}
+                {mobileStep === 2 && 'Choose Studio'}
+                {mobileStep === 3 && 'Date & Time'}
+              </span>
+            </div>
+            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+              <motion.div 
+                className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"
+                initial={false}
+                animate={{ width: `${(mobileStep / 3) * 100}%` }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Booking Form */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Form */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Session Type Card */}
+            {/* Session Type Card - Step 1 on mobile */}
             <motion.div 
-              className="glass rounded-2xl p-6"
+              className={`glass rounded-2xl p-6 ${mobileStep !== 1 ? 'hidden lg:block' : ''}`}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
@@ -653,11 +696,11 @@ function BookingPageContent() {
               </div>
             </motion.div>
 
-            {/* Sub-option Card - Shows based on session type */}
+            {/* Sub-option Card - Shows based on session type - Step 1 on mobile */}
             <AnimatePresence mode="wait">
               {sessionType && sessionType !== 'Only Drum Practice' && (
                 <motion.div 
-                  className="glass rounded-2xl p-6"
+                  className={`glass rounded-2xl p-6 ${mobileStep !== 1 ? 'hidden lg:block' : ''}`}
                   initial={{ opacity: 0, x: -20, height: 0 }}
                   animate={{ opacity: 1, x: 0, height: 'auto' }}
                   exit={{ opacity: 0, x: -20, height: 0 }}
@@ -782,11 +825,32 @@ function BookingPageContent() {
               )}
             </AnimatePresence>
 
-            {/* Studio Selection Card */}
+            {/* Mobile Next Button - Step 1 */}
+            {mobileStep === 1 && (
+              <div className="lg:hidden">
+                <motion.button
+                  type="button"
+                  onClick={handleMobileNext}
+                  disabled={!canProceedToStep2}
+                  className={`w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                    canProceedToStep2
+                      ? 'bg-violet-500 hover:bg-violet-600 text-white'
+                      : 'bg-white/5 text-zinc-500 cursor-not-allowed'
+                  }`}
+                  whileHover={canProceedToStep2 ? { scale: 1.02 } : {}}
+                  whileTap={canProceedToStep2 ? { scale: 0.98 } : {}}
+                >
+                  Next: Choose Studio
+                  <ChevronRight className="w-5 h-5" />
+                </motion.button>
+              </div>
+            )}
+
+            {/* Studio Selection Card - Step 2 on mobile */}
             <AnimatePresence mode="wait">
               {canFetchRates() && (
                 <motion.div 
-                  className="glass rounded-2xl p-6"
+                  className={`glass rounded-2xl p-6 ${mobileStep !== 2 ? 'hidden lg:block' : ''}`}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -894,11 +958,42 @@ function BookingPageContent() {
               )}
             </AnimatePresence>
 
-            {/* Date & Time Card */}
+            {/* Mobile Navigation Buttons - Step 2 */}
+            {mobileStep === 2 && canFetchRates() && (
+              <div className="lg:hidden flex gap-3">
+                <motion.button
+                  type="button"
+                  onClick={handleMobileBack}
+                  className="flex-1 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                  Back
+                </motion.button>
+                <motion.button
+                  type="button"
+                  onClick={handleMobileNext}
+                  disabled={!canProceedToStep3}
+                  className={`flex-1 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                    canProceedToStep3
+                      ? 'bg-violet-500 hover:bg-violet-600 text-white'
+                      : 'bg-white/5 text-zinc-500 cursor-not-allowed'
+                  }`}
+                  whileHover={canProceedToStep3 ? { scale: 1.02 } : {}}
+                  whileTap={canProceedToStep3 ? { scale: 0.98 } : {}}
+                >
+                  Next: Date & Time
+                  <ChevronRight className="w-5 h-5" />
+                </motion.button>
+              </div>
+            )}
+
+            {/* Date & Time Card - Step 3 on mobile */}
             <AnimatePresence mode="wait">
               {studio && canFetchRates() && (
                 <motion.div 
-                  className="glass rounded-2xl p-6"
+                  className={`glass rounded-2xl p-6 ${mobileStep !== 3 ? 'hidden lg:block' : ''}`}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -1050,16 +1145,32 @@ function BookingPageContent() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* Mobile Back Button - Step 3 */}
+            {mobileStep === 3 && studio && canFetchRates() && (
+              <div className="lg:hidden">
+                <motion.button
+                  type="button"
+                  onClick={handleMobileBack}
+                  className="w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                  Back to Studio Selection
+                </motion.button>
+              </div>
+            )}
           </div>
 
-          {/* Right Column - Summary */}
+          {/* Right Column - Summary - Show on step 3 on mobile */}
           <motion.div 
-            className="lg:col-span-1"
+            className={`lg:col-span-1 ${mobileStep !== 3 ? 'hidden lg:block' : ''}`}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
           >
-            <div className="glass-strong rounded-2xl p-6 sticky top-24">
+            <div className="glass-strong rounded-2xl p-6 lg:sticky lg:top-24">
               <h2 className="text-lg font-semibold text-white mb-4">Booking Summary</h2>
               
               <div className="space-y-4 mb-6">
