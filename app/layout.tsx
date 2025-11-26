@@ -5,6 +5,18 @@ import Link from "next/link";
 import { Music2, Calendar, MapPin, Mail } from "lucide-react";
 import Navigation from "./components/Navigation";
 
+const navLinks = [
+  { label: "Home", href: "/home" },
+  { label: "Studios", href: "/studios" },
+  { label: "Availability", href: "/availability" },
+  { label: "My Bookings", href: "/my-bookings" },
+  { label: "Gallery", href: "/gallery" },
+  { label: "Pricing", href: "/rate-card" },
+  { label: "FAQ", href: "/faq" },
+  { label: "About", href: "/about" },
+  { label: "Contact", href: "/contact" },
+];
+
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
