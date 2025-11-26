@@ -1,4 +1,4 @@
-export default function Loading() {
+export default function HomeLoading() {
   return (
     <div className="fixed inset-0 z-50 bg-[#0f0f1a] flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">

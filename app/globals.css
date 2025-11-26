@@ -71,6 +71,19 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  /* Prevent footer flash during load */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure main content takes available space */
+body > main {
+  flex: 1;
+}
+
+/* Ensure footer stays at bottom */
+body > footer {
+  margin-top: auto;
 }
 
 /* Custom scrollbar */

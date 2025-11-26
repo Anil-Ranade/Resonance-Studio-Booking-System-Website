@@ -42,19 +42,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${poppins.variable} ${geistMono.variable} antialiased bg-noise font-sans`}
+        className={`${poppins.variable} ${geistMono.variable} antialiased bg-noise font-sans flex flex-col min-h-screen`}
         style={{ fontFamily: 'var(--font-poppins), sans-serif' }}
       >
         {/* Navigation */}
         <Navigation />
 
         {/* Main Content with padding for fixed nav */}
-        <main className="pt-16 md:pt-20">
+        <main className="pt-16 md:pt-20 flex-1">
           {children}
         </main>
 
         {/* Footer */}
-        <footer className="border-t border-white/5 bg-black/20">
+        <footer className="border-t border-white/5 bg-black/20 mt-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
               {/* Brand */}
