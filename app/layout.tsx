@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
@@ -8,17 +8,29 @@ const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
   display: "swap",
-  weight: ["300", "400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
+  preload: true,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
+  preload: false,
 });
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#0f0f1a',
+};
 
 export const metadata: Metadata = {
   title: "Resonance Studio - Professional Recording Studio Booking",
   description: "Book professional recording studios online. Recording, mixing, and podcast facilities available in Pune.",
+  keywords: ["recording studio", "music studio", "pune", "karaoke", "rehearsal space"],
+  robots: "index, follow",
 };
 
 const navLinks = [
@@ -45,12 +57,12 @@ export default function RootLayout({
         style={{ fontFamily: 'var(--font-poppins), sans-serif' }}
       >
         {/* Navigation */}
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-violet-500/10 shadow-lg shadow-violet-500/5">
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-lg border-b border-violet-500/10 shadow-lg shadow-violet-500/5">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16 md:h-20">
               {/* Logo */}
-              <Link href="/home" className="flex items-center gap-3 group">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:shadow-violet-500/25 transition-all duration-300">
+              <Link href="/home" className="flex items-center gap-3 group" prefetch={true}>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:shadow-violet-500/25 transition-shadow duration-200">
                   <Music2 className="w-5 h-5 text-white" />
                 </div>
                 <span className="text-xl font-bold text-white hidden sm:block">
@@ -64,7 +76,8 @@ export default function RootLayout({
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="px-4 py-2 text-sm font-medium text-zinc-300 hover:text-white rounded-lg hover:bg-white/5 transition-all duration-200"
+                    prefetch={true}
+                    className="px-4 py-2 text-sm font-medium text-zinc-300 hover:text-white rounded-lg hover:bg-white/5 transition-colors duration-150"
                   >
                     {link.label}
                   </Link>
@@ -74,6 +87,7 @@ export default function RootLayout({
               {/* CTA Button */}
               <Link
                 href="/booking"
+                prefetch={true}
                 className="btn-primary text-sm hidden sm:flex items-center gap-2"
               >
                 <Calendar className="w-4 h-4" />
@@ -81,7 +95,7 @@ export default function RootLayout({
               </Link>
 
               {/* Mobile Menu Button */}
-              <button className="md:hidden p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors">
+              <button className="md:hidden p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors" aria-label="Open menu">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>

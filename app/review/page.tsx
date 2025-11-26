@@ -26,12 +26,21 @@ import {
 interface BookingData {
   user_id?: string;
   sessionType: string;
-  groupSize: number;
   studio: string;
   date: string;
   start_time: string;
   end_time: string;
   rate: number;
+  duration?: number;
+  // Session-specific details
+  karaokeOption?: string;
+  karaokeLabel?: string;
+  liveOption?: string;
+  liveLabel?: string;
+  bandEquipment?: string[];
+  bandLabel?: string;
+  recordingOption?: string;
+  recordingLabel?: string;
 }
 
 interface UserData {
@@ -44,6 +53,30 @@ interface UserData {
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
+};
+
+// Helper function to get session details label
+const getSessionDetailsLabel = (bookingData: BookingData): string => {
+  switch (bookingData.sessionType) {
+    case 'Karaoke':
+      return bookingData.karaokeLabel || '';
+    case 'Live with musicians':
+      return bookingData.liveLabel || '';
+    case 'Band':
+      return bookingData.bandLabel || '';
+    case 'Recording':
+      return bookingData.recordingLabel || '';
+    case 'Only Drum Practice':
+      return 'Drum practice session';
+    default:
+      return '';
+  }
+};
+
+// Helper function to get session details for API
+const getSessionDetails = (bookingData: BookingData): string => {
+  const label = getSessionDetailsLabel(bookingData);
+  return label || bookingData.sessionType;
 };
 
 export default function ReviewPage() {
@@ -290,7 +323,7 @@ export default function ReviewPage() {
           whatsapp: userData.whatsapp_number,
           name: userData.name,
           session_type: bookingData.sessionType,
-          group_size: bookingData.groupSize,
+          session_details: getSessionDetails(bookingData),
           studio: bookingData.studio,
           date: bookingData.date,
           start_time: bookingData.start_time,
@@ -330,10 +363,11 @@ export default function ReviewPage() {
 
   const duration = calculateDuration(bookingData.start_time, bookingData.end_time);
   const totalCost = duration * bookingData.rate;
+  const sessionDetails = getSessionDetailsLabel(bookingData);
 
   const summaryItems = [
     { icon: <Mic className="w-5 h-5" />, label: 'Session Type', value: bookingData.sessionType },
-    { icon: <Users className="w-5 h-5" />, label: 'Group Size', value: `${bookingData.groupSize} ${bookingData.groupSize === 1 ? 'person' : 'people'}` },
+    ...(sessionDetails ? [{ icon: <Users className="w-5 h-5" />, label: 'Details', value: sessionDetails }] : []),
     { icon: <Building2 className="w-5 h-5" />, label: 'Studio', value: bookingData.studio },
     { 
       icon: <Calendar className="w-5 h-5" />, 

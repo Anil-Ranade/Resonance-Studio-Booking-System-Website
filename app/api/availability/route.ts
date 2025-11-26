@@ -6,7 +6,7 @@ interface TimeSlot {
   end: string;
 }
 
-interface AvailabilitySlot {
+interface BlockedSlot {
   start_time: string;
   end_time: string;
 }
@@ -21,6 +21,8 @@ interface BookingSettings {
   maxBookingDuration: number;
   bookingBuffer: number;
   advanceBookingDays: number;
+  defaultOpenTime: string;
+  defaultCloseTime: string;
 }
 
 async function getBookingSettings(): Promise<BookingSettings> {
@@ -29,6 +31,8 @@ async function getBookingSettings(): Promise<BookingSettings> {
     maxBookingDuration: 8,
     bookingBuffer: 0,
     advanceBookingDays: 30,
+    defaultOpenTime: '08:00',
+    defaultCloseTime: '22:00',
   };
 
   try {
@@ -50,6 +54,12 @@ async function getBookingSettings(): Promise<BookingSettings> {
             break;
           case 'advance_booking_days':
             defaults.advanceBookingDays = Number(setting.value);
+            break;
+          case 'default_open_time':
+            defaults.defaultOpenTime = String(setting.value).replace(/"/g, '');
+            break;
+          case 'default_close_time':
+            defaults.defaultCloseTime = String(setting.value).replace(/"/g, '');
             break;
         }
       }
@@ -109,6 +119,15 @@ function chunksOverlap(chunk: TimeSlot, booking: Booking, bufferMinutes: number 
   return chunkStart < bookingEnd && chunkEnd > bookingStart;
 }
 
+function chunkOverlapsBlocked(chunk: TimeSlot, blockedSlot: BlockedSlot): boolean {
+  const chunkStart = timeToMinutes(chunk.start);
+  const chunkEnd = timeToMinutes(chunk.end);
+  const blockedStart = timeToMinutes(blockedSlot.start_time);
+  const blockedEnd = timeToMinutes(blockedSlot.end_time);
+
+  return chunkStart < blockedEnd && chunkEnd > blockedStart;
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const studio = searchParams.get('studio');
@@ -149,39 +168,35 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Step 1: Load availability slots for the studio and date
-    const { data: availabilitySlots, error: availabilityError } = await supabaseServer
+    // Step 1: Generate all 1-hour slots based on default operating hours
+    const allChunks = splitIntoHourChunks(
+      bookingSettings.defaultOpenTime,
+      bookingSettings.defaultCloseTime
+    );
+
+    // Step 2: Load blocked slots for the studio and date (is_available = false means blocked)
+    const { data: blockedSlots, error: blockedError } = await supabaseServer
       .from('availability_slots')
       .select('start_time, end_time')
       .eq('studio', studio)
       .eq('date', date)
-      .eq('is_available', true);
+      .eq('is_available', false);
 
-    if (availabilityError) {
+    if (blockedError) {
       return NextResponse.json(
-        { error: `Failed to fetch availability: ${availabilityError.message}` },
+        { error: `Failed to fetch blocked slots: ${blockedError.message}` },
         { status: 500 }
       );
     }
 
-    if (!availabilitySlots || availabilitySlots.length === 0) {
-      return NextResponse.json([]);
-    }
-
-    // Step 2: Split each availability window into 1-hour chunks
-    const allChunks: TimeSlot[] = [];
-    for (const slot of availabilitySlots as AvailabilitySlot[]) {
-      const chunks = splitIntoHourChunks(slot.start_time, slot.end_time);
-      allChunks.push(...chunks);
-    }
-
-    // Step 3: Query bookings where studio/date match and status != 'cancelled'
+    // Step 3: Query bookings where studio/date match and status is 'pending' or 'confirmed'
+    // Only active bookings should block slots (not cancelled, completed, or no_show)
     const { data: bookings, error: bookingsError } = await supabaseServer
       .from('bookings')
       .select('start_time, end_time')
       .eq('studio', studio)
       .eq('date', date)
-      .neq('status', 'cancelled');
+      .in('status', ['pending', 'confirmed']);
 
     if (bookingsError) {
       return NextResponse.json(
@@ -190,8 +205,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Step 4: Remove chunks that overlap confirmed bookings (with buffer)
-    const availableChunks = allChunks.filter((chunk) => {
+    // Step 4: Filter out blocked slots
+    let availableChunks = allChunks.filter((chunk) => {
+      if (!blockedSlots || blockedSlots.length === 0) return true;
+      return !blockedSlots.some((blocked: BlockedSlot) => 
+        chunkOverlapsBlocked(chunk, blocked)
+      );
+    });
+
+    // Step 5: Remove chunks that overlap confirmed bookings (with buffer)
+    availableChunks = availableChunks.filter((chunk) => {
       if (!bookings || bookings.length === 0) return true;
       return !bookings.some((booking: Booking) => 
         chunksOverlap(chunk, booking, bookingSettings.bookingBuffer)
@@ -200,6 +223,23 @@ export async function GET(request: NextRequest) {
 
     // Sort chunks by start time
     availableChunks.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+
+    // Step 6: Filter out past time slots if the selected date is today
+    const isToday = selectedDate.toDateString() === today.toDateString();
+    if (isToday) {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinutes = now.getMinutes();
+      // Calculate current time in minutes since midnight
+      const currentTimeInMinutes = currentHour * 60 + currentMinutes;
+      
+      // Filter out slots that have already started or are in the past
+      availableChunks = availableChunks.filter((chunk) => {
+        const slotStartMinutes = timeToMinutes(chunk.start);
+        // Only show slots that start after the current time
+        return slotStartMinutes > currentTimeInMinutes;
+      });
+    }
 
     return NextResponse.json(availableChunks);
   } catch (error) {

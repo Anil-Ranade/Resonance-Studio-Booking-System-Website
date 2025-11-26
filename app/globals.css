@@ -45,6 +45,20 @@
 
 html {
   scroll-behavior: smooth;
+  /* Prevent layout shift */
+  overflow-x: hidden;
+}
+
+/* Respect user's reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 body {
@@ -53,6 +67,10 @@ body {
   color: var(--text-primary);
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   min-height: 100vh;
+  /* Improve text rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 /* Custom scrollbar */
@@ -402,3 +420,98 @@ input[type="checkbox"]:disabled {
   opacity: 0.02;
   pointer-events: none;
 }
+
+/* ========================================
+   MOBILE PERFORMANCE OPTIMIZATIONS
+   ======================================== */
+
+/* Reduce blur effects on mobile for better performance */
+@media (max-width: 768px) {
+  .glass {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  
+  .glass-strong {
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+  }
+  
+  /* Disable heavy background noise on mobile */
+  .bg-noise::before {
+    display: none;
+  }
+  
+  /* Simplify grid background on mobile */
+  .bg-grid {
+    background-size: 80px 80px;
+  }
+  
+  /* Faster transitions on mobile */
+  .btn-primary,
+  .btn-secondary,
+  .btn-accent,
+  .card,
+  .input,
+  .select {
+    transition-duration: 0.15s;
+  }
+  
+  /* Disable hover transforms on touch devices */
+  .card:hover {
+    transform: none;
+  }
+  
+  .btn-primary:hover,
+  .btn-accent:hover {
+    transform: none;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Disable hover effects on touch devices */
+  .card:hover,
+  .btn-primary:hover,
+  .btn-secondary:hover,
+  .btn-accent:hover {
+    transform: none;
+  }
+  
+  /* Increase touch targets */
+  .btn-primary,
+  .btn-secondary,
+  .btn-accent {
+    min-height: 44px;
+  }
+  
+  /* Disable glow animations on touch */
+  .animate-pulse-glow {
+    animation: none;
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+  }
+}
+
+/* GPU acceleration hints for smooth animations */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+/* Optimize paint for fixed elements */
+nav {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Content visibility for offscreen optimization */
+@supports (content-visibility: auto) {
+  footer {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 400px;
+  }
+}
+

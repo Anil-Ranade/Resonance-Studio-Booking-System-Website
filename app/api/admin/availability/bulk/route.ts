@@ -47,7 +47,7 @@ async function verifyAdminToken(request: NextRequest) {
   return { user, adminUser };
 }
 
-// POST /api/admin/availability/bulk - Create multiple availability slots at once
+// POST /api/admin/availability/bulk - Block multiple time slots at once
 export async function POST(request: NextRequest) {
   const admin = await verifyAdminToken(request);
   if (!admin) {
@@ -56,7 +56,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { studio, dates, start_time, end_time, is_available = true } = body;
+    const { studio, dates, start_time, end_time } = body;
+    // Blocked slots have is_available = false
+    const is_available = false;
 
     if (!studio || !dates || !Array.isArray(dates) || dates.length === 0 || !start_time || !end_time) {
       return NextResponse.json(
@@ -67,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = supabaseAdmin();
 
-    // Create slots for each date
+    // Create blocked slots for each date
     const slotsToInsert = dates.map((date: string) => ({
       studio,
       date,
@@ -92,7 +94,7 @@ export async function POST(request: NextRequest) {
     // Log the action
     await supabase.from("audit_logs").insert({
       admin_id: admin.user.id,
-      action: "bulk_create",
+      action: "bulk_block",
       entity_type: "availability_slot",
       new_data: { count: slots?.length, studio, dates, start_time, end_time },
     });
@@ -106,7 +108,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE /api/admin/availability/bulk - Delete multiple availability slots
+// DELETE /api/admin/availability/bulk - Unblock multiple slots (delete blocked slot records)
 export async function DELETE(request: NextRequest) {
   const admin = await verifyAdminToken(request);
   if (!admin) {
@@ -133,7 +135,7 @@ export async function DELETE(request: NextRequest) {
       // Log the action
       await supabase.from("audit_logs").insert({
         admin_id: admin.user.id,
-        action: "bulk_delete",
+        action: "bulk_unblock",
         entity_type: "availability_slot",
         old_data: { ids },
       });
@@ -156,7 +158,7 @@ export async function DELETE(request: NextRequest) {
       // Log the action
       await supabase.from("audit_logs").insert({
         admin_id: admin.user.id,
-        action: "bulk_delete",
+        action: "bulk_unblock",
         entity_type: "availability_slot",
         old_data: { studio, startDate, endDate, count: deletedSlots?.length },
       });

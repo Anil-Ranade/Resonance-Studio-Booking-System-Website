@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ slots });
 }
 
-// POST /api/admin/availability - Create new availability slot
+// POST /api/admin/availability - Block a time slot (create blocked slot)
 export async function POST(request: NextRequest) {
   const admin = await verifyAdminToken(request);
   if (!admin) {
@@ -97,7 +97,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { studio, date, start_time, end_time, is_available = true } = body;
+    const { studio, date, start_time, end_time } = body;
+    // Blocked slots have is_available = false
+    const is_available = false;
 
     if (!studio || !date || !start_time || !end_time) {
       return NextResponse.json(
@@ -120,7 +122,7 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       return NextResponse.json(
-        { error: "Slot already exists for this studio, date, and time" },
+        { error: "This slot is already blocked for this studio, date, and time" },
         { status: 409 }
       );
     }
@@ -145,7 +147,7 @@ export async function POST(request: NextRequest) {
     // Log the action
     await supabase.from("audit_logs").insert({
       admin_id: admin.user.id,
-      action: "create",
+      action: "block",
       entity_type: "availability_slot",
       entity_id: slot.id,
       new_data: slot,
@@ -160,7 +162,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT /api/admin/availability - Update availability slot
+// PUT /api/admin/availability - Update blocked slot
 export async function PUT(request: NextRequest) {
   const admin = await verifyAdminToken(request);
   if (!admin) {
@@ -228,7 +230,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE /api/admin/availability - Delete availability slot
+// DELETE /api/admin/availability - Unblock slot (delete blocked slot record)
 export async function DELETE(request: NextRequest) {
   const admin = await verifyAdminToken(request);
   if (!admin) {
@@ -270,7 +272,7 @@ export async function DELETE(request: NextRequest) {
   // Log the action
   await supabase.from("audit_logs").insert({
     admin_id: admin.user.id,
-    action: "delete",
+    action: "unblock",
     entity_type: "availability_slot",
     entity_id: id,
     old_data: existingSlot,

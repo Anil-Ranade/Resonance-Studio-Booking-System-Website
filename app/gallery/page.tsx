@@ -1,19 +1,20 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, X, ChevronLeft, ChevronRight, Music, Camera, Maximize2 } from "lucide-react";
 
+// Optimized animation variants
 const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
+  initial: { opacity: 0, y: 15 },
   animate: { opacity: 1, y: 0 },
 };
 
 const staggerContainer = {
   animate: {
     transition: {
-      staggerChildren: 0.05,
+      staggerChildren: 0.03,
     },
   },
 };

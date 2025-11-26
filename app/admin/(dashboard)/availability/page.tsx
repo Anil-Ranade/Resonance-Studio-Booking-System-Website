@@ -18,6 +18,7 @@ import {
   Copy,
   User,
   Phone,
+  UserPlus,
 } from 'lucide-react';
 import { getSession } from '@/lib/supabaseAuth';
 
@@ -50,7 +51,28 @@ interface SlotFormData {
   is_available: boolean;
 }
 
+interface BookingFormData {
+  whatsapp: string;
+  name: string;
+  studio: string;
+  session_type: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  rate_per_hour: number;
+  notes: string;
+  send_notification: boolean;
+}
+
 const studios = ['Studio A', 'Studio B', 'Studio C'];
+const sessionTypes = [
+  'Karaoke',
+  'Live with musicians',
+  'Only Drum Practice',
+  'Band',
+  'Recording',
+  'Walk-in',
+];
 const timeOptions = [
   '08:00', '09:00', '10:00', '11:00', '12:00', '13:00',
   '14:00', '15:00', '16:00', '17:00', '18:00', '19:00',
@@ -75,13 +97,28 @@ export default function AvailabilityManagementPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showBookingModal, setShowBookingModal] = useState(false);
   const [editingSlot, setEditingSlot] = useState<AvailabilitySlot | null>(null);
   const [formData, setFormData] = useState<SlotFormData>({
     studio: 'Studio A',
     date: new Date().toISOString().split('T')[0],
     start_time: '08:00',
     end_time: '22:00',
-    is_available: true,
+    is_available: false, // Blocked slots have is_available = false
+  });
+
+  // Booking form data
+  const [bookingFormData, setBookingFormData] = useState<BookingFormData>({
+    whatsapp: '',
+    name: '',
+    studio: 'Studio A',
+    session_type: 'Karaoke',
+    date: new Date().toISOString().split('T')[0],
+    start_time: '10:00',
+    end_time: '12:00',
+    rate_per_hour: 400,
+    notes: '',
+    send_notification: true,
   });
 
   // Bulk add states
@@ -170,12 +207,12 @@ export default function AvailabilityManagementPage() {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Slot created successfully!' });
+        setMessage({ type: 'success', text: 'Slot blocked successfully!' });
         setShowAddModal(false);
         fetchSlots();
         resetForm();
       } else {
-        throw new Error(data.error || 'Failed to create slot');
+        throw new Error(data.error || 'Failed to block slot');
       }
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message });
@@ -209,13 +246,13 @@ export default function AvailabilityManagementPage() {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Slot updated successfully!' });
+        setMessage({ type: 'success', text: 'Blocked slot updated successfully!' });
         setShowEditModal(false);
         setEditingSlot(null);
         fetchSlots();
         resetForm();
       } else {
-        throw new Error(data.error || 'Failed to update slot');
+        throw new Error(data.error || 'Failed to update blocked slot');
       }
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message });
@@ -224,9 +261,9 @@ export default function AvailabilityManagementPage() {
     }
   };
 
-  // Delete slot
+  // Delete slot (unblock)
   const handleDeleteSlot = async (slotId: string) => {
-    if (!confirm('Are you sure you want to delete this slot?')) return;
+    if (!confirm('Are you sure you want to unblock this slot? It will become available for booking.')) return;
 
     try {
       const token = await getAccessToken();
@@ -238,10 +275,10 @@ export default function AvailabilityManagementPage() {
       });
 
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Slot deleted successfully!' });
+        setMessage({ type: 'success', text: 'Slot unblocked successfully!' });
         fetchSlots();
       } else {
-        throw new Error('Failed to delete slot');
+        throw new Error('Failed to unblock slot');
       }
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message });
@@ -279,12 +316,12 @@ export default function AvailabilityManagementPage() {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage({ type: 'success', text: `${data.count} slots created successfully!` });
+        setMessage({ type: 'success', text: `${data.count} slots blocked successfully!` });
         setShowBulkModal(false);
         setBulkDates([]);
         fetchSlots();
       } else {
-        throw new Error(data.error || 'Failed to create slots');
+        throw new Error(data.error || 'Failed to block slots');
       }
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message });
@@ -298,6 +335,66 @@ export default function AvailabilityManagementPage() {
     setBulkDates((prev) =>
       prev.includes(date) ? prev.filter((d) => d !== date) : [...prev, date]
     );
+  };
+
+  // Create booking for customer (admin)
+  const handleCreateBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setMessage(null);
+
+    try {
+      const token = await getAccessToken();
+      const response = await fetch('/api/admin/book', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          whatsapp: bookingFormData.whatsapp,
+          name: bookingFormData.name || undefined,
+          studio: bookingFormData.studio,
+          session_type: bookingFormData.session_type,
+          date: bookingFormData.date,
+          start_time: bookingFormData.start_time,
+          end_time: bookingFormData.end_time,
+          rate_per_hour: bookingFormData.rate_per_hour || undefined,
+          notes: bookingFormData.notes || undefined,
+          send_notification: bookingFormData.send_notification,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: 'Booking created successfully!' });
+        setShowBookingModal(false);
+        fetchSlots();
+        resetBookingForm();
+      } else {
+        throw new Error(data.error || data.message || 'Failed to create booking');
+      }
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetBookingForm = () => {
+    setBookingFormData({
+      whatsapp: '',
+      name: '',
+      studio: 'Studio A',
+      session_type: 'Karaoke',
+      date: new Date().toISOString().split('T')[0],
+      start_time: '10:00',
+      end_time: '12:00',
+      rate_per_hour: 400,
+      notes: '',
+      send_notification: true,
+    });
   };
 
   // Generate next 14 days for bulk selection
@@ -318,7 +415,7 @@ export default function AvailabilityManagementPage() {
       date: new Date().toISOString().split('T')[0],
       start_time: '08:00',
       end_time: '22:00',
-      is_available: true,
+      is_available: false, // Blocked slots have is_available = false
     });
   };
 
@@ -369,29 +466,41 @@ export default function AvailabilityManagementPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Availability Management</h1>
-          <p className="text-zinc-400 mt-1">Manage studio availability slots</p>
+          <p className="text-zinc-400 mt-1">All slots are open by default. Block slots to prevent bookings.</p>
         </div>
         <div className="flex items-center gap-3">
           <motion.button
+            onClick={() => {
+              resetBookingForm();
+              setShowBookingModal(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-violet-500 text-white rounded-xl hover:bg-violet-600 transition-colors"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <UserPlus className="w-4 h-4" />
+            Book for Customer
+          </motion.button>
+          <motion.button
             onClick={() => setShowBulkModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl hover:bg-emerald-500/30 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500/30 transition-colors"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             <Copy className="w-4 h-4" />
-            Bulk Add
+            Bulk Block
           </motion.button>
           <motion.button
             onClick={() => {
               resetForm();
               setShowAddModal(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-violet-500 text-white rounded-xl hover:bg-violet-600 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             <Plus className="w-4 h-4" />
-            Add Slot
+            Block Slot
           </motion.button>
         </div>
       </div>
@@ -476,9 +585,9 @@ export default function AvailabilityManagementPage() {
         ) : Object.keys(groupedSlots).length === 0 ? (
           <div className="p-12 text-center">
             <Clock className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-            <p className="text-zinc-400">No availability slots found</p>
+            <p className="text-zinc-400">No blocked slots found</p>
             <p className="text-zinc-500 text-sm mt-1">
-              Add slots using the buttons above
+              All time slots are currently available for booking
             </p>
           </div>
         ) : (
@@ -497,11 +606,7 @@ export default function AvailabilityManagementPage() {
                         key={slot.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className={`p-4 rounded-xl ${
-                          slot.is_available
-                            ? 'bg-emerald-500/10 border border-emerald-500/20'
-                            : 'bg-red-500/10 border border-red-500/20'
-                        }`}
+                        className="p-4 rounded-xl bg-red-500/10 border border-red-500/20"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
@@ -520,14 +625,8 @@ export default function AvailabilityManagementPage() {
                               <Clock className="w-4 h-4 text-zinc-500" />
                               {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
                             </div>
-                            <span
-                              className={`px-2 py-0.5 rounded text-xs ${
-                                slot.is_available
-                                  ? 'bg-emerald-500/20 text-emerald-400'
-                                  : 'bg-red-500/20 text-red-400'
-                              }`}
-                            >
-                              {slot.is_available ? 'Available' : 'Blocked'}
+                            <span className="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400">
+                              Blocked
                             </span>
                             {slot.bookings && slot.bookings.length > 0 && (
                               <span className="px-2 py-0.5 rounded text-xs bg-violet-500/20 text-violet-400">
@@ -544,7 +643,8 @@ export default function AvailabilityManagementPage() {
                             </button>
                             <button
                               onClick={() => handleDeleteSlot(slot.id)}
-                              className="p-2 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                              className="p-2 text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                              title="Unblock this slot"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -604,7 +704,7 @@ export default function AvailabilityManagementPage() {
         )}
       </div>
 
-      {/* Add Slot Modal */}
+      {/* Block Slot Modal */}
       <AnimatePresence>
         {showAddModal && (
           <motion.div
@@ -622,7 +722,7 @@ export default function AvailabilityManagementPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">Add Availability Slot</h2>
+                <h2 className="text-xl font-bold text-white">Block Time Slot</h2>
                 <button
                   onClick={() => setShowAddModal(false)}
                   className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10"
@@ -630,6 +730,9 @@ export default function AvailabilityManagementPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
+              <p className="text-zinc-400 text-sm mb-4">
+                Block this time slot to prevent customers from booking during this period.
+              </p>
               <form onSubmit={handleCreateSlot} className="space-y-4">
                 <div>
                   <label htmlFor="add-studio" className="block text-sm text-zinc-400 mb-2.5">Studio</label>
@@ -700,20 +803,6 @@ export default function AvailabilityManagementPage() {
                     </select>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    id="is_available"
-                    checked={formData.is_available}
-                    onChange={(e) =>
-                      setFormData({ ...formData, is_available: e.target.checked })
-                    }
-                    className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-violet-500 focus:ring-violet-500"
-                  />
-                  <label htmlFor="is_available" className="text-zinc-300">
-                    Available for booking
-                  </label>
-                </div>
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
@@ -725,14 +814,14 @@ export default function AvailabilityManagementPage() {
                   <button
                     type="submit"
                     disabled={saving}
-                    className="flex-1 btn-primary flex items-center justify-center gap-2"
+                    className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2.5 px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
                   >
                     {saving ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <Save className="w-4 h-4" />
                     )}
-                    {saving ? 'Saving...' : 'Save'}
+                    {saving ? 'Blocking...' : 'Block Slot'}
                   </button>
                 </div>
               </form>
@@ -741,7 +830,7 @@ export default function AvailabilityManagementPage() {
         )}
       </AnimatePresence>
 
-      {/* Edit Slot Modal */}
+      {/* Edit Blocked Slot Modal */}
       <AnimatePresence>
         {showEditModal && editingSlot && (
           <motion.div
@@ -762,7 +851,7 @@ export default function AvailabilityManagementPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">Edit Availability Slot</h2>
+                <h2 className="text-xl font-bold text-white">Edit Blocked Slot</h2>
                 <button
                   onClick={() => {
                     setShowEditModal(false);
@@ -844,20 +933,6 @@ export default function AvailabilityManagementPage() {
                     </select>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    id="edit_is_available"
-                    checked={formData.is_available}
-                    onChange={(e) =>
-                      setFormData({ ...formData, is_available: e.target.checked })
-                    }
-                    className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-violet-500 focus:ring-violet-500"
-                  />
-                  <label htmlFor="edit_is_available" className="text-zinc-300">
-                    Available for booking
-                  </label>
-                </div>
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
@@ -872,14 +947,14 @@ export default function AvailabilityManagementPage() {
                   <button
                     type="submit"
                     disabled={saving}
-                    className="flex-1 btn-primary flex items-center justify-center gap-2"
+                    className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2.5 px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
                   >
                     {saving ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <Save className="w-4 h-4" />
                     )}
-                    {saving ? 'Saving...' : 'Update'}
+                    {saving ? 'Updating...' : 'Update'}
                   </button>
                 </div>
               </form>
@@ -888,7 +963,7 @@ export default function AvailabilityManagementPage() {
         )}
       </AnimatePresence>
 
-      {/* Bulk Add Modal */}
+      {/* Bulk Block Modal */}
       <AnimatePresence>
         {showBulkModal && (
           <motion.div
@@ -906,7 +981,7 @@ export default function AvailabilityManagementPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">Bulk Add Slots</h2>
+                <h2 className="text-xl font-bold text-white">Bulk Block Slots</h2>
                 <button
                   onClick={() => setShowBulkModal(false)}
                   className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10"
@@ -914,6 +989,9 @@ export default function AvailabilityManagementPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
+              <p className="text-zinc-400 text-sm mb-4">
+                Block multiple dates at once to prevent bookings during these periods.
+              </p>
               <form onSubmit={handleBulkCreate} className="space-y-4">
                 <div>
                   <label htmlFor="bulk-studio" className="block text-sm text-zinc-400 mb-2.5">Studio</label>
@@ -1029,14 +1107,268 @@ export default function AvailabilityManagementPage() {
                   <button
                     type="submit"
                     disabled={saving || bulkDates.length === 0}
-                    className="flex-1 btn-primary flex items-center justify-center gap-2"
+                    className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2.5 px-4 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {saving ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <Plus className="w-4 h-4" />
                     )}
-                    {saving ? 'Creating...' : `Create ${bulkDates.length} Slots`}
+                    {saving ? 'Blocking...' : `Block ${bulkDates.length} Slot${bulkDates.length !== 1 ? 's' : ''}`}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Book for Customer Modal */}
+      <AnimatePresence>
+        {showBookingModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowBookingModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-lg glass rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-white">Book for Customer</h2>
+                  <p className="text-zinc-400 text-sm mt-1">Create a booking on behalf of a customer</p>
+                </div>
+                <button
+                  onClick={() => setShowBookingModal(false)}
+                  className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleCreateBooking} className="space-y-4">
+                {/* Customer Details */}
+                <div className="p-4 bg-white/5 rounded-xl space-y-4">
+                  <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                    <User className="w-4 h-4 text-violet-400" />
+                    Customer Details
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="booking-name" className="block text-sm text-zinc-400 mb-2">Name</label>
+                      <input
+                        type="text"
+                        id="booking-name"
+                        value={bookingFormData.name}
+                        onChange={(e) =>
+                          setBookingFormData({ ...bookingFormData, name: e.target.value })
+                        }
+                        placeholder="Customer name"
+                        className="input"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="booking-whatsapp" className="block text-sm text-zinc-400 mb-2">WhatsApp *</label>
+                      <input
+                        type="tel"
+                        id="booking-whatsapp"
+                        value={bookingFormData.whatsapp}
+                        onChange={(e) =>
+                          setBookingFormData({ ...bookingFormData, whatsapp: e.target.value.replace(/\D/g, '').slice(0, 10) })
+                        }
+                        placeholder="10-digit number"
+                        className="input"
+                        required
+                        maxLength={10}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Booking Details */}
+                <div className="p-4 bg-white/5 rounded-xl space-y-4">
+                  <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-violet-400" />
+                    Booking Details
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="booking-studio" className="block text-sm text-zinc-400 mb-2">Studio *</label>
+                      <select
+                        id="booking-studio"
+                        value={bookingFormData.studio}
+                        onChange={(e) =>
+                          setBookingFormData({ ...bookingFormData, studio: e.target.value })
+                        }
+                        className="select"
+                        required
+                      >
+                        {studios.map((studio) => (
+                          <option key={studio} value={studio}>
+                            {studio}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="booking-session-type" className="block text-sm text-zinc-400 mb-2">Session Type</label>
+                      <select
+                        id="booking-session-type"
+                        value={bookingFormData.session_type}
+                        onChange={(e) =>
+                          setBookingFormData({ ...bookingFormData, session_type: e.target.value })
+                        }
+                        className="select"
+                      >
+                        {sessionTypes.map((type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="booking-date" className="block text-sm text-zinc-400 mb-2">Date *</label>
+                    <input
+                      type="date"
+                      id="booking-date"
+                      value={bookingFormData.date}
+                      onChange={(e) =>
+                        setBookingFormData({ ...bookingFormData, date: e.target.value })
+                      }
+                      className="input"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="booking-start-time" className="block text-sm text-zinc-400 mb-2">
+                        Start Time *
+                      </label>
+                      <select
+                        id="booking-start-time"
+                        value={bookingFormData.start_time}
+                        onChange={(e) =>
+                          setBookingFormData({ ...bookingFormData, start_time: e.target.value })
+                        }
+                        className="select"
+                        required
+                      >
+                        {timeOptions.map((time) => (
+                          <option key={time} value={time}>
+                            {formatTime(time)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="booking-end-time" className="block text-sm text-zinc-400 mb-2">
+                        End Time *
+                      </label>
+                      <select
+                        id="booking-end-time"
+                        value={bookingFormData.end_time}
+                        onChange={(e) =>
+                          setBookingFormData({ ...bookingFormData, end_time: e.target.value })
+                        }
+                        className="select"
+                        required
+                      >
+                        {timeOptions.map((time) => (
+                          <option key={time} value={time}>
+                            {formatTime(time)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pricing & Notes */}
+                <div className="p-4 bg-white/5 rounded-xl space-y-4">
+                  <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-violet-400" />
+                    Pricing & Notes
+                  </h3>
+                  <div>
+                    <label htmlFor="booking-rate" className="block text-sm text-zinc-400 mb-2">Rate per Hour (₹)</label>
+                    <input
+                      type="number"
+                      id="booking-rate"
+                      value={bookingFormData.rate_per_hour}
+                      onChange={(e) =>
+                        setBookingFormData({ ...bookingFormData, rate_per_hour: parseInt(e.target.value) || 0 })
+                      }
+                      placeholder="e.g., 400"
+                      className="input"
+                      min="0"
+                    />
+                    {bookingFormData.rate_per_hour > 0 && bookingFormData.start_time && bookingFormData.end_time && (
+                      <p className="text-zinc-500 text-xs mt-1">
+                        Total: ₹{Math.round(
+                          bookingFormData.rate_per_hour *
+                          ((parseInt(bookingFormData.end_time.split(':')[0]) * 60 + parseInt(bookingFormData.end_time.split(':')[1])) -
+                           (parseInt(bookingFormData.start_time.split(':')[0]) * 60 + parseInt(bookingFormData.start_time.split(':')[1]))) / 60
+                        ).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label htmlFor="booking-notes" className="block text-sm text-zinc-400 mb-2">Notes</label>
+                    <textarea
+                      id="booking-notes"
+                      value={bookingFormData.notes}
+                      onChange={(e) =>
+                        setBookingFormData({ ...bookingFormData, notes: e.target.value })
+                      }
+                      placeholder="Any additional notes..."
+                      className="input min-h-[80px] resize-none"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="booking-notification"
+                      checked={bookingFormData.send_notification}
+                      onChange={(e) =>
+                        setBookingFormData({ ...bookingFormData, send_notification: e.target.checked })
+                      }
+                      className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-violet-500 focus:ring-violet-500"
+                    />
+                    <label htmlFor="booking-notification" className="text-sm text-zinc-400">
+                      Send WhatsApp confirmation to customer
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowBookingModal(false)}
+                    className="flex-1 btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving || !bookingFormData.whatsapp || bookingFormData.whatsapp.length !== 10}
+                    className="flex-1 btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {saving ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <UserPlus className="w-4 h-4" />
+                    )}
+                    {saving ? 'Creating...' : 'Create Booking'}
                   </button>
                 </div>
               </form>

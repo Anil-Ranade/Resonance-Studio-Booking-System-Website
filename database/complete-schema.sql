@@ -1,5 +1,15 @@
--- Resonance Studio Database Schema
--- Run this SQL in your Supabase SQL Editor
+-- ============================================
+-- RESONANCE STUDIO BOOKING - COMPLETE DATABASE SCHEMA
+-- ============================================
+-- This file contains the complete database schema for the Resonance Studio Booking application.
+-- Run this SQL in your Supabase SQL Editor to set up the entire database.
+-- 
+-- Consolidated from:
+--   - schema.sql
+--   - users-schema.sql
+--   - booking-settings-schema.sql
+--   - add-session-details.sql
+-- ============================================
 
 -- ============================================
 -- EXTENSIONS
@@ -47,8 +57,48 @@ CREATE INDEX IF NOT EXISTS idx_users_whatsapp ON users(whatsapp_number);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
 -- ============================================
--- AVAILABILITY_SLOTS TABLE
--- Stores available time slots for each studio
+-- ADMIN_USERS TABLE
+-- Stores admin user information (extends auth.users)
+-- ============================================
+CREATE TABLE IF NOT EXISTS admin_users (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    name VARCHAR(255),
+    role VARCHAR(50) NOT NULL DEFAULT 'admin' CHECK (role IN ('admin', 'super_admin', 'staff')),
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    last_login_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
+-- BOOKING_SETTINGS TABLE
+-- Stores global booking configuration
+-- ============================================
+CREATE TABLE IF NOT EXISTS booking_settings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    key VARCHAR(100) NOT NULL UNIQUE,
+    value JSONB NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Insert default booking settings
+INSERT INTO booking_settings (key, value, description) VALUES
+    ('min_booking_duration', '1', 'Minimum booking duration in hours'),
+    ('max_booking_duration', '8', 'Maximum booking duration in hours'),
+    ('booking_buffer', '0', 'Buffer time between bookings in minutes'),
+    ('advance_booking_days', '30', 'How many days in advance users can book'),
+    ('default_open_time', '"08:00"', 'Default studio opening time'),
+    ('default_close_time', '"22:00"', 'Default studio closing time')
+ON CONFLICT (key) DO NOTHING;
+
+-- ============================================
+-- AVAILABILITY_SLOTS TABLE (BLOCKED SLOTS)
+-- Stores blocked time slots for each studio
+-- By default, all slots within operating hours are available
+-- Admin adds entries here to BLOCK specific time slots
 -- ============================================
 CREATE TABLE IF NOT EXISTS availability_slots (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -56,7 +106,7 @@ CREATE TABLE IF NOT EXISTS availability_slots (
     date DATE NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
-    is_available BOOLEAN NOT NULL DEFAULT true,
+    is_available BOOLEAN NOT NULL DEFAULT false, -- false = blocked, entries in this table are blocked slots
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_by UUID REFERENCES auth.users(id),
@@ -84,6 +134,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     studio VARCHAR(100) NOT NULL,
     session_type VARCHAR(100),
     group_size INTEGER DEFAULT 1,
+    session_details TEXT, -- Detailed information about the booking (replaces group_size for descriptive text)
     date DATE NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
@@ -179,21 +230,6 @@ INSERT INTO rate_cards (studio, session_type, hourly_rate) VALUES
 ON CONFLICT (studio, session_type) DO NOTHING;
 
 -- ============================================
--- ADMIN_USERS TABLE
--- Stores admin user information (extends auth.users)
--- ============================================
-CREATE TABLE IF NOT EXISTS admin_users (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    name VARCHAR(255),
-    role VARCHAR(50) NOT NULL DEFAULT 'admin' CHECK (role IN ('admin', 'super_admin', 'staff')),
-    is_active BOOLEAN NOT NULL DEFAULT true,
-    last_login_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- ============================================
 -- AUDIT_LOG TABLE
 -- Tracks all admin actions for accountability
 -- ============================================
@@ -228,8 +264,11 @@ ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rate_cards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE booking_settings ENABLE ROW LEVEL SECURITY;
 
--- Studios: Everyone can read active studios
+-- ============================================
+-- STUDIOS POLICIES
+-- ============================================
 CREATE POLICY "Anyone can view active studios" ON studios
     FOR SELECT USING (is_active = true);
 
@@ -242,7 +281,9 @@ CREATE POLICY "Admins can manage studios" ON studios
         )
     );
 
--- Users: Anyone can create (for booking), admins can view all
+-- ============================================
+-- USERS POLICIES
+-- ============================================
 CREATE POLICY "Anyone can create users" ON users
     FOR INSERT WITH CHECK (true);
 
@@ -258,7 +299,9 @@ CREATE POLICY "Admins can manage users" ON users
         )
     );
 
--- Availability Slots: Everyone can read available slots
+-- ============================================
+-- AVAILABILITY_SLOTS POLICIES
+-- ============================================
 CREATE POLICY "Anyone can view available slots" ON availability_slots
     FOR SELECT USING (is_available = true);
 
@@ -271,7 +314,9 @@ CREATE POLICY "Admins can manage availability" ON availability_slots
         )
     );
 
--- Bookings: Users can view their own bookings, admins can view all
+-- ============================================
+-- BOOKINGS POLICIES
+-- ============================================
 CREATE POLICY "Users can view own bookings" ON bookings
     FOR SELECT USING (
         user_id = auth.uid() OR
@@ -304,7 +349,9 @@ CREATE POLICY "Admins can delete bookings" ON bookings
         )
     );
 
--- Reminders: Only admins can manage
+-- ============================================
+-- REMINDERS POLICIES
+-- ============================================
 CREATE POLICY "Service role can manage reminders" ON reminders
     FOR ALL USING (
         EXISTS (
@@ -314,7 +361,9 @@ CREATE POLICY "Service role can manage reminders" ON reminders
         )
     );
 
--- Contacts: Anyone can create, only admins can read
+-- ============================================
+-- CONTACTS POLICIES
+-- ============================================
 CREATE POLICY "Anyone can submit contact" ON contacts
     FOR INSERT WITH CHECK (true);
 
@@ -327,7 +376,9 @@ CREATE POLICY "Admins can manage contacts" ON contacts
         )
     );
 
--- Rate Cards: Anyone can read, only admins can modify
+-- ============================================
+-- RATE_CARDS POLICIES
+-- ============================================
 CREATE POLICY "Anyone can view rate cards" ON rate_cards
     FOR SELECT USING (is_active = true);
 
@@ -340,7 +391,9 @@ CREATE POLICY "Admins can manage rate cards" ON rate_cards
         )
     );
 
--- Admin Users: Only admins can view/manage
+-- ============================================
+-- ADMIN_USERS POLICIES
+-- ============================================
 CREATE POLICY "Admins can view admin users" ON admin_users
     FOR SELECT USING (
         id = auth.uid() OR
@@ -362,7 +415,9 @@ CREATE POLICY "Super admins can manage admin users" ON admin_users
         )
     );
 
--- Audit Logs: Only super admins can view
+-- ============================================
+-- AUDIT_LOGS POLICIES
+-- ============================================
 CREATE POLICY "Super admins can view audit logs" ON audit_logs
     FOR SELECT USING (
         EXISTS (
@@ -375,6 +430,21 @@ CREATE POLICY "Super admins can view audit logs" ON audit_logs
 
 CREATE POLICY "System can create audit logs" ON audit_logs
     FOR INSERT WITH CHECK (true);
+
+-- ============================================
+-- BOOKING_SETTINGS POLICIES
+-- ============================================
+CREATE POLICY "Anyone can view booking settings" ON booking_settings
+    FOR SELECT USING (true);
+
+CREATE POLICY "Admins can manage booking settings" ON booking_settings
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM admin_users 
+            WHERE admin_users.id = auth.uid() 
+            AND admin_users.is_active = true
+        )
+    );
 
 -- ============================================
 -- FUNCTIONS & TRIGGERS
@@ -423,6 +493,12 @@ CREATE TRIGGER update_rate_cards_updated_at
 DROP TRIGGER IF EXISTS update_admin_users_updated_at ON admin_users;
 CREATE TRIGGER update_admin_users_updated_at
     BEFORE UPDATE ON admin_users
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_booking_settings_updated_at ON booking_settings;
+CREATE TRIGGER update_booking_settings_updated_at
+    BEFORE UPDATE ON booking_settings
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 

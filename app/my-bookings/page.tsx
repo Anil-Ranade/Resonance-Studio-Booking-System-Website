@@ -51,8 +51,9 @@ interface CancelModalState {
 }
 
 const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
+  initial: { opacity: 0, y: 15 },
   animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.25 }
 };
 
 const statusConfig = {
@@ -259,8 +260,14 @@ export default function MyBookingsPage() {
         throw new Error(data.error || 'Failed to cancel booking');
       }
 
-      // Update bookings list - remove the cancelled booking
-      setBookings(prev => prev?.filter(b => b.id !== cancelModal.booking?.id) || null);
+      // Update bookings list - update the cancelled booking's status
+      setBookings(prev => 
+        prev?.map(b => 
+          b.id === cancelModal.booking?.id 
+            ? { ...b, status: 'cancelled' as const } 
+            : b
+        ) || null
+      );
 
       setCancelModal(prev => ({
         ...prev,
@@ -287,23 +294,23 @@ export default function MyBookingsPage() {
   };
 
   const canCancelBooking = (booking: Booking) => {
-    // Only allow cancellation for pending or confirmed bookings
-    if (booking.status !== 'pending' && booking.status !== 'confirmed') {
+    // Only allow cancellation for pending or confirmed bookings (case-insensitive)
+    const status = booking.status?.toLowerCase();
+    if (status !== 'pending' && status !== 'confirmed') {
       return false;
     }
     
     // Parse the booking date and time
-    // booking.date is like "2025-11-26" and start_time is like "14:00:00" or "14:00"
-    const [year, month, day] = booking.date.split('-').map(Number);
-    const timeParts = booking.start_time.split(':').map(Number);
-    const hours = timeParts[0] || 0;
-    const minutes = timeParts[1] || 0;
+    const bookingDateStr = booking.date;
+    const bookingTimeStr = booking.start_time;
     
-    const bookingDateTime = new Date(year, month - 1, day, hours, minutes);
+    // Create date from ISO string format
+    const bookingDateTime = new Date(`${bookingDateStr}T${bookingTimeStr}`);
     const now = new Date();
     
-    // Allow cancellation if booking is in the future
-    return bookingDateTime > now;
+    // Allow cancellation if booking is in the future or present (not in the past)
+    // We compare only up to minutes, ignoring seconds/milliseconds
+    return bookingDateTime >= now;
   };
 
   return (

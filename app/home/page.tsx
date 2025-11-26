@@ -10,50 +10,51 @@ import {
   MapPin, 
   Calendar, 
   ArrowRight, 
-  ChevronDown,
   Headphones,
   Award,
   Clock,
   Users,
   Play,
-  Star,
   Sparkles,
   Guitar,
   Speaker,
   MonitorPlay
 } from "lucide-react";
+import { useDevicePerformance } from '@/lib/useDevicePerformance';
 
+// Optimized animation variants - shorter durations for better performance
 const fadeInUp = {
-  initial: { opacity: 0, y: 30 },
+  initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.6, ease: "easeOut" }
+  transition: { duration: 0.3, ease: "easeOut" }
 };
 
 const fadeInLeft = {
-  initial: { opacity: 0, x: -30 },
+  initial: { opacity: 0, x: -20 },
   animate: { opacity: 1, x: 0 },
-  transition: { duration: 0.6, ease: "easeOut" }
+  transition: { duration: 0.3, ease: "easeOut" }
 };
 
 const fadeInRight = {
-  initial: { opacity: 0, x: 30 },
+  initial: { opacity: 0, x: 20 },
   animate: { opacity: 1, x: 0 },
-  transition: { duration: 0.6, ease: "easeOut" }
+  transition: { duration: 0.3, ease: "easeOut" }
 };
 
 const staggerContainer = {
   animate: {
     transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.1
+      staggerChildren: 0.05,
+      delayChildren: 0.05
     }
   }
 };
 
+// Simplified floating animation for better mobile performance
 const floatingAnimation = {
-  y: [0, -10, 0],
+  y: [0, -6, 0],
   transition: {
-    duration: 3,
+    duration: 4,
     repeat: Infinity,
     ease: "easeInOut" as const
   }
@@ -118,11 +119,8 @@ export default function HomePage() {
     { value: "8AM-10PM", label: "Daily Hours", icon: <Clock className="w-5 h-5" /> },
   ];
 
-  const testimonials = [
-    { name: "Rahul M.", text: "Best rehearsal space in Pune! The equipment is top-notch.", rating: 5 },
-    { name: "Priya S.", text: "Amazing karaoke experience. Will definitely come back!", rating: 5 },
-    { name: "Band Insignia", text: "Our go-to studio for practice sessions. Highly recommend!", rating: 5 },
-  ];
+  // Get device performance info to optimize animations
+  const { shouldReduceAnimations, isMobile } = useDevicePerformance();
 
   return (
     <div className="min-h-screen overflow-hidden">
@@ -131,50 +129,62 @@ export default function HomePage() {
         {/* Animated Background */}
         <div className="absolute inset-0 bg-grid opacity-20" />
         
-        {/* Floating Orbs */}
-        <motion.div 
-          className="absolute top-20 left-10 w-72 h-72 bg-violet-600/30 rounded-full blur-[100px]"
-          animate={{ 
-            scale: [1, 1.3, 1],
-            x: [0, 50, 0],
-            opacity: [0.3, 0.5, 0.3]
-          }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div 
-          className="absolute bottom-20 right-10 w-96 h-96 bg-purple-600/25 rounded-full blur-[120px]"
-          animate={{ 
-            scale: [1.2, 1, 1.2],
-            x: [0, -30, 0],
-            opacity: [0.4, 0.2, 0.4]
-          }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div 
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-violet-600/10 to-purple-600/10 rounded-full blur-[150px]"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
-        />
+        {/* Floating Orbs - Only show on desktop or when not reducing animations */}
+        {!shouldReduceAnimations && (
+          <>
+            <motion.div 
+              className="absolute top-20 left-10 w-72 h-72 bg-violet-600/30 rounded-full blur-[100px] will-change-transform"
+              animate={{ 
+                scale: [1, 1.2, 1],
+                opacity: [0.3, 0.4, 0.3]
+              }}
+              transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div 
+              className="absolute bottom-20 right-10 w-96 h-96 bg-purple-600/25 rounded-full blur-[120px] will-change-transform"
+              animate={{ 
+                scale: [1.1, 1, 1.1],
+                opacity: [0.3, 0.2, 0.3]
+              }}
+              transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </>
+        )}
+        
+        {/* Static orbs for mobile/reduced motion */}
+        {shouldReduceAnimations && (
+          <>
+            <div className="absolute top-20 left-10 w-72 h-72 bg-violet-600/20 rounded-full blur-[100px]" />
+            <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-600/15 rounded-full blur-[120px]" />
+          </>
+        )}
+        
+        {/* Central gradient - static on mobile */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-violet-600/10 to-purple-600/10 rounded-full blur-[150px]" />
 
-        {/* Floating Music Notes */}
-        <motion.div 
-          className="absolute top-1/4 right-[15%] text-violet-500/20"
-          animate={floatingAnimation}
-        >
-          <Music className="w-16 h-16" />
-        </motion.div>
-        <motion.div 
-          className="absolute bottom-1/3 left-[10%] text-purple-500/20"
-          animate={{ ...floatingAnimation, transition: { ...floatingAnimation.transition, delay: 1 } }}
-        >
-          <Headphones className="w-20 h-20" />
-        </motion.div>
-        <motion.div 
-          className="absolute top-1/3 left-[20%] text-violet-500/15"
-          animate={{ ...floatingAnimation, transition: { ...floatingAnimation.transition, delay: 0.5 } }}
-        >
-          <Mic className="w-12 h-12" />
-        </motion.div>
+        {/* Floating Music Notes - only on desktop */}
+        {!isMobile && !shouldReduceAnimations && (
+          <>
+            <motion.div 
+              className="absolute top-1/4 right-[15%] text-violet-500/20"
+              animate={floatingAnimation}
+            >
+              <Music className="w-16 h-16" />
+            </motion.div>
+            <motion.div 
+              className="absolute bottom-1/3 left-[10%] text-purple-500/20"
+              animate={{ ...floatingAnimation, transition: { ...floatingAnimation.transition, delay: 1 } }}
+            >
+              <Headphones className="w-20 h-20" />
+            </motion.div>
+            <motion.div 
+              className="absolute top-1/3 left-[20%] text-violet-500/15"
+              animate={{ ...floatingAnimation, transition: { ...floatingAnimation.transition, delay: 0.5 } }}
+            >
+              <Mic className="w-12 h-12" />
+            </motion.div>
+          </>
+        )}
         
         <motion.div 
           className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center"
@@ -275,37 +285,6 @@ export default function HomePage() {
               </motion.button>
             </Link>
           </motion.div>
-
-          {/* Quick Stats under CTA */}
-          <motion.div 
-            className="flex items-center justify-center gap-8 mt-12 pt-8 border-t border-white/5"
-            variants={fadeInUp}
-          >
-            <div className="text-center">
-              <p className="text-2xl font-bold text-white">₹200</p>
-              <p className="text-xs text-zinc-500">Starting/hour</p>
-            </div>
-            <div className="w-px h-10 bg-white/10" />
-            <div className="text-center">
-              <p className="text-2xl font-bold text-white">3</p>
-              <p className="text-xs text-zinc-500">Studios</p>
-            </div>
-            <div className="w-px h-10 bg-white/10" />
-            <div className="text-center">
-              <p className="text-2xl font-bold text-white">30</p>
-              <p className="text-xs text-zinc-500">Max Capacity</p>
-            </div>
-          </motion.div>
-        </motion.div>
-
-        {/* Scroll Indicator */}
-        <motion.div 
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          <span className="text-xs text-zinc-500">Scroll to explore</span>
-          <ChevronDown className="w-5 h-5 text-zinc-500" />
         </motion.div>
       </section>
 
@@ -471,52 +450,6 @@ export default function HomePage() {
                   {stat.value}
                 </motion.div>
                 <div className="text-zinc-500 text-sm">{stat.label}</div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <motion.span 
-              className="inline-block px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-medium mb-4"
-            >
-              Reviews
-            </motion.span>
-            <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-              What Our Customers Say
-            </h2>
-          </motion.div>
-
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-          >
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={index}
-                className="bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm border border-white/10 rounded-2xl p-6"
-                variants={fadeInUp}
-                whileHover={{ y: -5 }}
-              >
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-amber-400 fill-amber-400" />
-                  ))}
-                </div>
-                <p className="text-zinc-300 mb-4 leading-relaxed">&ldquo;{testimonial.text}&rdquo;</p>
-                <p className="text-violet-400 font-medium text-sm">{testimonial.name}</p>
               </motion.div>
             ))}
           </motion.div>

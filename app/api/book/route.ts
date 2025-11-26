@@ -8,7 +8,7 @@ interface BookRequest {
   name?: string;
   studio: string;
   session_type: string;
-  group_size: number;
+  session_details?: string;
   date: string;
   start_time: string;
   end_time: string;
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       name,
       studio,
       session_type,
-      group_size,
+      session_details,
       date,
       start_time,
       end_time,
@@ -186,7 +186,7 @@ export async function POST(request: Request) {
         name,
         studio,
         session_type,
-        group_size,
+        session_details: session_details || session_type,
         date,
         start_time,
         end_time,
@@ -219,7 +219,7 @@ export async function POST(request: Request) {
 
         googleEventId = await createEvent({
           summary: `${studio} - ${session_type} (${name || whatsapp})`,
-          description: `Booking ID: ${booking.id}\nWhatsApp: ${whatsapp}\nGroup Size: ${group_size}\nSession Type: ${session_type}`,
+          description: `Booking ID: ${booking.id}\nWhatsApp: ${whatsapp}\nSession Type: ${session_type}\nDetails: ${session_details || 'N/A'}`,
           startDateTime,
           endDateTime,
         });

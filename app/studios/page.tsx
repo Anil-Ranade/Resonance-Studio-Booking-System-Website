@@ -4,15 +4,16 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, Mic, Users, Check, Music, Radio, Star } from "lucide-react";
 
+// Optimized animation variants with shorter durations
 const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
+  initial: { opacity: 0, y: 15 },
   animate: { opacity: 1, y: 0 },
 };
 
 const staggerContainer = {
   animate: {
     transition: {
-      staggerChildren: 0.1,
+      staggerChildren: 0.08,
     },
   },
 };
