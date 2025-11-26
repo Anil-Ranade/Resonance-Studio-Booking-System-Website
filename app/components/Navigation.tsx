@@ -82,14 +82,20 @@ export default function Navigation() {
 
             {/* Mobile Menu Button */}
             <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsMenuOpen((prev) => !prev);
+              }}
+              className="md:hidden p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors touch-manipulation"
               aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isMenuOpen}
             >
               {isMenuOpen ? (
-                <X className="w-6 h-6" />
+                <X className="w-6 h-6 pointer-events-none" />
               ) : (
-                <Menu className="w-6 h-6" />
+                <Menu className="w-6 h-6 pointer-events-none" />
               )}
             </button>
           </div>
@@ -97,19 +103,20 @@ export default function Navigation() {
       </nav>
 
       {/* Mobile Menu Overlay */}
-      <div
-        className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300 md:hidden ${
-          isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
-        onClick={() => setIsMenuOpen(false)}
-      />
+      {isMenuOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          onClick={() => setIsMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
       {/* Mobile Menu Panel */}
       <div
-        className={`fixed top-16 left-0 right-0 z-40 bg-[#0a0a0f]/98 backdrop-blur-xl border-b border-violet-500/10 md:hidden transform transition-all duration-300 ease-out ${
+        className={`fixed top-16 left-0 right-0 z-50 bg-[#0a0a0f]/98 backdrop-blur-xl border-b border-violet-500/10 md:hidden transition-all duration-300 ease-out ${
           isMenuOpen
-            ? "translate-y-0 opacity-100"
-            : "-translate-y-4 opacity-0 pointer-events-none"
+            ? "opacity-100 visible"
+            : "opacity-0 invisible"
         }`}
       >
         <div className="max-h-[calc(100vh-4rem)] overflow-y-auto">
