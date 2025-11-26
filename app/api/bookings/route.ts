@@ -1,35 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 
-// GET /api/bookings?whatsapp=XXXXXXXXXX - Fetch bookings by WhatsApp number
+// GET /api/bookings?phone=XXXXXXXXXX - Fetch bookings by phone number
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const whatsapp = searchParams.get("whatsapp");
+    const phone = searchParams.get("phone");
 
-    if (!whatsapp) {
+    if (!phone) {
       return NextResponse.json(
-        { error: "WhatsApp number is required" },
+        { error: "Phone number is required" },
         { status: 400 }
       );
     }
 
-    // Normalize whatsapp to digits only
-    const normalizedWhatsapp = whatsapp.replace(/\D/g, "");
+    // Normalize phone to digits only
+    const normalizedPhone = phone.replace(/\D/g, "");
 
     // Validate exactly 10 digits
-    if (normalizedWhatsapp.length !== 10) {
+    if (normalizedPhone.length !== 10) {
       return NextResponse.json(
-        { error: "WhatsApp number must be exactly 10 digits" },
+        { error: "Phone number must be exactly 10 digits" },
         { status: 400 }
       );
     }
 
-    // Query bookings where whatsapp_number = normalized and status IN ('confirmed','pending')
+    // Query bookings where phone_number = normalized and status IN ('confirmed','pending')
     const { data: bookings, error: bookingsError } = await supabaseServer
       .from("bookings")
       .select("*")
-      .eq("whatsapp_number", normalizedWhatsapp)
+      .eq("phone_number", normalizedPhone)
       .in("status", ["confirmed", "pending"])
       .order("date", { ascending: true });
 

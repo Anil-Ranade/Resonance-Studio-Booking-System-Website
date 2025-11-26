@@ -7,7 +7,7 @@ import { deleteEvent } from "@/lib/googleCalendar";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { bookingId, whatsapp, otp, reason } = body;
+    const { bookingId, phone, otp, reason } = body;
 
     // Validate inputs
     if (!bookingId) {
@@ -17,10 +17,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const normalizedWhatsapp = whatsapp?.replace(/\D/g, "");
-    if (!normalizedWhatsapp || normalizedWhatsapp.length !== 10) {
+    const normalizedPhone = phone?.replace(/\D/g, "");
+    if (!normalizedPhone || normalizedPhone.length !== 10) {
       return NextResponse.json(
-        { error: "WhatsApp number must be exactly 10 digits" },
+        { error: "Phone number must be exactly 10 digits" },
         { status: 400 }
       );
     }
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify OTP
-    const otpResult = verifyOTP(normalizedWhatsapp, otp);
+    const otpResult = await verifyOTP(normalizedPhone, otp);
     if (!otpResult.success) {
       return NextResponse.json(
         { error: otpResult.error },
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       .from("bookings")
       .select("*")
       .eq("id", bookingId)
-      .eq("whatsapp_number", normalizedWhatsapp)
+      .eq("phone_number", normalizedPhone)
       .single();
 
     if (fetchError || !booking) {

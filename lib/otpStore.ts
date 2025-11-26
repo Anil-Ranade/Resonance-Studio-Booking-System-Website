@@ -1,139 +1,98 @@
-/**
- * OTP Store - In-memory storage for OTP verification
- * 
- * In production, consider using Redis or a database for:
- * - Persistence across server restarts
- * - Distributed systems support
- * - Better scalability
- */
+import bcrypt from 'bcryptjs';
+import { createClient } from '@supabase/supabase-js';
 
-interface OTPData {
-  otp: string;
-  expiresAt: number;
-  attempts: number;
-}
-
-// Global store for OTPs
-const otpStore = new Map<string, OTPData>();
-
-// Track last OTP sent time to prevent spam
-const lastOtpSentTime = new Map<string, number>();
+// Initialize Supabase client with service role for database operations
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // Configuration
-export const OTP_CONFIG = {
-  // OTP expiry time in milliseconds (5 minutes)
-  EXPIRY_MS: 5 * 60 * 1000,
-  // Maximum OTP verification attempts
-  MAX_ATTEMPTS: 3,
-  // Cooldown between OTP requests (1 minute)
-  COOLDOWN_MS: 60 * 1000,
-  // OTP length
-  LENGTH: 6,
-};
+const OTP_LENGTH = 6;
+const MAX_ATTEMPTS = 5;
 
-/**
- * Generate a random numeric OTP
- */
-export function generateOTP(): string {
-  const min = Math.pow(10, OTP_CONFIG.LENGTH - 1);
-  const max = Math.pow(10, OTP_CONFIG.LENGTH) - 1;
-  return Math.floor(min + Math.random() * (max - min + 1)).toString();
+interface VerifyResult {
+  success: boolean;
+  error?: string;
 }
 
 /**
- * Store an OTP for a phone number
+ * Verify OTP for a given phone number using the database
+ * This is used by the cancel booking flow
  */
-export function storeOTP(whatsapp: string, otp: string): void {
-  otpStore.set(whatsapp, {
-    otp,
-    expiresAt: Date.now() + OTP_CONFIG.EXPIRY_MS,
-    attempts: 0,
-  });
-  lastOtpSentTime.set(whatsapp, Date.now());
-}
+export async function verifyOTP(phone: string, code: string): Promise<VerifyResult> {
+  try {
+    // Normalize phone to digits only
+    const phoneDigits = phone.replace(/\D/g, '');
 
-/**
- * Get stored OTP data for a phone number
- */
-export function getOTPData(whatsapp: string): OTPData | undefined {
-  return otpStore.get(whatsapp);
-}
+    // Validate phone number format
+    if (phoneDigits.length !== 10) {
+      return { success: false, error: 'Invalid phone number format' };
+    }
 
-/**
- * Update OTP data
- */
-export function updateOTPData(whatsapp: string, data: Partial<OTPData>): void {
-  const existing = otpStore.get(whatsapp);
-  if (existing) {
-    otpStore.set(whatsapp, { ...existing, ...data });
+    // Validate OTP format
+    if (!/^\d{6}$/.test(code)) {
+      return { success: false, error: `OTP must be ${OTP_LENGTH} digits` };
+    }
+
+    // Fetch the latest unexpired OTP for this phone number
+    const { data: otpRecord, error: fetchError } = await supabase
+      .from('login_otps')
+      .select('id, code_hash, attempts, expires_at')
+      .eq('phone', phoneDigits)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (fetchError || !otpRecord) {
+      return { success: false, error: 'No valid OTP found. Please request a new OTP.' };
+    }
+
+    // Check if OTP has expired
+    if (new Date(otpRecord.expires_at) < new Date()) {
+      // Delete expired OTP
+      await supabase.from('login_otps').delete().eq('id', otpRecord.id);
+      return { success: false, error: 'OTP has expired. Please request a new OTP.' };
+    }
+
+    // Check if max attempts exceeded
+    if (otpRecord.attempts >= MAX_ATTEMPTS) {
+      // Delete the OTP record after max attempts
+      await supabase.from('login_otps').delete().eq('id', otpRecord.id);
+      return { success: false, error: 'Too many incorrect attempts. Please request a new OTP.' };
+    }
+
+    // Verify OTP using bcrypt
+    const isValidOTP = await bcrypt.compare(code, otpRecord.code_hash);
+
+    if (!isValidOTP) {
+      // Increment attempts
+      const newAttempts = otpRecord.attempts + 1;
+      await supabase
+        .from('login_otps')
+        .update({ attempts: newAttempts })
+        .eq('id', otpRecord.id);
+
+      const remainingAttempts = MAX_ATTEMPTS - newAttempts;
+
+      if (remainingAttempts <= 0) {
+        // Delete the OTP record after max attempts
+        await supabase.from('login_otps').delete().eq('id', otpRecord.id);
+        return { success: false, error: 'Too many incorrect attempts. Please request a new OTP.' };
+      }
+
+      return {
+        success: false,
+        error: `Invalid OTP. ${remainingAttempts} attempt${remainingAttempts !== 1 ? 's' : ''} remaining.`,
+      };
+    }
+
+    // OTP is valid - delete the OTP record
+    await supabase.from('login_otps').delete().eq('id', otpRecord.id);
+
+    return { success: true };
+  } catch (error) {
+    console.error('[OTP Store] Verification error:', error);
+    return { success: false, error: 'Failed to verify OTP. Please try again.' };
   }
-}
-
-/**
- * Delete stored OTP
- */
-export function deleteOTP(whatsapp: string): void {
-  otpStore.delete(whatsapp);
-}
-
-/**
- * Check if cooldown is active for a phone number
- * Returns remaining seconds if on cooldown, 0 otherwise
- */
-export function getCooldownRemaining(whatsapp: string): number {
-  const lastSent = lastOtpSentTime.get(whatsapp);
-  if (!lastSent) return 0;
-  
-  const elapsed = Date.now() - lastSent;
-  if (elapsed >= OTP_CONFIG.COOLDOWN_MS) return 0;
-  
-  return Math.ceil((OTP_CONFIG.COOLDOWN_MS - elapsed) / 1000);
-}
-
-/**
- * Verify an OTP
- * Returns verification result with appropriate error messages
- */
-export function verifyOTP(
-  whatsapp: string, 
-  userOtp: string
-): { 
-  success: boolean; 
-  error?: string; 
-  remainingAttempts?: number;
-} {
-  const data = otpStore.get(whatsapp);
-  
-  if (!data) {
-    return { success: false, error: "No OTP found. Please request a new OTP." };
-  }
-  
-  // Check expiry
-  if (Date.now() > data.expiresAt) {
-    otpStore.delete(whatsapp);
-    return { success: false, error: "OTP has expired. Please request a new OTP." };
-  }
-  
-  // Check max attempts
-  if (data.attempts >= OTP_CONFIG.MAX_ATTEMPTS) {
-    otpStore.delete(whatsapp);
-    return { success: false, error: "Too many incorrect attempts. Please request a new OTP." };
-  }
-  
-  // Verify OTP
-  if (data.otp !== userOtp) {
-    data.attempts += 1;
-    otpStore.set(whatsapp, data);
-    
-    const remaining = OTP_CONFIG.MAX_ATTEMPTS - data.attempts;
-    return { 
-      success: false, 
-      error: `Invalid OTP. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.`,
-      remainingAttempts: remaining,
-    };
-  }
-  
-  // Success - clear OTP
-  otpStore.delete(whatsapp);
-  return { success: true };
 }

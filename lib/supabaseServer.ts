@@ -8,12 +8,20 @@ import { createClient } from "@supabase/supabase-js";
  * Never expose this client or the service role key to the browser.
  * 
  * Environment variables required:
- * - SUPABASE_URL: Your Supabase project URL
+ * - SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL: Your Supabase project URL
  * - SUPABASE_SERVICE_ROLE_KEY: Your Supabase service role key (secret)
  */
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl) {
+  throw new Error("Missing SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL environment variable");
+}
+
+if (!supabaseServiceRoleKey) {
+  throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
+}
 
 export const supabaseServer = createClient(supabaseUrl, supabaseServiceRoleKey, {
   auth: {

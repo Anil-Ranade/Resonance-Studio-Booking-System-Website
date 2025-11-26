@@ -30,7 +30,7 @@ interface RecentBooking {
   start_time: string;
   end_time: string;
   name: string | null;
-  whatsapp_number: string;
+  phone_number: string;
   status: string;
 }
 

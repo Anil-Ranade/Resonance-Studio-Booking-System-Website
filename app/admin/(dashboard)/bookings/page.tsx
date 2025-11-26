@@ -24,7 +24,7 @@ import { getSession } from '@/lib/supabaseAuth';
 
 interface Booking {
   id: string;
-  whatsapp_number: string;
+  phone_number: string;
   name: string | null;
   studio: string;
   session_type: string | null;
@@ -174,7 +174,7 @@ export default function BookingsManagementPage() {
   const filteredBookings = bookings.filter((booking) => {
     const matchesSearch =
       booking.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.whatsapp_number.includes(searchTerm) ||
+      booking.phone_number.includes(searchTerm) ||
       booking.studio.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === 'all' || booking.status === statusFilter;
@@ -306,7 +306,7 @@ export default function BookingsManagementPage() {
                           {booking.name || 'N/A'}
                         </p>
                         <p className="text-zinc-500 text-sm">
-                          {booking.whatsapp_number}
+                          {booking.phone_number}
                         </p>
                       </div>
                     </td>
@@ -420,7 +420,7 @@ export default function BookingsManagementPage() {
                     </p>
                     <p className="text-zinc-400 text-sm flex items-center gap-1">
                       <Phone className="w-3 h-3" />
-                      {selectedBooking.whatsapp_number}
+                      {selectedBooking.phone_number}
                     </p>
                   </div>
                   <span

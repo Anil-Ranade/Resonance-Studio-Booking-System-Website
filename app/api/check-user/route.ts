@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 
 interface CheckUserRequest {
-  whatsapp: string;
+  phone: string;
   name?: string;
   email?: string;
 }
@@ -10,16 +10,44 @@ interface CheckUserRequest {
 // POST /api/check-user - Check if user exists or create new user
 export async function POST(request: Request) {
   try {
-    const body: CheckUserRequest = await request.json();
+    // Parse request body with error handling
+    let body: CheckUserRequest;
+    try {
+      const text = await request.text();
+      if (!text || text.trim() === '') {
+        return NextResponse.json(
+          { error: 'Request body is empty' },
+          { status: 400 }
+        );
+      }
+      body = JSON.parse(text);
+    } catch (parseError) {
+      console.error('[Check User] JSON parse error:', parseError);
+      return NextResponse.json(
+        { error: 'Invalid request body. Please send valid JSON.' },
+        { status: 400 }
+      );
+    }
+
+    // Validate phone is provided
+    console.log('[Check User] Received body:', JSON.stringify(body));
+    
+    if (!body.phone || body.phone.toString().trim() === '') {
+      return NextResponse.json(
+        { error: 'Phone number is required' },
+        { status: 400 }
+      );
+    }
+
     const { name, email } = body;
 
-    // Normalize whatsapp to digits only
-    const whatsapp = body.whatsapp.replace(/\D/g, "");
+    // Normalize phone to digits only
+    const phone = body.phone.toString().trim().replace(/\D/g, "");
 
     // Validate exactly 10 digits
-    if (whatsapp.length !== 10) {
+    if (phone.length !== 10) {
       return NextResponse.json(
-        { error: "WhatsApp number must be exactly 10 digits" },
+        { error: "Phone number must be exactly 10 digits" },
         { status: 400 }
       );
     }
@@ -28,7 +56,7 @@ export async function POST(request: Request) {
     const { data: existingUser, error: lookupError } = await supabaseServer
       .from("users")
       .select("*")
-      .eq("whatsapp_number", whatsapp)
+      .eq("phone_number", phone)
       .single();
 
     if (lookupError && lookupError.code !== "PGRST116") {
@@ -52,7 +80,7 @@ export async function POST(request: Request) {
     // Create new user
     const { data: newUser, error: createError } = await supabaseServer
       .from("users")
-      .insert({ whatsapp_number: whatsapp, name, email })
+      .insert({ phone_number: phone, name, email })
       .select()
       .single();
 
@@ -65,9 +93,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ user: newUser });
   } catch (error) {
+    console.error('[Check User] Unexpected error:', error);
     return NextResponse.json(
-      { error: "Invalid request body" },
-      { status: 400 }
+      { error: error instanceof Error ? error.message : "An unexpected error occurred" },
+      { status: 500 }
     );
   }
 }

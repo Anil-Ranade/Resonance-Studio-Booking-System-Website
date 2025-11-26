@@ -4,6 +4,17 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Helper function to safely parse JSON responses
+async function safeJsonParse(response: Response) {
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error('Failed to parse response as JSON:', text.substring(0, 200));
+    throw new Error('Server returned an invalid response. Please try again.');
+  }
+}
 import { 
   ArrowLeft, 
   Mic, 
@@ -45,7 +56,7 @@ interface BookingData {
 
 interface UserData {
   id: string;
-  whatsapp_number: string;
+  phone_number: string;
   name: string;
   email: string;
 }
@@ -134,10 +145,10 @@ export default function ReviewPage() {
       const response = await fetch('/api/check-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ whatsapp: phoneNumber }),
+        body: JSON.stringify({ phone: phoneNumber }),
       });
 
-      const data = await response.json();
+      const data = await safeJsonParse(response);
 
       if (data.error) {
         throw new Error(data.error);
@@ -174,10 +185,10 @@ export default function ReviewPage() {
       const response = await fetch('/api/check-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ whatsapp: phoneNumber, name, email }),
+        body: JSON.stringify({ phone: phoneNumber, name, email }),
       });
 
-      const data = await response.json();
+      const data = await safeJsonParse(response);
 
       if (data.error) {
         throw new Error(data.error);
@@ -201,13 +212,13 @@ export default function ReviewPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/otp/send', {
+      const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ whatsapp: userData.whatsapp_number }),
+        body: JSON.stringify({ phone: userData.phone_number }),
       });
 
-      const data = await response.json();
+      const data = await safeJsonParse(response);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to send OTP');
@@ -272,16 +283,16 @@ export default function ReviewPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/otp/verify', {
+      const response = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          whatsapp: userData.whatsapp_number,
-          otp: otpValue 
+          phone: userData.phone_number,
+          code: otpValue 
         }),
       });
 
-      const data = await response.json();
+      const data = await safeJsonParse(response);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to verify OTP');
@@ -320,7 +331,7 @@ export default function ReviewPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          whatsapp: userData.whatsapp_number,
+          phone: userData.phone_number,
           name: userData.name,
           session_type: bookingData.sessionType,
           session_details: getSessionDetails(bookingData),
@@ -332,7 +343,7 @@ export default function ReviewPage() {
         }),
       });
 
-      const data = await response.json();
+      const data = await safeJsonParse(response);
 
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Failed to create booking');
@@ -502,7 +513,7 @@ export default function ReviewPage() {
             <motion.div className="space-y-4" variants={fadeInUp}>
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-zinc-400 mb-2.5">
-                  WhatsApp Number
+                  Phone Number
                 </label>
                 <div className="relative">
                   <input
@@ -626,7 +637,7 @@ export default function ReviewPage() {
                   <Phone className="w-5 h-5 text-zinc-500" />
                   <span className="text-zinc-400">Phone</span>
                 </div>
-                <span className="text-white font-medium">{userData.whatsapp_number}</span>
+                <span className="text-white font-medium">{userData.phone_number}</span>
               </div>
               {userData.email && (
                 <div className="flex justify-between items-center py-3">
@@ -660,7 +671,7 @@ export default function ReviewPage() {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">Verify Your Number</h2>
-                <p className="text-zinc-400 text-sm">We&apos;ll send an OTP to your WhatsApp</p>
+                <p className="text-zinc-400 text-sm">We'll send an OTP to your phone</p>
               </div>
             </motion.div>
 
@@ -671,8 +682,8 @@ export default function ReviewPage() {
                 animate={{ opacity: 1 }}
               >
                 <p className="text-zinc-400 mb-6">
-                  Click below to receive a 6-digit verification code on your WhatsApp number
-                  <span className="text-white font-medium ml-1">{userData.whatsapp_number}</span>
+                  Click below to receive a 6-digit verification code on your phone number
+                  <span className="text-white font-medium ml-1">{userData.phone_number}</span>
                 </p>
                 <motion.button
                   type="button"
@@ -690,7 +701,7 @@ export default function ReviewPage() {
                   ) : (
                     <>
                       <Shield className="w-5 h-5" />
-                      Send OTP to WhatsApp
+                      Send OTP via SMS
                     </>
                   )}
                 </motion.button>
@@ -703,7 +714,7 @@ export default function ReviewPage() {
               >
                 <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-3">
                   <Check className="w-5 h-5 text-green-400" />
-                  <span className="text-green-400">OTP sent to your WhatsApp!</span>
+                  <span className="text-green-400">OTP sent to your phone!</span>
                 </div>
 
                 <div>
@@ -781,7 +792,7 @@ export default function ReviewPage() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-white">Phone Verified</h3>
-                <p className="text-green-400 text-sm">Your WhatsApp number has been verified successfully</p>
+                <p className="text-green-400 text-sm">Your phone number has been verified successfully</p>
               </div>
             </div>
           </motion.div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
+import { sendSMS } from "@/lib/sms";
 
 // Verify admin token from Authorization header
 async function verifyAdminToken(request: NextRequest) {
@@ -131,6 +132,35 @@ export async function PUT(request: NextRequest) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Send SMS notification when booking is confirmed
+    if (status === "confirmed" && booking) {
+      const hasTwilioConfig =
+        process.env.TWILIO_ACCOUNT_SID &&
+        process.env.TWILIO_AUTH_TOKEN &&
+        process.env.TWILIO_SMS_NUMBER;
+
+      if (hasTwilioConfig && booking.phone_number) {
+        try {
+          const formattedDate = new Date(booking.date).toLocaleDateString('en-IN', { 
+            weekday: 'short', 
+            day: 'numeric', 
+            month: 'short' 
+          });
+          const message = `Booking Confirmed!\n\nStudio: ${booking.studio}\nDate: ${formattedDate}\nTime: ${booking.start_time} - ${booking.end_time}${booking.total_amount ? `\nAmount: ₹${booking.total_amount}` : ''}\n\nBooking ID: ${booking.id.slice(0, 8)}\n\nThank you for booking with Resonance Studio!`;
+          
+          const smsResult = await sendSMS(booking.phone_number, message);
+
+          if (smsResult.success) {
+            console.log("[Admin Bookings] SMS confirmation sent successfully:", smsResult.sid);
+          } else {
+            console.error("[Admin Bookings] SMS confirmation failed:", smsResult.error);
+          }
+        } catch (smsError) {
+          console.error("[Admin Bookings] Failed to send SMS confirmation:", smsError);
+        }
+      }
     }
 
     // Log the action

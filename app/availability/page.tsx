@@ -5,6 +5,17 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, ChevronLeft, ChevronRight, Calendar, Clock, Loader2 } from "lucide-react";
 
+// Helper function to safely parse JSON responses
+async function safeJsonParse(response: Response) {
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error('Failed to parse response as JSON:', text.substring(0, 200));
+    throw new Error('Server returned an invalid response. Please try again.');
+  }
+}
+
 type AvailabilityData = {
   [date: string]: {
     [studio: string]: {
@@ -143,7 +154,7 @@ export default function AvailabilityPage() {
               fetch(`/api/availability?studio=${encodeURIComponent(studio.id)}&date=${dateKey}`)
                 .then(async (response) => {
                   if (response.ok) {
-                    const slots: TimeSlot[] = await response.json();
+                    const slots: TimeSlot[] = await safeJsonParse(response);
                     return { studioId: studio.id, studioKey: studio.key, dateKey, slots };
                   }
                   return { studioId: studio.id, studioKey: studio.key, dateKey, slots: [] };

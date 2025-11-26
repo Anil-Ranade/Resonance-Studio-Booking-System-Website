@@ -13,7 +13,7 @@ A studio booking and management platform.
 - Booking buffer time between sessions
 
 ### 📱 OTP Authentication
-- WhatsApp-based OTP verification via Twilio
+- SMS-based OTP verification via Twilio
 - Secure user authentication flow
 - Rate limiting with cooldown protection
 
@@ -22,10 +22,10 @@ A studio booking and management platform.
 - Sync bookings with owner's Google Calendar
 - Event details include customer info and booking ID
 
-### 💬 WhatsApp Notifications
-- Booking confirmation messages
+### 📲 SMS Notifications
+- Booking confirmation messages via SMS
 - Automated reminder system (24h and 1h before session)
-- Twilio-powered WhatsApp messaging
+- Twilio-powered SMS messaging
 
 ### 👤 My Bookings
 - View personal booking history

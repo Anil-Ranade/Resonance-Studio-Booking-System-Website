@@ -1,0 +1,207 @@
+import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client with service role for database operations
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+// Configuration
+const OTP_LENGTH = 6;
+const MAX_ATTEMPTS = 5;
+const JWT_EXPIRY = '30m'; // 30 minutes
+
+/**
+ * Validate phone number (10 digits only)
+ */
+function isValidPhone(phone: string): boolean {
+  const digitsOnly = phone.replace(/\D/g, '');
+  return digitsOnly.length === 10 && /^\d{10}$/.test(digitsOnly);
+}
+
+/**
+ * Validate OTP format (6 digits)
+ */
+function isValidOTPFormat(code: string): boolean {
+  return /^\d{6}$/.test(code);
+}
+
+/**
+ * Generate JWT token for authenticated user
+ */
+function generateToken(phone: string): string {
+  const jwtSecret = process.env.JWT_SECRET;
+
+  if (!jwtSecret) {
+    throw new Error('JWT_SECRET environment variable is not configured');
+  }
+
+  return jwt.sign(
+    {
+      phone,
+      iat: Math.floor(Date.now() / 1000),
+    },
+    jwtSecret,
+    { expiresIn: JWT_EXPIRY }
+  );
+}
+
+export async function POST(request: Request) {
+  try {
+    // Parse request body with error handling
+    let body;
+    try {
+      const text = await request.text();
+      if (!text || text.trim() === '') {
+        return NextResponse.json(
+          { error: 'Request body is empty' },
+          { status: 400 }
+        );
+      }
+      body = JSON.parse(text);
+    } catch (parseError) {
+      console.error('[Verify OTP] JSON parse error:', parseError);
+      return NextResponse.json(
+        { error: 'Invalid request body. Please send valid JSON.' },
+        { status: 400 }
+      );
+    }
+
+    const phone = body.phone?.toString().trim();
+    const code = body.code?.toString().trim();
+
+    // Validate phone number is provided
+    if (!phone) {
+      return NextResponse.json(
+        { error: 'Phone number is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate OTP code is provided
+    if (!code) {
+      return NextResponse.json(
+        { error: 'OTP code is required' },
+        { status: 400 }
+      );
+    }
+
+    // Extract digits only from phone
+    const phoneDigits = phone.replace(/\D/g, '');
+
+    // Validate phone number format
+    if (!isValidPhone(phoneDigits)) {
+      return NextResponse.json(
+        { error: 'Invalid phone number format' },
+        { status: 400 }
+      );
+    }
+
+    // Validate OTP format
+    if (!isValidOTPFormat(code)) {
+      return NextResponse.json(
+        { error: `OTP must be ${OTP_LENGTH} digits` },
+        { status: 400 }
+      );
+    }
+
+    // Fetch the latest unexpired OTP for this phone number
+    const { data: otpRecord, error: fetchError } = await supabase
+      .from('login_otps')
+      .select('id, code_hash, attempts, expires_at')
+      .eq('phone', phoneDigits)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (fetchError || !otpRecord) {
+      return NextResponse.json(
+        { error: 'No valid OTP found. Please request a new OTP.' },
+        { status: 400 }
+      );
+    }
+
+    // Check if OTP has expired
+    if (new Date(otpRecord.expires_at) < new Date()) {
+      // Delete expired OTP
+      await supabase.from('login_otps').delete().eq('id', otpRecord.id);
+      return NextResponse.json(
+        { error: 'OTP has expired. Please request a new OTP.' },
+        { status: 400 }
+      );
+    }
+
+    // Check if max attempts exceeded
+    if (otpRecord.attempts >= MAX_ATTEMPTS) {
+      // Delete the OTP record after max attempts
+      await supabase.from('login_otps').delete().eq('id', otpRecord.id);
+      return NextResponse.json(
+        { error: 'Too many incorrect attempts. Please request a new OTP.' },
+        { status: 429 }
+      );
+    }
+
+    // Verify OTP using bcrypt
+    const isValidOTP = await bcrypt.compare(code, otpRecord.code_hash);
+
+    if (!isValidOTP) {
+      // Increment attempts
+      const newAttempts = otpRecord.attempts + 1;
+      await supabase
+        .from('login_otps')
+        .update({ attempts: newAttempts })
+        .eq('id', otpRecord.id);
+
+      const remainingAttempts = MAX_ATTEMPTS - newAttempts;
+
+      if (remainingAttempts <= 0) {
+        // Delete the OTP record after max attempts
+        await supabase.from('login_otps').delete().eq('id', otpRecord.id);
+        return NextResponse.json(
+          { error: 'Too many incorrect attempts. Please request a new OTP.' },
+          { status: 429 }
+        );
+      }
+
+      return NextResponse.json(
+        {
+          error: `Invalid OTP. ${remainingAttempts} attempt${remainingAttempts !== 1 ? 's' : ''} remaining.`,
+          remainingAttempts,
+        },
+        { status: 400 }
+      );
+    }
+
+    // OTP is valid - delete the OTP record
+    await supabase.from('login_otps').delete().eq('id', otpRecord.id);
+
+    // Generate JWT token
+    let token: string;
+    try {
+      token = generateToken(phoneDigits);
+    } catch (tokenError) {
+      console.error('[Verify OTP] Token generation error:', tokenError);
+      return NextResponse.json(
+        { error: 'Failed to generate authentication token. Please try again.' },
+        { status: 500 }
+      );
+    }
+
+    console.log(`[Verify OTP] OTP verified successfully for ${phoneDigits}`);
+
+    return NextResponse.json({
+      verified: true,
+      token,
+      message: 'OTP verified successfully',
+    });
+  } catch (error) {
+    console.error('[Verify OTP] Unexpected error:', error);
+    return NextResponse.json(
+      { error: 'An unexpected error occurred. Please try again.' },
+      { status: 500 }
+    );
+  }
+}

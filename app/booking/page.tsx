@@ -4,6 +4,17 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Helper function to safely parse JSON responses
+async function safeJsonParse(response: Response) {
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error('Failed to parse response as JSON:', text.substring(0, 200));
+    throw new Error('Server returned an invalid response. Please try again.');
+  }
+}
 import { 
   ArrowLeft, 
   Mic, 
@@ -194,7 +205,7 @@ function BookingPageContent() {
       try {
         const response = await fetch('/api/settings');
         if (response.ok) {
-          const data = await response.json();
+          const data = await safeJsonParse(response);
           setBookingSettings(data);
           // Initialize numberOfHours with minBookingDuration
           setNumberOfHours(data.minBookingDuration || 1);
@@ -304,12 +315,11 @@ function BookingPageContent() {
       setRatesError('');
       try {
         const response = await fetch(buildRatesUrl());
+        const data = await safeJsonParse(response);
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to fetch rates');
+          throw new Error(data.error || 'Failed to fetch rates');
         }
-        const data: RatesResponse = await response.json();
-        setRatesData(data);
+        setRatesData(data as RatesResponse);
         // Auto-select suggested studio if no studio selected
         if (!studio) {
           setStudio(data.suggested_studio);
@@ -375,16 +385,15 @@ function BookingPageContent() {
         const response = await fetch(
           `/api/availability?studio=${encodeURIComponent(studio)}&date=${date}`
         );
+        const data = await safeJsonParse(response);
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to fetch availability');
+          throw new Error(data.error || 'Failed to fetch availability');
         }
-        const data: TimeSlot[] = await response.json();
-        setAvailableSlots(data);
+        setAvailableSlots(data as TimeSlot[]);
         
         // Auto-select prefilled time slot if it exists in available slots
         if (prefilledTime) {
-          const startIndex = data.findIndex(slot => slot.start === prefilledTime);
+          const startIndex = (data as TimeSlot[]).findIndex((slot: TimeSlot) => slot.start === prefilledTime);
           if (startIndex !== -1) {
             // Select slots based on numberOfHours
             const slotsToSelect = data.slice(startIndex, startIndex + numberOfHours);

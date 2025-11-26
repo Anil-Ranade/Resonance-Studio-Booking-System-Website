@@ -23,7 +23,7 @@ const faqData: FAQSection[] = [
     items: [
       {
         question: "How do I book a studio?",
-        answer: "You can book online through our website by filling the booking request form, or contact us directly via phone or WhatsApp."
+        answer: "You can book online through our website by filling the booking request form, or contact us directly via phone."
       },
       {
         question: "What are your operating hours?",

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { createEvent } from "@/lib/googleCalendar";
-import { sendBookingConfirmation } from "@/src/lib/whatsapp";
+import { sendSMS } from "@/lib/sms";
 
 interface BookRequest {
-  whatsapp: string;
+  phone: string;
   name?: string;
   studio: string;
   session_type: string;
@@ -75,13 +75,13 @@ export async function POST(request: Request) {
       rate_per_hour,
     } = body;
 
-    // Normalize whatsapp to digits only
-    const whatsapp = body.whatsapp.replace(/\D/g, "");
+    // Normalize phone to digits only
+    const phone = body.phone.replace(/\D/g, "");
 
-    // Validate whatsapp number (exactly 10 digits)
-    if (whatsapp.length !== 10) {
+    // Validate phone number (exactly 10 digits)
+    if (phone.length !== 10) {
       return NextResponse.json(
-        { error: "WhatsApp number must be exactly 10 digits" },
+        { error: "Phone number must be exactly 10 digits" },
         { status: 400 }
       );
     }
@@ -182,7 +182,7 @@ export async function POST(request: Request) {
     const { data: booking, error: insertError } = await supabaseServer
       .from("bookings")
       .insert({
-        whatsapp_number: whatsapp,
+        phone_number: phone,
         name,
         studio,
         session_type,
@@ -218,8 +218,8 @@ export async function POST(request: Request) {
         const endDateTime = `${date}T${end_time}:00`;
 
         googleEventId = await createEvent({
-          summary: `${studio} - ${session_type} (${name || whatsapp})`,
-          description: `Booking ID: ${booking.id}\nWhatsApp: ${whatsapp}\nSession Type: ${session_type}\nDetails: ${session_details || 'N/A'}`,
+          summary: `${studio} - ${session_type} (${name || phone})`,
+          description: `Booking ID: ${booking.id}\nPhone: ${phone}\nSession Type: ${session_type}\nDetails: ${session_details || 'N/A'}`,
           startDateTime,
           endDateTime,
         });
@@ -237,38 +237,37 @@ export async function POST(request: Request) {
       }
     }
 
-    // Send WhatsApp booking confirmation
+    // Send SMS booking confirmation
     const hasTwilioConfig = 
       process.env.TWILIO_ACCOUNT_SID &&
       process.env.TWILIO_AUTH_TOKEN &&
-      process.env.TWILIO_WHATSAPP_NUMBER;
+      process.env.TWILIO_SMS_NUMBER;
 
     if (hasTwilioConfig) {
-      const countryCode = process.env.WHATSAPP_COUNTRY_CODE || "+91";
-      const toNumber = `${countryCode}${whatsapp}`;
+      const countryCode = process.env.SMS_COUNTRY_CODE || "+91";
+      const toNumber = `${countryCode}${phone}`;
 
       try {
-        const whatsappResult = await sendBookingConfirmation(toNumber, {
-          bookingId: booking.id,
-          studio,
-          date,
-          start_time,
-          end_time,
-          total_amount: total_amount || undefined,
-          user_name: name,
+        const formattedDate = new Date(date).toLocaleDateString('en-IN', { 
+          weekday: 'short', 
+          day: 'numeric', 
+          month: 'short' 
         });
+        const message = `Booking Confirmed!\n\nStudio: ${studio}\nDate: ${formattedDate}\nTime: ${start_time} - ${end_time}${total_amount ? `\nAmount: ₹${total_amount}` : ''}\n\nBooking ID: ${booking.id.slice(0, 8)}\n\nThank you for booking with Resonance Studio!`;
         
-        if (whatsappResult.success) {
-          console.log("[Book API] WhatsApp confirmation sent successfully:", whatsappResult.sid);
+        const smsResult = await sendSMS(toNumber, message);
+        
+        if (smsResult.success) {
+          console.log("[Book API] SMS confirmation sent successfully:", smsResult.sid);
         } else {
-          console.error("[Book API] WhatsApp confirmation failed:", whatsappResult.error);
+          console.error("[Book API] SMS confirmation failed:", smsResult.error);
         }
-      } catch (whatsappError) {
+      } catch (smsError) {
         // Log error but don't fail the booking
-        console.error("[Book API] Failed to send WhatsApp confirmation:", whatsappError);
+        console.error("[Book API] Failed to send SMS confirmation:", smsError);
       }
     } else {
-      console.log("[Book API] WhatsApp notifications disabled - Twilio credentials not configured");
+      console.log("[Book API] SMS notifications disabled - Twilio credentials not configured");
     }
 
     // Insert reminders (immediate confirmation, 24h before, 1h before)

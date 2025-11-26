@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { createClient } from "@supabase/supabase-js";
 import { createEvent } from "@/lib/googleCalendar";
-import { sendBookingConfirmation } from "@/src/lib/whatsapp";
+import { sendSMS } from "@/lib/sms";
 
 // Verify admin token from Authorization header
 async function verifyAdminToken(request: NextRequest) {
@@ -51,7 +51,7 @@ async function verifyAdminToken(request: NextRequest) {
 }
 
 interface AdminBookRequest {
-  whatsapp: string;
+  phone: string;
   name?: string;
   studio: string;
   session_type: string;
@@ -62,7 +62,7 @@ interface AdminBookRequest {
   rate_per_hour?: number;
   notes?: string;
   skip_validation?: boolean; // Admin can skip some validations
-  send_notification?: boolean; // Whether to send WhatsApp notification
+  send_notification?: boolean; // Whether to send SMS notification
 }
 
 // POST /api/admin/book - Create a booking on behalf of a customer (admin only)
@@ -89,13 +89,13 @@ export async function POST(request: NextRequest) {
       send_notification = true,
     } = body;
 
-    // Normalize whatsapp to digits only
-    const whatsapp = body.whatsapp.replace(/\D/g, "");
+    // Normalize phone to digits only
+    const phone = body.phone.replace(/\D/g, "");
 
-    // Validate whatsapp number (exactly 10 digits)
-    if (whatsapp.length !== 10) {
+    // Validate phone number (exactly 10 digits)
+    if (phone.length !== 10) {
       return NextResponse.json(
-        { error: "WhatsApp number must be exactly 10 digits" },
+        { error: "Phone number must be exactly 10 digits" },
         { status: 400 }
       );
     }
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     // Check for conflicting bookings (admin can see conflicts but we still prevent double booking)
     const { data: conflictingBookings, error: conflictError } = await supabaseServer
       .from("bookings")
-      .select("id, start_time, end_time, name, whatsapp_number")
+      .select("id, start_time, end_time, name, phone_number")
       .eq("studio", studio)
       .eq("date", date)
       .in("status", ["confirmed", "pending"])
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     if (conflictingBookings && conflictingBookings.length > 0 && !skip_validation) {
       const conflicts = conflictingBookings.map(b => 
-        `${b.start_time}-${b.end_time} (${b.name || b.whatsapp_number})`
+        `${b.start_time}-${b.end_time} (${b.name || b.phone_number})`
       ).join(", ");
       return NextResponse.json(
         { 
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
     const { data: booking, error: insertError } = await supabaseServer
       .from("bookings")
       .insert({
-        whatsapp_number: whatsapp,
+        phone_number: phone,
         name,
         studio,
         session_type: session_type || "Walk-in",
@@ -199,8 +199,8 @@ export async function POST(request: NextRequest) {
         const endDateTime = `${date}T${end_time}:00`;
 
         googleEventId = await createEvent({
-          summary: `${studio} - ${session_type || 'Walk-in'} (${name || whatsapp}) [Admin]`,
-          description: `Booking ID: ${booking.id}\nWhatsApp: ${whatsapp}\nSession Type: ${session_type || 'Walk-in'}\nDetails: ${session_details || 'N/A'}\nNotes: ${notes || 'Booked by admin'}`,
+          summary: `${studio} - ${session_type || 'Walk-in'} (${name || phone}) [Admin]`,
+          description: `Booking ID: ${booking.id}\nPhone: ${phone}\nSession Type: ${session_type || 'Walk-in'}\nDetails: ${session_details || 'N/A'}\nNotes: ${notes || 'Booked by admin'}`,
           startDateTime,
           endDateTime,
         });
@@ -216,35 +216,34 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Send WhatsApp booking confirmation if enabled
+    // Send SMS booking confirmation if enabled
     if (send_notification) {
       const hasTwilioConfig =
         process.env.TWILIO_ACCOUNT_SID &&
         process.env.TWILIO_AUTH_TOKEN &&
-        process.env.TWILIO_WHATSAPP_NUMBER;
+        process.env.TWILIO_SMS_NUMBER;
 
       if (hasTwilioConfig) {
-        const countryCode = process.env.WHATSAPP_COUNTRY_CODE || "+91";
-        const toNumber = `${countryCode}${whatsapp}`;
+        const countryCode = process.env.SMS_COUNTRY_CODE || "+91";
+        const toNumber = `${countryCode}${phone}`;
 
         try {
-          const whatsappResult = await sendBookingConfirmation(toNumber, {
-            bookingId: booking.id,
-            studio,
-            date,
-            start_time,
-            end_time,
-            total_amount: total_amount || undefined,
-            user_name: name,
+          const formattedDate = new Date(date).toLocaleDateString('en-IN', { 
+            weekday: 'short', 
+            day: 'numeric', 
+            month: 'short' 
           });
+          const message = `Booking Confirmed!\n\nStudio: ${studio}\nDate: ${formattedDate}\nTime: ${start_time} - ${end_time}${total_amount ? `\nAmount: ₹${total_amount}` : ''}\n\nBooking ID: ${booking.id.slice(0, 8)}\n\nThank you for booking with Resonance Studio!`;
+          
+          const smsResult = await sendSMS(toNumber, message);
 
-          if (whatsappResult.success) {
-            console.log("[Admin Book API] WhatsApp confirmation sent successfully:", whatsappResult.sid);
+          if (smsResult.success) {
+            console.log("[Admin Book API] SMS confirmation sent successfully:", smsResult.sid);
           } else {
-            console.error("[Admin Book API] WhatsApp confirmation failed:", whatsappResult.error);
+            console.error("[Admin Book API] SMS confirmation failed:", smsResult.error);
           }
-        } catch (whatsappError) {
-          console.error("[Admin Book API] Failed to send WhatsApp confirmation:", whatsappError);
+        } catch (smsError) {
+          console.error("[Admin Book API] Failed to send SMS confirmation:", smsError);
         }
       }
     }

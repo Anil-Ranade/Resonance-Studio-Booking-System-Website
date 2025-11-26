@@ -22,14 +22,14 @@ export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
 export interface User {
   id: string;
-  whatsapp_number: string;
+  phone_number: string;
   name: string;
   email: string | null;
   created_at: string;
 }
 
 export interface CreateUserParams {
-  whatsapp_number: string;
+  phone_number: string;
   name: string;
   email?: string;
 }
@@ -39,26 +39,26 @@ export interface CreateUserParams {
 // ============================================
 
 /**
- * Retrieves a user by their WhatsApp number.
+ * Retrieves a user by their phone number.
  *
- * @param whatsappNumber - The WhatsApp number to search for (e.g., "+1234567890")
+ * @param phoneNumber - The phone number to search for (e.g., "+1234567890")
  * @returns The user object if found, null otherwise
  *
  * @example
- * const user = await getUserByWhatsapp("+1234567890");
+ * const user = await getUserByPhone("+1234567890");
  * if (user) {
  *   console.log(`Found user: ${user.name}`);
  * } else {
  *   console.log("User not found");
  * }
  */
-export async function getUserByWhatsapp(
-  whatsappNumber: string
+export async function getUserByPhone(
+  phoneNumber: string
 ): Promise<User | null> {
   const { data, error } = await supabaseClient
     .from("users")
     .select("*")
-    .eq("whatsapp_number", whatsappNumber)
+    .eq("phone_number", phoneNumber)
     .single();
 
   if (error) {
@@ -66,7 +66,7 @@ export async function getUserByWhatsapp(
     if (error.code === "PGRST116") {
       return null;
     }
-    console.error("Error fetching user by WhatsApp:", error.message);
+    console.error("Error fetching user by phone:", error.message);
     throw new Error(`Failed to fetch user: ${error.message}`);
   }
 
@@ -77,15 +77,15 @@ export async function getUserByWhatsapp(
  * Creates a new user in the database.
  *
  * @param params - The user data to create
- * @param params.whatsapp_number - The user's WhatsApp number (required, must be unique)
+ * @param params.phone_number - The user's phone number (required, must be unique)
  * @param params.name - The user's name (required)
  * @param params.email - The user's email address (optional)
  * @returns The newly created user object
- * @throws Error if user creation fails (e.g., duplicate WhatsApp number)
+ * @throws Error if user creation fails (e.g., duplicate phone number)
  *
  * @example
  * const newUser = await createUser({
- *   whatsapp_number: "+1234567890",
+ *   phone_number: "+1234567890",
  *   name: "John Doe",
  *   email: "john@example.com"
  * });
@@ -95,7 +95,7 @@ export async function createUser(params: CreateUserParams): Promise<User> {
   const { data, error } = await supabaseClient
     .from("users")
     .insert({
-      whatsapp_number: params.whatsapp_number,
+      phone_number: params.phone_number,
       name: params.name,
       email: params.email ?? null,
     })
@@ -103,10 +103,10 @@ export async function createUser(params: CreateUserParams): Promise<User> {
     .single();
 
   if (error) {
-    // Check for unique constraint violation on whatsapp_number
+    // Check for unique constraint violation on phone_number
     if (error.code === "23505") {
       throw new Error(
-        `User with WhatsApp number ${params.whatsapp_number} already exists`
+        `User with phone number ${params.phone_number} already exists`
       );
     }
     console.error("Error creating user:", error.message);
@@ -119,20 +119,20 @@ export async function createUser(params: CreateUserParams): Promise<User> {
 /**
  * Example usage in a React component:
  *
- * import { getUserByWhatsapp, createUser } from "@/lib/supabaseClient";
+ * import { getUserByPhone, createUser } from "@/lib/supabaseClient";
  *
  * function UserForm() {
  *   const handleSubmit = async (formData: FormData) => {
- *     const whatsapp = formData.get("whatsapp") as string;
+ *     const phone = formData.get("phone") as string;
  *     const name = formData.get("name") as string;
  *
  *     // Check if user exists
- *     let user = await getUserByWhatsapp(whatsapp);
+ *     let user = await getUserByPhone(phone);
  *
  *     if (!user) {
  *       // Create new user if not found
  *       user = await createUser({
- *         whatsapp_number: whatsapp,
+ *         phone_number: phone,
  *         name: name,
  *       });
  *     }

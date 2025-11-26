@@ -25,7 +25,7 @@ import { getSession } from '@/lib/supabaseAuth';
 interface SlotBooking {
   id: string;
   name: string | null;
-  whatsapp_number: string;
+  phone_number: string;
   start_time: string;
   end_time: string;
   status: string;
@@ -52,7 +52,7 @@ interface SlotFormData {
 }
 
 interface BookingFormData {
-  whatsapp: string;
+  phone: string;
   name: string;
   studio: string;
   session_type: string;
@@ -109,7 +109,7 @@ export default function AvailabilityManagementPage() {
 
   // Booking form data
   const [bookingFormData, setBookingFormData] = useState<BookingFormData>({
-    whatsapp: '',
+    phone: '',
     name: '',
     studio: 'Studio A',
     session_type: 'Karaoke',
@@ -352,7 +352,7 @@ export default function AvailabilityManagementPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          whatsapp: bookingFormData.whatsapp,
+          phone: bookingFormData.phone,
           name: bookingFormData.name || undefined,
           studio: bookingFormData.studio,
           session_type: bookingFormData.session_type,
@@ -384,7 +384,7 @@ export default function AvailabilityManagementPage() {
 
   const resetBookingForm = () => {
     setBookingFormData({
-      whatsapp: '',
+      phone: '',
       name: '',
       studio: 'Studio A',
       session_type: 'Karaoke',
@@ -670,7 +670,7 @@ export default function AvailabilityManagementPage() {
                                     </p>
                                     <p className="text-zinc-500 text-xs flex items-center gap-1">
                                       <Phone className="w-3 h-3" />
-                                      {booking.whatsapp_number}
+                                      {booking.phone_number}
                                     </p>
                                   </div>
                                 </div>
@@ -1175,13 +1175,13 @@ export default function AvailabilityManagementPage() {
                       />
                     </div>
                     <div>
-                      <label htmlFor="booking-whatsapp" className="block text-sm text-zinc-400 mb-2">WhatsApp *</label>
+                      <label htmlFor="booking-phone" className="block text-sm text-zinc-400 mb-2">Phone *</label>
                       <input
                         type="tel"
-                        id="booking-whatsapp"
-                        value={bookingFormData.whatsapp}
+                        id="booking-phone"
+                        value={bookingFormData.phone}
                         onChange={(e) =>
-                          setBookingFormData({ ...bookingFormData, whatsapp: e.target.value.replace(/\D/g, '').slice(0, 10) })
+                          setBookingFormData({ ...bookingFormData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })
                         }
                         placeholder="10-digit number"
                         className="input"
@@ -1345,7 +1345,7 @@ export default function AvailabilityManagementPage() {
                       className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-violet-500 focus:ring-violet-500"
                     />
                     <label htmlFor="booking-notification" className="text-sm text-zinc-400">
-                      Send WhatsApp confirmation to customer
+                      Send SMS confirmation to customer
                     </label>
                   </div>
                 </div>
@@ -1360,7 +1360,7 @@ export default function AvailabilityManagementPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={saving || !bookingFormData.whatsapp || bookingFormData.whatsapp.length !== 10}
+                    disabled={saving || !bookingFormData.phone || bookingFormData.phone.length !== 10}
                     className="flex-1 btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {saving ? (

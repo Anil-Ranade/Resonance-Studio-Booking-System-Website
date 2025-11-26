@@ -3,6 +3,17 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Helper function to safely parse JSON responses
+async function safeJsonParse(response: Response) {
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error('Failed to parse response as JSON:', text.substring(0, 200));
+    throw new Error('Server returned an invalid response. Please try again.');
+  }
+}
 import {
   ArrowLeft,
   Phone,
@@ -94,8 +105,8 @@ export default function MyBookingsPage() {
     setError('');
 
     try {
-      const response = await fetch(`/api/bookings?whatsapp=${normalized}`);
-      const data = await response.json();
+      const response = await fetch(`/api/bookings?phone=${normalized}`);
+      const data = await safeJsonParse(response);
 
       if (data.error) {
         throw new Error(data.error);
@@ -159,13 +170,13 @@ export default function MyBookingsPage() {
     setCancelModal(prev => ({ ...prev, isLoading: true, error: '' }));
 
     try {
-      const response = await fetch('/api/otp/send', {
+      const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ whatsapp: phoneNumber }),
+        body: JSON.stringify({ phone: phoneNumber }),
       });
 
-      const data = await response.json();
+      const data = await safeJsonParse(response);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to send OTP');
@@ -248,13 +259,13 @@ export default function MyBookingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bookingId: cancelModal.booking.id,
-          whatsapp: phoneNumber,
+          phone: phoneNumber,
           otp: otpValue,
           reason: cancelModal.reason || 'Cancelled by user',
         }),
       });
 
-      const data = await response.json();
+      const data = await safeJsonParse(response);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to cancel booking');
@@ -359,7 +370,7 @@ export default function MyBookingsPage() {
           <div className="space-y-4">
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-zinc-400 mb-2.5">
-                WhatsApp Number
+                Phone Number
               </label>
               <div className="relative">
                 <input
@@ -676,7 +687,7 @@ export default function MyBookingsPage() {
                       </div>
                       <div>
                         <h3 className="text-xl font-bold text-white">Verify Your Number</h3>
-                        <p className="text-zinc-400 text-sm">Enter the OTP sent to your WhatsApp</p>
+                        <p className="text-zinc-400 text-sm">Enter the OTP sent to your phone</p>
                       </div>
                     </motion.div>
 

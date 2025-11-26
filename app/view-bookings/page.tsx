@@ -3,6 +3,17 @@
 import { useState, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+
+// Helper function to safely parse JSON responses
+async function safeJsonParse(response: Response) {
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error('Failed to parse response as JSON:', text.substring(0, 200));
+    throw new Error('Server returned an invalid response. Please try again.');
+  }
+}
 import {
   ArrowLeft,
   Phone,
@@ -59,7 +70,7 @@ const statusConfig: Record<string, { color: string; icon: typeof CheckCircle2; l
 };
 
 export default function ViewBookingsPage() {
-  const [whatsapp, setWhatsapp] = useState("");
+  const [phone, setPhone] = useState("");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -84,19 +95,19 @@ export default function ViewBookingsPage() {
     setSearched(false);
 
     // Normalize to digits only
-    const normalized = whatsapp.replace(/\D/g, "");
+    const normalized = phone.replace(/\D/g, "");
 
     // Validate exactly 10 digits
     if (normalized.length !== 10) {
-      setError("Please enter a valid 10-digit WhatsApp number");
+      setError("Please enter a valid 10-digit phone number");
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await fetch(`/api/bookings?whatsapp=${normalized}`);
-      const data = await response.json();
+      const response = await fetch(`/api/bookings?phone=${normalized}`);
+      const data = await safeJsonParse(response);
 
       if (!response.ok) {
         setError(data.error || "Failed to fetch bookings");
@@ -161,13 +172,13 @@ export default function ViewBookingsPage() {
     setCancelModal(prev => ({ ...prev, isLoading: true, error: '' }));
 
     try {
-      const response = await fetch('/api/otp/send', {
+      const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ whatsapp: whatsapp.replace(/\D/g, '') }),
+        body: JSON.stringify({ phone: phone.replace(/\D/g, '') }),
       });
 
-      const data = await response.json();
+      const data = await safeJsonParse(response);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to send OTP');
@@ -250,13 +261,13 @@ export default function ViewBookingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bookingId: cancelModal.booking.id,
-          whatsapp: whatsapp.replace(/\D/g, ''),
+          phone: phone.replace(/\D/g, ''),
           otp: otpValue,
           reason: cancelModal.reason || 'Cancelled by user',
         }),
       });
 
-      const data = await response.json();
+      const data = await safeJsonParse(response);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to cancel booking');
@@ -335,7 +346,7 @@ export default function ViewBookingsPage() {
 
           <h1 className="text-4xl font-bold text-white mb-2">View My Bookings</h1>
           <p className="text-zinc-400">
-            Enter your WhatsApp number to view your bookings
+            Enter your phone number to view your bookings
           </p>
         </motion.div>
 
@@ -360,17 +371,17 @@ export default function ViewBookingsPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="whatsapp" className="block text-sm font-medium text-zinc-400 mb-2">
-                WhatsApp Number
+              <label htmlFor="phone" className="block text-sm font-medium text-zinc-400 mb-2">
+                Phone Number
               </label>
               <div className="relative flex items-center">
                 <Phone className="absolute left-4 w-5 h-5 text-zinc-500 pointer-events-none" />
                 <input
-                  id="whatsapp"
+                  id="phone"
                   type="tel"
                   placeholder="Enter 10-digit number"
-                  value={whatsapp}
-                  onChange={(e) => setWhatsapp(e.target.value)}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   style={{ paddingLeft: '3rem' }}
                   className="w-full py-3.5 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
                   maxLength={12}
@@ -651,7 +662,7 @@ export default function ViewBookingsPage() {
                       </div>
                       <div>
                         <h3 className="text-xl font-bold text-white">Verify Your Number</h3>
-                        <p className="text-zinc-400 text-sm">Enter the OTP sent to your WhatsApp</p>
+                        <p className="text-zinc-400 text-sm">Enter the OTP sent to your phone</p>
                       </div>
                     </motion.div>
 
@@ -662,7 +673,7 @@ export default function ViewBookingsPage() {
                     >
                       <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-3">
                         <Check className="w-5 h-5 text-green-400" />
-                        <span className="text-green-400">OTP sent to +91 {whatsapp.replace(/\D/g, '')}</span>
+                        <span className="text-green-400">OTP sent to +91 {phone.replace(/\D/g, '')}</span>
                       </div>
 
                       <div>

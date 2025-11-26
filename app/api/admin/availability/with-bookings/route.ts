@@ -50,7 +50,7 @@ async function verifyAdminToken(request: NextRequest) {
 interface Booking {
   id: string;
   name: string | null;
-  whatsapp_number: string;
+  phone_number: string;
   start_time: string;
   end_time: string;
   status: string;
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
   // Get all bookings for the date range
   let bookingsQuery = supabase
     .from("bookings")
-    .select("id, name, whatsapp_number, studio, date, start_time, end_time, status, session_type")
+    .select("id, name, phone_number, studio, date, start_time, end_time, status, session_type")
     .in("status", ["pending", "confirmed"]);
 
   if (studio && studio !== "all") {
