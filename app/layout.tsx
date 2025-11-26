@@ -3,6 +3,7 @@ import { Poppins, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { Music2, Calendar, MapPin, Mail } from "lucide-react";
+import Navigation from "./components/Navigation";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -32,18 +33,6 @@ export const metadata: Metadata = {
   keywords: ["recording studio", "music studio", "pune", "karaoke", "rehearsal space"],
   robots: "index, follow",
 };
-
-const navLinks = [
-  { label: "Home", href: "/home" },
-  { label: "Studios", href: "/studios" },
-  { label: "Availability", href: "/availability" },
-  { label: "My Bookings", href: "/my-bookings" },
-  { label: "Gallery", href: "/gallery" },
-  { label: "Pricing", href: "/rate-card" },
-  { label: "FAQ", href: "/faq" },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" },
-];
 
 export default function RootLayout({
   children,
