@@ -17,7 +17,7 @@ export default function ConfirmationPage() {
     {
       number: 1,
       icon: <Mail className="w-4 h-4" />,
-      text: "Check your email for booking details"
+      text: "Check your messages for booking details"
     },
     {
       number: 2,
@@ -76,7 +76,7 @@ export default function ConfirmationPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
-            Thank you for choosing Resonance Studio. We&apos;ve sent a confirmation to your email.
+            Thank you for choosing Resonance Studio. We&apos;ve sent a confirmation to your messages.
           </motion.p>
         </motion.div>
 

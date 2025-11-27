@@ -69,16 +69,11 @@ export default function RateCardPage() {
     },
   ];
 
-  // Studio pricing tables
+  // Studio pricing tables - grouped by same price
   const studioAPricing = [
-    { type: "Karaoke (1-5 participants)", price: "₹400" },
-    { type: "Karaoke (6-10 participants)", price: "₹400" },
-    { type: "Karaoke (11-20 participants)", price: "₹400" },
+    { type: "Karaoke (1-20 participants)", price: "₹400" },
     { type: "Karaoke (21-30 participants)", price: "₹500" },
-    { type: "Live (up to 2 musicians)", price: "₹600" },
-    { type: "Live (up to 4 musicians)", price: "₹600" },
-    { type: "Live (5 musicians)", price: "₹600" },
-    { type: "Live (6-8 musicians)", price: "₹600" },
+    { type: "Live (up to 8 musicians)", price: "₹600" },
     { type: "Live (8-12 musicians)", price: "₹800" },
     { type: "Only Drum Practice", price: "₹350" },
     { type: "Band with only Drums", price: "₹400" },
@@ -87,9 +82,7 @@ export default function RateCardPage() {
   ];
 
   const studioBPricing = [
-    { type: "Karaoke (1-5 participants)", price: "₹300" },
-    { type: "Karaoke (6-12 participants)", price: "₹300" },
-    { type: "Live (up to 2 musicians)", price: "₹400" },
+    { type: "Karaoke (1-12 participants)", price: "₹300" },
     { type: "Live (up to 4 musicians)", price: "₹400" },
     { type: "Live (5 musicians)", price: "₹500" },
   ];
