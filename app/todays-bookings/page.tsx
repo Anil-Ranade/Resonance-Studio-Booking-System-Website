@@ -115,10 +115,9 @@ export default function TodaysBookingsPage() {
   };
 
   const formatTimeLabel = (hour: number) => {
-    const endHour = hour + 1;
-    const startLabel = `${hour === 12 ? 12 : hour % 12} ${hour < 12 ? 'AM' : 'PM'}`;
-    const endLabel = `${endHour === 12 ? 12 : endHour % 12} ${endHour < 12 ? 'AM' : 'PM'}`;
-    return `${startLabel} - ${endLabel}`;
+    const displayHour = hour === 12 ? 12 : hour % 12;
+    const period = hour < 12 ? 'AM' : 'PM';
+    return `${displayHour} ${period}`;
   };
 
   return (
@@ -150,31 +149,39 @@ export default function TodaysBookingsPage() {
           <Loader2 className="w-12 h-12 text-violet-400 animate-spin" />
         </div>
       ) : (
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Column Headers */}
-          <div className="h-10 flex-shrink-0 flex bg-zinc-800 border-b border-zinc-700">
-            <div className="w-[120px] flex-shrink-0 px-4 flex items-center text-base font-bold text-zinc-200 border-r border-zinc-700">
-              TIME
-            </div>
-            {studios.map((studio) => (
-              <div key={studio} className="flex-1 px-4 flex items-center justify-center text-xl font-bold text-zinc-200 border-r border-zinc-700 last:border-r-0">
-                {studio.replace('Studio ', '')}
+        <div className="flex-1 flex flex-col overflow-hidden p-4">
+          {/* Table Container */}
+          <div className="flex-1 flex flex-col overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900">
+            {/* Column Headers */}
+            <div className="h-10 flex-shrink-0 flex bg-zinc-800 border-b border-zinc-700 rounded-t-xl">
+              <div className="w-[80px] flex-shrink-0 px-4 flex items-center text-base font-bold text-zinc-200 border-r border-zinc-700">
+                TIME
               </div>
-            ))}
-          </div>
-          
-          {/* Grid Body */}
-          <div className="flex-1 flex overflow-hidden">
-            {/* Time Column */}
-            <div className="w-[120px] flex-shrink-0 flex flex-col border-r border-zinc-700">
-              {timeSlots.map((hour) => (
-                <div 
-                  key={hour} 
-                  className="flex-1 px-3 flex items-center text-zinc-200 font-medium bg-zinc-900 text-sm border-b border-zinc-800"
-                >
-                  {formatTimeLabel(hour)}
+              {studios.map((studio) => (
+                <div key={studio} className="flex-1 px-4 flex items-center justify-center text-xl font-bold text-zinc-200 border-r border-zinc-700 last:border-r-0">
+                  {studio.replace('Studio ', '')}
                 </div>
               ))}
+            </div>
+          
+          {/* Grid Body */}
+          <div className="flex-1 flex overflow-hidden py-3">
+            {/* Time Column */}
+            <div className="w-[80px] flex-shrink-0 flex flex-col border-r border-zinc-700 relative">
+              {timeSlots.map((hour, index) => (
+                <div 
+                  key={hour} 
+                  className="flex-1 relative border-b border-zinc-800 bg-zinc-900"
+                >
+                  <span className="absolute top-0 -translate-y-1/2 left-2 text-amber-400 font-medium text-sm bg-zinc-900 pr-1">
+                    {formatTimeLabel(hour)}
+                  </span>
+                </div>
+              ))}
+              {/* 10 PM label at the bottom */}
+              <span className="absolute bottom-0 translate-y-1/2 left-2 text-amber-400 font-medium text-sm bg-zinc-900 pr-1">
+                10 PM
+              </span>
             </div>
             
             {/* Studio Columns */}
@@ -217,6 +224,9 @@ export default function TodaysBookingsPage() {
                 })}
               </div>
             ))}
+          </div>
+            {/* Bottom padding for 10 PM label */}
+            <div className="h-4 flex-shrink-0 bg-zinc-900 rounded-b-xl"></div>
           </div>
         </div>
       )}
