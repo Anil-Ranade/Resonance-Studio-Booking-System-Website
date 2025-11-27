@@ -24,7 +24,6 @@ A studio booking and management platform.
 
 ### 📲 SMS Notifications
 - Booking confirmation messages via SMS
-- Automated reminder system (24h and 1h before session)
 - Twilio-powered SMS messaging
 
 ### 👤 My Bookings
