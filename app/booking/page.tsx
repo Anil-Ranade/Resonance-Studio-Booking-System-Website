@@ -157,7 +157,7 @@ function BookingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Mobile step state (1 = session details, 2 = studio, 3 = date/time)
+  // Mobile step state (1 = session details, 2 = studio, 3 = date/time, 4 = summary)
   const [mobileStep, setMobileStep] = useState(1);
 
   // Form state
@@ -563,12 +563,15 @@ function BookingPageContent() {
   // Mobile step navigation helpers
   const canProceedToStep2 = canFetchRates();
   const canProceedToStep3 = !!studio && canFetchRates();
+  const canProceedToStep4 = selectedSlot !== null && selectedSlots.length >= bookingSettings.minBookingDuration;
 
   const handleMobileNext = () => {
     if (mobileStep === 1 && canProceedToStep2) {
       setMobileStep(2);
     } else if (mobileStep === 2 && canProceedToStep3) {
       setMobileStep(3);
+    } else if (mobileStep === 3 && canProceedToStep4) {
+      setMobileStep(4);
     }
   };
 
@@ -642,18 +645,19 @@ function BookingPageContent() {
         <div className="lg:hidden mb-6">
           <div className="glass rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-zinc-400 text-sm">Step {mobileStep} of 3</span>
+              <span className="text-zinc-400 text-sm">Step {mobileStep} of 4</span>
               <span className="text-white font-medium">
                 {mobileStep === 1 && 'Session Details'}
                 {mobileStep === 2 && 'Choose Studio'}
                 {mobileStep === 3 && 'Date & Time'}
+                {mobileStep === 4 && 'Review'}
               </span>
             </div>
             <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
               <motion.div 
                 className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"
                 initial={false}
-                animate={{ width: `${(mobileStep / 3) * 100}%` }}
+                animate={{ width: `${(mobileStep / 4) * 100}%` }}
                 transition={{ duration: 0.3 }}
               />
             </div>
@@ -1157,24 +1161,39 @@ function BookingPageContent() {
 
             {/* Mobile Back Button - Step 3 */}
             {mobileStep === 3 && studio && canFetchRates() && (
-              <div className="lg:hidden">
+              <div className="lg:hidden flex gap-3">
                 <motion.button
                   type="button"
                   onClick={handleMobileBack}
-                  className="w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white"
+                  className="flex-1 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   <ArrowLeft className="w-5 h-5" />
-                  Back to Studio Selection
+                  Back
+                </motion.button>
+                <motion.button
+                  type="button"
+                  onClick={handleMobileNext}
+                  disabled={!canProceedToStep4}
+                  className={`flex-1 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                    canProceedToStep4
+                      ? 'bg-violet-500 hover:bg-violet-600 text-white'
+                      : 'bg-white/5 text-zinc-500 cursor-not-allowed'
+                  }`}
+                  whileHover={canProceedToStep4 ? { scale: 1.02 } : {}}
+                  whileTap={canProceedToStep4 ? { scale: 0.98 } : {}}
+                >
+                  Next: Review
+                  <ChevronRight className="w-5 h-5" />
                 </motion.button>
               </div>
             )}
           </div>
 
-          {/* Right Column - Summary - Show on step 3 on mobile */}
+          {/* Right Column - Summary - Show on step 4 on mobile */}
           <motion.div 
-            className={`lg:col-span-1 ${mobileStep !== 3 ? 'hidden lg:block' : ''}`}
+            className={`lg:col-span-1 ${mobileStep !== 4 ? 'hidden lg:block' : ''}`}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
@@ -1261,6 +1280,20 @@ function BookingPageContent() {
                   </p>
                 </div>
               )}
+
+              {/* Mobile Back Button for Step 4 */}
+              <div className="lg:hidden mb-4">
+                <motion.button
+                  type="button"
+                  onClick={handleMobileBack}
+                  className="w-full py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                  Back to Date & Time
+                </motion.button>
+              </div>
 
               <motion.button
                 type="button"
