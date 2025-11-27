@@ -1,17 +1,46 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { motion } from "framer-motion";
-import { CheckCircle, Mail, Clock, Sparkles, ArrowRight, Calendar } from "lucide-react";
+import { CheckCircle, Mail, Clock, Sparkles, ArrowRight, Calendar, X, Plus } from "lucide-react";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
 };
 
+interface VerifiedUser {
+  id: string;
+  phone_number: string;
+  name: string;
+  email: string;
+}
+
 export default function ConfirmationPage() {
   const router = useRouter();
+  const [verifiedUser, setVerifiedUser] = useState<VerifiedUser | null>(null);
+
+  useEffect(() => {
+    // Load verified user from sessionStorage
+    const storedUser = sessionStorage.getItem('verifiedUser');
+    if (storedUser) {
+      setVerifiedUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  const handleBookAnotherSlot = () => {
+    // User is already verified, go directly to booking
+    // The verifiedUser is already in sessionStorage from the previous booking
+    router.push('/booking');
+  };
+
+  const handleExit = () => {
+    // Clear all session data and go to home
+    sessionStorage.removeItem('verifiedUser');
+    sessionStorage.removeItem('lastBookingId');
+    router.push('/home');
+  };
 
   const steps = [
     {
@@ -119,28 +148,29 @@ export default function ConfirmationPage() {
 
         {/* Actions */}
         <motion.div 
-          className="space-y-3"
+          className="flex flex-col sm:flex-row gap-3"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
         >
           <motion.button
-            onClick={() => router.push("/home")}
-            className="btn-accent w-full py-4 flex items-center justify-center gap-2"
+            onClick={handleExit}
+            className="flex-1 btn-secondary py-4 flex items-center justify-center gap-2"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            Back to Home
-            <ArrowRight className="w-5 h-5" />
+            <X className="w-5 h-5" />
+            Exit
           </motion.button>
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Link
-              href="/booking"
-              className="btn-secondary w-full py-4 block"
-            >
-              Book Another Session
-            </Link>
-          </motion.div>
+          <motion.button
+            onClick={handleBookAnotherSlot}
+            className="flex-1 btn-accent py-4 flex items-center justify-center gap-2"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Plus className="w-5 h-5" />
+            Book Another Slot
+          </motion.button>
         </motion.div>
 
         {/* Contact Info */}

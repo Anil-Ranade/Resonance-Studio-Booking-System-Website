@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Mic, 
   Music, 
@@ -14,13 +16,51 @@ import {
   Award,
   Clock,
   Users,
-  Play,
   Sparkles,
   Guitar,
   Speaker,
-  MonitorPlay
+  MonitorPlay,
+  Plus,
+  Edit3,
+  X,
+  Eye,
+  Phone,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  Building2,
+  Check,
+  Shield,
+  RefreshCw
 } from "lucide-react";
 import { useDevicePerformance } from '@/lib/useDevicePerformance';
+
+// Helper function to safely parse JSON responses
+async function safeJsonParse(response: Response) {
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error('Failed to parse response as JSON:', text.substring(0, 200));
+    throw new Error('Server returned an invalid response. Please try again.');
+  }
+}
+
+interface Booking {
+  id: string;
+  studio: string;
+  session_type: string;
+  session_details?: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
+  total_amount: number;
+  phone_number: string;
+  name?: string;
+}
+
+type ActionMode = 'change' | 'cancel' | 'view' | null;
 
 // Optimized animation variants - shorter durations for better performance
 const fadeInUp = {
@@ -61,6 +101,224 @@ const floatingAnimation = {
 };
 
 export default function HomePage() {
+  const router = useRouter();
+  
+  // Modal state for Change/Cancel/View flows
+  const [actionMode, setActionMode] = useState<ActionMode>(null);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [step, setStep] = useState<'phone' | 'select' | 'view' | 'cancel-confirm' | 'otp' | 'success'>('phone');
+  
+  // OTP state for cancel flow
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Cooldown timer for resend OTP
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
+  const resetModal = () => {
+    setActionMode(null);
+    setPhoneNumber('');
+    setError('');
+    setBookings([]);
+    setSelectedBooking(null);
+    setStep('phone');
+    setOtp(['', '', '', '', '', '']);
+    setOtpSent(false);
+    setResendCooldown(0);
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${minutes?.toString().padStart(2, '0') || '00'} ${period}`;
+  };
+
+  const handleFetchBookings = async () => {
+    const normalized = phoneNumber.replace(/\D/g, '');
+    if (normalized.length !== 10) {
+      setError('Please enter a valid 10-digit phone number');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/bookings/upcoming?phone=${normalized}`);
+      const data = await safeJsonParse(response);
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setBookings(data.bookings || []);
+      
+      if ((data.bookings || []).length === 0) {
+        setError('No upcoming bookings found for this phone number');
+      } else {
+        setStep('select');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch bookings');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSelectBooking = (booking: Booking) => {
+    setSelectedBooking(booking);
+    
+    if (actionMode === 'view') {
+      setStep('view');
+    } else if (actionMode === 'cancel') {
+      setStep('cancel-confirm');
+    } else if (actionMode === 'change') {
+      // Navigate to booking page with edit mode and pre-filled data
+      const bookingData = {
+        editMode: true,
+        originalBookingId: booking.id,
+        sessionType: booking.session_type,
+        sessionDetails: booking.session_details,
+        studio: booking.studio,
+        date: booking.date,
+        start_time: booking.start_time,
+        end_time: booking.end_time,
+        phone_number: booking.phone_number,
+        name: booking.name,
+        total_amount: booking.total_amount,
+      };
+      sessionStorage.setItem('editBookingData', JSON.stringify(bookingData));
+      router.push('/booking?mode=edit');
+    }
+  };
+
+  const handleSendOtp = async () => {
+    setIsSendingOtp(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneNumber }),
+      });
+
+      const data = await safeJsonParse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send OTP');
+      }
+
+      setOtpSent(true);
+      setStep('otp');
+      setResendCooldown(60);
+      setOtp(['', '', '', '', '', '']);
+      
+      setTimeout(() => {
+        otpInputRefs.current[0]?.focus();
+      }, 100);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send OTP');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (value && !/^\d$/.test(value)) return;
+
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    if (value && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pastedData.length === 6) {
+      const newOtp = pastedData.split('');
+      setOtp(newOtp);
+      otpInputRefs.current[5]?.focus();
+    }
+  };
+
+  const handleConfirmCancel = async () => {
+    const otpValue = otp.join('');
+    if (!selectedBooking || otpValue.length !== 6) {
+      setError('Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/bookings/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId: selectedBooking.id,
+          phone: phoneNumber,
+          otp: otpValue,
+          reason: 'Cancelled by user',
+        }),
+      });
+
+      const data = await safeJsonParse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to cancel booking');
+      }
+
+      setStep('success');
+      
+      setTimeout(() => {
+        resetModal();
+      }, 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to cancel booking');
+      setOtp(['', '', '', '', '', '']);
+      setTimeout(() => {
+        otpInputRefs.current[0]?.focus();
+      }, 100);
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
   const services = [
     {
       icon: <Guitar className="w-7 h-7" />,
@@ -238,7 +496,7 @@ export default function HomePage() {
 
           {/* Location */}
           <motion.div 
-            className="flex items-center justify-center gap-2 mb-10"
+            className="flex flex-wrap items-center justify-center gap-2 mb-10"
             variants={fadeInUp}
           >
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20">
@@ -251,37 +509,60 @@ export default function HomePage() {
             </div>
           </motion.div>
 
-          {/* CTA Buttons */}
+          {/* Four Action Buttons */}
           <motion.div 
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto"
             variants={fadeInUp}
           >
+            {/* New Booking */}
             <Link href="/booking">
-              <motion.button
-                className="group relative bg-gradient-to-r from-violet-600 to-purple-600 text-white text-lg font-semibold px-10 py-4 rounded-2xl flex items-center gap-3 shadow-xl shadow-violet-500/25 overflow-hidden"
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
+              <button
+                className="group relative bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-semibold px-4 sm:px-6 py-4 rounded-2xl flex flex-col items-center gap-2 shadow-lg shadow-violet-500/20 w-full transition-all duration-200 active:scale-[0.98]"
               >
-                <span className="absolute inset-0 bg-gradient-to-r from-violet-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <Calendar className="w-5 h-5 relative z-10" />
-                <span className="relative z-10">Book Your Session</span>
-                <motion.span
-                  className="relative z-10"
-                  animate={{ x: [0, 5, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                >
-                  <ArrowRight className="w-5 h-5" />
-                </motion.span>
-              </motion.button>
+                <Plus className="w-6 h-6" />
+                <span className="text-sm sm:text-base">New</span>
+              </button>
             </Link>
+
+            {/* Change Booking */}
+            <button
+              onClick={() => { setActionMode('change'); setStep('phone'); }}
+              className="group bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold px-4 sm:px-6 py-4 rounded-2xl flex flex-col items-center gap-2 shadow-lg shadow-blue-500/20 w-full transition-all duration-200 active:scale-[0.98]"
+            >
+              <Edit3 className="w-6 h-6" />
+              <span className="text-sm sm:text-base">Change</span>
+            </button>
+
+            {/* Cancel Booking */}
+            <button
+              onClick={() => { setActionMode('cancel'); setStep('phone'); }}
+              className="group bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-semibold px-4 sm:px-6 py-4 rounded-2xl flex flex-col items-center gap-2 shadow-lg shadow-red-500/20 w-full transition-all duration-200 active:scale-[0.98]"
+            >
+              <X className="w-6 h-6" />
+              <span className="text-sm sm:text-base">Cancel</span>
+            </button>
+
+            {/* View Booking */}
+            <button
+              onClick={() => { setActionMode('view'); setStep('phone'); }}
+              className="group bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold px-4 sm:px-6 py-4 rounded-2xl flex flex-col items-center gap-2 shadow-lg shadow-emerald-500/20 w-full transition-all duration-200 active:scale-[0.98]"
+            >
+              <Eye className="w-6 h-6" />
+              <span className="text-sm sm:text-base">View</span>
+            </button>
+          </motion.div>
+
+          {/* Explore Studios link */}
+          <motion.div 
+            className="mt-6"
+            variants={fadeInUp}
+          >
             <Link href="/studios">
               <motion.button
-                className="group bg-white/5 backdrop-blur-sm border border-white/10 text-white text-lg font-semibold px-10 py-4 rounded-2xl flex items-center gap-3 hover:bg-white/10 hover:border-white/20 transition-all"
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
+                className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm"
+                whileHover={{ x: 5 }}
               >
-                <Play className="w-5 h-5 text-violet-400" />
-                Explore Studios
+                Explore Studios <ArrowRight className="w-4 h-4" />
               </motion.button>
             </Link>
           </motion.div>
@@ -533,6 +814,467 @@ export default function HomePage() {
           </motion.div>
         </div>
       </section>
+
+      {/* Modal for Change/Cancel/View flows */}
+      <AnimatePresence>
+        {actionMode && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {/* Backdrop */}
+            <motion.div
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={resetModal}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+
+            {/* Modal Content */}
+            <motion.div
+              className="relative w-full max-w-lg glass-strong rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            >
+              {/* Close Button */}
+              <button
+                onClick={resetModal}
+                className="absolute top-4 right-4 text-zinc-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Phone Input Step */}
+              {step === 'phone' && (
+                <>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      actionMode === 'change' ? 'bg-blue-500/20' : 
+                      actionMode === 'cancel' ? 'bg-red-500/20' : 'bg-emerald-500/20'
+                    }`}>
+                      {actionMode === 'change' && <Edit3 className="w-6 h-6 text-blue-400" />}
+                      {actionMode === 'cancel' && <X className="w-6 h-6 text-red-400" />}
+                      {actionMode === 'view' && <Eye className="w-6 h-6 text-emerald-400" />}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">
+                        {actionMode === 'change' && 'Change Booking'}
+                        {actionMode === 'cancel' && 'Cancel Booking'}
+                        {actionMode === 'view' && 'View Booking'}
+                      </h3>
+                      <p className="text-zinc-400 text-sm">Enter your phone number to find your bookings</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="phone" className="block text-sm font-medium text-zinc-400 mb-2.5">
+                        Phone Number
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                        <input
+                          type="tel"
+                          id="phone"
+                          value={phoneNumber}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '');
+                            setPhoneNumber(value);
+                            setError('');
+                          }}
+                          onKeyDown={(e) => e.key === 'Enter' && handleFetchBookings()}
+                          placeholder="Enter 10-digit number"
+                          className="w-full py-3.5 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                          maxLength={10}
+                          autoComplete="tel"
+                          inputMode="numeric"
+                        />
+                      </div>
+                    </div>
+
+                    {error && (
+                      <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                        <span className="text-red-400 text-sm">{error}</span>
+                      </div>
+                    )}
+
+                    <motion.button
+                      type="button"
+                      onClick={handleFetchBookings}
+                      disabled={isLoading || phoneNumber.replace(/\D/g, '').length !== 10}
+                      className={`w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                        actionMode === 'change' ? 'bg-blue-500 hover:bg-blue-600' :
+                        actionMode === 'cancel' ? 'bg-red-500 hover:bg-red-600' : 'bg-emerald-500 hover:bg-emerald-600'
+                      } text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Searching...
+                        </>
+                      ) : (
+                        <>
+                          Find My Bookings
+                          <ArrowRight className="w-5 h-5" />
+                        </>
+                      )}
+                    </motion.button>
+                  </div>
+                </>
+              )}
+
+              {/* Booking Selection Step */}
+              {step === 'select' && (
+                <>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      actionMode === 'change' ? 'bg-blue-500/20' : 
+                      actionMode === 'cancel' ? 'bg-red-500/20' : 'bg-emerald-500/20'
+                    }`}>
+                      <Calendar className={`w-6 h-6 ${
+                        actionMode === 'change' ? 'text-blue-400' : 
+                        actionMode === 'cancel' ? 'text-red-400' : 'text-emerald-400'
+                      }`} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">Select Booking</h3>
+                      <p className="text-zinc-400 text-sm">
+                        {actionMode === 'change' && 'Choose the booking you want to modify'}
+                        {actionMode === 'cancel' && 'Choose the booking you want to cancel'}
+                        {actionMode === 'view' && 'Choose the booking you want to view'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 mb-4 max-h-[50vh] overflow-y-auto">
+                    {bookings.map((booking) => (
+                      <motion.button
+                        key={booking.id}
+                        type="button"
+                        onClick={() => handleSelectBooking(booking)}
+                        className={`w-full p-4 rounded-xl border text-left transition-all ${
+                          selectedBooking?.id === booking.id
+                            ? actionMode === 'change' ? 'bg-blue-500/20 border-blue-500' :
+                              actionMode === 'cancel' ? 'bg-red-500/20 border-red-500' : 'bg-emerald-500/20 border-emerald-500'
+                            : 'bg-white/5 border-white/10 hover:border-white/20'
+                        }`}
+                        whileTap={{ scale: 0.99 }}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Mic className="w-4 h-4 text-violet-400" />
+                              <span className="text-white font-medium">{booking.session_type}</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div className="flex items-center gap-2 text-zinc-400">
+                                <Building2 className="w-4 h-4" />
+                                {booking.studio}
+                              </div>
+                              <div className="flex items-center gap-2 text-zinc-400">
+                                <Calendar className="w-4 h-4" />
+                                {formatDate(booking.date)}
+                              </div>
+                              <div className="flex items-center gap-2 text-zinc-400 col-span-2">
+                                <Clock className="w-4 h-4" />
+                                {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
+                              </div>
+                            </div>
+                          </div>
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                            selectedBooking?.id === booking.id
+                              ? actionMode === 'change' ? 'bg-blue-500 border-blue-500' :
+                                actionMode === 'cancel' ? 'bg-red-500 border-red-500' : 'bg-emerald-500 border-emerald-500'
+                              : 'border-zinc-500'
+                          }`}>
+                            {selectedBooking?.id === booking.id && (
+                              <Check className="w-3 h-3 text-white" />
+                            )}
+                          </div>
+                        </div>
+                      </motion.button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => { setStep('phone'); setSelectedBooking(null); setError(''); }}
+                    className="w-full text-center text-zinc-500 hover:text-zinc-300 text-sm font-medium transition-colors"
+                  >
+                    ← Back to phone number
+                  </button>
+                </>
+              )}
+
+              {/* View Booking Details Step */}
+              {step === 'view' && selectedBooking && (
+                <>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                      <Eye className="w-6 h-6 text-emerald-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">Booking Details</h3>
+                      <p className="text-zinc-400 text-sm">ID: {selectedBooking.id.slice(0, 8)}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 mb-6">
+                    <div className="flex justify-between items-center py-3 border-b border-white/10">
+                      <div className="flex items-center gap-3">
+                        <Mic className="w-5 h-5 text-zinc-500" />
+                        <span className="text-zinc-400">Session Type</span>
+                      </div>
+                      <span className="text-white font-medium">{selectedBooking.session_type}</span>
+                    </div>
+                    {selectedBooking.session_details && (
+                      <div className="flex justify-between items-center py-3 border-b border-white/10">
+                        <div className="flex items-center gap-3">
+                          <Users className="w-5 h-5 text-zinc-500" />
+                          <span className="text-zinc-400">Details</span>
+                        </div>
+                        <span className="text-white font-medium">{selectedBooking.session_details}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center py-3 border-b border-white/10">
+                      <div className="flex items-center gap-3">
+                        <Building2 className="w-5 h-5 text-zinc-500" />
+                        <span className="text-zinc-400">Studio</span>
+                      </div>
+                      <span className="text-white font-medium">{selectedBooking.studio}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-3 border-b border-white/10">
+                      <div className="flex items-center gap-3">
+                        <Calendar className="w-5 h-5 text-zinc-500" />
+                        <span className="text-zinc-400">Date</span>
+                      </div>
+                      <span className="text-white font-medium">{formatDate(selectedBooking.date)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-3 border-b border-white/10">
+                      <div className="flex items-center gap-3">
+                        <Clock className="w-5 h-5 text-zinc-500" />
+                        <span className="text-zinc-400">Time</span>
+                      </div>
+                      <span className="text-white font-medium">
+                        {formatTime(selectedBooking.start_time)} - {formatTime(selectedBooking.end_time)}
+                      </span>
+                    </div>
+                    {selectedBooking.total_amount && (
+                      <div className="flex justify-between items-center py-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-zinc-400">Total Amount</span>
+                        </div>
+                        <span className="text-emerald-400 font-bold text-lg">
+                          ₹{selectedBooking.total_amount.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => { setStep('select'); setSelectedBooking(null); }}
+                      className="flex-1 py-3 rounded-xl border border-white/10 text-zinc-400 font-medium hover:bg-white/5 transition-colors"
+                    >
+                      ← Back
+                    </button>
+                    <button
+                      onClick={resetModal}
+                      className="flex-1 py-3 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-600 transition-colors"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Cancel Confirmation Step */}
+              {step === 'cancel-confirm' && selectedBooking && (
+                <>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center">
+                      <X className="w-6 h-6 text-red-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">Confirm Cancellation</h3>
+                      <p className="text-zinc-400 text-sm">This action requires verification</p>
+                    </div>
+                  </div>
+
+                  {/* Booking Summary */}
+                  <div className="bg-white/5 rounded-xl p-4 mb-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Mic className="w-5 h-5 text-violet-400" />
+                      <span className="text-white font-medium">{selectedBooking.session_type}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="flex items-center gap-2 text-zinc-400">
+                        <Building2 className="w-4 h-4" />
+                        {selectedBooking.studio}
+                      </div>
+                      <div className="flex items-center gap-2 text-zinc-400">
+                        <Calendar className="w-4 h-4" />
+                        {formatDate(selectedBooking.date)}
+                      </div>
+                      <div className="flex items-center gap-2 text-zinc-400 col-span-2">
+                        <Clock className="w-4 h-4" />
+                        {formatTime(selectedBooking.start_time)} - {formatTime(selectedBooking.end_time)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-zinc-400 text-sm mb-6 text-center">
+                    Click below to receive a verification code on your phone number to confirm cancellation.
+                  </p>
+
+                  {error && (
+                    <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                      <span className="text-red-400 text-sm">{error}</span>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => { setStep('select'); setSelectedBooking(null); setError(''); }}
+                      className="flex-1 py-3 rounded-xl border border-white/10 text-zinc-400 font-medium hover:bg-white/5 transition-colors"
+                    >
+                      Keep Booking
+                    </button>
+                    <motion.button
+                      onClick={handleSendOtp}
+                      disabled={isSendingOtp}
+                      className="flex-1 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {isSendingOtp ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <>
+                          <Shield className="w-4 h-4" />
+                          Verify & Cancel
+                        </>
+                      )}
+                    </motion.button>
+                  </div>
+                </>
+              )}
+
+              {/* OTP Verification Step */}
+              {step === 'otp' && selectedBooking && (
+                <>
+                  <div className="flex items-center gap-3 mb-6 pb-6 border-b border-white/10">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                      <Shield className="w-6 h-6 text-amber-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">Verify Cancellation</h3>
+                      <p className="text-zinc-400 text-sm">Enter the OTP sent to your phone</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-3">
+                      <Check className="w-5 h-5 text-green-400" />
+                      <span className="text-green-400">OTP sent to +91 {phoneNumber}</span>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-zinc-400 mb-4 text-center">
+                        Enter the 6-digit OTP
+                      </label>
+                      <div className="flex justify-center gap-2 sm:gap-3 max-w-sm mx-auto">
+                        {otp.map((digit, index) => (
+                          <input
+                            key={index}
+                            ref={(el) => { otpInputRefs.current[index] = el; }}
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={1}
+                            value={digit}
+                            onChange={(e) => handleOtpChange(index, e.target.value)}
+                            onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                            onPaste={handleOtpPaste}
+                            className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold rounded-xl bg-white/5 border border-white/10 text-white focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all"
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {error && (
+                      <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                        <span className="text-red-400 text-sm">{error}</span>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <motion.button
+                        onClick={handleConfirmCancel}
+                        disabled={isVerifyingOtp || otp.join('').length !== 6}
+                        className="flex-1 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        {isVerifyingOtp ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <>
+                            <Check className="w-5 h-5" />
+                            Confirm Cancellation
+                          </>
+                        )}
+                      </motion.button>
+
+                      <motion.button
+                        onClick={handleSendOtp}
+                        disabled={isSendingOtp || resendCooldown > 0}
+                        className="flex-1 py-3 rounded-xl border border-white/10 text-zinc-400 font-medium hover:bg-white/5 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <RefreshCw className={`w-5 h-5 ${isSendingOtp ? 'animate-spin' : ''}`} />
+                        {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
+                      </motion.button>
+                    </div>
+
+                    <button
+                      onClick={() => { setStep('cancel-confirm'); setOtp(['', '', '', '', '', '']); setError(''); }}
+                      className="w-full text-center text-zinc-500 hover:text-zinc-300 text-sm font-medium transition-colors"
+                    >
+                      ← Back to booking details
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Success Step */}
+              {step === 'success' && (
+                <div className="text-center py-4">
+                  <motion.div
+                    className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', damping: 15 }}
+                  >
+                    <CheckCircle2 className="w-8 h-8 text-green-400" />
+                  </motion.div>
+                  <h3 className="text-xl font-bold text-white mb-2">Booking Cancelled</h3>
+                  <p className="text-zinc-400">Your booking has been successfully cancelled.</p>
+                  <p className="text-zinc-500 text-sm mt-2">A cancellation SMS has been sent to your phone.</p>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

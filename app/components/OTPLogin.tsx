@@ -52,6 +52,43 @@ export default function OTPLogin({ redirectUrl = '/my-bookings', onSuccess }: OT
     }
   }, [step]);
 
+  // Web OTP API - Auto-fill OTP from SMS on supported mobile browsers
+  useEffect(() => {
+    if (step !== 'otp' || !('OTPCredential' in window)) return;
+
+    const abortController = new AbortController();
+    
+    const autoFillOtp = async () => {
+      try {
+        const credential = await navigator.credentials.get({
+          otp: { transport: ['sms'] },
+          signal: abortController.signal
+        } as CredentialRequestOptions);
+        
+        if (credential && 'code' in credential) {
+          const code = (credential as { code: string }).code;
+          if (code && code.length === 6) {
+            const newOtp = code.split('');
+            setOtp(newOtp);
+            otpInputRefs.current[5]?.focus();
+            // Auto-submit when OTP is auto-filled
+            handleVerifyOTP(code);
+          }
+        }
+      } catch (err) {
+        // User cancelled or API not supported - ignore silently
+        console.log('OTP auto-fill not available:', err);
+      }
+    };
+
+    autoFillOtp();
+
+    return () => {
+      abortController.abort();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
   // Handle phone input change
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 10);

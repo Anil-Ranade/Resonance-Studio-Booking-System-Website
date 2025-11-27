@@ -1,13 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 
-// GET /api/todays-bookings - Get today's bookings for all studios
-export async function GET() {
+// GET /api/todays-bookings - Get bookings for a specific date (defaults to today)
+export async function GET(request: NextRequest) {
   try {
     const supabase = supabaseAdmin();
 
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split("T")[0];
+    // Get date from query params or default to today
+    const searchParams = request.nextUrl.searchParams;
+    const dateParam = searchParams.get("date");
+    const today = dateParam || new Date().toISOString().split("T")[0];
 
     // Fetch all bookings for today that are confirmed or pending
     const { data: bookings, error } = await supabase

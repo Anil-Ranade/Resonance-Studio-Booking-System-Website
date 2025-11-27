@@ -233,11 +233,13 @@ export async function GET(request: NextRequest) {
       // Calculate current time in minutes since midnight
       const currentTimeInMinutes = currentHour * 60 + currentMinutes;
       
-      // Filter out slots that have already started or are in the past
+      // Filter out slots that have already ended
+      // A slot is considered past if its END time is before or equal to current time
+      // This allows users to see slots that are currently in progress or about to start
       availableChunks = availableChunks.filter((chunk) => {
-        const slotStartMinutes = timeToMinutes(chunk.start);
-        // Only show slots that start after the current time
-        return slotStartMinutes > currentTimeInMinutes;
+        const slotEndMinutes = timeToMinutes(chunk.end);
+        // Only show slots that haven't ended yet (end time is after current time)
+        return slotEndMinutes > currentTimeInMinutes;
       });
     }
 

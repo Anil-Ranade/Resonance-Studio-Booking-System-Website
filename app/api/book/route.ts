@@ -13,6 +13,7 @@ interface BookRequest {
   start_time: string;
   end_time: string;
   rate_per_hour?: number;
+  is_modification?: boolean;
 }
 
 interface BookingSettings {
@@ -73,6 +74,7 @@ export async function POST(request: Request) {
       start_time,
       end_time,
       rate_per_hour,
+      is_modification,
     } = body;
 
     // Normalize phone to digits only
@@ -253,7 +255,10 @@ export async function POST(request: Request) {
           day: 'numeric', 
           month: 'short' 
         });
-        const message = `Booking Confirmed!\n\nStudio: ${studio}\nDate: ${formattedDate}\nTime: ${start_time} - ${end_time}${total_amount ? `\nAmount: ₹${total_amount}` : ''}\n\nBooking ID: ${booking.id.slice(0, 8)}\n\nThank you for booking with Resonance Studio!`;
+        
+        // Different message for new booking vs modification
+        const messageTitle = is_modification ? 'Booking Updated!' : 'Booking Confirmed!';
+        const message = `${messageTitle}\n\nStudio: ${studio}\nDate: ${formattedDate}\nTime: ${start_time} - ${end_time}${total_amount ? `\nAmount: ₹${total_amount}` : ''}\n\nBooking ID: ${booking.id.slice(0, 8)}\n\nThank you for booking with Resonance Studio!`;
         
         const smsResult = await sendSMS(toNumber, message);
         

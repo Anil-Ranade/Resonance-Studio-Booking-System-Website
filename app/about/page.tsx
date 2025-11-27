@@ -212,12 +212,32 @@ export default function AboutPage() {
 
         {/* Credit */}
         <motion.div 
-          className="glass-strong rounded-2xl p-6 text-center"
+          className="relative rounded-2xl p-8 text-center overflow-hidden group"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <p className="text-zinc-400">Concept, Project Planning & Execution by <span className="text-violet-400 font-semibold">Anil Ranade</span></p>
+          {/* Animated gradient border */}
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 opacity-75"></div>
+          <div className="absolute inset-[2px] rounded-2xl bg-zinc-900/95 backdrop-blur-sm"></div>
+          
+          {/* Glow effect */}
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-violet-600/20 via-purple-500/20 to-fuchsia-500/20 blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-500"></div>
+          
+          {/* Content */}
+          <div className="relative z-10">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-2xl">✨</span>
+              <span className="text-xs uppercase tracking-[0.3em] text-violet-400 font-medium">Visionary Behind Resonance</span>
+              <span className="text-2xl">✨</span>
+            </div>
+            <p className="text-lg text-zinc-300">
+              Concept, Project Planning & Execution by{' '}
+              <span className="text-xl font-bold bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+                Anil Ranade
+              </span>
+            </p>
+          </div>
         </motion.div>
       </div>
     </div>

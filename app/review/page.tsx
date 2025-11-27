@@ -52,6 +52,11 @@ interface BookingData {
   bandLabel?: string;
   recordingOption?: string;
   recordingLabel?: string;
+  // Edit mode fields
+  isEditMode?: boolean;
+  originalBookingId?: string | null;
+  editPhoneNumber?: string | null;
+  editName?: string | null;
 }
 
 interface UserData {
@@ -93,7 +98,6 @@ const getSessionDetails = (bookingData: BookingData): string => {
 export default function ReviewPage() {
   const router = useRouter();
   const [bookingData, setBookingData] = useState<BookingData | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string>('');
   
   // User details state
@@ -110,15 +114,49 @@ export default function ReviewPage() {
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
+  const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  
+  // Track if user is already verified from previous booking
+  const [isAlreadyVerified, setIsAlreadyVerified] = useState(false);
+  const [isConfirmingBooking, setIsConfirmingBooking] = useState(false);
+  
+  // Booking confirmation state
+  const [confirmedBookingId, setConfirmedBookingId] = useState<string | null>(null);
 
   useEffect(() => {
     const storedData = sessionStorage.getItem('bookingData');
     if (storedData) {
       const parsed = JSON.parse(storedData);
       setBookingData(parsed);
+      
+      // If edit mode, pre-fill phone and name from the original booking
+      if (parsed.isEditMode && parsed.editPhoneNumber) {
+        setPhoneNumber(parsed.editPhoneNumber);
+        if (parsed.editName) {
+          setName(parsed.editName);
+        }
+        // Set as already verified since they already own this booking
+        setIsAlreadyVerified(true);
+        // Create a mock user data object for the edit flow
+        setUserData({
+          id: '',
+          phone_number: parsed.editPhoneNumber,
+          name: parsed.editName || '',
+          email: '',
+        });
+      }
+      // Check for verified user (from previous booking in same session) - only if not edit mode
+      const storedVerifiedUser = sessionStorage.getItem('verifiedUser');
+      if (storedVerifiedUser && !parsed.isEditMode) {
+        const parsedUser = JSON.parse(storedVerifiedUser);
+        setUserData(parsedUser);
+        setPhoneNumber(parsedUser.phone_number);
+        setName(parsedUser.name);
+        setEmail(parsedUser.email || '');
+        setIsAlreadyVerified(true);
+      }
     } else {
       router.push('/booking');
     }
@@ -131,6 +169,43 @@ export default function ReviewPage() {
       return () => clearTimeout(timer);
     }
   }, [resendCooldown]);
+
+  // Web OTP API - Auto-fill OTP from SMS on supported mobile browsers
+  useEffect(() => {
+    if (!showOtpVerification || !('OTPCredential' in window)) return;
+
+    const abortController = new AbortController();
+    
+    const autoFillOtp = async () => {
+      try {
+        const credential = await navigator.credentials.get({
+          otp: { transport: ['sms'] },
+          signal: abortController.signal
+        } as CredentialRequestOptions);
+        
+        if (credential && 'code' in credential) {
+          const code = (credential as { code: string }).code;
+          if (code && code.length === 6) {
+            const newOtp = code.split('');
+            setOtp(newOtp);
+            otpInputRefs.current[5]?.focus();
+            // Auto-submit when OTP is auto-filled
+            handleVerifyOtpAndBook(code);
+          }
+        }
+      } catch (err) {
+        // User cancelled or API not supported - ignore silently
+        console.log('OTP auto-fill not available:', err);
+      }
+    };
+
+    autoFillOtp();
+
+    return () => {
+      abortController.abort();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showOtpVerification]);
 
   const handlePhoneCheck = async () => {
     if (phoneNumber.replace(/\D/g, '').length !== 10) {
@@ -252,6 +327,11 @@ export default function ReviewPage() {
     if (value && index < 5) {
       otpInputRefs.current[index + 1]?.focus();
     }
+
+    // Auto-submit when all digits entered
+    if (value && index === 5 && newOtp.every(digit => digit !== '')) {
+      handleVerifyOtpAndBook(newOtp.join(''));
+    }
   };
 
   const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -267,65 +347,65 @@ export default function ReviewPage() {
       const newOtp = pastedData.split('');
       setOtp(newOtp);
       otpInputRefs.current[5]?.focus();
+      // Auto-verify when pasting complete OTP
+      handleVerifyOtpAndBook(newOtp.join(''));
     }
   };
 
-  const handleVerifyOtp = async () => {
-    const otpValue = otp.join('');
-    if (otpValue.length !== 6) {
+  // Combined function to verify OTP and create booking immediately
+  const handleVerifyOtpAndBook = async (otpValue?: string) => {
+    const code = otpValue || otp.join('');
+    if (code.length !== 6) {
       setError('Please enter the complete 6-digit OTP');
       return;
     }
 
-    if (!userData) return;
+    if (!userData || !bookingData) return;
 
     setIsVerifyingOtp(true);
     setError('');
 
     try {
-      const response = await fetch('/api/auth/verify-otp', {
+      // Step 1: Verify OTP
+      const verifyResponse = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           phone: userData.phone_number,
-          code: otpValue 
+          code 
         }),
       });
 
-      const data = await safeJsonParse(response);
+      const verifyData = await safeJsonParse(verifyResponse);
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to verify OTP');
+      if (!verifyResponse.ok) {
+        throw new Error(verifyData.error || 'Failed to verify OTP');
       }
 
-      setOtpVerified(true);
-      setShowOtpVerification(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to verify OTP');
-      // Clear OTP on error
-      setOtp(['', '', '', '', '', '']);
-      otpInputRefs.current[0]?.focus();
-    } finally {
-      setIsVerifyingOtp(false);
-    }
-  };
+      // Step 1.5: If edit mode, cancel the original booking first
+      if (bookingData.isEditMode && bookingData.originalBookingId) {
+        try {
+          const cancelResponse = await fetch('/api/bookings/cancel-silent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              bookingId: bookingData.originalBookingId,
+              phone: userData.phone_number,
+              reason: 'Booking modified by user',
+            }),
+          });
+          
+          if (!cancelResponse.ok) {
+            const cancelData = await safeJsonParse(cancelResponse);
+            console.warn('Failed to cancel original booking:', cancelData.error);
+          }
+        } catch (cancelErr) {
+          console.warn('Error cancelling original booking:', cancelErr);
+        }
+      }
 
-  const calculateDuration = (start: string, end: string): number => {
-    const [startHour, startMin] = start.split(':').map(Number);
-    const [endHour, endMin] = end.split(':').map(Number);
-    const startMinutes = startHour * 60 + startMin;
-    const endMinutes = endHour * 60 + endMin;
-    return (endMinutes - startMinutes) / 60;
-  };
-
-  const handleConfirmBooking = async () => {
-    if (!bookingData || !userData || !otpVerified) return;
-
-    setIsSubmitting(true);
-    setError('');
-
-    try {
-      const response = await fetch('/api/book', {
+      // Step 2: OTP verified - immediately create booking
+      const bookResponse = await fetch('/api/book', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -340,23 +420,130 @@ export default function ReviewPage() {
           start_time: bookingData.start_time,
           end_time: bookingData.end_time,
           rate_per_hour: bookingData.rate,
+          is_modification: bookingData.isEditMode || false,
         }),
       });
 
-      const data = await safeJsonParse(response);
+      const bookData = await safeJsonParse(bookResponse);
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to create booking');
+      if (!bookResponse.ok || !bookData.success) {
+        throw new Error(bookData.error || 'Failed to create booking');
       }
 
+      // Success! Show confirmation
+      setBookingConfirmed(true);
+      setConfirmedBookingId(bookData.booking.id);
+      setShowOtpVerification(false);
+      
+      // Store verified user for potential rebooking without OTP
+      sessionStorage.setItem('verifiedUser', JSON.stringify(userData));
+      
+      // Store booking ID for confirmation page
       sessionStorage.removeItem('bookingData');
-      sessionStorage.setItem('lastBookingId', data.booking.id);
-      router.push('/confirmation');
+      sessionStorage.setItem('lastBookingId', bookData.booking.id);
+      
+      // Redirect to confirmation page after a short delay
+      setTimeout(() => {
+        router.push('/confirmation');
+      }, 2500);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to verify OTP');
+      // Clear OTP on error
+      setOtp(['', '', '', '', '', '']);
+      otpInputRefs.current[0]?.focus();
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    handleVerifyOtpAndBook();
+  };
+
+  // Direct booking for already verified users (no OTP needed) or edit mode
+  const handleDirectBooking = async () => {
+    if (!userData || !bookingData) return;
+
+    setIsConfirmingBooking(true);
+    setError('');
+
+    try {
+      // If in edit mode, first cancel the original booking (silently)
+      if (bookingData.isEditMode && bookingData.originalBookingId) {
+        try {
+          const cancelResponse = await fetch('/api/bookings/cancel-silent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              bookingId: bookingData.originalBookingId,
+              phone: userData.phone_number,
+              reason: 'Booking modified by user',
+            }),
+          });
+          
+          if (!cancelResponse.ok) {
+            const cancelData = await safeJsonParse(cancelResponse);
+            console.warn('Failed to cancel original booking:', cancelData.error);
+            // Continue with new booking anyway - old booking will remain
+          }
+        } catch (cancelErr) {
+          console.warn('Error cancelling original booking:', cancelErr);
+          // Continue with new booking anyway
+        }
+      }
+
+      const bookResponse = await fetch('/api/book', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone: userData.phone_number,
+          name: userData.name,
+          session_type: bookingData.sessionType,
+          session_details: getSessionDetails(bookingData),
+          studio: bookingData.studio,
+          date: bookingData.date,
+          start_time: bookingData.start_time,
+          end_time: bookingData.end_time,
+          rate_per_hour: bookingData.rate,
+          is_modification: bookingData.isEditMode || false,
+        }),
+      });
+
+      const bookData = await safeJsonParse(bookResponse);
+
+      if (!bookResponse.ok || !bookData.success) {
+        throw new Error(bookData.error || 'Failed to create booking');
+      }
+
+      // Success! Show confirmation
+      setBookingConfirmed(true);
+      setConfirmedBookingId(bookData.booking.id);
+      
+      // Store booking ID for confirmation page
+      sessionStorage.removeItem('bookingData');
+      sessionStorage.setItem('lastBookingId', bookData.booking.id);
+      
+      // Redirect to confirmation page after a short delay
+      setTimeout(() => {
+        router.push('/confirmation');
+      }, 2500);
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create booking');
     } finally {
-      setIsSubmitting(false);
+      setIsConfirmingBooking(false);
     }
+  };
+
+  const calculateDuration = (start: string, end: string): number => {
+    const [startHour, startMin] = start.split(':').map(Number);
+    const [endHour, endMin] = end.split(':').map(Number);
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    return (endMinutes - startMinutes) / 60;
   };
 
   if (!bookingData) {
@@ -412,9 +599,14 @@ export default function ReviewPage() {
             Back to Booking
           </Link>
           
-          <h1 className="text-4xl font-bold text-white mb-2">Review Your Booking</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">
+            {bookingData?.isEditMode ? 'Update Your Booking' : 'Review Your Booking'}
+          </h1>
           <p className="text-zinc-400">
-            Please confirm your booking details before proceeding
+            {bookingData?.isEditMode 
+              ? 'Review your updated booking details before confirming'
+              : 'Please confirm your booking details before proceeding'
+            }
           </p>
         </motion.div>
 
@@ -653,7 +845,7 @@ export default function ReviewPage() {
         </motion.div>
 
         {/* OTP Verification Card */}
-        {userData && !otpVerified && (
+        {userData && !bookingConfirmed && (
           <motion.div 
             className="glass-strong rounded-3xl p-8 mb-6"
             initial={{ opacity: 0, y: 20 }}
@@ -666,16 +858,55 @@ export default function ReviewPage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                <Shield className="w-6 h-6 text-amber-400" />
+              <div className={`w-12 h-12 rounded-xl ${isAlreadyVerified ? 'bg-green-500/20' : 'bg-amber-500/20'} flex items-center justify-center`}>
+                <Shield className={`w-6 h-6 ${isAlreadyVerified ? 'text-green-400' : 'text-amber-400'}`} />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">Verify Your Number</h2>
-                <p className="text-zinc-400 text-sm">We'll send an OTP to your phone</p>
+                <h2 className="text-xl font-bold text-white">
+                  {isAlreadyVerified ? 'Confirm Booking' : 'Verify & Confirm Booking'}
+                </h2>
+                <p className="text-zinc-400 text-sm">
+                  {isAlreadyVerified ? 'Your phone number is already verified' : 'Enter OTP to confirm your booking'}
+                </p>
               </div>
             </motion.div>
 
-            {!showOtpVerification ? (
+            {/* Already verified - Direct confirm */}
+            {isAlreadyVerified ? (
+              <motion.div 
+                className="text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center gap-3 mb-6">
+                  <Check className="w-5 h-5 text-green-400" />
+                  <span className="text-green-400">Phone verified from previous booking</span>
+                </div>
+                <p className="text-zinc-400 mb-6">
+                  Click below to confirm your booking for <span className="text-white font-medium">{userData.phone_number}</span>
+                </p>
+                <motion.button
+                  type="button"
+                  onClick={handleDirectBooking}
+                  disabled={isConfirmingBooking}
+                  className="btn-accent py-3 px-8 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mx-auto"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {isConfirmingBooking ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Confirming Booking...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-5 h-5" />
+                      Confirm Booking
+                    </>
+                  )}
+                </motion.button>
+              </motion.div>
+            ) : !showOtpVerification ? (
               <motion.div 
                 className="text-center"
                 initial={{ opacity: 0 }}
@@ -751,12 +982,12 @@ export default function ReviewPage() {
                     {isVerifyingOtp ? (
                       <>
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        Verifying...
+                        Confirming Booking...
                       </>
                     ) : (
                       <>
                         <Check className="w-5 h-5" />
-                        Verify OTP
+                        Verify & Confirm
                       </>
                     )}
                   </motion.button>
@@ -778,22 +1009,61 @@ export default function ReviewPage() {
           </motion.div>
         )}
 
-        {/* OTP Verified Success */}
-        {otpVerified && (
+        {/* Booking Confirmed Success */}
+        {bookingConfirmed && (
           <motion.div 
-            className="glass-strong rounded-3xl p-6 mb-6"
+            className="glass-strong rounded-3xl p-8 mb-6"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
-                <Shield className="w-6 h-6 text-green-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">Phone Verified</h3>
-                <p className="text-green-400 text-sm">Your phone number has been verified successfully</p>
-              </div>
+            <div className="text-center">
+              <motion.div 
+                className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              >
+                <Check className="w-10 h-10 text-green-400" />
+              </motion.div>
+              <motion.h2 
+                className="text-2xl font-bold text-white mb-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                {bookingData?.isEditMode ? 'Your booking has been updated!' : 'Your booking is confirmed!'}
+              </motion.h2>
+              <motion.p 
+                className="text-zinc-400 mb-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+              >
+                {bookingData?.isEditMode 
+                  ? 'An update confirmation SMS has been sent to your phone.'
+                  : 'A confirmation SMS has been sent to your phone.'
+                }
+              </motion.p>
+              {confirmedBookingId && (
+                <motion.p 
+                  className="text-sm text-zinc-500"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  Booking ID: {confirmedBookingId.slice(0, 8)}
+                </motion.p>
+              )}
+              <motion.div 
+                className="mt-6 flex items-center justify-center gap-2 text-violet-400"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+              >
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">Redirecting to confirmation page...</span>
+              </motion.div>
             </div>
           </motion.div>
         )}
@@ -815,49 +1085,26 @@ export default function ReviewPage() {
           )}
         </AnimatePresence>
 
-        {/* Action Buttons */}
-        <motion.div 
-          className="flex flex-col sm:flex-row gap-3 sm:gap-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <motion.button
-            type="button"
-            onClick={() => router.push('/booking')}
-            disabled={isSubmitting}
-            className="w-full sm:flex-1 btn-secondary py-4 disabled:opacity-50 disabled:cursor-not-allowed"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+        {/* Action Buttons - Only show when booking is not yet confirmed */}
+        {!bookingConfirmed && (
+          <motion.div 
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
           >
-            Edit Booking
-          </motion.button>
-          <motion.button
-            type="button"
-            onClick={handleConfirmBooking}
-            disabled={isSubmitting || !userData || !otpVerified}
-            className="w-full sm:flex-1 btn-accent py-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Processing...
-              </>
-            ) : !otpVerified ? (
-              <>
-                <Shield className="w-5 h-5" />
-                Verify OTP First
-              </>
-            ) : (
-              <>
-                Confirm Booking
-                <Check className="w-5 h-5" />
-              </>
-            )}
-          </motion.button>
-        </motion.div>
+            <motion.button
+              type="button"
+              onClick={() => router.push('/booking')}
+              disabled={isVerifyingOtp}
+              className="w-full sm:flex-1 btn-secondary py-4 disabled:opacity-50 disabled:cursor-not-allowed"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Edit Booking
+            </motion.button>
+          </motion.div>
+        )}
       </div>
     </div>
   );

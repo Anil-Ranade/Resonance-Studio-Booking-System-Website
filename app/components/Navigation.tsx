@@ -112,44 +112,42 @@ export default function Navigation() {
       )}
 
       {/* Mobile Menu Panel */}
-      <div
-        className={`fixed top-16 left-0 right-0 z-50 bg-[#0a0a0f]/98 backdrop-blur-xl border-b border-violet-500/10 md:hidden transition-all duration-300 ease-out ${
-          isMenuOpen
-            ? "opacity-100 visible"
-            : "opacity-0 invisible"
-        }`}
-      >
-        <div className="max-h-[calc(100vh-4rem)] overflow-y-auto">
-          <div className="px-4 py-4 space-y-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setIsMenuOpen(false)}
-                className={`block px-4 py-3 text-base font-medium rounded-lg transition-all duration-200 ${
-                  pathname === link.href
-                    ? "text-violet-400 bg-violet-500/10"
-                    : "text-zinc-300 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
-            
-            {/* Mobile CTA Button */}
-            <div className="pt-4 pb-2">
-              <Link
-                href="/booking"
-                onClick={() => setIsMenuOpen(false)}
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-medium rounded-lg hover:from-violet-500 hover:to-purple-500 transition-all duration-300 shadow-lg shadow-violet-500/25"
-              >
-                <Calendar className="w-4 h-4" />
-                Book Now
-              </Link>
+      {isMenuOpen && (
+        <div
+          className="fixed top-16 left-0 right-0 z-50 bg-[#0a0a0f]/98 backdrop-blur-xl border-b border-violet-500/10 md:hidden transition-all duration-300 ease-out opacity-100 visible"
+        >
+          <div className="max-h-[calc(100vh-4rem)] overflow-y-auto">
+            <div className="px-4 py-4 space-y-1">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block px-4 py-3 text-base font-medium rounded-lg transition-all duration-200 ${
+                    pathname === link.href
+                      ? "text-violet-400 bg-violet-500/10"
+                      : "text-zinc-300 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              
+              {/* Mobile CTA Button */}
+              <div className="pt-4 pb-2">
+                <Link
+                  href="/booking"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-medium rounded-lg hover:from-violet-500 hover:to-purple-500 transition-all duration-300 shadow-lg shadow-violet-500/25"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Book Now
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

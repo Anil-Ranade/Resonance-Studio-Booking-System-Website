@@ -22,6 +22,7 @@ import {
   Calendar, 
   Clock, 
   ChevronRight,
+  ChevronLeft,
   Loader2,
   AlertCircle,
   CheckCircle2,
@@ -125,10 +126,19 @@ const STUDIOS: { name: StudioName; description: string; features: string[] }[] =
   },
 ];
 
+// Step definitions
+const STEPS = [
+  { number: 1, label: 'Session Type', icon: <Mic className="w-4 h-4" /> },
+  { number: 2, label: 'Details', icon: <Users className="w-4 h-4" /> },
+  { number: 3, label: 'Studio', icon: <Music className="w-4 h-4" /> },
+  { number: 4, label: 'Date & Time', icon: <Calendar className="w-4 h-4" /> },
+  { number: 5, label: 'Review', icon: <CheckCircle2 className="w-4 h-4" /> },
+];
+
 function BookingPageLoading() {
   return (
     <div className="min-h-screen py-8 px-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-2xl mx-auto">
         <div className="mb-8">
           <div className="h-6 w-32 bg-white/10 rounded animate-pulse mb-6" />
           <div className="h-10 w-64 bg-white/10 rounded animate-pulse mb-2" />
@@ -157,8 +167,18 @@ function BookingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Mobile step state (1 = session details, 2 = studio, 3 = date/time, 4 = summary)
-  const [mobileStep, setMobileStep] = useState(1);
+  // Current step (1-5)
+  const [currentStep, setCurrentStep] = useState(1);
+
+  // Edit mode state for changing existing booking
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [originalBookingId, setOriginalBookingId] = useState<string | null>(null);
+  const [editPhoneNumber, setEditPhoneNumber] = useState<string | null>(null);
+  const [editName, setEditName] = useState<string | null>(null);
+  const [originalStartTime, setOriginalStartTime] = useState<string | null>(null);
+  const [originalEndTime, setOriginalEndTime] = useState<string | null>(null);
+  const [originalSessionType, setOriginalSessionType] = useState<string | null>(null);
+  const [originalSessionDetails, setOriginalSessionDetails] = useState<string | null>(null);
 
   // Form state
   const [sessionType, setSessionType] = useState<SessionType | ''>('');
@@ -207,7 +227,6 @@ function BookingPageContent() {
         if (response.ok) {
           const data = await safeJsonParse(response);
           setBookingSettings(data);
-          // Initialize numberOfHours with minBookingDuration
           setNumberOfHours(data.minBookingDuration || 1);
         }
       } catch (error) {
@@ -233,6 +252,7 @@ function BookingPageContent() {
     const urlDate = searchParams.get('date');
     const urlStudio = searchParams.get('studio');
     const urlTime = searchParams.get('time');
+    const mode = searchParams.get('mode');
 
     if (urlDate) {
       setDate(urlDate);
@@ -243,18 +263,56 @@ function BookingPageContent() {
     if (urlTime) {
       setPrefilledTime(urlTime);
     }
+
+    // Handle edit mode
+    if (mode === 'edit') {
+      const editData = sessionStorage.getItem('editBookingData');
+      if (editData) {
+        try {
+          const parsed = JSON.parse(editData);
+          setIsEditMode(true);
+          setOriginalBookingId(parsed.originalBookingId);
+          setEditPhoneNumber(parsed.phone_number);
+          setEditName(parsed.name);
+          
+          if (parsed.sessionType) {
+            setSessionType(parsed.sessionType as SessionType);
+            setOriginalSessionType(parsed.sessionType);
+          }
+          if (parsed.sessionDetails) {
+            setOriginalSessionDetails(parsed.sessionDetails);
+          }
+          if (parsed.studio) {
+            setStudio(parsed.studio as StudioName);
+          }
+          if (parsed.date) {
+            setDate(parsed.date);
+          }
+          if (parsed.start_time) {
+            setPrefilledTime(parsed.start_time);
+            setOriginalStartTime(parsed.start_time);
+          }
+          if (parsed.end_time) {
+            setOriginalEndTime(parsed.end_time);
+          }
+          
+          if (parsed.start_time && parsed.end_time) {
+            const [startH, startM] = parsed.start_time.split(':').map(Number);
+            const [endH, endM] = parsed.end_time.split(':').map(Number);
+            const duration = (endH * 60 + endM - startH * 60 - startM) / 60;
+            if (duration > 0) {
+              setNumberOfHours(duration);
+            }
+          }
+        } catch (e) {
+          console.error('Failed to parse edit booking data:', e);
+        }
+      }
+    }
   }, [searchParams]);
 
-  // Reset sub-options when session type changes
-  useEffect(() => {
-    setKaraokeOption('');
-    setLiveOption('');
-    setBandEquipment([]);
-    setRecordingOption('');
-    setRatesData(null);
-    setStudio('');
-    setStudioError('');
-  }, [sessionType]);
+  // Check if session type needs sub-options
+  const needsSubOptions = sessionType && sessionType !== 'Only Drum Practice';
 
   // Check if we have all required fields to fetch rates
   const canFetchRates = (): boolean => {
@@ -320,7 +378,6 @@ function BookingPageContent() {
           throw new Error(data.error || 'Failed to fetch rates');
         }
         setRatesData(data as RatesResponse);
-        // Auto-select suggested studio if no studio selected
         if (!studio) {
           setStudio(data.suggested_studio);
         }
@@ -340,7 +397,6 @@ function BookingPageContent() {
   const handleStudioSelect = (selectedStudio: StudioName) => {
     if (!ratesData) return;
     
-    // Check if the studio is allowed (upgrade only)
     if (!ratesData.allowed_studios.includes(selectedStudio)) {
       setStudioError('Your group size does not fit in this studio. Please select a larger studio.');
       return;
@@ -349,7 +405,6 @@ function BookingPageContent() {
     setStudioError('');
     setStudio(selectedStudio);
     
-    // Update rate based on selected studio
     if (ratesData.rate_breakdown && selectedStudio in ratesData.rate_breakdown) {
       setRatesData(prev => prev ? {
         ...prev,
@@ -391,13 +446,10 @@ function BookingPageContent() {
         }
         setAvailableSlots(data as TimeSlot[]);
         
-        // Auto-select prefilled time slot if it exists in available slots
         if (prefilledTime) {
           const startIndex = (data as TimeSlot[]).findIndex((slot: TimeSlot) => slot.start === prefilledTime);
           if (startIndex !== -1) {
-            // Select slots based on numberOfHours
             const slotsToSelect = data.slice(startIndex, startIndex + numberOfHours);
-            // Only select if all consecutive slots are available
             if (slotsToSelect.length === numberOfHours && areConsecutiveSlots(slotsToSelect)) {
               setSelectedSlots(slotsToSelect);
             } else {
@@ -427,34 +479,25 @@ function BookingPageContent() {
     return true;
   };
 
-  // Check if a slot can be selected as start time (has enough consecutive slots)
+  // Check if a slot can be selected as start time
   const canSelectAsStartTime = (slotIndex: number): boolean => {
-    // Check if there are enough slots remaining
     if (slotIndex + numberOfHours > availableSlots.length) return false;
-    
     const potentialSlots = availableSlots.slice(slotIndex, slotIndex + numberOfHours);
-    
-    // Make sure we actually have the required number of slots
     if (potentialSlots.length < numberOfHours) return false;
-    
     return areConsecutiveSlots(potentialSlots);
   };
 
-  // Time slot selection - now selects based on numberOfHours
+  // Time slot selection
   const handleSlotSelect = (slot: TimeSlot, slotIndex: number) => {
-    // If already selected as start, deselect
     if (selectedSlots.length > 0 && selectedSlots[0].start === slot.start) {
       setSelectedSlots([]);
       return;
     }
 
-    // Check if we can select this slot with the required number of hours
     if (!canSelectAsStartTime(slotIndex)) {
-      // Show error or just don't select
       return;
     }
 
-    // Select consecutive slots based on numberOfHours
     const slotsToSelect = availableSlots.slice(slotIndex, slotIndex + numberOfHours);
     setSelectedSlots(slotsToSelect);
   };
@@ -468,7 +511,6 @@ function BookingPageContent() {
           const slotsToSelect = availableSlots.slice(startSlotIndex, startSlotIndex + numberOfHours);
           setSelectedSlots(slotsToSelect);
         } else {
-          // Clear selection if not enough consecutive slots
           setSelectedSlots([]);
         }
       }
@@ -476,14 +518,63 @@ function BookingPageContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [numberOfHours]);
 
-  // Check if a slot is part of the current selection
-  const isSlotSelected = (slot: TimeSlot): boolean => {
-    return selectedSlots.some(s => s.start === slot.start && s.end === slot.end);
-  };
-
   // Check if a slot is the start of the current selection
   const isStartSlot = (slot: TimeSlot): boolean => {
     return selectedSlots.length > 0 && selectedSlots[0].start === slot.start;
+  };
+
+  // Step validation
+  const canProceedFromStep = (step: number): boolean => {
+    switch (step) {
+      case 1:
+        return !!sessionType;
+      case 2:
+        // Skip this step for 'Only Drum Practice'
+        if (sessionType === 'Only Drum Practice') return true;
+        return canFetchRates();
+      case 3:
+        return !!studio && !studioError;
+      case 4:
+        return selectedSlot !== null && selectedSlots.length >= bookingSettings.minBookingDuration;
+      default:
+        return false;
+    }
+  };
+
+  // Get the actual step number (accounting for skipped steps)
+  const getActualStep = (step: number): number => {
+    if (sessionType === 'Only Drum Practice' && step >= 2) {
+      return step; // Step 2 (Details) will be skipped
+    }
+    return step;
+  };
+
+  // Get display steps based on session type
+  const getDisplaySteps = () => {
+    if (sessionType === 'Only Drum Practice') {
+      return STEPS.filter(s => s.number !== 2);
+    }
+    return STEPS;
+  };
+
+  // Navigate to next step
+  const handleNext = () => {
+    if (currentStep === 1 && sessionType === 'Only Drum Practice') {
+      // Skip step 2 for 'Only Drum Practice'
+      setCurrentStep(3);
+    } else if (currentStep < 5) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  // Navigate to previous step
+  const handleBack = () => {
+    if (currentStep === 3 && sessionType === 'Only Drum Practice') {
+      // Skip step 2 when going back for 'Only Drum Practice'
+      setCurrentStep(1);
+    } else if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
   };
 
   const handleReviewBooking = () => {
@@ -494,7 +585,6 @@ function BookingPageContent() {
       return;
     }
     
-    // Build booking details based on session type
     let sessionDetails: Record<string, unknown> = { sessionType };
     
     switch (sessionType) {
@@ -524,8 +614,17 @@ function BookingPageContent() {
       end_time: selectedSlot.end,
       rate: ratesData?.suggested_rate,
       duration: selectedSlots.length,
+      isEditMode,
+      originalBookingId: isEditMode ? originalBookingId : null,
+      editPhoneNumber: isEditMode ? editPhoneNumber : null,
+      editName: isEditMode ? editName : null,
     };
     sessionStorage.setItem('bookingData', JSON.stringify(bookingData));
+    
+    if (isEditMode) {
+      sessionStorage.removeItem('editBookingData');
+    }
+    
     router.push('/review');
   };
 
@@ -553,136 +652,123 @@ function BookingPageContent() {
     }
   };
 
-  const steps = [
-    { number: 1, label: 'Session Details', active: true },
-    { number: 2, label: 'Choose Studio', active: canFetchRates() },
-    { number: 3, label: 'Choose Time', active: !!studio && canFetchRates() },
-    { number: 4, label: 'Review', active: selectedSlot !== null },
-  ];
-
-  // Mobile step navigation helpers
-  const canProceedToStep2 = canFetchRates();
-  const canProceedToStep3 = !!studio && canFetchRates();
-  const canProceedToStep4 = selectedSlot !== null && selectedSlots.length >= bookingSettings.minBookingDuration;
-
-  const handleMobileNext = () => {
-    if (mobileStep === 1 && canProceedToStep2) {
-      setMobileStep(2);
-    } else if (mobileStep === 2 && canProceedToStep3) {
-      setMobileStep(3);
-    } else if (mobileStep === 3 && canProceedToStep4) {
-      setMobileStep(4);
-    }
-  };
-
-  const handleMobileBack = () => {
-    if (mobileStep > 1) {
-      setMobileStep(mobileStep - 1);
-    }
+  // Animation variants
+  const pageVariants = {
+    initial: { opacity: 0, x: 20 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -20 }
   };
 
   return (
     <div className="min-h-screen py-8 px-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-2xl mx-auto">
         {/* Header */}
         <motion.div 
-          className="mb-8"
+          className="mb-6"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <Link 
             href="/home"
-            className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-6"
+            className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-4"
           >
             <ArrowLeft className="w-5 h-5" />
             Back to Home
           </Link>
           
-          <h1 className="text-4xl font-bold text-white mb-2">
-            Book Your Session
+          <h1 className="text-3xl font-bold text-white mb-1">
+            {isEditMode ? 'Change Your Booking' : 'Book Your Session'}
           </h1>
-          <p className="text-zinc-400">
-            Select your session type and preferences to find the perfect studio
+          <p className="text-zinc-400 text-sm">
+            {isEditMode 
+              ? 'Modify your booking details below'
+              : 'Complete each step to book your session'
+            }
           </p>
         </motion.div>
 
-        {/* Progress Steps */}
+        {/* Progress Bar */}
         <motion.div 
-          className="flex items-center justify-between mb-10 glass rounded-2xl p-4 overflow-x-auto"
+          className="mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          {steps.map((step, index) => (
-            <div key={step.number} className="flex items-center">
-              <div className="flex items-center gap-2">
-                <motion.div 
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                    step.active 
-                      ? 'bg-gradient-to-r from-violet-500 to-purple-500 text-white' 
-                      : 'bg-white/5 text-zinc-500'
-                  }`}
-                >
-                  {step.number}
-                </motion.div>
-                <span className={`hidden sm:block text-xs font-medium ${
-                  step.active ? 'text-white' : 'text-zinc-500'
-                }`}>
-                  {step.label}
-                </span>
-              </div>
-              {index < steps.length - 1 && (
-                <div className={`w-8 sm:w-16 h-0.5 mx-2 rounded transition-colors duration-300 ${
-                  steps[index + 1].active ? 'bg-violet-500' : 'bg-white/10'
-                }`} />
-              )}
-            </div>
-          ))}
+          <div className="flex items-center justify-between mb-3">
+            {getDisplaySteps().map((step, index) => {
+              const displaySteps = getDisplaySteps();
+              const isActive = currentStep === step.number;
+              const isCompleted = currentStep > step.number;
+              
+              return (
+                <div key={step.number} className="flex items-center">
+                  <motion.div 
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                      isActive 
+                        ? 'bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg shadow-violet-500/30' 
+                        : isCompleted
+                          ? 'bg-violet-500/20 text-violet-400 border border-violet-500/50'
+                          : 'bg-white/5 text-zinc-500 border border-white/10'
+                    }`}
+                    animate={isActive ? { scale: [1, 1.1, 1] } : {}}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {isCompleted ? <Check className="w-4 h-4" /> : step.icon}
+                  </motion.div>
+                  {index < displaySteps.length - 1 && (
+                    <div className={`w-8 sm:w-12 md:w-16 h-1 mx-1 rounded transition-colors duration-300 ${
+                      isCompleted ? 'bg-violet-500' : 'bg-white/10'
+                    }`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div className="text-center">
+            <span className="text-zinc-400 text-sm">
+              Step {getDisplaySteps().findIndex(s => s.number === currentStep) + 1} of {getDisplaySteps().length}:
+            </span>
+            <span className="text-white font-medium ml-2">
+              {STEPS.find(s => s.number === currentStep)?.label}
+            </span>
+          </div>
         </motion.div>
 
-        {/* Mobile Step Indicator */}
-        <div className="lg:hidden mb-6">
-          <div className="glass rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-zinc-400 text-sm">Step {mobileStep} of 4</span>
-              <span className="text-white font-medium">
-                {mobileStep === 1 && 'Session Details'}
-                {mobileStep === 2 && 'Choose Studio'}
-                {mobileStep === 3 && 'Date & Time'}
-                {mobileStep === 4 && 'Review'}
-              </span>
-            </div>
-            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-              <motion.div 
-                className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"
-                initial={false}
-                animate={{ width: `${(mobileStep / 4) * 100}%` }}
-                transition={{ duration: 0.3 }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Booking Form */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Form */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Session Type Card - Step 1 on mobile */}
-            <motion.div 
-              className={`glass rounded-2xl p-6 ${mobileStep !== 1 ? 'hidden lg:block' : ''}`}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+        {/* Step Content */}
+        <AnimatePresence mode="wait">
+          {/* Step 1: Session Type */}
+          {currentStep === 1 && (
+            <motion.div
+              key="step1"
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.3 }}
+              className="glass rounded-2xl p-6"
             >
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <h2 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
                 <Mic className="w-5 h-5 text-violet-400" />
-                Session Type
+                What type of session do you want?
               </h2>
+              <p className="text-zinc-400 text-sm mb-6">Choose the session type that best fits your needs</p>
+              
+              {/* Show original session type when in edit mode */}
+              {isEditMode && originalSessionType && (
+                <div className="mb-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                  <p className="text-amber-400 text-xs uppercase tracking-wide mb-1">Currently Booked</p>
+                  <p className="text-amber-300 font-semibold text-lg">{originalSessionType}</p>
+                </div>
+              )}
+
+              {isEditMode && (
+                <p className="text-zinc-400 text-sm mb-3">Choose a new session type:</p>
+              )}
               
               <div className="space-y-3">
                 {SESSION_TYPES.map((type) => (
-                  <motion.button
+                  <button
                     key={type.name}
                     type="button"
                     onClick={() => setSessionType(type.name)}
@@ -691,628 +777,599 @@ function BookingPageContent() {
                         ? 'bg-violet-500/20 border-violet-500 text-white'
                         : 'bg-white/5 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'
                     }`}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
                   >
-                    <span className={`p-2 rounded-lg ${sessionType === type.name ? 'bg-violet-500/30 text-violet-400' : 'bg-white/5 text-zinc-500'}`}>
+                    <span className={`p-3 rounded-lg ${sessionType === type.name ? 'bg-violet-500/30 text-violet-400' : 'bg-white/5 text-zinc-500'}`}>
                       {type.icon}
                     </span>
                     <div className="flex-1">
-                      <p className="font-medium">{type.name}</p>
+                      <p className="font-medium text-lg">{type.name}</p>
                       <p className="text-sm text-zinc-500">{type.description}</p>
                     </div>
                     {sessionType === type.name && (
-                      <CheckCircle2 className="w-5 h-5 text-violet-400" />
+                      <CheckCircle2 className="w-6 h-6 text-violet-400" />
                     )}
-                  </motion.button>
+                  </button>
                 ))}
               </div>
             </motion.div>
+          )}
 
-            {/* Sub-option Card - Shows based on session type - Step 1 on mobile */}
-            <AnimatePresence mode="wait">
-              {sessionType && sessionType !== 'Only Drum Practice' && (
-                <motion.div 
-                  className={`glass rounded-2xl p-6 ${mobileStep !== 1 ? 'hidden lg:block' : ''}`}
-                  initial={{ opacity: 0, x: -20, height: 0 }}
-                  animate={{ opacity: 1, x: 0, height: 'auto' }}
-                  exit={{ opacity: 0, x: -20, height: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <Users className="w-5 h-5 text-violet-400" />
-                    {sessionType === 'Karaoke' && 'How many participants?'}
-                    {sessionType === 'Live with musicians' && 'How many musicians?'}
-                    {sessionType === 'Band' && 'Select Equipment'}
-                    {sessionType === 'Recording' && 'Recording Package'}
-                  </h2>
+          {/* Step 2: Sub-options (Details) */}
+          {currentStep === 2 && needsSubOptions && (
+            <motion.div
+              key="step2"
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.3 }}
+              className="glass rounded-2xl p-6"
+            >
+              <h2 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
+                <Users className="w-5 h-5 text-violet-400" />
+                {sessionType === 'Karaoke' && 'How many participants?'}
+                {sessionType === 'Live with musicians' && 'How many musicians?'}
+                {sessionType === 'Band' && 'What equipment do you need?'}
+                {sessionType === 'Recording' && 'Choose your recording package'}
+              </h2>
+              <p className="text-zinc-400 text-sm mb-6">This helps us find the best studio for you</p>
 
-                  {/* Karaoke Options */}
-                  {sessionType === 'Karaoke' && (
-                    <div className="space-y-2">
-                      {KARAOKE_OPTIONS.map((option) => (
-                        <motion.button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setKaraokeOption(option.value)}
-                          className={`w-full p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
-                            karaokeOption === option.value
-                              ? 'bg-violet-500/20 border-violet-500 text-white'
-                              : 'bg-white/5 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'
-                          }`}
-                          whileTap={{ scale: 0.99 }}
-                        >
-                          <span>{option.label}</span>
-                          {karaokeOption === option.value && (
-                            <Check className="w-4 h-4 text-violet-400" />
-                          )}
-                        </motion.button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Live with Musicians Options */}
-                  {sessionType === 'Live with musicians' && (
-                    <div className="space-y-2">
-                      {LIVE_OPTIONS.map((option) => (
-                        <motion.button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setLiveOption(option.value)}
-                          className={`w-full p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
-                            liveOption === option.value
-                              ? 'bg-violet-500/20 border-violet-500 text-white'
-                              : 'bg-white/5 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'
-                          }`}
-                          whileTap={{ scale: 0.99 }}
-                        >
-                          <span>{option.label}</span>
-                          {liveOption === option.value && (
-                            <Check className="w-4 h-4 text-violet-400" />
-                          )}
-                        </motion.button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Band Equipment Checkboxes */}
-                  {sessionType === 'Band' && (
-                    <div className="grid grid-cols-2 gap-3">
-                      {BAND_EQUIPMENT.map((equipment) => (
-                        <motion.button
-                          key={equipment.value}
-                          type="button"
-                          onClick={() => toggleBandEquipment(equipment.value)}
-                          className={`p-4 rounded-xl border text-left transition-all flex items-center gap-3 ${
-                            bandEquipment.includes(equipment.value)
-                              ? 'bg-violet-500/20 border-violet-500 text-white'
-                              : 'bg-white/5 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'
-                          }`}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-                            bandEquipment.includes(equipment.value)
-                              ? 'bg-violet-500 border-violet-500'
-                              : 'border-zinc-500'
-                          }`}>
-                            {bandEquipment.includes(equipment.value) && (
-                              <Check className="w-3 h-3 text-white" />
-                            )}
-                          </div>
-                          <span className={bandEquipment.includes(equipment.value) ? 'text-violet-300' : ''}>
-                            {equipment.icon}
-                          </span>
-                          <span className="font-medium">{equipment.label}</span>
-                        </motion.button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Recording Options */}
-                  {sessionType === 'Recording' && (
-                    <div className="space-y-2">
-                      {RECORDING_OPTIONS.map((option) => (
-                        <motion.button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setRecordingOption(option.value)}
-                          className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between ${
-                            recordingOption === option.value
-                              ? 'bg-violet-500/20 border-violet-500 text-white'
-                              : 'bg-white/5 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'
-                          }`}
-                          whileTap={{ scale: 0.99 }}
-                        >
-                          <div>
-                            <p className="font-medium">{option.label}</p>
-                            <p className="text-sm text-amber-400">{option.price}</p>
-                          </div>
-                          {recordingOption === option.value && (
-                            <Check className="w-5 h-5 text-violet-400" />
-                          )}
-                        </motion.button>
-                      ))}
-                    </div>
-                  )}
-                </motion.div>
+              {/* Show original session details when in edit mode */}
+              {isEditMode && originalSessionDetails && (
+                <div className="mb-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                  <p className="text-amber-400 text-xs uppercase tracking-wide mb-1">Currently Booked</p>
+                  <p className="text-amber-300 font-semibold text-lg">{originalSessionDetails}</p>
+                </div>
               )}
-            </AnimatePresence>
 
-            {/* Mobile Next Button - Step 1 */}
-            {mobileStep === 1 && (
-              <div className="lg:hidden">
-                <motion.button
-                  type="button"
-                  onClick={handleMobileNext}
-                  disabled={!canProceedToStep2}
-                  className={`w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
-                    canProceedToStep2
-                      ? 'bg-violet-500 hover:bg-violet-600 text-white'
-                      : 'bg-white/5 text-zinc-500 cursor-not-allowed'
-                  }`}
-                  whileHover={canProceedToStep2 ? { scale: 1.02 } : {}}
-                  whileTap={canProceedToStep2 ? { scale: 0.98 } : {}}
-                >
-                  Next: Choose Studio
-                  <ChevronRight className="w-5 h-5" />
-                </motion.button>
-              </div>
-            )}
+              {isEditMode && (
+                <p className="text-zinc-400 text-sm mb-3">Choose new details:</p>
+              )}
 
-            {/* Studio Selection Card - Step 2 on mobile */}
-            <AnimatePresence mode="wait">
-              {canFetchRates() && (
-                <motion.div 
-                  className={`glass rounded-2xl p-6 ${mobileStep !== 2 ? 'hidden lg:block' : ''}`}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <Music className="w-5 h-5 text-violet-400" />
-                    Select Studio
-                  </h2>
-
-                  {/* Loading State */}
-                  {loadingRates && (
-                    <div className="p-6 rounded-xl bg-white/5 flex items-center justify-center gap-3">
-                      <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
-                      <span className="text-zinc-400">Finding the best studio for you...</span>
-                    </div>
-                  )}
-
-                  {/* Error State */}
-                  {ratesError && !loadingRates && (
-                    <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3">
-                      <AlertCircle className="w-5 h-5 text-red-400" />
-                      <span className="text-red-400">{ratesError}</span>
-                    </div>
-                  )}
-
-                  {/* Studio Cards */}
-                  {ratesData && !loadingRates && (
-                    <>
-                      {/* Suggestion Message */}
-                      <div className="mb-4 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
-                        <p className="text-violet-300 text-sm flex items-start gap-2">
-                          <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                          {ratesData.explanation}
-                        </p>
-                      </div>
-
-                      {/* Studio Error */}
-                      {studioError && (
-                        <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                          <p className="text-red-400 text-sm flex items-start gap-2">
-                            <X className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                            {studioError}
-                          </p>
-                        </div>
+              {/* Karaoke Options */}
+              {sessionType === 'Karaoke' && (
+                <div className="space-y-3">
+                  {KARAOKE_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setKaraokeOption(option.value)}
+                      className={`w-full p-4 rounded-xl border text-left flex items-center justify-between transition-all ${
+                        karaokeOption === option.value
+                          ? 'bg-violet-500/20 border-violet-500 text-white'
+                          : 'bg-white/5 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'
+                      }`}
+                    >
+                      <span className="font-medium">{option.label}</span>
+                      {karaokeOption === option.value && (
+                        <Check className="w-5 h-5 text-violet-400" />
                       )}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-                      {/* Studio Cards Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        {STUDIOS.map((studioInfo) => {
-                          const isAllowed = ratesData.allowed_studios.includes(studioInfo.name);
-                          const isSelected = studio === studioInfo.name;
-                          const isSuggested = ratesData.suggested_studio === studioInfo.name;
-                          const studioRate = ratesData.rate_breakdown?.[studioInfo.name];
+              {/* Live with Musicians Options */}
+              {sessionType === 'Live with musicians' && (
+                <div className="space-y-3">
+                  {LIVE_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setLiveOption(option.value)}
+                      className={`w-full p-4 rounded-xl border text-left flex items-center justify-between transition-all ${
+                        liveOption === option.value
+                          ? 'bg-violet-500/20 border-violet-500 text-white'
+                          : 'bg-white/5 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'
+                      }`}
+                    >
+                      <span className="font-medium">{option.label}</span>
+                      {liveOption === option.value && (
+                        <Check className="w-5 h-5 text-violet-400" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-                          return (
-                            <motion.button
-                              key={studioInfo.name}
-                              type="button"
-                              onClick={() => handleStudioSelect(studioInfo.name)}
-                              disabled={!isAllowed}
-                              className={`relative p-4 rounded-xl border text-left transition-all ${
-                                isSelected
-                                  ? 'bg-violet-500/20 border-violet-500 ring-2 ring-violet-500/50'
-                                  : isAllowed
-                                    ? 'bg-white/5 border-white/10 hover:border-violet-500/50 hover:bg-violet-500/10'
-                                    : 'bg-zinc-900/50 border-zinc-800 opacity-50 cursor-not-allowed'
-                              }`}
-                              whileHover={isAllowed ? { scale: 1.02 } : {}}
-                              whileTap={isAllowed ? { scale: 0.98 } : {}}
-                            >
-                              {/* Suggested Badge */}
-                              {isSuggested && (
-                                <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-violet-500 text-white text-xs font-medium rounded-full">
-                                  Suggested
-                                </div>
-                              )}
+              {/* Band Equipment */}
+              {sessionType === 'Band' && (
+                <div className="grid grid-cols-2 gap-4">
+                  {BAND_EQUIPMENT.map((equipment) => (
+                    <button
+                      key={equipment.value}
+                      type="button"
+                      onClick={() => toggleBandEquipment(equipment.value)}
+                      className={`p-4 rounded-xl border text-left flex items-center gap-3 transition-all ${
+                        bandEquipment.includes(equipment.value)
+                          ? 'bg-violet-500/20 border-violet-500 text-white'
+                          : 'bg-white/5 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
+                        bandEquipment.includes(equipment.value)
+                          ? 'bg-violet-500 border-violet-500'
+                          : 'border-zinc-500'
+                      }`}>
+                        {bandEquipment.includes(equipment.value) && (
+                          <Check className="w-4 h-4 text-white" />
+                        )}
+                      </div>
+                      <span className={bandEquipment.includes(equipment.value) ? 'text-violet-300' : ''}>
+                        {equipment.icon}
+                      </span>
+                      <span className="font-medium">{equipment.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
 
-                              {/* Not Available Badge */}
-                              {!isAllowed && (
-                                <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-zinc-700 text-zinc-400 text-xs font-medium rounded-full">
-                                  Too Small
-                                </div>
-                              )}
+              {/* Recording Options */}
+              {sessionType === 'Recording' && (
+                <div className="space-y-3">
+                  {RECORDING_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setRecordingOption(option.value)}
+                      className={`w-full p-4 rounded-xl border text-left flex items-center justify-between transition-all ${
+                        recordingOption === option.value
+                          ? 'bg-violet-500/20 border-violet-500 text-white'
+                          : 'bg-white/5 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'
+                      }`}
+                    >
+                      <div>
+                        <p className="font-medium">{option.label}</p>
+                        <p className="text-sm text-amber-400">{option.price}</p>
+                      </div>
+                      {recordingOption === option.value && (
+                        <Check className="w-5 h-5 text-violet-400" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
 
-                              <h3 className={`font-bold mb-1 ${isSelected ? 'text-white' : isAllowed ? 'text-zinc-300' : 'text-zinc-500'}`}>
-                                {studioInfo.name}
-                              </h3>
-                              <p className={`text-xs mb-2 ${isAllowed ? 'text-zinc-500' : 'text-zinc-600'}`}>
+          {/* Step 3: Studio Selection */}
+          {currentStep === 3 && (
+            <motion.div
+              key="step3"
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.3 }}
+              className="glass rounded-2xl p-6"
+            >
+              <h2 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
+                <Music className="w-5 h-5 text-violet-400" />
+                Select Your Studio
+              </h2>
+              <p className="text-zinc-400 text-sm mb-6">We&apos;ve suggested the best studio for your session</p>
+
+              {loadingRates && (
+                <div className="p-8 rounded-xl bg-white/5 flex flex-col items-center justify-center gap-3">
+                  <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+                  <span className="text-zinc-400">Finding the best studio for you...</span>
+                </div>
+              )}
+
+              {ratesError && !loadingRates && (
+                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-400" />
+                  <span className="text-red-400">{ratesError}</span>
+                </div>
+              )}
+
+              {ratesData && !loadingRates && (
+                <>
+                  <div className="mb-6 p-4 rounded-xl bg-violet-500/10 border border-violet-500/20">
+                    <p className="text-violet-300 flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                      {ratesData.explanation}
+                    </p>
+                  </div>
+
+                  {studioError && (
+                    <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                      <p className="text-red-400 text-sm flex items-start gap-2">
+                        <X className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        {studioError}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    {STUDIOS.map((studioInfo) => {
+                      const isAllowed = ratesData.allowed_studios.includes(studioInfo.name);
+                      const isSelected = studio === studioInfo.name;
+                      const isSuggested = ratesData.suggested_studio === studioInfo.name;
+                      const studioRate = ratesData.rate_breakdown?.[studioInfo.name];
+
+                      return (
+                        <motion.button
+                          key={studioInfo.name}
+                          type="button"
+                          onClick={() => handleStudioSelect(studioInfo.name)}
+                          disabled={!isAllowed}
+                          className={`relative w-full p-5 rounded-xl border text-left transition-all ${
+                            isSelected
+                              ? 'bg-violet-500/20 border-violet-500 ring-2 ring-violet-500/50'
+                              : isAllowed
+                                ? 'bg-white/5 border-white/10 hover:border-violet-500/50 hover:bg-violet-500/10'
+                                : 'bg-zinc-900/50 border-zinc-800 opacity-50 cursor-not-allowed'
+                          }`}
+                          whileHover={isAllowed ? { scale: 1.01 } : {}}
+                          whileTap={isAllowed ? { scale: 0.99 } : {}}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className={`font-bold text-lg ${isSelected ? 'text-white' : isAllowed ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                                  {studioInfo.name}
+                                </h3>
+                                {isSuggested && (
+                                  <span className="px-2 py-0.5 bg-violet-500 text-white text-xs font-medium rounded-full">
+                                    Recommended
+                                  </span>
+                                )}
+                                {!isAllowed && (
+                                  <span className="px-2 py-0.5 bg-zinc-700 text-zinc-400 text-xs font-medium rounded-full">
+                                    Too Small
+                                  </span>
+                                )}
+                              </div>
+                              <p className={`text-sm mb-2 ${isAllowed ? 'text-zinc-400' : 'text-zinc-600'}`}>
                                 {studioInfo.description}
                               </p>
-                              
+                              <div className="flex flex-wrap gap-2">
+                                {studioInfo.features.map((feature, i) => (
+                                  <span key={i} className="text-xs px-2 py-1 bg-white/5 rounded text-zinc-500">
+                                    {feature}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="text-right">
                               {studioRate && isAllowed && (
-                                <p className={`text-lg font-bold ${isSelected ? 'text-amber-400' : 'text-amber-500/70'}`}>
-                                  ₹{studioRate}/hr
+                                <p className={`text-xl font-bold ${isSelected ? 'text-amber-400' : 'text-amber-500/70'}`}>
+                                  ₹{studioRate}
+                                  <span className="text-sm font-normal">/hr</span>
                                 </p>
                               )}
-                            </motion.button>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Mobile Navigation Buttons - Step 2 */}
-            {mobileStep === 2 && canFetchRates() && (
-              <div className="lg:hidden flex gap-3">
-                <motion.button
-                  type="button"
-                  onClick={handleMobileBack}
-                  className="flex-1 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                  Back
-                </motion.button>
-                <motion.button
-                  type="button"
-                  onClick={handleMobileNext}
-                  disabled={!canProceedToStep3}
-                  className={`flex-1 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
-                    canProceedToStep3
-                      ? 'bg-violet-500 hover:bg-violet-600 text-white'
-                      : 'bg-white/5 text-zinc-500 cursor-not-allowed'
-                  }`}
-                  whileHover={canProceedToStep3 ? { scale: 1.02 } : {}}
-                  whileTap={canProceedToStep3 ? { scale: 0.98 } : {}}
-                >
-                  Next: Date & Time
-                  <ChevronRight className="w-5 h-5" />
-                </motion.button>
-              </div>
-            )}
-
-            {/* Date & Time Card - Step 3 on mobile */}
-            <AnimatePresence mode="wait">
-              {studio && canFetchRates() && (
-                <motion.div 
-                  className={`glass rounded-2xl p-6 ${mobileStep !== 3 ? 'hidden lg:block' : ''}`}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-violet-400" />
-                    Select Date & Time
-                  </h2>
-
-                  {/* Date Picker */}
-                  <div className="mb-6">
-                    <label htmlFor="date" className="block text-sm font-medium text-zinc-400 mb-2.5">
-                      Date <span className="text-zinc-500 font-normal">(up to {bookingSettings.advanceBookingDays} days in advance)</span>
-                    </label>
-                    <input
-                      type="date"
-                      id="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      min={getMinDate()}
-                      max={getMaxDate()}
-                      className="input"
-                    />
+                              {isSelected && (
+                                <CheckCircle2 className="w-6 h-6 text-violet-400 mt-2 ml-auto" />
+                              )}
+                            </div>
+                          </div>
+                        </motion.button>
+                      );
+                    })}
                   </div>
+                </>
+              )}
+            </motion.div>
+          )}
 
-                  {/* Number of Hours */}
-                  <div className="mb-6">
-                    <label htmlFor="numberOfHours" className="block text-sm font-medium text-zinc-400 mb-2.5">
-                      Number of Hours <span className="text-zinc-500 font-normal">({bookingSettings.minBookingDuration}-{bookingSettings.maxBookingDuration} hours)</span>
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setNumberOfHours(prev => Math.max(bookingSettings.minBookingDuration, prev - 1))}
-                        disabled={numberOfHours <= bookingSettings.minBookingDuration}
-                        className={`w-12 h-12 rounded-xl border flex items-center justify-center text-xl font-bold transition-all ${
-                          numberOfHours <= bookingSettings.minBookingDuration
-                            ? 'bg-zinc-800/50 text-zinc-600 border-zinc-700 cursor-not-allowed'
-                            : 'bg-white/5 text-white border-white/10 hover:border-violet-500 hover:bg-violet-500/20'
-                        }`}
-                      >
-                        -
-                      </button>
-                      <div className="flex-1 text-center">
-                        <span className="text-3xl font-bold text-white">{numberOfHours}</span>
-                        <span className="text-zinc-400 ml-2">hour{numberOfHours > 1 ? 's' : ''}</span>
+          {/* Step 4: Date & Time */}
+          {currentStep === 4 && (
+            <motion.div
+              key="step4"
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.3 }}
+              className="glass rounded-2xl p-6"
+            >
+              <h2 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-violet-400" />
+                Choose Date & Time
+              </h2>
+              <p className="text-zinc-400 text-sm mb-6">Select when you want to book {studio}</p>
+
+              {/* Date Picker */}
+              <div className="mb-6">
+                <label htmlFor="date" className="block text-sm font-medium text-zinc-300 mb-2">
+                  Select Date
+                </label>
+                <input
+                  type="date"
+                  id="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  min={getMinDate()}
+                  max={getMaxDate()}
+                  className="input text-lg"
+                />
+                <p className="text-xs text-zinc-500 mt-1">
+                  Book up to {bookingSettings.advanceBookingDays} days in advance
+                </p>
+              </div>
+
+              {/* Number of Hours */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                  Duration
+                </label>
+                <div className="flex items-center gap-4 justify-center bg-white/5 rounded-xl p-4">
+                  <button
+                    type="button"
+                    onClick={() => setNumberOfHours(prev => Math.max(bookingSettings.minBookingDuration, prev - 1))}
+                    disabled={numberOfHours <= bookingSettings.minBookingDuration}
+                    className={`w-14 h-14 rounded-xl border flex items-center justify-center text-2xl font-bold transition-all ${
+                      numberOfHours <= bookingSettings.minBookingDuration
+                        ? 'bg-zinc-800/50 text-zinc-600 border-zinc-700 cursor-not-allowed'
+                        : 'bg-white/5 text-white border-white/10 hover:border-violet-500 hover:bg-violet-500/20'
+                    }`}
+                  >
+                    -
+                  </button>
+                  <div className="text-center min-w-[100px]">
+                    <span className="text-4xl font-bold text-white">{numberOfHours}</span>
+                    <span className="text-zinc-400 ml-2 text-lg">hour{numberOfHours > 1 ? 's' : ''}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setNumberOfHours(prev => Math.min(bookingSettings.maxBookingDuration, prev + 1))}
+                    disabled={numberOfHours >= bookingSettings.maxBookingDuration}
+                    className={`w-14 h-14 rounded-xl border flex items-center justify-center text-2xl font-bold transition-all ${
+                      numberOfHours >= bookingSettings.maxBookingDuration
+                        ? 'bg-zinc-800/50 text-zinc-600 border-zinc-700 cursor-not-allowed'
+                        : 'bg-white/5 text-white border-white/10 hover:border-violet-500 hover:bg-violet-500/20'
+                    }`}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* Time Slots */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-3">
+                  Select Start Time
+                </label>
+                
+                {loadingSlots && (
+                  <div className="p-8 rounded-xl bg-white/5 flex flex-col items-center justify-center gap-3">
+                    <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
+                    <span className="text-zinc-400">Loading available slots...</span>
+                  </div>
+                )}
+                
+                {!loadingSlots && slotsError && (
+                  <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-400" />
+                    <span className="text-red-400">{slotsError}</span>
+                  </div>
+                )}
+                
+                {!loadingSlots && !slotsError && studio && date && availableSlots.length === 0 && (
+                  <div className="p-6 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
+                    <Calendar className="w-12 h-12 text-amber-400 mx-auto mb-3" />
+                    <h3 className="text-white font-semibold mb-2">No Slots Available</h3>
+                    <p className="text-amber-300 text-sm">
+                      No available time slots for {studio} on this date. Try a different date.
+                    </p>
+                  </div>
+                )}
+                
+                {!loadingSlots && !slotsError && availableSlots.length > 0 && (
+                  <>
+                    {/* Show original slot when in edit mode */}
+                    {isEditMode && originalStartTime && originalEndTime && (
+                      <div className="mb-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                        <p className="text-amber-400 text-xs uppercase tracking-wide mb-1">Currently Booked Slot</p>
+                        <p className="text-amber-300 font-semibold text-lg">
+                          {formatTimeDisplay(originalStartTime)} - {formatTimeDisplay(originalEndTime)}
+                        </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setNumberOfHours(prev => Math.min(bookingSettings.maxBookingDuration, prev + 1))}
-                        disabled={numberOfHours >= bookingSettings.maxBookingDuration}
-                        className={`w-12 h-12 rounded-xl border flex items-center justify-center text-xl font-bold transition-all ${
-                          numberOfHours >= bookingSettings.maxBookingDuration
-                            ? 'bg-zinc-800/50 text-zinc-600 border-zinc-700 cursor-not-allowed'
-                            : 'bg-white/5 text-white border-white/10 hover:border-violet-500 hover:bg-violet-500/20'
-                        }`}
-                      >
-                        +
-                      </button>
+                    )}
+                    
+                    {selectedSlots.length > 0 && (
+                      <div className="mb-4 p-3 rounded-xl bg-violet-500/20 border border-violet-500/30">
+                        <p className="text-violet-400 text-xs uppercase tracking-wide mb-1">
+                          {isEditMode ? 'New Selected Slot' : 'Selected'}
+                        </p>
+                        <p className="text-violet-300 font-medium text-center">
+                          {formatTimeDisplay(selectedSlots[0].start)} - {formatTimeDisplay(selectedSlots[selectedSlots.length - 1].end)}
+                        </p>
+                      </div>
+                    )}
+
+                    {isEditMode && (
+                      <p className="text-zinc-400 text-sm mb-3">Choose a new time slot:</p>
+                    )}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto pr-1">
+                      {availableSlots.map((slot, index) => {
+                        const canSelect = canSelectAsStartTime(index);
+                        if (!canSelect) return null;
+                        
+                        const isStart = isStartSlot(slot);
+                        const endSlot = availableSlots[index + numberOfHours - 1];
+                        if (!endSlot) return null;
+                        
+                        // Format time range display (e.g., "8-9 AM" for 1hr, "8-10 AM" for 2hrs, "8-11 AM" for 3hrs)
+                        const formatTimeRange = (start: string, endTime: string) => {
+                          const [startH] = start.split(':').map(Number);
+                          const [endH] = endTime.split(':').map(Number);
+                          const startPeriod = startH >= 12 ? 'PM' : 'AM';
+                          const endPeriod = endH >= 12 ? 'PM' : 'AM';
+                          const startDisplay = startH % 12 || 12;
+                          const endDisplay = endH % 12 || 12;
+                          
+                          if (startPeriod === endPeriod) {
+                            return `${startDisplay}-${endDisplay} ${endPeriod}`;
+                          } else {
+                            return `${startDisplay} ${startPeriod}-${endDisplay} ${endPeriod}`;
+                          }
+                        };
+                        
+                        return (
+                          <button
+                            key={`${slot.start}-${endSlot.end}`}
+                            type="button"
+                            onClick={() => handleSlotSelect(slot, index)}
+                            className={`px-3 py-3 text-sm rounded-xl border transition-all font-medium ${
+                              isStart
+                                ? 'bg-violet-500 text-white border-violet-500 shadow-lg shadow-violet-500/25'
+                                : 'bg-white/5 text-white border-white/10 hover:border-violet-500 hover:bg-violet-500/20'
+                            }`}
+                          >
+                            {formatTimeRange(slot.start, endSlot.end)}
+                          </button>
+                        );
+                      })}
                     </div>
+                  </>
+                )}
+                
+                {!loadingSlots && !slotsError && !date && (
+                  <div className="p-6 rounded-xl bg-white/5 text-center">
+                    <Clock className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
+                    <p className="text-zinc-500">Select a date to see available slots</p>
                   </div>
-
-                  {/* Time Slots */}
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-400 mb-3">
-                      Available Time Slots
-                    </label>
-                    
-                    {loadingSlots && (
-                      <div className="p-6 rounded-xl bg-white/5 flex items-center justify-center gap-3">
-                        <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
-                        <span className="text-zinc-400">Loading slots...</span>
-                      </div>
-                    )}
-                    
-                    {!loadingSlots && slotsError && (
-                      <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3">
-                        <AlertCircle className="w-5 h-5 text-red-400" />
-                        <span className="text-red-400">{slotsError}</span>
-                      </div>
-                    )}
-                    
-                    {!loadingSlots && !slotsError && studio && date && availableSlots.length === 0 && (
-                      <div className="p-6 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
-                        <Calendar className="w-12 h-12 text-amber-400 mx-auto mb-3" />
-                        <h3 className="text-white font-semibold mb-2">No Slots Available</h3>
-                        <p className="text-amber-300 text-sm mb-4">
-                          Unfortunately, there are no available time slots for {studio} on{' '}
-                          {new Date(date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}.
-                        </p>
-                        <p className="text-zinc-400 text-sm">
-                          Try selecting a different date or studio to find available slots.
-                        </p>
-                      </div>
-                    )}
-                    
-                    {!loadingSlots && !slotsError && availableSlots.length > 0 && (
-                      <>
-                        <div className="mb-4 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
-                          <p className="text-violet-300 text-sm">
-                            📍 Select your preferred {numberOfHours} hour{numberOfHours > 1 ? '' : ''} time slot.
-                            {selectedSlots.length > 0 && (
-                              <span className="block mt-1 text-violet-400 font-medium">
-                                Selected: {formatTimeDisplay(selectedSlots[0].start)} - {formatTimeDisplay(selectedSlots[selectedSlots.length - 1].end)}
-                              </span>
-                            )}
-                          </p>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                          {availableSlots.map((slot, index) => {
-                            // Only show slots that can be valid start times for the selected duration
-                            const canSelect = canSelectAsStartTime(index);
-                            if (!canSelect) return null;
-                            
-                            const isStart = isStartSlot(slot);
-                            // Calculate the end time based on numberOfHours
-                            const endSlot = availableSlots[index + numberOfHours - 1];
-                            // Skip if end slot doesn't exist (shouldn't happen due to canSelect check, but safety first)
-                            if (!endSlot) return null;
-                            const endTime = endSlot.end;
-                            
-                            return (
-                              <button
-                                key={`${slot.start}-${endTime}`}
-                                type="button"
-                                onClick={() => handleSlotSelect(slot, index)}
-                                className={`px-3 py-3 text-sm rounded-xl border transition-all font-medium ${
-                                  isStart
-                                    ? 'bg-violet-500 text-white border-violet-500 shadow-lg shadow-violet-500/25'
-                                    : 'bg-zinc-800 text-white border-zinc-600 hover:border-violet-500 hover:bg-violet-500/20'
-                                }`}
-                              >
-                                {formatTimeDisplay(slot.start)} - {formatTimeDisplay(endTime)}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
-                    
-                    {!loadingSlots && !slotsError && !date && (
-                      <div className="p-6 rounded-xl bg-white/5 text-center">
-                        <Clock className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-                        <p className="text-zinc-500">Select a date to see available slots</p>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Mobile Back Button - Step 3 */}
-            {mobileStep === 3 && studio && canFetchRates() && (
-              <div className="lg:hidden flex gap-3">
-                <motion.button
-                  type="button"
-                  onClick={handleMobileBack}
-                  className="flex-1 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                  Back
-                </motion.button>
-                <motion.button
-                  type="button"
-                  onClick={handleMobileNext}
-                  disabled={!canProceedToStep4}
-                  className={`flex-1 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
-                    canProceedToStep4
-                      ? 'bg-violet-500 hover:bg-violet-600 text-white'
-                      : 'bg-white/5 text-zinc-500 cursor-not-allowed'
-                  }`}
-                  whileHover={canProceedToStep4 ? { scale: 1.02 } : {}}
-                  whileTap={canProceedToStep4 ? { scale: 0.98 } : {}}
-                >
-                  Next: Review
-                  <ChevronRight className="w-5 h-5" />
-                </motion.button>
+                )}
               </div>
-            )}
-          </div>
+            </motion.div>
+          )}
 
-          {/* Right Column - Summary - Show on step 4 on mobile */}
-          <motion.div 
-            className={`lg:col-span-1 ${mobileStep !== 4 ? 'hidden lg:block' : ''}`}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-          >
-            <div className="glass-strong rounded-2xl p-6 lg:sticky lg:top-24">
-              <h2 className="text-lg font-semibold text-white mb-4">Booking Summary</h2>
-              
+          {/* Step 5: Review */}
+          {currentStep === 5 && (
+            <motion.div
+              key="step5"
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.3 }}
+              className="glass rounded-2xl p-6"
+            >
+              <h2 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-violet-400" />
+                Review Your Booking
+              </h2>
+              <p className="text-zinc-400 text-sm mb-6">Please confirm your booking details</p>
+
               <div className="space-y-4 mb-6">
-                <div className="flex justify-between items-center py-2 border-b border-white/10">
-                  <span className="text-zinc-400 text-sm">Session Type</span>
-                  <span className="text-white font-medium text-right">{sessionType || '-'}</span>
+                <div className="flex justify-between items-center py-3 border-b border-white/10">
+                  <span className="text-zinc-400">Session Type</span>
+                  <span className="text-white font-medium">{sessionType}</span>
                 </div>
                 
                 {sessionType && sessionType !== 'Only Drum Practice' && (
-                  <div className="flex justify-between items-start py-2 border-b border-white/10">
-                    <span className="text-zinc-400 text-sm">Details</span>
+                  <div className="flex justify-between items-start py-3 border-b border-white/10">
+                    <span className="text-zinc-400">Details</span>
                     <span className="text-white font-medium text-right max-w-[60%]">
-                      {getSubOptionLabel() || '-'}
+                      {getSubOptionLabel()}
                     </span>
                   </div>
                 )}
                 
-                <div className="flex justify-between items-center py-2 border-b border-white/10">
-                  <span className="text-zinc-400 text-sm">Studio</span>
-                  <span className="text-white font-medium">{studio || '-'}</span>
+                <div className="flex justify-between items-center py-3 border-b border-white/10">
+                  <span className="text-zinc-400">Studio</span>
+                  <span className="text-white font-medium">{studio}</span>
                 </div>
                 
-                <div className="flex justify-between items-center py-2 border-b border-white/10">
-                  <span className="text-zinc-400 text-sm">Date</span>
+                <div className="flex justify-between items-center py-3 border-b border-white/10">
+                  <span className="text-zinc-400">Date</span>
                   <span className="text-white font-medium">
-                    {date ? new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '-'}
+                    {date ? new Date(date).toLocaleDateString('en-US', { 
+                      weekday: 'short', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    }) : '-'}
                   </span>
                 </div>
                 
-                <div className="flex justify-between items-center py-2 border-b border-white/10">
-                  <span className="text-zinc-400 text-sm">Time</span>
+                <div className="flex justify-between items-center py-3 border-b border-white/10">
+                  <span className="text-zinc-400">Time</span>
                   <span className="text-white font-medium">
                     {selectedSlot ? `${formatTimeDisplay(selectedSlot.start)} - ${formatTimeDisplay(selectedSlot.end)}` : '-'}
                   </span>
                 </div>
                 
-                <div className="flex justify-between items-center py-2 border-b border-white/10">
-                  <span className="text-zinc-400 text-sm">Duration</span>
-                  <span className="text-white font-medium">
-                    {selectedSlots.length > 0 ? `${selectedSlots.length} hour(s)` : '-'}
-                  </span>
+                <div className="flex justify-between items-center py-3 border-b border-white/10">
+                  <span className="text-zinc-400">Duration</span>
+                  <span className="text-white font-medium">{selectedSlots.length} hour(s)</span>
                 </div>
                 
-                {ratesData && ratesData.suggested_rate !== undefined && (
-                  <motion.div 
-                    className="flex justify-between items-center py-2"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <span className="text-zinc-400 text-sm">Rate</span>
-                    <span className="text-amber-400 font-bold text-lg">
-                      ₹{ratesData.suggested_rate.toLocaleString('en-IN')}
-                      {sessionType === 'Recording' && recordingOption !== 'sd_card_recording' ? '/song' : '/hr'}
-                    </span>
-                  </motion.div>
+                {ratesData && (
+                  <>
+                    <div className="flex justify-between items-center py-3 border-b border-white/10">
+                      <span className="text-zinc-400">Rate</span>
+                      <span className="text-amber-400 font-bold">
+                        ₹{ratesData.suggested_rate.toLocaleString('en-IN')}
+                        {sessionType === 'Recording' && recordingOption !== 'sd_card_recording' ? '/song' : '/hr'}
+                      </span>
+                    </div>
+
+                    {sessionType !== 'Recording' && (
+                      <div className="flex justify-between items-center py-4 bg-violet-500/10 rounded-xl px-4 -mx-1">
+                        <span className="text-violet-300 font-medium">Estimated Total</span>
+                        <span className="text-white font-bold text-2xl">
+                          ₹{(ratesData.suggested_rate * selectedSlots.length).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
-
-                {/* Estimated Total */}
-                {ratesData && ratesData.suggested_rate !== undefined && selectedSlots.length > 0 && sessionType !== 'Recording' && (
-                  <motion.div 
-                    className="flex justify-between items-center py-3 bg-violet-500/10 rounded-xl px-3 -mx-1"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <span className="text-violet-300 text-sm font-medium">Estimated Total</span>
-                    <span className="text-white font-bold text-xl">
-                      ₹{(ratesData.suggested_rate * selectedSlots.length).toLocaleString('en-IN')}
-                    </span>
-                  </motion.div>
-                )}
-              </div>
-
-              {/* Duration validation message */}
-              {selectedSlots.length > 0 && selectedSlots.length < bookingSettings.minBookingDuration && (
-                <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                  <p className="text-amber-400 text-sm">
-                    ⚠️ Minimum booking is {bookingSettings.minBookingDuration} hour(s). 
-                    Please select {bookingSettings.minBookingDuration - selectedSlots.length} more slot(s).
-                  </p>
-                </div>
-              )}
-
-              {/* Mobile Back Button for Step 4 */}
-              <div className="lg:hidden mb-4">
-                <motion.button
-                  type="button"
-                  onClick={handleMobileBack}
-                  className="w-full py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                  Back to Date & Time
-                </motion.button>
               </div>
 
               <motion.button
                 type="button"
                 onClick={handleReviewBooking}
-                disabled={!selectedSlot || !sessionType || !studio || !date || selectedSlots.length < bookingSettings.minBookingDuration}
-                className={`w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
-                  selectedSlot && sessionType && studio && date && selectedSlots.length >= bookingSettings.minBookingDuration
-                    ? 'btn-accent'
-                    : 'bg-white/5 text-zinc-500 cursor-not-allowed'
-                }`}
-                whileHover={selectedSlot && sessionType && studio && date && selectedSlots.length >= bookingSettings.minBookingDuration ? { scale: 1.02 } : {}}
-                whileTap={selectedSlot && sessionType && studio && date && selectedSlots.length >= bookingSettings.minBookingDuration ? { scale: 0.98 } : {}}
+                className="w-full py-4 rounded-xl font-semibold btn-accent flex items-center justify-center gap-2"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                Review Booking
+                Proceed to Confirmation
                 <ChevronRight className="w-5 h-5" />
               </motion.button>
-            </div>
-          </motion.div>
-        </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Navigation Buttons */}
+        <motion.div 
+          className="flex gap-4 mt-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          {currentStep > 1 && (
+            <motion.button
+              type="button"
+              onClick={handleBack}
+              className="flex-1 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <ChevronLeft className="w-5 h-5" />
+              Back
+            </motion.button>
+          )}
+          
+          {currentStep < 5 && (
+            <motion.button
+              type="button"
+              onClick={handleNext}
+              disabled={!canProceedFromStep(currentStep)}
+              className={`flex-1 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                canProceedFromStep(currentStep)
+                  ? 'bg-violet-500 hover:bg-violet-600 text-white'
+                  : 'bg-white/5 text-zinc-500 cursor-not-allowed'
+              }`}
+              whileHover={canProceedFromStep(currentStep) ? { scale: 1.02 } : {}}
+              whileTap={canProceedFromStep(currentStep) ? { scale: 0.98 } : {}}
+            >
+              Next
+              <ChevronRight className="w-5 h-5" />
+            </motion.button>
+          )}
+        </motion.div>
       </div>
     </div>
   );

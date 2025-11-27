@@ -104,3 +104,50 @@ export async function sendOTPSMS(
   const body = `Your Resonance Studio one-time login code is: ${otp}. This code expires in 5 minutes. Do not share this code with anyone.`;
   return sendSMS(to, body);
 }
+
+/**
+ * Send a 24-hour reminder SMS before a booking.
+ *
+ * @param to - Recipient phone number (10 digits or E.164 format)
+ * @param bookingDetails - Details of the booking
+ * @returns Object with success status and either sid (on success) or error (on failure)
+ */
+export async function send24HourReminderSMS(
+  to: string,
+  bookingDetails: {
+    studio: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    sessionType?: string;
+  }
+): Promise<{ success: true; sid: string } | { success: false; error: string }> {
+  const formattedDate = new Date(bookingDetails.date).toLocaleDateString('en-IN', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+  
+  const body = `Reminder: Your session at Resonance Studio is tomorrow!\n\n📍 ${bookingDetails.studio}\n📅 ${formattedDate}\n⏰ ${bookingDetails.startTime} - ${bookingDetails.endTime}${bookingDetails.sessionType ? `\n🎵 ${bookingDetails.sessionType}` : ''}\n\nSee you soon!`;
+  return sendSMS(to, body);
+}
+
+/**
+ * Send a 1-hour reminder SMS before a booking.
+ *
+ * @param to - Recipient phone number (10 digits or E.164 format)
+ * @param bookingDetails - Details of the booking
+ * @returns Object with success status and either sid (on success) or error (on failure)
+ */
+export async function send1HourReminderSMS(
+  to: string,
+  bookingDetails: {
+    studio: string;
+    startTime: string;
+    endTime: string;
+    sessionType?: string;
+  }
+): Promise<{ success: true; sid: string } | { success: false; error: string }> {
+  const body = `Your session at Resonance Studio starts in 1 hour!\n\n📍 ${bookingDetails.studio}\n⏰ ${bookingDetails.startTime} - ${bookingDetails.endTime}${bookingDetails.sessionType ? `\n🎵 ${bookingDetails.sessionType}` : ''}\n\nWe're excited to see you!`;
+  return sendSMS(to, body);
+}

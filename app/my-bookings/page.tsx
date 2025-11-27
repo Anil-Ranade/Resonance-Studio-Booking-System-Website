@@ -315,12 +315,23 @@ export default function MyBookingsPage() {
     const bookingDateStr = booking.date;
     const bookingTimeStr = booking.start_time;
     
+    // Ensure time has proper format (HH:MM:SS)
+    const formattedTime = bookingTimeStr.includes(':') 
+      ? (bookingTimeStr.split(':').length === 2 ? `${bookingTimeStr}:00` : bookingTimeStr)
+      : '00:00:00';
+    
     // Create date from ISO string format
-    const bookingDateTime = new Date(`${bookingDateStr}T${bookingTimeStr}`);
+    const bookingDateTime = new Date(`${bookingDateStr}T${formattedTime}`);
     const now = new Date();
     
+    // Check if date parsing was successful
+    if (isNaN(bookingDateTime.getTime())) {
+      // If we can't parse the date properly, allow cancellation for pending/confirmed bookings
+      // This is a fallback to ensure users can always cancel their bookings
+      return true;
+    }
+    
     // Allow cancellation if booking is in the future or present (not in the past)
-    // We compare only up to minutes, ignoring seconds/milliseconds
     return bookingDateTime >= now;
   };
 

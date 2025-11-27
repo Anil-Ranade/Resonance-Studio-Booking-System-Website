@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { verifyOTP } from "@/lib/otpStore";
 import { deleteEvent } from "@/lib/googleCalendar";
+import { sendSMS } from "@/lib/sms";
 
 // POST /api/bookings/cancel - Cancel a booking with OTP verification
 export async function POST(request: NextRequest) {
@@ -114,6 +115,54 @@ export async function POST(request: NextRequest) {
       } catch (calendarError) {
         // Log error but don't fail the cancellation
         console.error("[Cancel Booking] Failed to delete Google Calendar event:", calendarError);
+      }
+    }
+
+    // Cancel any pending reminders for this booking
+    try {
+      const { error: reminderError } = await supabaseServer
+        .from("reminders")
+        .update({ status: "cancelled" })
+        .eq("booking_id", bookingId)
+        .eq("status", "pending");
+
+      if (reminderError) {
+        console.error("[Cancel Booking] Failed to cancel reminders:", reminderError);
+      } else {
+        console.log(`[Cancel Booking] Pending reminders for booking ${bookingId} cancelled`);
+      }
+    } catch (reminderError) {
+      // Log error but don't fail the cancellation
+      console.error("[Cancel Booking] Error cancelling reminders:", reminderError);
+    }
+
+    // Send cancellation SMS
+    const hasTwilioConfig = 
+      process.env.TWILIO_ACCOUNT_SID &&
+      process.env.TWILIO_AUTH_TOKEN &&
+      process.env.TWILIO_SMS_NUMBER;
+
+    if (hasTwilioConfig) {
+      const countryCode = process.env.SMS_COUNTRY_CODE || "+91";
+      const toNumber = `${countryCode}${normalizedPhone}`;
+
+      try {
+        const formattedDate = new Date(booking.date).toLocaleDateString('en-IN', { 
+          weekday: 'short', 
+          day: 'numeric', 
+          month: 'short' 
+        });
+        const message = `Booking Cancelled\n\nYour booking at ${booking.studio} on ${formattedDate} (${booking.start_time} - ${booking.end_time}) has been cancelled.\n\nBooking ID: ${bookingId.slice(0, 8)}\n\nWe hope to see you again at Resonance Studio!`;
+        
+        const smsResult = await sendSMS(toNumber, message);
+        
+        if (smsResult.success) {
+          console.log("[Cancel Booking] SMS notification sent successfully:", smsResult.sid);
+        } else {
+          console.error("[Cancel Booking] SMS notification failed:", smsResult.error);
+        }
+      } catch (smsError) {
+        console.error("[Cancel Booking] Failed to send SMS notification:", smsError);
       }
     }
 
