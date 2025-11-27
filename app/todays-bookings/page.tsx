@@ -108,9 +108,9 @@ export default function TodaysBookingsPage() {
   const startHour = 8;
 
   const getStudioColor = (studio: string) => {
-    if (studio === 'Studio A') return 'bg-violet-500';
-    if (studio === 'Studio B') return 'bg-blue-500';
-    if (studio === 'Studio C') return 'bg-emerald-500';
+    if (studio === 'Studio A') return 'bg-blue-500';
+    if (studio === 'Studio B') return 'bg-amber-700';
+    if (studio === 'Studio C') return 'bg-green-500';
     return 'bg-zinc-600';
   };
 

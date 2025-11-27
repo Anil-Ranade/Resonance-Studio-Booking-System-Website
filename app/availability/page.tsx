@@ -16,10 +16,12 @@ async function safeJsonParse(response: Response) {
   }
 }
 
+type SlotStatus = 'available' | 'booked' | 'past' | 'unavailable';
+
 type AvailabilityData = {
   [date: string]: {
     [studio: string]: {
-      [time: string]: boolean;
+      [time: string]: SlotStatus;
     };
   };
 };
@@ -27,6 +29,12 @@ type AvailabilityData = {
 interface TimeSlot {
   start: string;
   end: string;
+}
+
+interface BookingSlot {
+  start_time: string;
+  end_time: string;
+  studio: string;
 }
 
 export default function AvailabilityPage() {
@@ -45,8 +53,8 @@ export default function AvailabilityPage() {
 
   const studios = [
     { id: "Studio A", name: "Studio A", color: "bg-blue-500", key: "A" },
-    { id: "Studio B", name: "Studio B", color: "bg-amber-500", key: "B" },
-    { id: "Studio C", name: "Studio C", color: "bg-emerald-500", key: "C" },
+    { id: "Studio B", name: "Studio B", color: "bg-amber-700", key: "B" },
+    { id: "Studio C", name: "Studio C", color: "bg-green-500", key: "C" },
   ];
 
   const timeSlots = [
@@ -117,14 +125,49 @@ export default function AvailabilityPage() {
     }
   };
 
-  // Check if a slot is available
-  const isSlotAvailable = (date: Date, studioKey: string, timeLabel: string): boolean | null => {
-    const dateKey = formatDateKey(date);
-    // Returns: true = available, false = booked, null = no availability set
-    if (availability[dateKey]?.[studioKey]?.[timeLabel] !== undefined) {
-      return availability[dateKey][studioKey][timeLabel];
+  // Helper function to check if a time slot is in the past
+  const isSlotInPast = (date: Date, timeStart: string): boolean => {
+    const now = new Date();
+    const slotDate = new Date(date);
+    
+    // If the date is before today, it's in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    slotDate.setHours(0, 0, 0, 0);
+    
+    if (slotDate < today) {
+      return true;
     }
-    return null; // No availability data means slot is not available for booking
+    
+    // If it's today, check the time
+    if (slotDate.getTime() === today.getTime()) {
+      const [hours, minutes] = timeStart.split(':').map(Number);
+      const slotTimeInMinutes = hours * 60 + minutes;
+      const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+      
+      // Slot is past if its start time has already passed
+      return slotTimeInMinutes <= currentTimeInMinutes;
+    }
+    
+    return false;
+  };
+
+  // Check if a slot is available
+  const getSlotStatus = (date: Date, studioKey: string, timeSlot: { label: string; start: string }): SlotStatus => {
+    const dateKey = formatDateKey(date);
+    
+    // First check if slot is in the past
+    if (isSlotInPast(date, timeSlot.start)) {
+      return 'past';
+    }
+    
+    // Then check availability data
+    const status = availability[dateKey]?.[studioKey]?.[timeSlot.label];
+    if (status) {
+      return status;
+    }
+    
+    return 'unavailable';
   };
 
   // Fetch availability from API
@@ -145,8 +188,10 @@ export default function AvailabilityPage() {
           };
         });
 
-        // Fetch availability for each studio and date in parallel
+        // Fetch availability and bookings for each studio and date in parallel
         const fetchPromises: Promise<{ studioId: string; studioKey: string; dateKey: string; slots: TimeSlot[] }>[] = [];
+        const bookingPromises: Promise<{ dateKey: string; bookings: BookingSlot[] }>[] = [];
+        
         for (const studio of studios) {
           for (const date of currentDates) {
             const dateKey = formatDateKey(date);
@@ -167,18 +212,70 @@ export default function AvailabilityPage() {
           }
         }
         
-        const results = await Promise.all(fetchPromises);
+        // Fetch bookings for each date using todays-bookings endpoint
+        for (const date of currentDates) {
+          const dateKey = formatDateKey(date);
+          bookingPromises.push(
+            fetch(`/api/todays-bookings?date=${dateKey}`)
+              .then(async (response) => {
+                if (response.ok) {
+                  const data = await safeJsonParse(response);
+                  return { dateKey, bookings: data.bookings || [] };
+                }
+                return { dateKey, bookings: [] };
+              })
+              .catch((err) => {
+                console.error(`Error fetching bookings for ${dateKey}:`, err);
+                return { dateKey, bookings: [] };
+              })
+          );
+        }
         
-        // Process results
-        results.forEach(({ studioKey, dateKey, slots }) => {
-          // Mark available slots based on API response
-          // If a slot is returned by API, it's available for booking
-          // If not returned, it's either not configured or already booked
+        const [availabilityResults, bookingResults] = await Promise.all([
+          Promise.all(fetchPromises),
+          Promise.all(bookingPromises)
+        ]);
+        
+        // Create a map of booked slots
+        const bookedSlotsMap: { [key: string]: boolean } = {};
+        bookingResults.forEach(({ dateKey, bookings }) => {
+          bookings.forEach((booking: BookingSlot) => {
+            // Map studio name to key
+            const studioKey = booking.studio === 'Studio A' ? 'A' : 
+                              booking.studio === 'Studio B' ? 'B' : 
+                              booking.studio === 'Studio C' ? 'C' : '';
+            if (studioKey) {
+              // Mark all time slots that overlap with this booking as booked
+              timeSlots.forEach(slot => {
+                const slotStartMinutes = parseInt(slot.start.split(':')[0]) * 60 + parseInt(slot.start.split(':')[1]);
+                const slotEndMinutes = parseInt(slot.end.split(':')[0]) * 60 + parseInt(slot.end.split(':')[1]);
+                const bookingStartMinutes = parseInt(booking.start_time.split(':')[0]) * 60 + parseInt(booking.start_time.split(':')[1]);
+                const bookingEndMinutes = parseInt(booking.end_time.split(':')[0]) * 60 + parseInt(booking.end_time.split(':')[1]);
+                
+                // Check if slot overlaps with booking
+                if (slotStartMinutes < bookingEndMinutes && slotEndMinutes > bookingStartMinutes) {
+                  bookedSlotsMap[`${dateKey}-${studioKey}-${slot.label}`] = true;
+                }
+              });
+            }
+          });
+        });
+        
+        // Process availability results
+        availabilityResults.forEach(({ studioKey, dateKey, slots }) => {
           timeSlots.forEach(timeSlot => {
-            const isAvailable = slots.some(
-              (slot: TimeSlot) => slot.start === timeSlot.start && slot.end === timeSlot.end
-            );
-            availabilityData[dateKey][studioKey][timeSlot.label] = isAvailable;
+            const slotKey = `${dateKey}-${studioKey}-${timeSlot.label}`;
+            
+            // Check if this slot is booked
+            if (bookedSlotsMap[slotKey]) {
+              availabilityData[dateKey][studioKey][timeSlot.label] = 'booked';
+            } else {
+              // Check if slot is available from API
+              const isAvailable = slots.some(
+                (slot: TimeSlot) => slot.start === timeSlot.start && slot.end === timeSlot.end
+              );
+              availabilityData[dateKey][studioKey][timeSlot.label] = isAvailable ? 'available' : 'unavailable';
+            }
           });
         });
         
@@ -233,6 +330,10 @@ export default function AvailabilityPage() {
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 rounded bg-zinc-700 border border-zinc-600" />
                   <span className="text-zinc-400 text-sm">Available</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-zinc-900 border border-zinc-700 flex items-center justify-center text-zinc-600 text-[8px]">—</div>
+                  <span className="text-zinc-400 text-sm">Past</span>
                 </div>
               </div>
             </div>
@@ -334,11 +435,10 @@ export default function AvailabilityPage() {
                     </td>
                     {dates.map((date, dateIndex) => (
                       studios.map((studio, studioIndex) => {
-                        const availableStatus = isSlotAvailable(date, studio.key, timeSlot.label);
-                        // null = no slot configured, true = available, false = booked
-                        const isAvailable = availableStatus === true;
-                        const isBooked = availableStatus === false;
-                        const noSlot = availableStatus === null;
+                        const slotStatus = getSlotStatus(date, studio.key, timeSlot);
+                        const isAvailable = slotStatus === 'available';
+                        const isBooked = slotStatus === 'booked';
+                        const isPast = slotStatus === 'past';
                         
                         return (
                           <td 
@@ -348,11 +448,13 @@ export default function AvailabilityPage() {
                             }`}
                           >
                             <motion.div
-                              className={`w-full h-8 rounded-lg ${
+                              className={`w-full h-8 rounded-lg flex items-center justify-center text-xs font-medium ${
                                 isAvailable 
-                                  ? 'bg-zinc-800/50 border border-zinc-700/50 cursor-pointer hover:bg-zinc-700/50' 
+                                  ? 'bg-zinc-800/50 border border-zinc-700/50 cursor-pointer hover:bg-zinc-700/50 text-zinc-400' 
                                   : isBooked
-                                  ? `${studio.color} cursor-not-allowed`
+                                  ? `${studio.color} cursor-not-allowed text-white/80`
+                                  : isPast
+                                  ? 'bg-zinc-900/80 border border-zinc-800/50 cursor-not-allowed text-zinc-600'
                                   : 'bg-zinc-900/50 border border-zinc-800/30 cursor-not-allowed opacity-50'
                               } transition-all`}
                               whileHover={isAvailable ? { scale: 1.05 } : {}}
@@ -367,9 +469,13 @@ export default function AvailabilityPage() {
                                   ? `Book ${studio.name} at ${timeSlot.label}` 
                                   : isBooked 
                                   ? `${studio.name} - Booked`
+                                  : isPast
+                                  ? `${studio.name} - Past`
                                   : `${studio.name} - Not available`
                               }
-                            />
+                            >
+                              {isPast && '—'}
+                            </motion.div>
                           </td>
                         );
                       })
