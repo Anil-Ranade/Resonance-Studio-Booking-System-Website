@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getDeviceFingerprint, isPhoneTrustedLocally } from '@/lib/deviceFingerprint';
 
 // Helper function to safely parse JSON responses
 async function safeJsonParse(response: Response) {
@@ -31,7 +32,9 @@ import {
   User,
   Mail,
   Shield,
-  RefreshCw
+  RefreshCw,
+  ShieldCheck,
+  Smartphone
 } from 'lucide-react';
 
 interface BookingData {
@@ -122,6 +125,10 @@ export default function ReviewPage() {
   const [isAlreadyVerified, setIsAlreadyVerified] = useState(false);
   const [isConfirmingBooking, setIsConfirmingBooking] = useState(false);
   
+  // Trusted device state
+  const [isDeviceTrusted, setIsDeviceTrusted] = useState(false);
+  const [isCheckingDevice, setIsCheckingDevice] = useState(false);
+  
   // Booking confirmation state
   const [confirmedBookingId, setConfirmedBookingId] = useState<string | null>(null);
 
@@ -161,6 +168,52 @@ export default function ReviewPage() {
       router.push('/booking');
     }
   }, [router]);
+
+  // Check if device is trusted for this phone number when userData changes
+  useEffect(() => {
+    const checkDeviceTrust = async () => {
+      if (!userData?.phone_number) {
+        setIsDeviceTrusted(false);
+        return;
+      }
+
+      const normalized = userData.phone_number.replace(/\D/g, '');
+      if (normalized.length !== 10) {
+        setIsDeviceTrusted(false);
+        return;
+      }
+
+      // First check local storage for quick check
+      if (!isPhoneTrustedLocally(normalized)) {
+        setIsDeviceTrusted(false);
+        return;
+      }
+
+      setIsCheckingDevice(true);
+      
+      // Verify with server
+      try {
+        const deviceInfo = await getDeviceFingerprint();
+        const response = await fetch('/api/auth/verify-device', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: normalized,
+            deviceFingerprint: deviceInfo.fingerprint,
+          }),
+        });
+
+        const data = await safeJsonParse(response);
+        setIsDeviceTrusted(data.trusted === true);
+      } catch {
+        setIsDeviceTrusted(false);
+      } finally {
+        setIsCheckingDevice(false);
+      }
+    };
+
+    checkDeviceTrust();
+  }, [userData?.phone_number]);
 
   // Cooldown timer for resend OTP
   useEffect(() => {
@@ -538,6 +591,106 @@ export default function ReviewPage() {
     }
   };
 
+  // Trusted device booking (no OTP needed, verified via device fingerprint)
+  const handleTrustedDeviceBooking = async () => {
+    if (!userData || !bookingData) return;
+
+    setIsConfirmingBooking(true);
+    setError('');
+
+    try {
+      const deviceInfo = await getDeviceFingerprint();
+      
+      // Verify device is still trusted
+      const verifyResponse = await fetch('/api/auth/verify-device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: userData.phone_number,
+          deviceFingerprint: deviceInfo.fingerprint,
+        }),
+      });
+
+      const verifyData = await safeJsonParse(verifyResponse);
+      
+      if (!verifyData.trusted) {
+        // Device not trusted, fall back to OTP
+        setIsDeviceTrusted(false);
+        setError('Device verification failed. Please use OTP verification.');
+        setIsConfirmingBooking(false);
+        return;
+      }
+
+      // If in edit mode, first cancel the original booking (silently)
+      if (bookingData.isEditMode && bookingData.originalBookingId) {
+        try {
+          const cancelResponse = await fetch('/api/bookings/cancel-silent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              bookingId: bookingData.originalBookingId,
+              phone: userData.phone_number,
+              reason: 'Booking modified by user',
+            }),
+          });
+          
+          if (!cancelResponse.ok) {
+            const cancelData = await safeJsonParse(cancelResponse);
+            console.warn('Failed to cancel original booking:', cancelData.error);
+            // Continue with new booking anyway
+          }
+        } catch (cancelErr) {
+          console.warn('Error cancelling original booking:', cancelErr);
+        }
+      }
+
+      // Create the booking
+      const bookResponse = await fetch('/api/book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: userData.phone_number,
+          name: userData.name,
+          session_type: bookingData.sessionType,
+          session_details: getSessionDetails(bookingData),
+          studio: bookingData.studio,
+          date: bookingData.date,
+          start_time: bookingData.start_time,
+          end_time: bookingData.end_time,
+          rate_per_hour: bookingData.rate,
+          is_modification: bookingData.isEditMode || false,
+        }),
+      });
+
+      const bookData = await safeJsonParse(bookResponse);
+
+      if (!bookResponse.ok || !bookData.success) {
+        throw new Error(bookData.error || 'Failed to create booking');
+      }
+
+      // Success! Show confirmation
+      setBookingConfirmed(true);
+      setConfirmedBookingId(bookData.booking.id);
+      
+      // Store verified user for potential rebooking
+      sessionStorage.setItem('verifiedUser', JSON.stringify(userData));
+      
+      // Store booking ID for confirmation page
+      sessionStorage.removeItem('bookingData');
+      sessionStorage.setItem('lastBookingId', bookData.booking.id);
+      
+      // Redirect to confirmation page after a short delay
+      setTimeout(() => {
+        router.push('/confirmation');
+      }, 2500);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create booking');
+    } finally {
+      setIsConfirmingBooking(false);
+    }
+  };
+
   const calculateDuration = (start: string, end: string): number => {
     const [startHour, startMin] = start.split(':').map(Number);
     const [endHour, endMin] = end.split(':').map(Number);
@@ -825,12 +978,24 @@ export default function ReviewPage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <div className={`w-8 h-8 rounded-lg ${isAlreadyVerified ? 'bg-green-500/20' : 'bg-amber-500/20'} flex items-center justify-center`}>
-                <Shield className={`w-4 h-4 ${isAlreadyVerified ? 'text-green-400' : 'text-amber-400'}`} />
+              <div className={`w-8 h-8 rounded-lg ${isAlreadyVerified || isDeviceTrusted ? 'bg-green-500/20' : 'bg-amber-500/20'} flex items-center justify-center`}>
+                {isDeviceTrusted ? (
+                  <Smartphone className={`w-4 h-4 text-green-400`} />
+                ) : (
+                  <Shield className={`w-4 h-4 ${isAlreadyVerified ? 'text-green-400' : 'text-amber-400'}`} />
+                )}
               </div>
-              <h2 className="text-lg font-bold text-white">
-                {isAlreadyVerified ? 'Confirm Booking' : 'Verify & Confirm'}
-              </h2>
+              <div>
+                <h2 className="text-lg font-bold text-white">
+                  {isAlreadyVerified || isDeviceTrusted ? 'Confirm Booking' : 'Verify & Confirm'}
+                </h2>
+                {isDeviceTrusted && !isAlreadyVerified && (
+                  <p className="text-green-400 text-xs flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" />
+                    Trusted Device - No OTP required
+                  </p>
+                )}
+              </div>
             </motion.div>
 
             {/* Already verified - Direct confirm */}
@@ -867,6 +1032,51 @@ export default function ReviewPage() {
                     </>
                   )}
                 </motion.button>
+              </motion.div>
+            ) : isDeviceTrusted && !showOtpVerification ? (
+              /* Trusted device - confirm without OTP */
+              <motion.div 
+                className="text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <div className="p-2 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center gap-2 mb-4">
+                  <ShieldCheck className="w-4 h-4 text-green-400" />
+                  <span className="text-green-400 text-sm">Trusted Device Verified</span>
+                </div>
+                <p className="text-zinc-400 text-sm mb-4">
+                  {bookingData?.isEditMode 
+                    ? <>Confirm modification for <span className="text-white font-medium">{userData.phone_number}</span></>
+                    : <>Confirm your booking for <span className="text-white font-medium">{userData.phone_number}</span></>
+                  }
+                </p>
+                <motion.button
+                  type="button"
+                  onClick={handleTrustedDeviceBooking}
+                  disabled={isConfirmingBooking}
+                  className="btn-accent py-2.5 px-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mx-auto"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {isConfirmingBooking ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Confirming...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Confirm Booking
+                    </>
+                  )}
+                </motion.button>
+                {/* Option to use OTP instead */}
+                <button
+                  onClick={() => setIsDeviceTrusted(false)}
+                  className="w-full mt-4 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+                >
+                  Use OTP verification instead
+                </button>
               </motion.div>
             ) : !showOtpVerification ? (
               <motion.div 

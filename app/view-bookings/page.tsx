@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { getDeviceFingerprint, isPhoneTrustedLocally } from '@/lib/deviceFingerprint';
 
 // Helper function to safely parse JSON responses
 async function safeJsonParse(response: Response) {
@@ -33,6 +34,7 @@ import {
   RefreshCw,
   Mic,
   Users,
+  Smartphone,
 } from "lucide-react";
 
 interface Booking {
@@ -52,13 +54,14 @@ interface Booking {
 interface CancelModalState {
   isOpen: boolean;
   booking: Booking | null;
-  step: 'confirm' | 'otp' | 'success';
+  step: 'confirm' | 'otp' | 'success' | 'trusted-confirm';
   otp: string[];
   reason: string;
   isLoading: boolean;
   error: string;
   otpSent: boolean;
   cooldown: number;
+  deviceTrusted: boolean;
 }
 
 const statusConfig: Record<string, { color: string; icon: typeof CheckCircle2; label: string }> = {
@@ -75,6 +78,7 @@ export default function ViewBookingsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
+  const [isDeviceTrusted, setIsDeviceTrusted] = useState(false);
   const [cancelModal, setCancelModal] = useState<CancelModalState>({
     isOpen: false,
     booking: null,
@@ -85,8 +89,46 @@ export default function ViewBookingsPage() {
     error: '',
     otpSent: false,
     cooldown: 0,
+    deviceTrusted: false,
   });
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Check if device is trusted for this phone number when phone changes
+  useEffect(() => {
+    const checkDeviceTrust = async () => {
+      const normalized = phone.replace(/\D/g, '');
+      if (normalized.length !== 10) {
+        setIsDeviceTrusted(false);
+        return;
+      }
+
+      // First check local storage for quick check
+      if (!isPhoneTrustedLocally(normalized)) {
+        setIsDeviceTrusted(false);
+        return;
+      }
+
+      // Verify with server
+      try {
+        const deviceInfo = await getDeviceFingerprint();
+        const response = await fetch('/api/auth/verify-device', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: normalized,
+            deviceFingerprint: deviceInfo.fingerprint,
+          }),
+        });
+
+        const data = await safeJsonParse(response);
+        setIsDeviceTrusted(data.trusted === true);
+      } catch {
+        setIsDeviceTrusted(false);
+      }
+    };
+
+    checkDeviceTrust();
+  }, [phone]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,13 +187,14 @@ export default function ViewBookingsPage() {
     setCancelModal({
       isOpen: true,
       booking,
-      step: 'confirm',
+      step: isDeviceTrusted ? 'trusted-confirm' : 'confirm',
       otp: ['', '', '', '', '', ''],
       reason: '',
       isLoading: false,
       error: '',
       otpSent: false,
       cooldown: 0,
+      deviceTrusted: isDeviceTrusted,
     });
   };
 
@@ -303,6 +346,74 @@ export default function ViewBookingsPage() {
       setTimeout(() => {
         otpInputRefs.current[0]?.focus();
       }, 100);
+    }
+  };
+
+  // Cancel with trusted device (no OTP needed)
+  const confirmTrustedCancellation = async () => {
+    if (!cancelModal.booking) {
+      setCancelModal(prev => ({ ...prev, error: 'No booking selected' }));
+      return;
+    }
+
+    setCancelModal(prev => ({ ...prev, isLoading: true, error: '' }));
+
+    try {
+      const deviceInfo = await getDeviceFingerprint();
+      
+      const response = await fetch('/api/bookings/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId: cancelModal.booking.id,
+          phone: phone.replace(/\D/g, ''),
+          deviceFingerprint: deviceInfo.fingerprint,
+          reason: cancelModal.reason || 'Cancelled by user',
+        }),
+      });
+
+      const data = await safeJsonParse(response);
+
+      if (!response.ok) {
+        // If device verification failed, fall back to OTP
+        if (data.error?.includes('OTP is required')) {
+          setCancelModal(prev => ({
+            ...prev,
+            step: 'confirm',
+            deviceTrusted: false,
+            isLoading: false,
+            error: 'Device verification failed. Please use OTP.',
+          }));
+          return;
+        }
+        throw new Error(data.error || 'Failed to cancel booking');
+      }
+
+      // Update bookings list - update the cancelled booking's status
+      setBookings(prev => 
+        prev.map(b => 
+          b.id === cancelModal.booking?.id 
+            ? { ...b, status: 'cancelled' as const } 
+            : b
+        )
+      );
+
+      setCancelModal(prev => ({
+        ...prev,
+        step: 'success',
+        isLoading: false,
+      }));
+
+      // Auto close after 2 seconds
+      setTimeout(() => {
+        closeCancelModal();
+      }, 2000);
+    } catch (err) {
+      setCancelModal(prev => ({
+        ...prev,
+        isLoading: false,
+        error: err instanceof Error ? err.message : 'Failed to cancel booking',
+      }));
     }
   };
 
@@ -568,6 +679,97 @@ export default function ViewBookingsPage() {
                 >
                   <X className="w-5 h-5" />
                 </button>
+
+                {/* Step: Trusted Device Confirm */}
+                {cancelModal.step === 'trusted-confirm' && (
+                  <>
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
+                        <Smartphone className="w-6 h-6 text-green-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-white">Cancel Booking</h3>
+                        <p className="text-green-400 text-sm flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4" />
+                          Trusted Device - No OTP required
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Booking Summary */}
+                    <div className="bg-white/5 rounded-xl p-4 mb-6">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Mic className="w-5 h-5 text-violet-400" />
+                        <span className="text-white font-medium">{cancelModal.booking?.session_type || cancelModal.booking?.studio}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="flex items-center gap-2 text-zinc-400">
+                          <Calendar className="w-4 h-4" />
+                          {cancelModal.booking && formatDate(cancelModal.booking.date)}
+                        </div>
+                        <div className="flex items-center gap-2 text-zinc-400">
+                          <Clock className="w-4 h-4" />
+                          {cancelModal.booking && `${formatTime(cancelModal.booking.start_time)} - ${formatTime(cancelModal.booking.end_time)}`}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Reason Input */}
+                    <div className="mb-6">
+                      <label htmlFor="cancel-reason-trusted" className="block text-sm font-medium text-zinc-400 mb-2.5">
+                        Reason for cancellation (optional)
+                      </label>
+                      <textarea
+                        id="cancel-reason-trusted"
+                        value={cancelModal.reason}
+                        onChange={(e) => setCancelModal(prev => ({ ...prev, reason: e.target.value }))}
+                        placeholder="Let us know why you're cancelling..."
+                        className="w-full py-3 px-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all min-h-[80px] resize-none"
+                        rows={3}
+                      />
+                    </div>
+
+                    {cancelModal.error && (
+                      <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                        <span className="text-red-400 text-sm">{cancelModal.error}</span>
+                      </div>
+                    )}
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={closeCancelModal}
+                        className="flex-1 py-3 rounded-xl border border-white/10 text-zinc-400 font-medium hover:bg-white/5 transition-colors"
+                      >
+                        Keep Booking
+                      </button>
+                      <motion.button
+                        onClick={confirmTrustedCancellation}
+                        disabled={cancelModal.isLoading}
+                        className="flex-1 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        {cancelModal.isLoading ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <>
+                            <XCircle className="w-4 h-4" />
+                            Cancel Booking
+                          </>
+                        )}
+                      </motion.button>
+                    </div>
+
+                    {/* Option to use OTP instead */}
+                    <button
+                      onClick={() => setCancelModal(prev => ({ ...prev, step: 'confirm', deviceTrusted: false }))}
+                      className="w-full mt-4 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+                    >
+                      Use OTP verification instead
+                    </button>
+                  </>
+                )}
 
                 {/* Step: Confirm */}
                 {cancelModal.step === 'confirm' && (
