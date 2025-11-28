@@ -224,6 +224,7 @@ export async function POST(request: Request) {
           description: `Booking ID: ${booking.id}\nPhone: ${phone}\nSession Type: ${session_type}\nDetails: ${session_details || 'N/A'}`,
           startDateTime,
           endDateTime,
+          studioName: studio,
         });
 
         // Update booking with google_event_id

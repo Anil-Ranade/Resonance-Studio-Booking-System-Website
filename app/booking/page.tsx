@@ -984,7 +984,14 @@ function BookingPageContent() {
                   )}
 
                   <div className="space-y-2">
-                    {STUDIOS.map((studioInfo) => {
+                    {[...STUDIOS].sort((a, b) => {
+                      // Recommended studio comes first
+                      const aIsSuggested = a.name === ratesData.suggested_studio;
+                      const bIsSuggested = b.name === ratesData.suggested_studio;
+                      if (aIsSuggested && !bIsSuggested) return -1;
+                      if (!aIsSuggested && bIsSuggested) return 1;
+                      return 0;
+                    }).map((studioInfo) => {
                       const isAllowed = ratesData.allowed_studios.includes(studioInfo.name);
                       const isSelected = studio === studioInfo.name;
                       const isSuggested = ratesData.suggested_studio === studioInfo.name;

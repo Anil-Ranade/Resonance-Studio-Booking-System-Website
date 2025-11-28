@@ -183,15 +183,9 @@ export default function ReviewPage() {
         return;
       }
 
-      // First check local storage for quick check
-      if (!isPhoneTrustedLocally(normalized)) {
-        setIsDeviceTrusted(false);
-        return;
-      }
-
       setIsCheckingDevice(true);
       
-      // Verify with server
+      // Verify with server (the source of truth for trusted devices)
       try {
         const deviceInfo = await getDeviceFingerprint();
         const response = await fetch('/api/auth/verify-device', {
@@ -204,7 +198,14 @@ export default function ReviewPage() {
         });
 
         const data = await safeJsonParse(response);
-        setIsDeviceTrusted(data.trusted === true);
+        const isTrusted = data.trusted === true;
+        setIsDeviceTrusted(isTrusted);
+        
+        // Sync local storage with server state
+        if (isTrusted && !isPhoneTrustedLocally(normalized)) {
+          const { addTrustedPhone } = await import('@/lib/deviceFingerprint');
+          addTrustedPhone(normalized);
+        }
       } catch {
         setIsDeviceTrusted(false);
       } finally {
@@ -419,13 +420,18 @@ export default function ReviewPage() {
     setError('');
 
     try {
-      // Step 1: Verify OTP
+      // Get device fingerprint to register as trusted device
+      const deviceInfo = await getDeviceFingerprint();
+
+      // Step 1: Verify OTP and register device as trusted
       const verifyResponse = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           phone: userData.phone_number,
-          code 
+          code,
+          deviceFingerprint: deviceInfo.fingerprint,
+          deviceName: deviceInfo.deviceName,
         }),
       });
 
@@ -433,6 +439,12 @@ export default function ReviewPage() {
 
       if (!verifyResponse.ok) {
         throw new Error(verifyData.error || 'Failed to verify OTP');
+      }
+
+      // Store phone as trusted locally if device was registered
+      if (verifyData.deviceTrusted) {
+        const { addTrustedPhone } = await import('@/lib/deviceFingerprint');
+        addTrustedPhone(userData.phone_number);
       }
 
       // Step 1.5: If edit mode, cancel the original booking first
@@ -1040,13 +1052,16 @@ export default function ReviewPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
-                <div className="p-2 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center gap-2 mb-4">
-                  <ShieldCheck className="w-4 h-4 text-green-400" />
-                  <span className="text-green-400 text-sm">Trusted Device Verified</span>
+                <div className="p-2 rounded-lg bg-green-500/10 border border-green-500/20 flex flex-col items-center justify-center gap-1 mb-4">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-green-400" />
+                    <span className="text-green-400 text-sm font-medium">Trusted Device Verified</span>
+                  </div>
+                  <span className="text-green-400/70 text-xs">No OTP required - your device was verified during a previous booking</span>
                 </div>
                 <p className="text-zinc-400 text-sm mb-4">
                   {bookingData?.isEditMode 
-                    ? <>Confirm modification for <span className="text-white font-medium">{userData.phone_number}</span></>
+                    ? <>You can proceed with your booking modification for <span className="text-white font-medium">{userData.phone_number}</span></>
                     : <>Confirm your booking for <span className="text-white font-medium">{userData.phone_number}</span></>
                   }
                 </p>

@@ -102,13 +102,7 @@ export default function ViewBookingsPage() {
         return;
       }
 
-      // First check local storage for quick check
-      if (!isPhoneTrustedLocally(normalized)) {
-        setIsDeviceTrusted(false);
-        return;
-      }
-
-      // Verify with server
+      // Verify with server (the source of truth for trusted devices)
       try {
         const deviceInfo = await getDeviceFingerprint();
         const response = await fetch('/api/auth/verify-device', {
@@ -121,7 +115,14 @@ export default function ViewBookingsPage() {
         });
 
         const data = await safeJsonParse(response);
-        setIsDeviceTrusted(data.trusted === true);
+        const isTrusted = data.trusted === true;
+        setIsDeviceTrusted(isTrusted);
+        
+        // Sync local storage with server state
+        if (isTrusted && !isPhoneTrustedLocally(normalized)) {
+          const { addTrustedPhone } = await import('@/lib/deviceFingerprint');
+          addTrustedPhone(normalized);
+        }
       } catch {
         setIsDeviceTrusted(false);
       }
@@ -183,19 +184,58 @@ export default function ViewBookingsPage() {
     return `${hour12}:${minutes} ${ampm}`;
   };
 
-  const openCancelModal = (booking: Booking) => {
+  const openCancelModal = async (booking: Booking) => {
+    // First show modal with loading state
     setCancelModal({
       isOpen: true,
       booking,
-      step: isDeviceTrusted ? 'trusted-confirm' : 'confirm',
+      step: 'confirm', // Default to confirm, will update after trust check
       otp: ['', '', '', '', '', ''],
       reason: '',
-      isLoading: false,
+      isLoading: true, // Show loading while checking device trust
       error: '',
       otpSent: false,
       cooldown: 0,
-      deviceTrusted: isDeviceTrusted,
+      deviceTrusted: false,
     });
+
+    // Re-verify device trust in real-time when opening cancel modal
+    const normalized = phone.replace(/\D/g, '');
+    let isTrusted = false;
+    
+    if (normalized.length === 10) {
+      try {
+        const deviceInfo = await getDeviceFingerprint();
+        const response = await fetch('/api/auth/verify-device', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: normalized,
+            deviceFingerprint: deviceInfo.fingerprint,
+          }),
+        });
+
+        const data = await safeJsonParse(response);
+        isTrusted = data.trusted === true;
+        setIsDeviceTrusted(isTrusted);
+        
+        // Sync local storage with server state
+        if (isTrusted && !isPhoneTrustedLocally(normalized)) {
+          const { addTrustedPhone } = await import('@/lib/deviceFingerprint');
+          addTrustedPhone(normalized);
+        }
+      } catch {
+        isTrusted = false;
+      }
+    }
+
+    // Update modal with verified trust status
+    setCancelModal(prev => ({
+      ...prev,
+      step: isTrusted ? 'trusted-confirm' : 'confirm',
+      isLoading: false,
+      deviceTrusted: isTrusted,
+    }));
   };
 
   const closeCancelModal = () => {
@@ -299,6 +339,9 @@ export default function ViewBookingsPage() {
     setCancelModal(prev => ({ ...prev, isLoading: true, error: '' }));
 
     try {
+      // Get device fingerprint to register as trusted device
+      const deviceInfo = await getDeviceFingerprint();
+
       const response = await fetch('/api/bookings/cancel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -306,6 +349,8 @@ export default function ViewBookingsPage() {
           bookingId: cancelModal.booking.id,
           phone: phone.replace(/\D/g, ''),
           otp: otpValue,
+          deviceFingerprint: deviceInfo.fingerprint,
+          deviceName: deviceInfo.deviceName,
           reason: cancelModal.reason || 'Cancelled by user',
         }),
       });
@@ -314,6 +359,12 @@ export default function ViewBookingsPage() {
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to cancel booking');
+      }
+
+      // Store phone as trusted locally if device was registered
+      if (data.deviceTrusted) {
+        const { addTrustedPhone } = await import('@/lib/deviceFingerprint');
+        addTrustedPhone(phone);
       }
 
       // Update bookings list - update the cancelled booking's status
@@ -680,10 +731,18 @@ export default function ViewBookingsPage() {
                   <X className="w-5 h-5" />
                 </button>
 
+                {/* Loading State - Checking Device Trust */}
+                {cancelModal.isLoading && cancelModal.step === 'confirm' && !cancelModal.otpSent && (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Loader2 className="w-10 h-10 text-violet-400 animate-spin mb-4" />
+                    <p className="text-zinc-400 text-sm">Verifying device...</p>
+                  </div>
+                )}
+
                 {/* Step: Trusted Device Confirm */}
-                {cancelModal.step === 'trusted-confirm' && (
+                {cancelModal.step === 'trusted-confirm' && !cancelModal.isLoading && (
                   <>
-                    <div className="flex items-center gap-3 mb-6">
+                    <div className="flex items-center gap-3 mb-4">
                       <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
                         <Smartphone className="w-6 h-6 text-green-400" />
                       </div>
@@ -691,9 +750,18 @@ export default function ViewBookingsPage() {
                         <h3 className="text-xl font-bold text-white">Cancel Booking</h3>
                         <p className="text-green-400 text-sm flex items-center gap-1.5">
                           <ShieldCheck className="w-4 h-4" />
-                          Trusted Device - No OTP required
+                          Trusted Device
                         </p>
                       </div>
+                    </div>
+
+                    {/* Trusted Device Info Banner */}
+                    <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 mb-6">
+                      <p className="text-green-400 text-sm text-center">
+                        <span className="font-medium">No OTP required!</span>
+                        <br />
+                        <span className="text-green-400/70 text-xs">Your device was verified during a previous booking and is now trusted.</span>
+                      </p>
                     </div>
 
                     {/* Booking Summary */}
@@ -772,7 +840,7 @@ export default function ViewBookingsPage() {
                 )}
 
                 {/* Step: Confirm */}
-                {cancelModal.step === 'confirm' && (
+                {cancelModal.step === 'confirm' && !cancelModal.isLoading && (
                   <>
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center">

@@ -203,6 +203,7 @@ export async function POST(request: NextRequest) {
           description: `Booking ID: ${booking.id}\nPhone: ${phone}\nSession Type: ${session_type || 'Walk-in'}\nDetails: ${session_details || 'N/A'}\nNotes: ${notes || 'Booked by admin'}`,
           startDateTime,
           endDateTime,
+          studioName: studio,
         });
 
         await supabaseServer

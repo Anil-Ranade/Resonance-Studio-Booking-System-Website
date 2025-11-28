@@ -43,7 +43,7 @@ async function verifyTrustedDevice(phone: string, deviceFingerprint: string): Pr
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { bookingId, phone, otp, deviceFingerprint, reason } = body;
+    const { bookingId, phone, otp, deviceFingerprint, deviceName, reason } = body;
 
     // Validate inputs
     if (!bookingId) {
@@ -93,6 +93,30 @@ export async function POST(request: NextRequest) {
       verified = true;
       verificationMethod = "otp";
       console.log(`[Cancel Booking] Verified via OTP for ${normalizedPhone}`);
+
+      // Register device as trusted after successful OTP verification
+      if (deviceFingerprint) {
+        try {
+          await supabase
+            .from("trusted_devices")
+            .upsert(
+              {
+                phone: normalizedPhone,
+                device_fingerprint: deviceFingerprint,
+                device_name: deviceName || "Unknown Device",
+                last_used_at: new Date().toISOString(),
+                is_active: true,
+              },
+              {
+                onConflict: "phone,device_fingerprint",
+              }
+            );
+          console.log(`[Cancel Booking] Device registered as trusted for ${normalizedPhone}`);
+        } catch (deviceError) {
+          console.error("[Cancel Booking] Failed to register trusted device:", deviceError);
+          // Continue without failing
+        }
+      }
     }
 
     // Get the booking and verify it belongs to the user
@@ -226,6 +250,7 @@ export async function POST(request: NextRequest) {
       message: "Booking cancelled successfully",
       booking: updatedBooking,
       verificationMethod,
+      deviceTrusted: verificationMethod === "otp" && !!deviceFingerprint,
     });
   } catch (error) {
     console.error("[Cancel Booking] Unexpected error:", error);

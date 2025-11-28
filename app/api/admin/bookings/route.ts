@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
 import { sendSMS } from "@/lib/sms";
+import { deleteEvent, createEvent, updateEvent } from "@/lib/googleCalendar";
 
 // Verify admin token from Authorization header
 async function verifyAdminToken(request: NextRequest) {
@@ -107,7 +108,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { id, status, notes } = body;
+    const { id, status, notes, studio, date, start_time, end_time, session_type, session_details, name } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -118,9 +119,27 @@ export async function PUT(request: NextRequest) {
 
     const supabase = supabaseAdmin();
 
+    // Fetch the existing booking first to get google_event_id and old data
+    const { data: existingBooking, error: fetchError } = await supabase
+      .from("bookings")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !existingBooking) {
+      return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+    }
+
     const updates: Record<string, any> = {};
     if (status) updates.status = status;
     if (notes !== undefined) updates.notes = notes;
+    if (studio !== undefined) updates.studio = studio;
+    if (date !== undefined) updates.date = date;
+    if (start_time !== undefined) updates.start_time = start_time;
+    if (end_time !== undefined) updates.end_time = end_time;
+    if (session_type !== undefined) updates.session_type = session_type;
+    if (session_details !== undefined) updates.session_details = session_details;
+    if (name !== undefined) updates.name = name;
     if (status === "cancelled") updates.cancelled_at = new Date().toISOString();
 
     const { data: booking, error } = await supabase
@@ -132,6 +151,71 @@ export async function PUT(request: NextRequest) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Sync with Google Calendar
+    const hasGoogleConfig =
+      process.env.GOOGLE_CLIENT_ID &&
+      process.env.GOOGLE_CLIENT_SECRET &&
+      process.env.GOOGLE_REFRESH_TOKEN &&
+      process.env.OWNER_CALENDAR_ID;
+
+    if (hasGoogleConfig && booking) {
+      try {
+        // If status changed to cancelled, delete the calendar event
+        if (status === "cancelled" && existingBooking.google_event_id) {
+          await deleteEvent(existingBooking.google_event_id);
+          console.log(`[Admin Bookings] Google Calendar event ${existingBooking.google_event_id} deleted due to cancellation`);
+          
+          // Clear the google_event_id from the booking
+          await supabase
+            .from("bookings")
+            .update({ google_event_id: null })
+            .eq("id", id);
+        }
+        // If booking was previously cancelled and is now confirmed/pending, create a new event
+        else if (existingBooking.status === "cancelled" && (status === "confirmed" || status === "pending") && !existingBooking.google_event_id) {
+          const startDateTime = `${booking.date}T${booking.start_time}:00`;
+          const endDateTime = `${booking.date}T${booking.end_time}:00`;
+
+          const googleEventId = await createEvent({
+            summary: `${booking.studio} - ${booking.session_type || 'Booking'} (${booking.name || booking.phone_number})`,
+            description: `Booking ID: ${booking.id}\nPhone: ${booking.phone_number}\nSession Type: ${booking.session_type || 'N/A'}\nDetails: ${booking.session_details || 'N/A'}`,
+            startDateTime,
+            endDateTime,
+            studioName: booking.studio,
+          });
+
+          await supabase
+            .from("bookings")
+            .update({ google_event_id: googleEventId })
+            .eq("id", id);
+          
+          console.log(`[Admin Bookings] New Google Calendar event ${googleEventId} created for reactivated booking`);
+        }
+        // If booking details were updated (date, time, studio, etc.), update the calendar event
+        else if (existingBooking.google_event_id && (date || start_time || end_time || studio || session_type || name)) {
+          const updatedDate = date || existingBooking.date;
+          const updatedStartTime = start_time || existingBooking.start_time;
+          const updatedEndTime = end_time || existingBooking.end_time;
+          const updatedStudio = studio || existingBooking.studio;
+          const updatedSessionType = session_type || existingBooking.session_type;
+          const updatedName = name || existingBooking.name;
+
+          await updateEvent({
+            eventId: existingBooking.google_event_id,
+            summary: `${updatedStudio} - ${updatedSessionType || 'Booking'} (${updatedName || booking.phone_number})`,
+            description: `Booking ID: ${booking.id}\nPhone: ${booking.phone_number}\nSession Type: ${updatedSessionType || 'N/A'}\nDetails: ${booking.session_details || 'N/A'}`,
+            startDateTime: `${updatedDate}T${updatedStartTime}:00`,
+            endDateTime: `${updatedDate}T${updatedEndTime}:00`,
+          });
+          
+          console.log(`[Admin Bookings] Google Calendar event ${existingBooking.google_event_id} updated`);
+        }
+      } catch (calendarError) {
+        console.error("[Admin Bookings] Failed to sync Google Calendar:", calendarError);
+        // Don't fail the request, just log the error
+      }
     }
 
     // Send SMS notification when booking is confirmed
@@ -169,6 +253,7 @@ export async function PUT(request: NextRequest) {
       action: "update",
       entity_type: "booking",
       entity_id: id,
+      old_data: existingBooking,
       new_data: updates,
     });
 
@@ -209,6 +294,23 @@ export async function DELETE(request: NextRequest) {
 
   if (!existingBooking) {
     return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+  }
+
+  // Delete Google Calendar event if it exists
+  const hasGoogleConfig =
+    process.env.GOOGLE_CLIENT_ID &&
+    process.env.GOOGLE_CLIENT_SECRET &&
+    process.env.GOOGLE_REFRESH_TOKEN &&
+    process.env.OWNER_CALENDAR_ID;
+
+  if (hasGoogleConfig && existingBooking.google_event_id) {
+    try {
+      await deleteEvent(existingBooking.google_event_id);
+      console.log(`[Admin Bookings] Google Calendar event ${existingBooking.google_event_id} deleted for booking deletion`);
+    } catch (calendarError) {
+      console.error("[Admin Bookings] Failed to delete Google Calendar event:", calendarError);
+      // Don't fail the request, just log the error
+    }
   }
 
   // Delete associated reminders first
