@@ -107,6 +107,43 @@ const RECORDING_OPTIONS: { value: RecordingOption; label: string; price: string 
   { value: 'sd_card_recording', label: 'SD Card Recording', price: '₹100/hour' },
 ];
 
+// Helper function to parse session details and get sub-option values
+const parseSessionDetails = (sessionType: string, sessionDetails: string): {
+  karaokeOption?: KaraokeOption;
+  liveOption?: LiveMusicianOption;
+  bandEquipment?: BandEquipment[];
+  recordingOption?: RecordingOption;
+} => {
+  if (!sessionDetails) return {};
+  
+  switch (sessionType) {
+    case 'Karaoke': {
+      const match = KARAOKE_OPTIONS.find(o => o.label === sessionDetails || sessionDetails.includes(o.label));
+      return match ? { karaokeOption: match.value } : {};
+    }
+    case 'Live with musicians': {
+      const match = LIVE_OPTIONS.find(o => o.label === sessionDetails || sessionDetails.includes(o.label));
+      return match ? { liveOption: match.value } : {};
+    }
+    case 'Band': {
+      // Band equipment can be comma-separated list of labels
+      const equipment: BandEquipment[] = [];
+      BAND_EQUIPMENT.forEach(eq => {
+        if (sessionDetails.toLowerCase().includes(eq.label.toLowerCase())) {
+          equipment.push(eq.value);
+        }
+      });
+      return equipment.length > 0 ? { bandEquipment: equipment } : {};
+    }
+    case 'Recording': {
+      const match = RECORDING_OPTIONS.find(o => o.label === sessionDetails || sessionDetails.includes(o.label));
+      return match ? { recordingOption: match.value } : {};
+    }
+    default:
+      return {};
+  }
+};
+
 // Studio info
 const STUDIOS: { name: StudioName; description: string; features: string[] }[] = [
   { 
@@ -179,6 +216,9 @@ function BookingPageContent() {
   const [originalEndTime, setOriginalEndTime] = useState<string | null>(null);
   const [originalSessionType, setOriginalSessionType] = useState<string | null>(null);
   const [originalSessionDetails, setOriginalSessionDetails] = useState<string | null>(null);
+  const [originalDuration, setOriginalDuration] = useState<number | null>(null);
+  const [originalDate, setOriginalDate] = useState<string | null>(null);
+  const [originalStudio, setOriginalStudio] = useState<string | null>(null);
 
   // Form state
   const [sessionType, setSessionType] = useState<SessionType | ''>('');
@@ -278,15 +318,34 @@ function BookingPageContent() {
           if (parsed.sessionType) {
             setSessionType(parsed.sessionType as SessionType);
             setOriginalSessionType(parsed.sessionType);
+            
+            // Pre-fill sub-options based on session details
+            if (parsed.sessionDetails) {
+              const subOptions = parseSessionDetails(parsed.sessionType, parsed.sessionDetails);
+              if (subOptions.karaokeOption) {
+                setKaraokeOption(subOptions.karaokeOption);
+              }
+              if (subOptions.liveOption) {
+                setLiveOption(subOptions.liveOption);
+              }
+              if (subOptions.bandEquipment) {
+                setBandEquipment(subOptions.bandEquipment);
+              }
+              if (subOptions.recordingOption) {
+                setRecordingOption(subOptions.recordingOption);
+              }
+            }
           }
           if (parsed.sessionDetails) {
             setOriginalSessionDetails(parsed.sessionDetails);
           }
           if (parsed.studio) {
             setStudio(parsed.studio as StudioName);
+            setOriginalStudio(parsed.studio);
           }
           if (parsed.date) {
             setDate(parsed.date);
+            setOriginalDate(parsed.date);
           }
           if (parsed.start_time) {
             setPrefilledTime(parsed.start_time);
@@ -302,6 +361,7 @@ function BookingPageContent() {
             const duration = (endH * 60 + endM - startH * 60 - startM) / 60;
             if (duration > 0) {
               setNumberOfHours(duration);
+              setOriginalDuration(duration);
             }
           }
         } catch (e) {
@@ -437,9 +497,13 @@ function BookingPageContent() {
       setSlotsError('');
       setSelectedSlots([]);
       try {
-        const response = await fetch(
-          `/api/availability?studio=${encodeURIComponent(studio)}&date=${date}`
-        );
+        // Build availability URL - include excludeBookingId in edit mode so original slot is available
+        let availabilityUrl = `/api/availability?studio=${encodeURIComponent(studio)}&date=${date}`;
+        if (isEditMode && originalBookingId) {
+          availabilityUrl += `&excludeBookingId=${encodeURIComponent(originalBookingId)}`;
+        }
+        
+        const response = await fetch(availabilityUrl);
         const data = await safeJsonParse(response);
         if (!response.ok) {
           throw new Error(data.error || 'Failed to fetch availability');
@@ -467,7 +531,7 @@ function BookingPageContent() {
     };
 
     fetchAvailability();
-  }, [studio, date, prefilledTime, numberOfHours]);
+  }, [studio, date, prefilledTime, numberOfHours, isEditMode, originalBookingId]);
 
   // Helper to check if slots are consecutive
   const areConsecutiveSlots = (slots: TimeSlot[]): boolean => {
@@ -879,6 +943,14 @@ function BookingPageContent() {
               </h2>
               <p className="text-zinc-400 text-sm mb-4">We&apos;ve suggested the best studio for your session</p>
 
+              {/* Show original studio when in edit mode */}
+              {isEditMode && originalStudio && (
+                <div className="mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                  <p className="text-amber-400 text-xs uppercase tracking-wide mb-1">Currently Booked</p>
+                  <p className="text-amber-300 font-semibold">{originalStudio}</p>
+                </div>
+              )}
+
               {loadingRates && (
                 <div className="p-6 rounded-xl bg-white/5 flex flex-col items-center justify-center gap-2">
                   <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
@@ -990,12 +1062,32 @@ function BookingPageContent() {
               </h2>
               <p className="text-zinc-400 text-sm mb-4">Select when you want to book {studio}</p>
 
+              {/* Show original booking details when in edit mode */}
+              {isEditMode && originalDate && originalStartTime && originalEndTime && originalDuration && (
+                <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                  <p className="text-amber-400 text-xs uppercase tracking-wide mb-1">Currently Booked</p>
+                  <div className="flex flex-wrap gap-3 text-amber-300 text-sm">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5" />
+                      {new Date(originalDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      {formatTimeDisplay(originalStartTime)} - {formatTimeDisplay(originalEndTime)}
+                    </span>
+                    <span className="font-semibold">({originalDuration} hr{originalDuration > 1 ? 's' : ''})</span>
+                  </div>
+                </div>
+              )}
+
               {/* Date and Duration in a row */}
               <div className="grid grid-cols-2 gap-4 mb-4">
                 {/* Date Picker */}
                 <div>
                   <label htmlFor="date" className="block text-xs font-medium text-zinc-300 mb-1">
-                    Date
+                    Date {isEditMode && originalDate && (
+                      <span className="text-amber-400 text-xs">(was {new Date(originalDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})</span>
+                    )}
                   </label>
                   <input
                     type="date"
@@ -1004,14 +1096,16 @@ function BookingPageContent() {
                     onChange={(e) => setDate(e.target.value)}
                     min={getMinDate()}
                     max={getMaxDate()}
-                    className="input text-sm w-full"
+                    className={`input text-sm w-full ${isEditMode && originalDate === date ? 'border-amber-500/50' : ''}`}
                   />
                 </div>
 
                 {/* Number of Hours */}
                 <div>
                   <label className="block text-xs font-medium text-zinc-300 mb-1">
-                    Duration
+                    Duration {isEditMode && originalDuration && (
+                      <span className="text-amber-400 text-xs">(was {originalDuration} hr{originalDuration > 1 ? 's' : ''})</span>
+                    )}
                   </label>
                   <div className="flex items-center gap-2 justify-center bg-white/5 rounded-xl p-2">
                     <button
@@ -1027,7 +1121,7 @@ function BookingPageContent() {
                       -
                     </button>
                     <div className="text-center min-w-[60px]">
-                      <span className="text-2xl font-bold text-white">{numberOfHours}</span>
+                      <span className={`text-2xl font-bold ${isEditMode && originalDuration === numberOfHours ? 'text-amber-400' : 'text-white'}`}>{numberOfHours}</span>
                       <span className="text-zinc-400 ml-1 text-sm">hr{numberOfHours > 1 ? 's' : ''}</span>
                     </div>
                     <button
@@ -1116,6 +1210,9 @@ function BookingPageContent() {
                             return `${startDisplay} ${startPeriod}-${endDisplay} ${endPeriod}`;
                           }
                         };
+
+                        // Check if this slot matches the original booking time
+                        const isOriginalSlot = isEditMode && originalStartTime === slot.start;
                         
                         return (
                           <button
@@ -1125,10 +1222,13 @@ function BookingPageContent() {
                             className={`px-2 py-2 text-xs rounded-lg border transition-all font-medium ${
                               isStart
                                 ? 'bg-violet-500 text-white border-violet-500 shadow-lg shadow-violet-500/25'
-                                : 'bg-white/5 text-white border-white/10 hover:border-violet-500 hover:bg-violet-500/20'
+                                : isOriginalSlot
+                                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 hover:border-amber-400 hover:bg-amber-500/30'
+                                  : 'bg-white/5 text-white border-white/10 hover:border-violet-500 hover:bg-violet-500/20'
                             }`}
                           >
                             {formatTimeRange(slot.start, endSlot.end)}
+                            {isOriginalSlot && !isStart && <span className="ml-1 text-[10px]">✓</span>}
                           </button>
                         );
                       })}

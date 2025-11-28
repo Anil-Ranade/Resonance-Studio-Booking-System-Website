@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getDeviceFingerprint, addTrustedPhone } from '@/lib/deviceFingerprint';
 
 // Helper function to safely parse JSON responses
 async function safeJsonParse(response: Response) {
@@ -186,10 +187,18 @@ export default function OTPLogin({ redirectUrl = '/my-bookings', onSuccess }: OT
     setSuccess('');
 
     try {
+      // Get device fingerprint to register as trusted device
+      const deviceInfo = await getDeviceFingerprint();
+
       const response = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, code }),
+        body: JSON.stringify({ 
+          phone, 
+          code,
+          deviceFingerprint: deviceInfo.fingerprint,
+          deviceName: deviceInfo.deviceName,
+        }),
       });
 
       const data = await safeJsonParse(response);
@@ -202,6 +211,11 @@ export default function OTPLogin({ redirectUrl = '/my-bookings', onSuccess }: OT
         // Store token in localStorage
         localStorage.setItem('auth_token', data.token);
         localStorage.setItem('user_phone', phone);
+        
+        // Store phone as trusted locally if device was registered as trusted
+        if (data.deviceTrusted) {
+          addTrustedPhone(phone);
+        }
         
         setSuccess('Verification successful! Redirecting...');
         

@@ -150,6 +150,7 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const studio = searchParams.get('studio');
   const date = searchParams.get('date');
+  const excludeBookingId = searchParams.get('excludeBookingId'); // For edit mode - exclude this booking from conflict check
 
   // Validate inputs
   if (!studio || !date) {
@@ -210,12 +211,19 @@ export async function GET(request: NextRequest) {
 
     // Step 3: Query bookings where studio/date match and status is 'pending' or 'confirmed'
     // Only active bookings should block slots (not cancelled, completed, or no_show)
-    const { data: bookings, error: bookingsError } = await supabaseServer
+    // If excludeBookingId is provided (edit mode), exclude that booking from the query
+    let bookingsQuery = supabaseServer
       .from('bookings')
-      .select('start_time, end_time')
+      .select('id, start_time, end_time')
       .eq('studio', studio)
       .eq('date', date)
       .in('status', ['pending', 'confirmed']);
+    
+    if (excludeBookingId) {
+      bookingsQuery = bookingsQuery.neq('id', excludeBookingId);
+    }
+
+    const { data: bookings, error: bookingsError } = await bookingsQuery;
 
     if (bookingsError) {
       return NextResponse.json(

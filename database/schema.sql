@@ -201,6 +201,12 @@ CREATE INDEX IF NOT EXISTS idx_login_otps_phone ON login_otps(phone);
 CREATE INDEX IF NOT EXISTS idx_login_otps_expires ON login_otps(expires_at);
 
 -- ============================================
+-- TRUSTED_DEVICES TABLE
+-- Schema moved to database/devices.sql
+-- Run devices.sql after this schema to set up trusted devices
+-- ============================================
+
+-- ============================================
 -- RATE_CARDS TABLE
 -- Stores pricing information for different session types
 -- ============================================

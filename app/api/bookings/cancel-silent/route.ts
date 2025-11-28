@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { deleteEvent } from "@/lib/googleCalendar";
 
-// POST /api/bookings/cancel-silent - Cancel a booking without OTP (for booking modifications)
-// This endpoint is used internally when a user modifies their booking
+// POST /api/bookings/cancel-silent - Cancel a booking for modifications
+// This endpoint is used when a user modifies their booking after OTP verification
+// NOTE: OTP verification must be done before calling this endpoint
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

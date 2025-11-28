@@ -132,20 +132,20 @@ export default function ReviewPage() {
       setBookingData(parsed);
       
       // If edit mode, pre-fill phone and name from the original booking
+      // OTP verification is still required for booking modifications
       if (parsed.isEditMode && parsed.editPhoneNumber) {
         setPhoneNumber(parsed.editPhoneNumber);
         if (parsed.editName) {
           setName(parsed.editName);
         }
-        // Set as already verified since they already own this booking
-        setIsAlreadyVerified(true);
-        // Create a mock user data object for the edit flow
+        // Create a user data object for the edit flow (OTP verification will still be required)
         setUserData({
           id: '',
           phone_number: parsed.editPhoneNumber,
           name: parsed.editName || '',
           email: '',
         });
+        // Don't set isAlreadyVerified - require OTP for booking modifications
       }
       // Check for verified user (from previous booking in same session) - only if not edit mode
       const storedVerifiedUser = sessionStorage.getItem('verifiedUser');
@@ -875,7 +875,10 @@ export default function ReviewPage() {
                 animate={{ opacity: 1 }}
               >
                 <p className="text-zinc-400 text-sm mb-4">
-                  Receive a verification code on <span className="text-white font-medium">{userData.phone_number}</span>
+                  {bookingData?.isEditMode 
+                    ? <>Verify your phone to modify your booking: <span className="text-white font-medium">{userData.phone_number}</span></>
+                    : <>Receive a verification code on <span className="text-white font-medium">{userData.phone_number}</span></>
+                  }
                 </p>
                 <motion.button
                   type="button"

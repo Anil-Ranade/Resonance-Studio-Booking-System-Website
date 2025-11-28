@@ -71,6 +71,8 @@ export async function POST(request: Request) {
 
     const phone = body.phone?.toString().trim();
     const code = body.code?.toString().trim();
+    const deviceFingerprint = body.deviceFingerprint?.toString().trim();
+    const deviceName = body.deviceName?.toString().trim();
 
     // Validate phone number is provided
     if (!phone) {
@@ -190,11 +192,45 @@ export async function POST(request: Request) {
       );
     }
 
+    // Register device as trusted if fingerprint is provided
+    let deviceTrusted = false;
+    if (deviceFingerprint) {
+      try {
+        // Upsert trusted device record
+        const { error: deviceError } = await supabase
+          .from('trusted_devices')
+          .upsert(
+            {
+              phone: phoneDigits,
+              device_fingerprint: deviceFingerprint,
+              device_name: deviceName || 'Unknown Device',
+              last_used_at: new Date().toISOString(),
+              is_active: true,
+            },
+            {
+              onConflict: 'phone,device_fingerprint',
+            }
+          );
+
+        if (deviceError) {
+          console.error('[Verify OTP] Failed to register trusted device:', deviceError);
+          // Don't fail the request, just log the error
+        } else {
+          deviceTrusted = true;
+          console.log(`[Verify OTP] Device registered as trusted for ${phoneDigits}`);
+        }
+      } catch (deviceRegError) {
+        console.error('[Verify OTP] Device registration error:', deviceRegError);
+        // Continue without failing
+      }
+    }
+
     console.log(`[Verify OTP] OTP verified successfully for ${phoneDigits}`);
 
     return NextResponse.json({
       verified: true,
       token,
+      deviceTrusted,
       message: 'OTP verified successfully',
     });
   } catch (error) {
