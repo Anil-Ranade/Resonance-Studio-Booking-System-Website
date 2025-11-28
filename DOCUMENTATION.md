@@ -314,29 +314,4 @@ Text Colors:
 
 ---
 
-## 🔌 API Endpoints
-
-### Public Endpoints
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/auth/send-otp` | Send OTP to phone |
-| `POST` | `/api/auth/verify-otp` | Verify OTP |
-| `GET` | `/api/availability` | Get available slots |
-| `POST` | `/api/book` | Create booking |
-| `GET` | `/api/bookings` | Get user bookings |
-| `POST` | `/api/bookings/cancel` | Cancel booking |
-| `GET` | `/api/rates` | Get pricing rates |
-| `GET` | `/api/studios` | Get studio info |
-
-### Admin Endpoints
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/admin/login` | Admin login |
-| `GET` | `/api/admin/stats` | Dashboard statistics |
-| `GET` | `/api/admin/bookings` | All bookings |
-| `GET/POST` | `/api/admin/availability` | Manage availability |
-| `GET/POST` | `/api/admin/settings` | System settings |
-
----
-
 *Built with ❤️ for Resonance Studio*
