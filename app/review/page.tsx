@@ -582,58 +582,49 @@ export default function ReviewPage() {
   ];
 
   return (
-    <div className="min-h-screen py-8 px-4">
+    <div className="min-h-screen py-4 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <motion.div 
-          className="mb-8"
+          className="mb-4"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <Link 
             href="/booking"
-            className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-6"
+            className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-2 text-sm"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
             Back to Booking
           </Link>
           
-          <h1 className="text-4xl font-bold text-white mb-2">
+          <h1 className="text-2xl font-bold text-white">
             {bookingData?.isEditMode ? 'Update Your Booking' : 'Review Your Booking'}
           </h1>
-          <p className="text-zinc-400">
-            {bookingData?.isEditMode 
-              ? 'Review your updated booking details before confirming'
-              : 'Please confirm your booking details before proceeding'
-            }
-          </p>
         </motion.div>
 
         {/* Booking Summary Card */}
         <motion.div 
-          className="glass-strong rounded-3xl p-8 mb-6"
+          className="glass-strong rounded-2xl p-4 mb-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
           <motion.div 
-            className="flex items-center gap-3 mb-6 pb-6 border-b border-white/10"
+            className="flex items-center gap-2 mb-3 pb-3 border-b border-white/10"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center">
-              <ClipboardList className="w-6 h-6 text-violet-400" />
+            <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
+              <ClipboardList className="w-4 h-4 text-violet-400" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">Booking Summary</h2>
-              <p className="text-zinc-400 text-sm">ID: {bookingData.user_id}</p>
-            </div>
+            <h2 className="text-lg font-bold text-white">Booking Summary</h2>
           </motion.div>
 
           <motion.div 
-            className="space-y-4"
+            className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm"
             initial="initial"
             animate="animate"
             variants={{
@@ -643,32 +634,28 @@ export default function ReviewPage() {
             {summaryItems.map((item, index) => (
               <motion.div 
                 key={index}
-                className="flex justify-between items-center py-3 border-b border-white/5"
+                className="flex justify-between items-center py-1"
                 variants={fadeInUp}
               >
-                <div className="flex items-center gap-3">
-                  <span className="text-zinc-500">{item.icon}</span>
-                  <span className="text-zinc-400">{item.label}</span>
-                </div>
-                <span className="text-white font-medium">{item.value}</span>
+                <span className="text-zinc-400">{item.label}</span>
+                <span className="text-white font-medium text-right">{item.value}</span>
               </motion.div>
             ))}
           </motion.div>
 
           {/* Total */}
           <motion.div 
-            className="mt-6 pt-6 border-t border-white/10"
+            className="mt-3 pt-3 border-t border-white/10"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5 }}
           >
             <div className="flex justify-between items-center">
               <div>
-                <span className="text-zinc-400">Total Amount</span>
-                <p className="text-zinc-500 text-sm">{duration} hour{duration !== 1 ? 's' : ''}</p>
+                <span className="text-zinc-400 text-sm">Total ({duration} hr{duration !== 1 ? 's' : ''})</span>
               </div>
               <motion.span 
-                className="text-3xl font-bold gradient-text-accent"
+                className="text-2xl font-bold gradient-text-accent"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.6, type: "spring", stiffness: 300 }}
@@ -681,30 +668,29 @@ export default function ReviewPage() {
 
         {/* User Details Card */}
         <motion.div 
-          className="glass-strong rounded-3xl p-8 mb-6"
+          className="glass-strong rounded-2xl p-4 mb-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <motion.div 
-            className="flex items-center gap-3 mb-6 pb-6 border-b border-white/10"
+            className="flex items-center gap-2 mb-3 pb-3 border-b border-white/10"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center">
-              <User className="w-6 h-6 text-violet-400" />
+            <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
+              <User className="w-4 h-4 text-violet-400" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Your Details</h2>
-              <p className="text-zinc-400 text-sm">Enter your phone number to continue</p>
+              <h2 className="text-lg font-bold text-white">Your Details</h2>
             </div>
           </motion.div>
 
           {!userData && !needsSignup && (
-            <motion.div className="space-y-4" variants={fadeInUp}>
+            <motion.div className="space-y-3" variants={fadeInUp}>
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-zinc-400 mb-2.5">
+                <label htmlFor="phone" className="block text-sm font-medium text-zinc-400 mb-1.5">
                   Phone Number
                 </label>
                 <div className="relative">
@@ -717,7 +703,7 @@ export default function ReviewPage() {
                       setPhoneNumber(value);
                     }}
                     placeholder="Enter 10-digit number"
-                    className="w-full py-3.5 px-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                    className="w-full py-3 px-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
                     maxLength={10}
                     autoComplete="tel"
                     inputMode="numeric"
@@ -728,13 +714,13 @@ export default function ReviewPage() {
                 type="button"
                 onClick={handlePhoneCheck}
                 disabled={isCheckingUser || phoneNumber.replace(/\D/g, '').length !== 10}
-                className="w-full btn-accent py-3 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full btn-accent py-2.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
                 {isCheckingUser ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Checking...
                   </>
                 ) : (
@@ -746,58 +732,54 @@ export default function ReviewPage() {
 
           {needsSignup && !userData && (
             <motion.div 
-              className="space-y-4"
+              className="space-y-3"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <p className="text-zinc-400 text-sm mb-4">
+              <p className="text-zinc-400 text-sm mb-2">
                 Welcome! Please enter your details to create an account.
               </p>
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-zinc-400 mb-2.5">
+                <label htmlFor="name" className="block text-sm font-medium text-zinc-400 mb-1.5">
                   Full Name
                 </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter your full name"
-                    className="w-full py-3.5 px-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
-                    autoComplete="name"
-                    required
-                  />
-                </div>
+                <input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your full name"
+                  className="w-full py-3 px-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                  autoComplete="name"
+                  required
+                />
               </div>
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-zinc-400 mb-2.5">
+                <label htmlFor="email" className="block text-sm font-medium text-zinc-400 mb-1.5">
                   Email Address
                 </label>
-                <div className="relative">
-                  <input
-                    type="email"
-                    id="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    className="w-full py-3.5 px-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
-                    autoComplete="email"
-                    required
-                  />
-                </div>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="w-full py-3 px-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                  autoComplete="email"
+                  required
+                />
               </div>
               <motion.button
                 type="button"
                 onClick={handleSignup}
                 disabled={isCheckingUser || !name.trim() || !email.includes('@')}
-                className="w-full btn-accent py-3 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full btn-accent py-2.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
                 {isCheckingUser ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Creating Account...
                   </>
                 ) : (
@@ -809,37 +791,22 @@ export default function ReviewPage() {
 
           {userData && (
             <motion.div 
-              className="space-y-3"
+              className="space-y-2"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-3">
-                <Check className="w-5 h-5 text-green-400" />
-                <span className="text-green-400">Account verified</span>
+              <div className="p-2 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
+                <Check className="w-4 h-4 text-green-400" />
+                <span className="text-green-400 text-sm">Account verified</span>
               </div>
-              <div className="flex justify-between items-center py-3 border-b border-white/5">
-                <div className="flex items-center gap-3">
-                  <User className="w-5 h-5 text-zinc-500" />
-                  <span className="text-zinc-400">Name</span>
-                </div>
+              <div className="flex justify-between items-center py-2 text-sm">
+                <span className="text-zinc-400">Name</span>
                 <span className="text-white font-medium">{userData.name}</span>
               </div>
-              <div className="flex justify-between items-center py-3 border-b border-white/5">
-                <div className="flex items-center gap-3">
-                  <Phone className="w-5 h-5 text-zinc-500" />
-                  <span className="text-zinc-400">Phone</span>
-                </div>
+              <div className="flex justify-between items-center py-2 text-sm">
+                <span className="text-zinc-400">Phone</span>
                 <span className="text-white font-medium">{userData.phone_number}</span>
               </div>
-              {userData.email && (
-                <div className="flex justify-between items-center py-3">
-                  <div className="flex items-center gap-3">
-                    <Mail className="w-5 h-5 text-zinc-500" />
-                    <span className="text-zinc-400">Email</span>
-                  </div>
-                  <span className="text-white font-medium">{userData.email}</span>
-                </div>
-              )}
             </motion.div>
           )}
         </motion.div>
@@ -847,28 +814,23 @@ export default function ReviewPage() {
         {/* OTP Verification Card */}
         {userData && !bookingConfirmed && (
           <motion.div 
-            className="glass-strong rounded-3xl p-8 mb-6"
+            className="glass-strong rounded-2xl p-4 mb-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             <motion.div 
-              className="flex items-center gap-3 mb-6 pb-6 border-b border-white/10"
+              className="flex items-center gap-2 mb-3 pb-3 border-b border-white/10"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <div className={`w-12 h-12 rounded-xl ${isAlreadyVerified ? 'bg-green-500/20' : 'bg-amber-500/20'} flex items-center justify-center`}>
-                <Shield className={`w-6 h-6 ${isAlreadyVerified ? 'text-green-400' : 'text-amber-400'}`} />
+              <div className={`w-8 h-8 rounded-lg ${isAlreadyVerified ? 'bg-green-500/20' : 'bg-amber-500/20'} flex items-center justify-center`}>
+                <Shield className={`w-4 h-4 ${isAlreadyVerified ? 'text-green-400' : 'text-amber-400'}`} />
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">
-                  {isAlreadyVerified ? 'Confirm Booking' : 'Verify & Confirm Booking'}
-                </h2>
-                <p className="text-zinc-400 text-sm">
-                  {isAlreadyVerified ? 'Your phone number is already verified' : 'Enter OTP to confirm your booking'}
-                </p>
-              </div>
+              <h2 className="text-lg font-bold text-white">
+                {isAlreadyVerified ? 'Confirm Booking' : 'Verify & Confirm'}
+              </h2>
             </motion.div>
 
             {/* Already verified - Direct confirm */}
@@ -878,9 +840,9 @@ export default function ReviewPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
-                <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center gap-3 mb-6">
-                  <Check className="w-5 h-5 text-green-400" />
-                  <span className="text-green-400">Phone verified from previous booking</span>
+                <div className="p-2 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center gap-2 mb-4">
+                  <Check className="w-4 h-4 text-green-400" />
+                  <span className="text-green-400 text-sm">Phone verified</span>
                 </div>
                 <p className="text-zinc-400 mb-6">
                   Click below to confirm your booking for <span className="text-white font-medium">{userData.phone_number}</span>
@@ -889,18 +851,18 @@ export default function ReviewPage() {
                   type="button"
                   onClick={handleDirectBooking}
                   disabled={isConfirmingBooking}
-                  className="btn-accent py-3 px-8 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mx-auto"
+                  className="btn-accent py-2.5 px-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mx-auto"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   {isConfirmingBooking ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Confirming Booking...
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Confirming...
                     </>
                   ) : (
                     <>
-                      <Check className="w-5 h-5" />
+                      <Check className="w-4 h-4" />
                       Confirm Booking
                     </>
                   )}
@@ -912,26 +874,25 @@ export default function ReviewPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
-                <p className="text-zinc-400 mb-6">
-                  Click below to receive a 6-digit verification code on your phone number
-                  <span className="text-white font-medium ml-1">{userData.phone_number}</span>
+                <p className="text-zinc-400 text-sm mb-4">
+                  Receive a verification code on <span className="text-white font-medium">{userData.phone_number}</span>
                 </p>
                 <motion.button
                   type="button"
                   onClick={handleSendOtp}
                   disabled={isSendingOtp}
-                  className="btn-accent py-3 px-8 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mx-auto"
+                  className="btn-accent py-2.5 px-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mx-auto"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   {isSendingOtp ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                       Sending OTP...
                     </>
                   ) : (
                     <>
-                      <Shield className="w-5 h-5" />
+                      <Shield className="w-4 h-4" />
                       Send OTP via SMS
                     </>
                   )}
@@ -939,20 +900,20 @@ export default function ReviewPage() {
               </motion.div>
             ) : (
               <motion.div 
-                className="space-y-6"
+                className="space-y-4"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-3">
-                  <Check className="w-5 h-5 text-green-400" />
-                  <span className="text-green-400">OTP sent to your phone!</span>
+                <div className="p-2 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2 justify-center">
+                  <Check className="w-4 h-4 text-green-400" />
+                  <span className="text-green-400 text-sm">OTP sent to your phone!</span>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-zinc-400 mb-4 text-center">
+                  <label className="block text-sm font-medium text-zinc-400 mb-2 text-center">
                     Enter the 6-digit OTP
                   </label>
-                  <div className="flex justify-center gap-2 sm:gap-3 max-w-sm mx-auto">
+                  <div className="flex justify-center gap-2 max-w-xs mx-auto">
                     {otp.map((digit, index) => (
                       <input
                         key={index}
@@ -964,29 +925,29 @@ export default function ReviewPage() {
                         onChange={(e) => handleOtpChange(index, e.target.value)}
                         onKeyDown={(e) => handleOtpKeyDown(index, e)}
                         onPaste={handleOtpPaste}
-                        className="w-11 h-13 sm:w-14 sm:h-16 text-center text-xl sm:text-2xl font-bold rounded-xl bg-white/5 border border-white/10 text-white focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all"
+                        className="w-10 h-12 text-center text-xl font-bold rounded-lg bg-white/5 border border-white/10 text-white focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all"
                       />
                     ))}
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex gap-2">
                   <motion.button
                     type="button"
                     onClick={handleVerifyOtp}
                     disabled={isVerifyingOtp || otp.join('').length !== 6}
-                    className="flex-1 btn-accent py-3 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 btn-accent py-2.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     {isVerifyingOtp ? (
                       <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Confirming Booking...
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Confirming...
                       </>
                     ) : (
                       <>
-                        <Check className="w-5 h-5" />
+                        <Check className="w-4 h-4" />
                         Verify & Confirm
                       </>
                     )}
@@ -996,12 +957,12 @@ export default function ReviewPage() {
                     type="button"
                     onClick={handleSendOtp}
                     disabled={isSendingOtp || resendCooldown > 0}
-                    className="flex-1 btn-secondary py-3 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="btn-secondary py-2.5 px-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <RefreshCw className={`w-5 h-5 ${isSendingOtp ? 'animate-spin' : ''}`} />
-                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
+                    <RefreshCw className={`w-4 h-4 ${isSendingOtp ? 'animate-spin' : ''}`} />
+                    {resendCooldown > 0 ? `${resendCooldown}s` : 'Resend'}
                   </motion.button>
                 </div>
               </motion.div>
@@ -1012,42 +973,42 @@ export default function ReviewPage() {
         {/* Booking Confirmed Success */}
         {bookingConfirmed && (
           <motion.div 
-            className="glass-strong rounded-3xl p-8 mb-6"
+            className="glass-strong rounded-2xl p-6 mb-4"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
           >
             <div className="text-center">
               <motion.div 
-                className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6"
+                className="w-14 h-14 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
               >
-                <Check className="w-10 h-10 text-green-400" />
+                <Check className="w-7 h-7 text-green-400" />
               </motion.div>
               <motion.h2 
-                className="text-2xl font-bold text-white mb-2"
+                className="text-xl font-bold text-white mb-1"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
               >
-                {bookingData?.isEditMode ? 'Your booking has been updated!' : 'Your booking is confirmed!'}
+                {bookingData?.isEditMode ? 'Booking Updated!' : 'Booking Confirmed!'}
               </motion.h2>
               <motion.p 
-                className="text-zinc-400 mb-4"
+                className="text-zinc-400 text-sm mb-2"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
               >
                 {bookingData?.isEditMode 
-                  ? 'An update confirmation SMS has been sent to your phone.'
-                  : 'A confirmation SMS has been sent to your phone.'
+                  ? 'Update confirmation SMS sent.'
+                  : 'Confirmation SMS sent.'
                 }
               </motion.p>
               {confirmedBookingId && (
                 <motion.p 
-                  className="text-sm text-zinc-500"
+                  className="text-xs text-zinc-500"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
@@ -1056,13 +1017,13 @@ export default function ReviewPage() {
                 </motion.p>
               )}
               <motion.div 
-                className="mt-6 flex items-center justify-center gap-2 text-violet-400"
+                className="mt-3 flex items-center justify-center gap-2 text-violet-400"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
               >
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Redirecting to confirmation page...</span>
+                <span className="text-sm">Redirecting...</span>
               </motion.div>
             </div>
           </motion.div>
@@ -1072,14 +1033,14 @@ export default function ReviewPage() {
         <AnimatePresence>
           {error && (
             <motion.div 
-              className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20"
+              className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <div className="flex items-center gap-3">
-                <AlertCircle className="w-5 h-5 text-red-400" />
-                <p className="text-red-400">{error}</p>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-400" />
+                <p className="text-red-400 text-sm">{error}</p>
               </div>
             </motion.div>
           )}
@@ -1088,7 +1049,7 @@ export default function ReviewPage() {
         {/* Action Buttons - Only show when booking is not yet confirmed */}
         {!bookingConfirmed && (
           <motion.div 
-            className="flex flex-col sm:flex-row gap-3 sm:gap-4"
+            className="flex gap-3"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
@@ -1097,7 +1058,7 @@ export default function ReviewPage() {
               type="button"
               onClick={() => router.push('/booking')}
               disabled={isVerifyingOtp}
-              className="w-full sm:flex-1 btn-secondary py-4 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full btn-secondary py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >

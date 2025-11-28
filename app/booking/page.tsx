@@ -16,7 +16,7 @@ async function safeJsonParse(response: Response) {
   }
 }
 import { 
-  ArrowLeft, 
+  ArrowLeft,
   Mic, 
   Users, 
   Calendar, 
@@ -660,79 +660,26 @@ function BookingPageContent() {
   };
 
   return (
-    <div className="min-h-screen py-8 px-4">
+    <div className="min-h-screen py-4 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <motion.div 
-          className="mb-6"
+          className="mb-4"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <Link 
             href="/home"
-            className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-4"
+            className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-2 text-sm"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
             Back to Home
           </Link>
           
-          <h1 className="text-3xl font-bold text-white mb-1">
+          <h1 className="text-2xl font-bold text-white">
             {isEditMode ? 'Change Your Booking' : 'Book Your Session'}
           </h1>
-          <p className="text-zinc-400 text-sm">
-            {isEditMode 
-              ? 'Modify your booking details below'
-              : 'Complete each step to book your session'
-            }
-          </p>
-        </motion.div>
-
-        {/* Progress Bar */}
-        <motion.div 
-          className="mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            {getDisplaySteps().map((step, index) => {
-              const displaySteps = getDisplaySteps();
-              const isActive = currentStep === step.number;
-              const isCompleted = currentStep > step.number;
-              
-              return (
-                <div key={step.number} className="flex items-center">
-                  <motion.div 
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                      isActive 
-                        ? 'bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg shadow-violet-500/30' 
-                        : isCompleted
-                          ? 'bg-violet-500/20 text-violet-400 border border-violet-500/50'
-                          : 'bg-white/5 text-zinc-500 border border-white/10'
-                    }`}
-                    animate={isActive ? { scale: [1, 1.1, 1] } : {}}
-                    transition={{ duration: 0.3 }}
-                  >
-                    {isCompleted ? <Check className="w-4 h-4" /> : step.icon}
-                  </motion.div>
-                  {index < displaySteps.length - 1 && (
-                    <div className={`w-8 sm:w-12 md:w-16 h-1 mx-1 rounded transition-colors duration-300 ${
-                      isCompleted ? 'bg-violet-500' : 'bg-white/10'
-                    }`} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div className="text-center">
-            <span className="text-zinc-400 text-sm">
-              Step {getDisplaySteps().findIndex(s => s.number === currentStep) + 1} of {getDisplaySteps().length}:
-            </span>
-            <span className="text-white font-medium ml-2">
-              {STEPS.find(s => s.number === currentStep)?.label}
-            </span>
-          </div>
         </motion.div>
 
         {/* Step Content */}
@@ -746,50 +693,42 @@ function BookingPageContent() {
               animate="animate"
               exit="exit"
               transition={{ duration: 0.3 }}
-              className="glass rounded-2xl p-6"
+              className="glass rounded-2xl p-5"
             >
-              <h2 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
                 <Mic className="w-5 h-5 text-violet-400" />
                 What type of session do you want?
               </h2>
-              <p className="text-zinc-400 text-sm mb-6">Choose the session type that best fits your needs</p>
+              <p className="text-zinc-400 text-sm mb-4">Choose the session type that best fits your needs</p>
               
               {/* Show original session type when in edit mode */}
               {isEditMode && originalSessionType && (
-                <div className="mb-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                <div className="mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
                   <p className="text-amber-400 text-xs uppercase tracking-wide mb-1">Currently Booked</p>
-                  <p className="text-amber-300 font-semibold text-lg">{originalSessionType}</p>
+                  <p className="text-amber-300 font-semibold">{originalSessionType}</p>
                 </div>
               )}
 
               {isEditMode && (
-                <p className="text-zinc-400 text-sm mb-3">Choose a new session type:</p>
+                <p className="text-zinc-400 text-sm mb-2">Choose a new session type:</p>
               )}
               
-              <div className="space-y-3">
-                {SESSION_TYPES.map((type) => (
-                  <button
-                    key={type.name}
-                    type="button"
-                    onClick={() => setSessionType(type.name)}
-                    className={`w-full p-4 rounded-xl border text-left transition-all flex items-center gap-4 ${
-                      sessionType === type.name
-                        ? 'bg-violet-500/20 border-violet-500 text-white'
-                        : 'bg-white/5 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'
-                    }`}
-                  >
-                    <span className={`p-3 rounded-lg ${sessionType === type.name ? 'bg-violet-500/30 text-violet-400' : 'bg-white/5 text-zinc-500'}`}>
-                      {type.icon}
-                    </span>
-                    <div className="flex-1">
-                      <p className="font-medium text-lg">{type.name}</p>
-                      <p className="text-sm text-zinc-500">{type.description}</p>
-                    </div>
-                    {sessionType === type.name && (
-                      <CheckCircle2 className="w-6 h-6 text-violet-400" />
-                    )}
-                  </button>
-                ))}
+              {/* Session Type Dropdown */}
+              <div>
+                <label className="block text-zinc-400 text-sm mb-2">Session Type</label>
+                <select
+                  value={sessionType}
+                  onChange={(e) => setSessionType(e.target.value as SessionType)}
+                  className="w-full p-3 rounded-xl border bg-white/5 border-white/10 text-white appearance-none cursor-pointer focus:outline-none focus:border-violet-500 transition-all"
+                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center' }}
+                >
+                  <option value="" className="bg-zinc-900">Select a session type</option>
+                  {SESSION_TYPES.map((type) => (
+                    <option key={type.name} value={type.name} className="bg-zinc-900">
+                      {type.name} - {type.description}
+                    </option>
+                  ))}
+                </select>
               </div>
             </motion.div>
           )}
@@ -803,130 +742,121 @@ function BookingPageContent() {
               animate="animate"
               exit="exit"
               transition={{ duration: 0.3 }}
-              className="glass rounded-2xl p-6"
+              className="glass rounded-2xl p-5"
             >
-              <h2 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
                 <Users className="w-5 h-5 text-violet-400" />
                 {sessionType === 'Karaoke' && 'How many participants?'}
                 {sessionType === 'Live with musicians' && 'How many musicians?'}
                 {sessionType === 'Band' && 'What equipment do you need?'}
                 {sessionType === 'Recording' && 'Choose your recording package'}
               </h2>
-              <p className="text-zinc-400 text-sm mb-6">This helps us find the best studio for you</p>
+              <p className="text-zinc-400 text-sm mb-4">This helps us find the best studio for you</p>
 
               {/* Show original session details when in edit mode */}
               {isEditMode && originalSessionDetails && (
-                <div className="mb-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                <div className="mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
                   <p className="text-amber-400 text-xs uppercase tracking-wide mb-1">Currently Booked</p>
-                  <p className="text-amber-300 font-semibold text-lg">{originalSessionDetails}</p>
+                  <p className="text-amber-300 font-semibold">{originalSessionDetails}</p>
                 </div>
               )}
 
               {isEditMode && (
-                <p className="text-zinc-400 text-sm mb-3">Choose new details:</p>
+                <p className="text-zinc-400 text-sm mb-2">Choose new details:</p>
               )}
 
-              {/* Karaoke Options */}
+              {/* Karaoke Options Dropdown */}
               {sessionType === 'Karaoke' && (
-                <div className="space-y-3">
-                  {KARAOKE_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setKaraokeOption(option.value)}
-                      className={`w-full p-4 rounded-xl border text-left flex items-center justify-between transition-all ${
-                        karaokeOption === option.value
-                          ? 'bg-violet-500/20 border-violet-500 text-white'
-                          : 'bg-white/5 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'
-                      }`}
-                    >
-                      <span className="font-medium">{option.label}</span>
-                      {karaokeOption === option.value && (
-                        <Check className="w-5 h-5 text-violet-400" />
-                      )}
-                    </button>
-                  ))}
+                <div>
+                  <label className="block text-zinc-400 text-sm mb-2">Number of Participants</label>
+                  <select
+                    value={karaokeOption}
+                    onChange={(e) => setKaraokeOption(e.target.value as KaraokeOption)}
+                    className="w-full p-3 rounded-xl border bg-white/5 border-white/10 text-white appearance-none cursor-pointer focus:outline-none focus:border-violet-500 transition-all"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center' }}
+                  >
+                    <option value="" className="bg-zinc-900">Select number of participants</option>
+                    {KARAOKE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value} className="bg-zinc-900">
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
 
-              {/* Live with Musicians Options */}
+              {/* Live with Musicians Options Dropdown */}
               {sessionType === 'Live with musicians' && (
-                <div className="space-y-3">
-                  {LIVE_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setLiveOption(option.value)}
-                      className={`w-full p-4 rounded-xl border text-left flex items-center justify-between transition-all ${
-                        liveOption === option.value
-                          ? 'bg-violet-500/20 border-violet-500 text-white'
-                          : 'bg-white/5 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'
-                      }`}
-                    >
-                      <span className="font-medium">{option.label}</span>
-                      {liveOption === option.value && (
-                        <Check className="w-5 h-5 text-violet-400" />
-                      )}
-                    </button>
-                  ))}
+                <div>
+                  <label className="block text-zinc-400 text-sm mb-2">Number of Musicians</label>
+                  <select
+                    value={liveOption}
+                    onChange={(e) => setLiveOption(e.target.value as LiveMusicianOption)}
+                    className="w-full p-3 rounded-xl border bg-white/5 border-white/10 text-white appearance-none cursor-pointer focus:outline-none focus:border-violet-500 transition-all"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center' }}
+                  >
+                    <option value="" className="bg-zinc-900">Select number of musicians</option>
+                    {LIVE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value} className="bg-zinc-900">
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
 
-              {/* Band Equipment */}
+              {/* Band Equipment - Keep as checkboxes since multiple can be selected */}
               {sessionType === 'Band' && (
-                <div className="grid grid-cols-2 gap-4">
-                  {BAND_EQUIPMENT.map((equipment) => (
-                    <button
-                      key={equipment.value}
-                      type="button"
-                      onClick={() => toggleBandEquipment(equipment.value)}
-                      className={`p-4 rounded-xl border text-left flex items-center gap-3 transition-all ${
-                        bandEquipment.includes(equipment.value)
-                          ? 'bg-violet-500/20 border-violet-500 text-white'
-                          : 'bg-white/5 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'
-                      }`}
-                    >
-                      <div className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
-                        bandEquipment.includes(equipment.value)
-                          ? 'bg-violet-500 border-violet-500'
-                          : 'border-zinc-500'
-                      }`}>
-                        {bandEquipment.includes(equipment.value) && (
-                          <Check className="w-4 h-4 text-white" />
-                        )}
-                      </div>
-                      <span className={bandEquipment.includes(equipment.value) ? 'text-violet-300' : ''}>
-                        {equipment.icon}
-                      </span>
-                      <span className="font-medium">{equipment.label}</span>
-                    </button>
-                  ))}
+                <div>
+                  <label className="block text-zinc-400 text-sm mb-2">Select Equipment (multiple allowed)</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {BAND_EQUIPMENT.map((equipment) => (
+                      <button
+                        key={equipment.value}
+                        type="button"
+                        onClick={() => toggleBandEquipment(equipment.value)}
+                        className={`p-3 rounded-xl border text-left flex items-center gap-2 transition-all ${
+                          bandEquipment.includes(equipment.value)
+                            ? 'bg-violet-500/20 border-violet-500 text-white'
+                            : 'bg-white/5 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'
+                        }`}
+                      >
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                          bandEquipment.includes(equipment.value)
+                            ? 'bg-violet-500 border-violet-500'
+                            : 'border-zinc-500'
+                        }`}>
+                          {bandEquipment.includes(equipment.value) && (
+                            <Check className="w-3 h-3 text-white" />
+                          )}
+                        </div>
+                        <span className={`text-sm ${bandEquipment.includes(equipment.value) ? 'text-violet-300' : ''}`}>
+                          {equipment.icon}
+                        </span>
+                        <span className="font-medium text-sm">{equipment.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              {/* Recording Options */}
+              {/* Recording Options Dropdown */}
               {sessionType === 'Recording' && (
-                <div className="space-y-3">
-                  {RECORDING_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setRecordingOption(option.value)}
-                      className={`w-full p-4 rounded-xl border text-left flex items-center justify-between transition-all ${
-                        recordingOption === option.value
-                          ? 'bg-violet-500/20 border-violet-500 text-white'
-                          : 'bg-white/5 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'
-                      }`}
-                    >
-                      <div>
-                        <p className="font-medium">{option.label}</p>
-                        <p className="text-sm text-amber-400">{option.price}</p>
-                      </div>
-                      {recordingOption === option.value && (
-                        <Check className="w-5 h-5 text-violet-400" />
-                      )}
-                    </button>
-                  ))}
+                <div>
+                  <label className="block text-zinc-400 text-sm mb-2">Recording Package</label>
+                  <select
+                    value={recordingOption}
+                    onChange={(e) => setRecordingOption(e.target.value as RecordingOption)}
+                    className="w-full p-3 rounded-xl border bg-white/5 border-white/10 text-white appearance-none cursor-pointer focus:outline-none focus:border-violet-500 transition-all"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center' }}
+                  >
+                    <option value="" className="bg-zinc-900">Select a recording package</option>
+                    {RECORDING_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value} className="bg-zinc-900">
+                        {option.label} - {option.price}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
             </motion.div>
@@ -941,39 +871,39 @@ function BookingPageContent() {
               animate="animate"
               exit="exit"
               transition={{ duration: 0.3 }}
-              className="glass rounded-2xl p-6"
+              className="glass rounded-2xl p-5"
             >
-              <h2 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
                 <Music className="w-5 h-5 text-violet-400" />
                 Select Your Studio
               </h2>
-              <p className="text-zinc-400 text-sm mb-6">We&apos;ve suggested the best studio for your session</p>
+              <p className="text-zinc-400 text-sm mb-4">We&apos;ve suggested the best studio for your session</p>
 
               {loadingRates && (
-                <div className="p-8 rounded-xl bg-white/5 flex flex-col items-center justify-center gap-3">
-                  <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
-                  <span className="text-zinc-400">Finding the best studio for you...</span>
+                <div className="p-6 rounded-xl bg-white/5 flex flex-col items-center justify-center gap-2">
+                  <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
+                  <span className="text-zinc-400 text-sm">Finding the best studio...</span>
                 </div>
               )}
 
               {ratesError && !loadingRates && (
-                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3">
-                  <AlertCircle className="w-5 h-5 text-red-400" />
-                  <span className="text-red-400">{ratesError}</span>
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-400" />
+                  <span className="text-red-400 text-sm">{ratesError}</span>
                 </div>
               )}
 
               {ratesData && !loadingRates && (
                 <>
-                  <div className="mb-6 p-4 rounded-xl bg-violet-500/10 border border-violet-500/20">
-                    <p className="text-violet-300 flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <div className="mb-4 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
+                    <p className="text-violet-300 text-sm flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
                       {ratesData.explanation}
                     </p>
                   </div>
 
                   {studioError && (
-                    <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                    <div className="mb-3 p-2 rounded-xl bg-red-500/10 border border-red-500/20">
                       <p className="text-red-400 text-sm flex items-start gap-2">
                         <X className="w-4 h-4 mt-0.5 flex-shrink-0" />
                         {studioError}
@@ -981,7 +911,7 @@ function BookingPageContent() {
                     </div>
                   )}
 
-                  <div className="space-y-4">
+                  <div className="space-y-2">
                     {STUDIOS.map((studioInfo) => {
                       const isAllowed = ratesData.allowed_studios.includes(studioInfo.name);
                       const isSelected = studio === studioInfo.name;
@@ -994,7 +924,7 @@ function BookingPageContent() {
                           type="button"
                           onClick={() => handleStudioSelect(studioInfo.name)}
                           disabled={!isAllowed}
-                          className={`relative w-full p-5 rounded-xl border text-left transition-all ${
+                          className={`relative w-full p-3 rounded-xl border text-left transition-all ${
                             isSelected
                               ? 'bg-violet-500/20 border-violet-500 ring-2 ring-violet-500/50'
                               : isAllowed
@@ -1004,43 +934,33 @@ function BookingPageContent() {
                           whileHover={isAllowed ? { scale: 1.01 } : {}}
                           whileTap={isAllowed ? { scale: 0.99 } : {}}
                         >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className={`font-bold text-lg ${isSelected ? 'text-white' : isAllowed ? 'text-zinc-300' : 'text-zinc-500'}`}>
-                                  {studioInfo.name}
-                                </h3>
-                                {isSuggested && (
-                                  <span className="px-2 py-0.5 bg-violet-500 text-white text-xs font-medium rounded-full">
-                                    Recommended
-                                  </span>
-                                )}
-                                {!isAllowed && (
-                                  <span className="px-2 py-0.5 bg-zinc-700 text-zinc-400 text-xs font-medium rounded-full">
-                                    Too Small
-                                  </span>
-                                )}
-                              </div>
-                              <p className={`text-sm mb-2 ${isAllowed ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                                {studioInfo.description}
-                              </p>
-                              <div className="flex flex-wrap gap-2">
-                                {studioInfo.features.map((feature, i) => (
-                                  <span key={i} className="text-xs px-2 py-1 bg-white/5 rounded text-zinc-500">
-                                    {feature}
-                                  </span>
-                                ))}
-                              </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <h3 className={`font-bold ${isSelected ? 'text-white' : isAllowed ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                                {studioInfo.name}
+                              </h3>
+                              {isSuggested && (
+                                <span className="px-2 py-0.5 bg-violet-500 text-white text-xs font-medium rounded-full">
+                                  Recommended
+                                </span>
+                              )}
+                              {!isAllowed && (
+                                <span className="px-2 py-0.5 bg-zinc-700 text-zinc-400 text-xs font-medium rounded-full">
+                                  Too Small
+                                </span>
+                              )}
+                              <span className={`text-xs ${isAllowed ? 'text-zinc-500' : 'text-zinc-600'}`}>
+                                ({studioInfo.features[0]})
+                              </span>
                             </div>
-                            <div className="text-right">
+                            <div className="flex items-center gap-2">
                               {studioRate && isAllowed && (
-                                <p className={`text-xl font-bold ${isSelected ? 'text-amber-400' : 'text-amber-500/70'}`}>
-                                  ₹{studioRate}
-                                  <span className="text-sm font-normal">/hr</span>
+                                <p className={`font-bold ${isSelected ? 'text-amber-400' : 'text-amber-500/70'}`}>
+                                  ₹{studioRate}<span className="text-xs font-normal">/hr</span>
                                 </p>
                               )}
                               {isSelected && (
-                                <CheckCircle2 className="w-6 h-6 text-violet-400 mt-2 ml-auto" />
+                                <CheckCircle2 className="w-5 h-5 text-violet-400" />
                               )}
                             </div>
                           </div>
@@ -1062,96 +982,95 @@ function BookingPageContent() {
               animate="animate"
               exit="exit"
               transition={{ duration: 0.3 }}
-              className="glass rounded-2xl p-6"
+              className="glass rounded-2xl p-5"
             >
-              <h2 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-violet-400" />
                 Choose Date & Time
               </h2>
-              <p className="text-zinc-400 text-sm mb-6">Select when you want to book {studio}</p>
+              <p className="text-zinc-400 text-sm mb-4">Select when you want to book {studio}</p>
 
-              {/* Date Picker */}
-              <div className="mb-6">
-                <label htmlFor="date" className="block text-sm font-medium text-zinc-300 mb-2">
-                  Select Date
-                </label>
-                <input
-                  type="date"
-                  id="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  min={getMinDate()}
-                  max={getMaxDate()}
-                  className="input text-lg"
-                />
-                <p className="text-xs text-zinc-500 mt-1">
-                  Book up to {bookingSettings.advanceBookingDays} days in advance
-                </p>
-              </div>
+              {/* Date and Duration in a row */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                {/* Date Picker */}
+                <div>
+                  <label htmlFor="date" className="block text-xs font-medium text-zinc-300 mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    id="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    min={getMinDate()}
+                    max={getMaxDate()}
+                    className="input text-sm w-full"
+                  />
+                </div>
 
-              {/* Number of Hours */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-zinc-300 mb-2">
-                  Duration
-                </label>
-                <div className="flex items-center gap-4 justify-center bg-white/5 rounded-xl p-4">
-                  <button
-                    type="button"
-                    onClick={() => setNumberOfHours(prev => Math.max(bookingSettings.minBookingDuration, prev - 1))}
-                    disabled={numberOfHours <= bookingSettings.minBookingDuration}
-                    className={`w-14 h-14 rounded-xl border flex items-center justify-center text-2xl font-bold transition-all ${
-                      numberOfHours <= bookingSettings.minBookingDuration
-                        ? 'bg-zinc-800/50 text-zinc-600 border-zinc-700 cursor-not-allowed'
-                        : 'bg-white/5 text-white border-white/10 hover:border-violet-500 hover:bg-violet-500/20'
-                    }`}
-                  >
-                    -
-                  </button>
-                  <div className="text-center min-w-[100px]">
-                    <span className="text-4xl font-bold text-white">{numberOfHours}</span>
-                    <span className="text-zinc-400 ml-2 text-lg">hour{numberOfHours > 1 ? 's' : ''}</span>
+                {/* Number of Hours */}
+                <div>
+                  <label className="block text-xs font-medium text-zinc-300 mb-1">
+                    Duration
+                  </label>
+                  <div className="flex items-center gap-2 justify-center bg-white/5 rounded-xl p-2">
+                    <button
+                      type="button"
+                      onClick={() => setNumberOfHours(prev => Math.max(bookingSettings.minBookingDuration, prev - 1))}
+                      disabled={numberOfHours <= bookingSettings.minBookingDuration}
+                      className={`w-10 h-10 rounded-lg border flex items-center justify-center text-xl font-bold transition-all ${
+                        numberOfHours <= bookingSettings.minBookingDuration
+                          ? 'bg-zinc-800/50 text-zinc-600 border-zinc-700 cursor-not-allowed'
+                          : 'bg-white/5 text-white border-white/10 hover:border-violet-500 hover:bg-violet-500/20'
+                      }`}
+                    >
+                      -
+                    </button>
+                    <div className="text-center min-w-[60px]">
+                      <span className="text-2xl font-bold text-white">{numberOfHours}</span>
+                      <span className="text-zinc-400 ml-1 text-sm">hr{numberOfHours > 1 ? 's' : ''}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setNumberOfHours(prev => Math.min(bookingSettings.maxBookingDuration, prev + 1))}
+                      disabled={numberOfHours >= bookingSettings.maxBookingDuration}
+                      className={`w-10 h-10 rounded-lg border flex items-center justify-center text-xl font-bold transition-all ${
+                        numberOfHours >= bookingSettings.maxBookingDuration
+                          ? 'bg-zinc-800/50 text-zinc-600 border-zinc-700 cursor-not-allowed'
+                          : 'bg-white/5 text-white border-white/10 hover:border-violet-500 hover:bg-violet-500/20'
+                      }`}
+                    >
+                      +
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setNumberOfHours(prev => Math.min(bookingSettings.maxBookingDuration, prev + 1))}
-                    disabled={numberOfHours >= bookingSettings.maxBookingDuration}
-                    className={`w-14 h-14 rounded-xl border flex items-center justify-center text-2xl font-bold transition-all ${
-                      numberOfHours >= bookingSettings.maxBookingDuration
-                        ? 'bg-zinc-800/50 text-zinc-600 border-zinc-700 cursor-not-allowed'
-                        : 'bg-white/5 text-white border-white/10 hover:border-violet-500 hover:bg-violet-500/20'
-                    }`}
-                  >
-                    +
-                  </button>
                 </div>
               </div>
 
               {/* Time Slots */}
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-3">
+                <label className="block text-xs font-medium text-zinc-300 mb-2">
                   Select Start Time
                 </label>
                 
                 {loadingSlots && (
-                  <div className="p-8 rounded-xl bg-white/5 flex flex-col items-center justify-center gap-3">
-                    <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
-                    <span className="text-zinc-400">Loading available slots...</span>
+                  <div className="p-4 rounded-xl bg-white/5 flex items-center justify-center gap-2">
+                    <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
+                    <span className="text-zinc-400 text-sm">Loading slots...</span>
                   </div>
                 )}
                 
                 {!loadingSlots && slotsError && (
-                  <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3">
-                    <AlertCircle className="w-5 h-5 text-red-400" />
-                    <span className="text-red-400">{slotsError}</span>
+                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-400" />
+                    <span className="text-red-400 text-sm">{slotsError}</span>
                   </div>
                 )}
                 
                 {!loadingSlots && !slotsError && studio && date && availableSlots.length === 0 && (
-                  <div className="p-6 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
-                    <Calendar className="w-12 h-12 text-amber-400 mx-auto mb-3" />
-                    <h3 className="text-white font-semibold mb-2">No Slots Available</h3>
+                  <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
+                    <Calendar className="w-8 h-8 text-amber-400 mx-auto mb-2" />
                     <p className="text-amber-300 text-sm">
-                      No available time slots for {studio} on this date. Try a different date.
+                      No slots available. Try a different date.
                     </p>
                   </div>
                 )}
@@ -1160,29 +1079,20 @@ function BookingPageContent() {
                   <>
                     {/* Show original slot when in edit mode */}
                     {isEditMode && originalStartTime && originalEndTime && (
-                      <div className="mb-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
-                        <p className="text-amber-400 text-xs uppercase tracking-wide mb-1">Currently Booked Slot</p>
-                        <p className="text-amber-300 font-semibold text-lg">
-                          {formatTimeDisplay(originalStartTime)} - {formatTimeDisplay(originalEndTime)}
-                        </p>
+                      <div className="mb-3 p-2 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                        <p className="text-amber-400 text-xs uppercase tracking-wide">Currently: {formatTimeDisplay(originalStartTime)} - {formatTimeDisplay(originalEndTime)}</p>
                       </div>
                     )}
                     
                     {selectedSlots.length > 0 && (
-                      <div className="mb-4 p-3 rounded-xl bg-violet-500/20 border border-violet-500/30">
-                        <p className="text-violet-400 text-xs uppercase tracking-wide mb-1">
-                          {isEditMode ? 'New Selected Slot' : 'Selected'}
-                        </p>
-                        <p className="text-violet-300 font-medium text-center">
-                          {formatTimeDisplay(selectedSlots[0].start)} - {formatTimeDisplay(selectedSlots[selectedSlots.length - 1].end)}
+                      <div className="mb-3 p-2 rounded-xl bg-violet-500/20 border border-violet-500/30 text-center">
+                        <p className="text-violet-300 font-medium text-sm">
+                          {isEditMode ? 'New: ' : ''}{formatTimeDisplay(selectedSlots[0].start)} - {formatTimeDisplay(selectedSlots[selectedSlots.length - 1].end)}
                         </p>
                       </div>
                     )}
 
-                    {isEditMode && (
-                      <p className="text-zinc-400 text-sm mb-3">Choose a new time slot:</p>
-                    )}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto pr-1">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[180px] overflow-y-auto pr-1">
                       {availableSlots.map((slot, index) => {
                         const canSelect = canSelectAsStartTime(index);
                         if (!canSelect) return null;
@@ -1212,7 +1122,7 @@ function BookingPageContent() {
                             key={`${slot.start}-${endSlot.end}`}
                             type="button"
                             onClick={() => handleSlotSelect(slot, index)}
-                            className={`px-3 py-3 text-sm rounded-xl border transition-all font-medium ${
+                            className={`px-2 py-2 text-xs rounded-lg border transition-all font-medium ${
                               isStart
                                 ? 'bg-violet-500 text-white border-violet-500 shadow-lg shadow-violet-500/25'
                                 : 'bg-white/5 text-white border-white/10 hover:border-violet-500 hover:bg-violet-500/20'
@@ -1227,9 +1137,9 @@ function BookingPageContent() {
                 )}
                 
                 {!loadingSlots && !slotsError && !date && (
-                  <div className="p-6 rounded-xl bg-white/5 text-center">
-                    <Clock className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-                    <p className="text-zinc-500">Select a date to see available slots</p>
+                  <div className="p-4 rounded-xl bg-white/5 text-center">
+                    <Clock className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+                    <p className="text-zinc-500 text-sm">Select a date to see available slots</p>
                   </div>
                 )}
               </div>
@@ -1334,7 +1244,7 @@ function BookingPageContent() {
 
         {/* Navigation Buttons */}
         <motion.div 
-          className="flex gap-4 mt-6"
+          className="flex gap-3 mt-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
@@ -1343,11 +1253,11 @@ function BookingPageContent() {
             <motion.button
               type="button"
               onClick={handleBack}
-              className="flex-1 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10"
+              className="flex-1 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-4 h-4" />
               Back
             </motion.button>
           )}
@@ -1357,7 +1267,7 @@ function BookingPageContent() {
               type="button"
               onClick={handleNext}
               disabled={!canProceedFromStep(currentStep)}
-              className={`flex-1 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
                 canProceedFromStep(currentStep)
                   ? 'bg-violet-500 hover:bg-violet-600 text-white'
                   : 'bg-white/5 text-zinc-500 cursor-not-allowed'
@@ -1366,7 +1276,7 @@ function BookingPageContent() {
               whileTap={canProceedFromStep(currentStep) ? { scale: 0.98 } : {}}
             >
               Next
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-4 h-4" />
             </motion.button>
           )}
         </motion.div>
