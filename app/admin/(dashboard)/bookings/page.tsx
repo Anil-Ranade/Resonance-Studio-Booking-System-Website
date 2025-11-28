@@ -38,6 +38,27 @@ interface Booking {
   created_at: string;
 }
 
+// Helper function to check if a booking's time has passed
+const isBookingTimePassed = (date: string, endTime: string): boolean => {
+  const now = new Date();
+  const bookingDate = new Date(date);
+  const [hours, minutes] = endTime.split(':').map(Number);
+  
+  // Set the booking end datetime
+  bookingDate.setHours(hours, minutes, 0, 0);
+  
+  return now > bookingDate;
+};
+
+// Get effective status - if time has passed and booking is confirmed/pending, treat as needing completion
+const getEffectiveStatus = (booking: Booking): Booking['status'] | 'needs_completion' => {
+  if ((booking.status === 'confirmed' || booking.status === 'pending') && 
+      isBookingTimePassed(booking.date, booking.end_time)) {
+    return 'needs_completion';
+  }
+  return booking.status;
+};
+
 export default function BookingsManagementPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -176,8 +197,12 @@ export default function BookingsManagementPage() {
       booking.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       booking.phone_number.includes(searchTerm) ||
       booking.studio.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const effectiveStatus = getEffectiveStatus(booking);
     const matchesStatus =
-      statusFilter === 'all' || booking.status === statusFilter;
+      statusFilter === 'all' || 
+      booking.status === statusFilter ||
+      (statusFilter === 'needs_completion' && effectiveStatus === 'needs_completion');
     return matchesSearch && matchesStatus;
   });
 
@@ -193,9 +218,18 @@ export default function BookingsManagementPage() {
         return 'bg-blue-500/20 text-blue-400';
       case 'no_show':
         return 'bg-zinc-500/20 text-zinc-400';
+      case 'needs_completion':
+        return 'bg-orange-500/20 text-orange-400';
       default:
         return 'bg-zinc-500/20 text-zinc-400';
     }
+  };
+
+  const getStatusLabel = (status: string) => {
+    if (status === 'needs_completion') {
+      return 'Needs Action';
+    }
+    return status.replace('_', ' ');
   };
 
   const formatTime = (time: string) => {
@@ -247,10 +281,12 @@ export default function BookingsManagementPage() {
               className="select"
             >
               <option value="all">All Status</option>
+              <option value="needs_completion">Needs Action</option>
               <option value="pending">Pending</option>
               <option value="confirmed">Confirmed</option>
               <option value="completed">Completed</option>
               <option value="no_show">No Show</option>
+              <option value="cancelled">Cancelled</option>
             </select>
           </div>
         </div>
@@ -335,13 +371,18 @@ export default function BookingsManagementPage() {
                       </p>
                     </td>
                     <td className="p-4">
-                      <span
-                        className={`px-3 py-1 rounded-lg text-xs font-medium capitalize ${getStatusColor(
-                          booking.status
-                        )}`}
-                      >
-                        {booking.status}
-                      </span>
+                      {(() => {
+                        const effectiveStatus = getEffectiveStatus(booking);
+                        return (
+                          <span
+                            className={`px-3 py-1 rounded-lg text-xs font-medium capitalize ${getStatusColor(
+                              effectiveStatus
+                            )}`}
+                          >
+                            {getStatusLabel(effectiveStatus)}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="p-4 text-right">
                       <button
@@ -423,13 +464,18 @@ export default function BookingsManagementPage() {
                       {selectedBooking.phone_number}
                     </p>
                   </div>
-                  <span
-                    className={`ml-auto px-3 py-1 rounded-lg text-xs font-medium capitalize ${getStatusColor(
-                      selectedBooking.status
-                    )}`}
-                  >
-                    {selectedBooking.status.replace('_', ' ')}
-                  </span>
+                  {(() => {
+                    const effectiveStatus = getEffectiveStatus(selectedBooking);
+                    return (
+                      <span
+                        className={`ml-auto px-3 py-1 rounded-lg text-xs font-medium capitalize ${getStatusColor(
+                          effectiveStatus
+                        )}`}
+                      >
+                        {getStatusLabel(effectiveStatus)}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -489,8 +535,8 @@ export default function BookingsManagementPage() {
                 <div className="pt-4 border-t border-white/10">
                   <p className="text-zinc-400 text-sm mb-3">Actions</p>
                   <div className="flex flex-wrap gap-2">
-                    {/* Pending bookings */}
-                    {selectedBooking.status === 'pending' && (
+                    {/* Pending bookings (time not passed) */}
+                    {selectedBooking.status === 'pending' && !isBookingTimePassed(selectedBooking.date, selectedBooking.end_time) && (
                       <>
                         <button
                           onClick={() => handleConfirm(selectedBooking.id)}
@@ -511,9 +557,44 @@ export default function BookingsManagementPage() {
                       </>
                     )}
 
-                    {/* Confirmed bookings */}
-                    {selectedBooking.status === 'confirmed' && (
+                    {/* Confirmed bookings (time not passed) */}
+                    {selectedBooking.status === 'confirmed' && !isBookingTimePassed(selectedBooking.date, selectedBooking.end_time) && (
                       <>
+                        <button
+                          onClick={() => handleComplete(selectedBooking.id)}
+                          disabled={updating}
+                          className="flex-1 py-3 rounded-xl bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                          Mark Complete
+                        </button>
+                        <button
+                          onClick={() => handleNoShow(selectedBooking.id)}
+                          disabled={updating}
+                          className="flex-1 py-3 rounded-xl bg-zinc-500/20 text-zinc-400 hover:bg-zinc-500/30 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
+                          No Show
+                        </button>
+                        <button
+                          onClick={() => handleCancel(selectedBooking.id)}
+                          disabled={updating}
+                          className="flex-1 py-3 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
+                          Cancel
+                        </button>
+                      </>
+                    )}
+
+                    {/* Bookings where time has passed (needs completion) - pending or confirmed */}
+                    {(selectedBooking.status === 'pending' || selectedBooking.status === 'confirmed') && 
+                     isBookingTimePassed(selectedBooking.date, selectedBooking.end_time) && (
+                      <>
+                        <p className="w-full text-orange-400 text-sm mb-2 flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4" />
+                          Session time has passed. Please update the status.
+                        </p>
                         <button
                           onClick={() => handleComplete(selectedBooking.id)}
                           disabled={updating}
@@ -563,16 +644,34 @@ export default function BookingsManagementPage() {
                       </>
                     )}
 
-                    {/* Completed bookings - can mark uncomplete */}
+                    {/* Completed bookings - can mark as no show, not complete, or cancel */}
                     {selectedBooking.status === 'completed' && (
-                      <button
-                        onClick={() => handleRestore(selectedBooking.id)}
-                        disabled={updating}
-                        className="flex-1 py-3 rounded-xl bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                      >
-                        {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                        Mark Uncomplete
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleRestore(selectedBooking.id)}
+                          disabled={updating}
+                          className="flex-1 py-3 rounded-xl bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                          Not Complete
+                        </button>
+                        <button
+                          onClick={() => handleNoShow(selectedBooking.id)}
+                          disabled={updating}
+                          className="flex-1 py-3 rounded-xl bg-zinc-500/20 text-zinc-400 hover:bg-zinc-500/30 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
+                          No Show
+                        </button>
+                        <button
+                          onClick={() => handleCancel(selectedBooking.id)}
+                          disabled={updating}
+                          className="flex-1 py-3 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
+                          Cancel
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
