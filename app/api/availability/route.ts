@@ -128,6 +128,24 @@ function chunkOverlapsBlocked(chunk: TimeSlot, blockedSlot: BlockedSlot): boolea
   return chunkStart < blockedEnd && chunkEnd > blockedStart;
 }
 
+// Helper function to get current time in IST (India Standard Time)
+function getISTDate(): Date {
+  const now = new Date();
+  // Convert to IST by adding 5 hours 30 minutes to UTC
+  const istOffset = 5.5 * 60 * 60 * 1000; // 5 hours 30 minutes in milliseconds
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+  return new Date(utcTime + istOffset);
+}
+
+// Helper function to get today's date string in IST (YYYY-MM-DD)
+function getISTDateString(): string {
+  const istDate = getISTDate();
+  const year = istDate.getFullYear();
+  const month = String(istDate.getMonth() + 1).padStart(2, '0');
+  const day = String(istDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const studio = searchParams.get('studio');
@@ -154,8 +172,9 @@ export async function GET(request: NextRequest) {
     // Fetch booking settings
     const bookingSettings = await getBookingSettings();
     
-    // Validate date is within advance booking limit
-    const today = new Date();
+    // Use IST for date calculations (India Standard Time)
+    const todayIST = getISTDateString();
+    const today = new Date(todayIST);
     today.setHours(0, 0, 0, 0);
     const selectedDate = new Date(date);
     const maxDate = new Date(today);
@@ -224,18 +243,18 @@ export async function GET(request: NextRequest) {
     // Sort chunks by start time
     availableChunks.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
 
-    // Step 6: Filter out past time slots if the selected date is today
-    const isToday = selectedDate.toDateString() === today.toDateString();
+    // Step 6: Filter out past time slots if the selected date is today (using IST)
+    const isToday = date === todayIST;
     if (isToday) {
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinutes = now.getMinutes();
-      // Calculate current time in minutes since midnight
+      const nowIST = getISTDate();
+      const currentHour = nowIST.getHours();
+      const currentMinutes = nowIST.getMinutes();
+      // Calculate current time in minutes since midnight (IST)
       const currentTimeInMinutes = currentHour * 60 + currentMinutes;
       
       // Filter out slots whose START time has already passed
       // Users should not be able to book a slot that has already started
-      // For example, if it's 12:30 PM, slots starting at 8 AM, 9 AM, 10 AM, 11 AM, and 12 PM should not be shown
+      // For example, if it's 12:30 PM IST, slots starting at 8 AM, 9 AM, 10 AM, 11 AM, and 12 PM should not be shown
       availableChunks = availableChunks.filter((chunk) => {
         const slotStartMinutes = timeToMinutes(chunk.start);
         // Only show slots that haven't started yet (start time is after current time)
