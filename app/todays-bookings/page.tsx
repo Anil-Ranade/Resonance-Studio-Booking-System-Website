@@ -52,7 +52,8 @@ export default function TodaysBookingsPage() {
 
   useEffect(() => {
     fetchBookings(selectedDate);
-    const interval = setInterval(() => fetchBookings(selectedDate, true), 120000);
+    // Auto-refresh every 10 seconds for real-time updates
+    const interval = setInterval(() => fetchBookings(selectedDate, true), 10000);
     return () => clearInterval(interval);
   }, [selectedDate]);
 
@@ -106,6 +107,42 @@ export default function TodaysBookingsPage() {
   // Time slots from 8 AM to 10 PM (14 slots)
   const timeSlots = Array.from({ length: 14 }, (_, i) => 8 + i);
   const startHour = 8;
+  const endHour = 22; // 10 PM
+
+  // Get current time for determining past slots and current time indicator
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    return () => clearInterval(timer);
+  }, []);
+
+  const isToday = selectedDate === new Date().toISOString().split('T')[0];
+  const currentHour = currentTime.getHours();
+  const currentMinutes = currentTime.getMinutes();
+
+  // Calculate current time position as percentage
+  const getCurrentTimePosition = () => {
+    const totalMinutes = (currentHour - startHour) * 60 + currentMinutes;
+    const totalDuration = (endHour - startHour) * 60;
+    return (totalMinutes / totalDuration) * 100;
+  };
+
+  const currentTimePosition = getCurrentTimePosition();
+  const showCurrentTimeLine = isToday && currentHour >= startHour && currentHour < endHour;
+
+  // Check if a time slot has a booking for a specific studio
+  const hasBookingAtHour = (studio: string, hour: number) => {
+    const blocks = studioBlocks[studio] || [];
+    return blocks.some(block => hour >= block.start && hour < block.end);
+  };
+
+  // Check if a time slot is in the past (only for today)
+  const isPastSlot = (hour: number) => {
+    return isToday && hour < currentHour;
+  };
 
   const getStudioColor = (studio: string) => {
     if (studio === 'Studio A') return 'bg-blue-500';
@@ -158,14 +195,28 @@ export default function TodaysBookingsPage() {
                 TIME
               </div>
               {studios.map((studio) => (
-                <div key={studio} className="flex-1 px-4 flex items-center justify-center text-xl font-bold text-zinc-200 border-r border-zinc-700 last:border-r-0">
-                  {studio.replace('Studio ', '')}
+                <div key={studio} className="flex-1 px-4 flex items-center justify-center text-xl font-bold text-zinc-200 border-r border-zinc-700">
+                  {studio}
                 </div>
               ))}
+              <div className="w-[80px] flex-shrink-0 px-4 flex items-center text-base font-bold text-zinc-200">
+                TIME
+              </div>
             </div>
           
           {/* Grid Body */}
-          <div className="flex-1 flex overflow-hidden py-3">
+          <div className="flex-1 flex overflow-hidden py-3 relative">
+            {/* Current Time Indicator */}
+            {showCurrentTimeLine && (
+              <div 
+                className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
+                style={{ top: `${currentTimePosition}%` }}
+              >
+                <div className="w-3 h-3 rounded-full bg-red-500 -ml-1.5 flex-shrink-0"></div>
+                <div className="flex-1 h-0.5 bg-red-500"></div>
+              </div>
+            )}
+            
             {/* Time Column */}
             <div className="w-[80px] flex-shrink-0 flex flex-col border-r border-zinc-700 relative">
               {timeSlots.map((hour, index) => (
@@ -189,14 +240,24 @@ export default function TodaysBookingsPage() {
               <div key={studio} className="flex-1 relative border-r border-zinc-700 last:border-r-0">
                 {/* Grid lines for empty slots */}
                 <div className="absolute inset-0 flex flex-col">
-                  {timeSlots.map((hour) => (
-                    <div 
-                      key={hour} 
-                      className="flex-1 border-b border-zinc-800 bg-zinc-900/50 flex items-center justify-center"
-                    >
-                      <div className="w-10 h-8 rounded border border-zinc-700/50 bg-zinc-800/30"></div>
-                    </div>
-                  ))}
+                  {timeSlots.map((hour) => {
+                    const hasBooking = hasBookingAtHour(studio, hour);
+                    const isPast = isPastSlot(hour);
+                    const shouldBlackOut = !hasBooking || isPast;
+                    
+                    return (
+                      <div 
+                        key={hour} 
+                        className={`flex-1 border-b border-zinc-800 flex items-center justify-center ${
+                          shouldBlackOut ? 'bg-black' : 'bg-zinc-900/50'
+                        }`}
+                      >
+                        {!shouldBlackOut && (
+                          <div className="w-10 h-8 rounded border border-zinc-700/50 bg-zinc-800/30"></div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
                 
                 {/* Booking blocks */}
@@ -224,6 +285,24 @@ export default function TodaysBookingsPage() {
                 })}
               </div>
             ))}
+            
+            {/* Right Time Column */}
+            <div className="w-[80px] flex-shrink-0 flex flex-col border-l border-zinc-700 relative">
+              {timeSlots.map((hour, index) => (
+                <div 
+                  key={hour} 
+                  className="flex-1 relative border-b border-zinc-800 bg-zinc-900"
+                >
+                  <span className="absolute top-0 -translate-y-1/2 right-2 text-amber-400 font-medium text-sm bg-zinc-900 pl-1">
+                    {formatTimeLabel(hour)}
+                  </span>
+                </div>
+              ))}
+              {/* 10 PM label at the bottom */}
+              <span className="absolute bottom-0 translate-y-1/2 right-2 text-amber-400 font-medium text-sm bg-zinc-900 pl-1">
+                10 PM
+              </span>
+            </div>
           </div>
             {/* Bottom padding for 10 PM label */}
             <div className="h-4 flex-shrink-0 bg-zinc-900 rounded-b-xl"></div>
