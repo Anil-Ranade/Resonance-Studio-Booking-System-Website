@@ -42,6 +42,30 @@ export default function AvailabilityPage() {
   const [availability, setAvailability] = useState<AvailabilityData>({});
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
+
+  // Fetch booking settings on component mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+          const data = await response.json();
+          setAdvanceBookingDays(data.advanceBookingDays || 30);
+        }
+      } catch (err) {
+        console.error('Error fetching booking settings:', err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  // Calculate max date based on advance booking days
+  const getMaxDate = useCallback(() => {
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + advanceBookingDays);
+    return maxDate;
+  }, [advanceBookingDays]);
 
   // Detect mobile screen size
   useEffect(() => {
@@ -58,20 +82,20 @@ export default function AvailabilityPage() {
   ];
 
   const timeSlots = [
-    { label: "8-9 AM", start: "08:00", end: "09:00" },
-    { label: "9-10 AM", start: "09:00", end: "10:00" },
-    { label: "10-11 AM", start: "10:00", end: "11:00" },
-    { label: "11 AM-12 PM", start: "11:00", end: "12:00" },
-    { label: "12-1 PM", start: "12:00", end: "13:00" },
-    { label: "1-2 PM", start: "13:00", end: "14:00" },
-    { label: "2-3 PM", start: "14:00", end: "15:00" },
-    { label: "3-4 PM", start: "15:00", end: "16:00" },
-    { label: "4-5 PM", start: "16:00", end: "17:00" },
-    { label: "5-6 PM", start: "17:00", end: "18:00" },
-    { label: "6-7 PM", start: "18:00", end: "19:00" },
-    { label: "7-8 PM", start: "19:00", end: "20:00" },
-    { label: "8-9 PM", start: "20:00", end: "21:00" },
-    { label: "9-10 PM", start: "21:00", end: "22:00" },
+    { label: "08:00 - 09:00", start: "08:00", end: "09:00" },
+    { label: "09:00 - 10:00", start: "09:00", end: "10:00" },
+    { label: "10:00 - 11:00", start: "10:00", end: "11:00" },
+    { label: "11:00 - 12:00", start: "11:00", end: "12:00" },
+    { label: "12:00 - 13:00", start: "12:00", end: "13:00" },
+    { label: "13:00 - 14:00", start: "13:00", end: "14:00" },
+    { label: "14:00 - 15:00", start: "14:00", end: "15:00" },
+    { label: "15:00 - 16:00", start: "15:00", end: "16:00" },
+    { label: "16:00 - 17:00", start: "16:00", end: "17:00" },
+    { label: "17:00 - 18:00", start: "17:00", end: "18:00" },
+    { label: "18:00 - 19:00", start: "18:00", end: "19:00" },
+    { label: "19:00 - 20:00", start: "19:00", end: "20:00" },
+    { label: "20:00 - 21:00", start: "20:00", end: "21:00" },
+    { label: "21:00 - 22:00", start: "21:00", end: "22:00" },
   ];
 
   // Get dates - 1 for mobile, 3 for desktop
@@ -115,13 +139,23 @@ export default function AvailabilityPage() {
     const newDate = new Date(startDate);
     const daysToMove = isMobile ? 1 : 3;
     newDate.setDate(startDate.getDate() + daysToMove);
-    setStartDate(newDate);
+    // Don't go beyond the advance booking limit
+    const maxDate = getMaxDate();
+    if (newDate <= maxDate) {
+      setStartDate(newDate);
+    }
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newDate = new Date(e.target.value);
     if (!isNaN(newDate.getTime())) {
-      setStartDate(newDate);
+      // Ensure date is within allowed range
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const maxDate = getMaxDate();
+      if (newDate >= today && newDate <= maxDate) {
+        setStartDate(newDate);
+      }
     }
   };
 
@@ -299,6 +333,19 @@ export default function AvailabilityPage() {
     return prevDate >= today;
   };
 
+  const canGoNext = () => {
+    const maxDate = getMaxDate();
+    const nextDate = new Date(startDate);
+    const daysToMove = isMobile ? 1 : 3;
+    nextDate.setDate(startDate.getDate() + daysToMove);
+    return nextDate <= maxDate;
+  };
+
+  // Get the max date as ISO string for the date input
+  const getMaxDateString = () => {
+    return getMaxDate().toISOString().split('T')[0];
+  };
+
   return (
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-6xl mx-auto">
@@ -347,6 +394,7 @@ export default function AvailabilityPage() {
                   value={startDate.toISOString().split('T')[0]}
                   onChange={handleDateChange}
                   min={new Date().toISOString().split('T')[0]}
+                  max={getMaxDateString()}
                   className="bg-transparent text-white text-sm outline-none cursor-pointer"
                 />
               </div>
@@ -361,9 +409,10 @@ export default function AvailabilityPage() {
               </motion.button>
               <motion.button
                 onClick={goToNextDays}
-                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:bg-white/10 hover:text-white transition-all"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                disabled={!canGoNext()}
+                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:bg-white/10 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                whileHover={{ scale: canGoNext() ? 1.05 : 1 }}
+                whileTap={{ scale: canGoNext() ? 0.95 : 1 }}
               >
                 <ChevronRight className="w-5 h-5" />
               </motion.button>

@@ -154,9 +154,7 @@ export default function DisplayPage() {
   };
 
   const formatTimeLabel = (hour: number) => {
-    const displayHour = hour === 12 ? 12 : hour % 12;
-    const period = hour < 12 ? 'AM' : 'PM';
-    return `${displayHour} ${period}`;
+    return `${hour.toString().padStart(2, '0')}:00`;
   };
 
   return (

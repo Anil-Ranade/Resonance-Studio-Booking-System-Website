@@ -150,10 +150,7 @@ export default function HomePage() {
   };
 
   const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    return `${displayHours}:${minutes?.toString().padStart(2, '0') || '00'} ${period}`;
+    return time.slice(0, 5); // Returns "HH:MM" format (24-hour)
   };
 
   const handleFetchBookings = async () => {
@@ -374,7 +371,7 @@ export default function HomePage() {
     { value: "10+", label: "Years Experience", icon: <Award className="w-5 h-5" /> },
     { value: "3", label: "Professional Studios", icon: <Headphones className="w-5 h-5" /> },
     { value: "1,000+", label: "Happy Customers", icon: <Users className="w-5 h-5" /> },
-    { value: "8AM-10PM", label: "Daily Hours", icon: <Clock className="w-5 h-5" /> },
+    { value: "08:00-22:00", label: "Daily Hours", icon: <Clock className="w-5 h-5" /> },
   ];
 
   // Get device performance info to optimize animations

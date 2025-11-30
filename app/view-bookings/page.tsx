@@ -178,11 +178,7 @@ export default function ViewBookingsPage() {
   };
 
   const formatTime = (timeString: string) => {
-    const [hours, minutes] = timeString.split(":");
-    const hour = parseInt(hours, 10);
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
+    return timeString.slice(0, 5); // Returns "HH:MM" format (24-hour)
   };
 
   const openCancelModal = async (booking: Booking) => {

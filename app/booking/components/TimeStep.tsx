@@ -19,6 +19,25 @@ export default function TimeStep() {
   const [duration, setDuration] = useState(draft.duration || 1);
   const [maxBookingDuration, setMaxBookingDuration] = useState(8);
   const [minBookingDuration, setMinBookingDuration] = useState(1);
+  const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
+
+  // Fetch booking settings on component mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+          const data = await response.json();
+          setMinBookingDuration(data.minBookingDuration || 1);
+          setMaxBookingDuration(data.maxBookingDuration || 8);
+          setAdvanceBookingDays(data.advanceBookingDays || 30);
+        }
+      } catch (err) {
+        console.error('Error fetching booking settings:', err);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   // Calculate min/max dates
   const getMinDate = () => {
@@ -27,7 +46,7 @@ export default function TimeStep() {
 
   const getMaxDate = () => {
     const maxDate = new Date();
-    maxDate.setDate(maxDate.getDate() + 30);
+    maxDate.setDate(maxDate.getDate() + advanceBookingDays);
     return maxDate.toISOString().split('T')[0];
   };
 
@@ -73,6 +92,9 @@ export default function TimeStep() {
       if (data.settings) {
         setMinBookingDuration(data.settings.minBookingDuration || 1);
         setMaxBookingDuration(data.settings.maxBookingDuration || 8);
+        if (data.settings.advanceBookingDays) {
+          setAdvanceBookingDays(data.settings.advanceBookingDays);
+        }
       }
     } catch (err) {
       setError('Failed to load available time slots. Please try again.');
@@ -186,15 +208,12 @@ export default function TimeStep() {
     return selectedSlots.some(s => s.start === slot.start);
   };
 
-  // Format time for display (e.g., "8am", "12pm")
+  // Format time for display in 24-hour format (e.g., "08:00", "14:00")
   const formatTime = (time: string) => {
-    const [hours] = time.split(':').map(Number);
-    const period = hours >= 12 ? 'pm' : 'am';
-    const displayHours = hours % 12 || 12;
-    return `${displayHours}${period}`;
+    return time.slice(0, 5); // Returns "HH:MM" format
   };
 
-  // Format time slot for display (e.g., "8am - 9am")
+  // Format time slot for display (e.g., "08:00 - 09:00")
   const formatTimeSlot = (start: string, end: string) => {
     return `${formatTime(start)} - ${formatTime(end)}`;
   };

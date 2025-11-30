@@ -97,12 +97,7 @@ export default function AdminDashboard() {
   }, [fetchDashboardData]);
 
   const formatTime = (time: string) => {
-    const [hours] = time.split(':');
-    const hour = parseInt(hours, 10);
-    if (hour === 0) return '12:00 AM';
-    if (hour < 12) return `${hour}:00 AM`;
-    if (hour === 12) return '12:00 PM';
-    return `${hour - 12}:00 PM`;
+    return time.slice(0, 5); // Returns "HH:MM" format (24-hour)
   };
 
   const statCards = [

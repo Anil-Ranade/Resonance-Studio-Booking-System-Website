@@ -283,6 +283,7 @@ export async function GET(request: NextRequest) {
       settings: {
         minBookingDuration: bookingSettings.minBookingDuration,
         maxBookingDuration: bookingSettings.maxBookingDuration,
+        advanceBookingDays: bookingSettings.advanceBookingDays,
       }
     });
   } catch (error) {
