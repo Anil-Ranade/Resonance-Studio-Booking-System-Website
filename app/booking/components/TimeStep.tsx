@@ -51,10 +51,11 @@ export default function TimeStep() {
   };
 
   // Check if slot is the original slot in edit mode
-  const isOriginalSlot = (slot: TimeSlot) => {
+  const isOriginalSlot = (slot: { start: string; end: string }) => {
     if (!draft.isEditMode || !draft.originalChoices) return false;
     return date === draft.originalChoices.date && 
-           slot.start === draft.originalChoices.start_time;
+           slot.start === draft.originalChoices.start_time &&
+           slot.end === draft.originalChoices.end_time;
   };
 
   // Check if the current date is the original date in edit mode
@@ -152,38 +153,20 @@ export default function TimeStep() {
   const handleSlotClick = (slot: AvailableSlot) => {
     if (!slot.available) return;
 
-    // For single hour bookings, just select/deselect
-    if (duration === 1) {
-      if (selectedSlots.length === 1 && selectedSlots[0].start === slot.start) {
-        setSelectedSlots([]);
-        updateDraft({ selectedSlot: null });
-      } else {
-        setSelectedSlots([slot]);
-        updateDraft({ selectedSlot: { start: slot.start, end: slot.end } });
-      }
+    // Check if clicking the already selected slot to deselect
+    if (draft.selectedSlot && draft.selectedSlot.start === slot.start) {
+      setSelectedSlots([]);
+      updateDraft({ selectedSlot: null });
       return;
     }
 
-    // For multi-hour bookings, select consecutive slots
-    const slotIndex = slots.findIndex(s => s.start === slot.start);
-    const slotsNeeded = duration;
-    const consecutiveSlots: TimeSlot[] = [];
-
-    for (let i = 0; i < slotsNeeded; i++) {
-      const currentSlot = slots[slotIndex + i];
-      if (!currentSlot || !currentSlot.available) {
-        setError(`Cannot book ${duration} consecutive hours starting from this time.`);
-        return;
-      }
-      consecutiveSlots.push({ start: currentSlot.start, end: currentSlot.end });
-    }
-
+    // For duration-based slots, the slot already has the correct start and end
+    setSelectedSlots([slot]);
     setError('');
-    setSelectedSlots(consecutiveSlots);
     updateDraft({
       selectedSlot: {
-        start: consecutiveSlots[0].start,
-        end: consecutiveSlots[consecutiveSlots.length - 1].end,
+        start: slot.start,
+        end: slot.end,
       },
       duration,
     });
@@ -217,6 +200,44 @@ export default function TimeStep() {
   const formatTimeSlot = (start: string, end: string) => {
     return `${formatTime(start)} - ${formatTime(end)}`;
   };
+
+  // Generate display slots based on duration
+  // For 1hr: 8-9, 9-10, 10-11, ...
+  // For 2hr: 8-10, 9-11, 10-12, ...
+  const generateDisplaySlots = () => {
+    if (slots.length === 0) return [];
+    
+    const displaySlots: { start: string; end: string; available: boolean; originalSlots: AvailableSlot[] }[] = [];
+    
+    for (let i = 0; i <= slots.length - duration; i++) {
+      const startSlot = slots[i];
+      const endSlotIndex = i + duration - 1;
+      const endSlot = slots[endSlotIndex];
+      
+      // Check if all consecutive slots are available
+      let allAvailable = true;
+      const originalSlots: AvailableSlot[] = [];
+      
+      for (let j = 0; j < duration; j++) {
+        const currentSlot = slots[i + j];
+        originalSlots.push(currentSlot);
+        if (!currentSlot.available) {
+          allAvailable = false;
+        }
+      }
+      
+      displaySlots.push({
+        start: startSlot.start,
+        end: endSlot.end,
+        available: allAvailable,
+        originalSlots,
+      });
+    }
+    
+    return displaySlots;
+  };
+
+  const displaySlots = generateDisplaySlots();
 
   // Format date for display
   const formatDate = (dateStr: string) => {
@@ -334,11 +355,15 @@ export default function TimeStep() {
             <div className="text-center py-8 text-zinc-400">
               No slots available for this date
             </div>
+          ) : displaySlots.length === 0 ? (
+            <div className="text-center py-8 text-zinc-400">
+              No {duration}-hour slots available for this date
+            </div>
           ) : (
             <div className="grid grid-cols-3 gap-2">
-              {slots.map((slot) => {
+              {displaySlots.map((slot) => {
                 const isOriginal = isOriginalSlot(slot);
-                const isSelected = isSlotSelected(slot);
+                const isSelected = draft.selectedSlot?.start === slot.start && draft.selectedSlot?.end === slot.end;
                 
                 return (
                   <button

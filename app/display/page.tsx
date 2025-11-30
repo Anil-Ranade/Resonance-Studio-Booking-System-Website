@@ -229,9 +229,9 @@ export default function DisplayPage() {
                   </span>
                 </div>
               ))}
-              {/* 10 PM label at the bottom */}
+              {/* 22:00 label at the bottom */}
               <span className="absolute bottom-0 translate-y-1/2 left-2 text-amber-400 font-medium text-sm bg-zinc-900 pr-1">
-                10 PM
+                22:00
               </span>
             </div>
             
@@ -298,9 +298,9 @@ export default function DisplayPage() {
                   </span>
                 </div>
               ))}
-              {/* 10 PM label at the bottom */}
+              {/* 22:00 label at the bottom */}
               <span className="absolute bottom-0 translate-y-1/2 right-2 text-amber-400 font-medium text-sm bg-zinc-900 pl-1">
-                10 PM
+                22:00
               </span>
             </div>
           </div>
