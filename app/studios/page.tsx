@@ -194,7 +194,7 @@ export default function StudiosPage() {
                     </div>
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                       <Link 
-                        href="/booking"
+                        href="/booking/new"
                         className="btn-primary px-8 py-3 text-center block"
                       >
                         Book {studio.name}

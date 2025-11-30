@@ -41,7 +41,7 @@ export default function Navigation() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-violet-500/10 shadow-lg shadow-violet-500/5">
+      <nav className="main-nav fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-violet-500/10 shadow-lg shadow-violet-500/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 md:h-20">
             {/* Logo */}
@@ -73,7 +73,7 @@ export default function Navigation() {
 
             {/* CTA Button - Desktop */}
             <Link
-              href="/booking"
+              href="/booking/new"
               className="btn-primary text-sm hidden md:flex items-center gap-2"
             >
               <Calendar className="w-4 h-4" />
@@ -136,7 +136,7 @@ export default function Navigation() {
               {/* Mobile CTA Button */}
               <div className="pt-4 pb-2">
                 <Link
-                  href="/booking"
+                  href="/booking/new"
                   onClick={() => setIsMenuOpen(false)}
                   className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-medium rounded-lg hover:from-violet-500 hover:to-purple-500 transition-all duration-300 shadow-lg shadow-violet-500/25"
                 >

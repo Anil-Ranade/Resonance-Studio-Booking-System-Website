@@ -1,0 +1,346 @@
+'use client';
+
+import { Users, Drum, Radio, Guitar, Music, RotateCcw } from 'lucide-react';
+import { useBooking, KaraokeOption, LiveMusicianOption, BandEquipment, RecordingOption } from '../contexts/BookingContext';
+import StepLayout from './StepLayout';
+import { getStudioSuggestion, getStudioRate } from '../utils/studioSuggestion';
+
+// Karaoke participant options (updated to match new requirements)
+const KARAOKE_OPTIONS: { value: KaraokeOption; label: string; description: string }[] = [
+  { value: 'upto_5', label: 'Up to 5 people', description: 'Small group' },
+  { value: '10', label: '10 people', description: 'Medium group' },
+  { value: '20', label: '20 people', description: 'Large group' },
+  { value: '21_30', label: '21-30 people', description: 'Extra large group' },
+];
+
+// Live musician options (updated to match new requirements)
+const LIVE_OPTIONS: { value: LiveMusicianOption; label: string; description: string }[] = [
+  { value: 'upto_2', label: 'Up to 2 musicians', description: 'Solo or duo' },
+  { value: 'upto_4_or_5', label: '4-5 musicians', description: 'Small band' },
+  { value: 'upto_8', label: 'Up to 8 musicians', description: 'Medium ensemble' },
+  { value: '9_12', label: '9-12 musicians', description: 'Large ensemble' },
+];
+
+// Band equipment options
+const BAND_EQUIPMENT: { value: BandEquipment; label: string; icon: React.ReactNode }[] = [
+  { value: 'drum', label: 'Drums', icon: <Drum className="w-5 h-5" /> },
+  { value: 'amps', label: 'Amps', icon: <Radio className="w-5 h-5" /> },
+  { value: 'guitars', label: 'Guitars', icon: <Guitar className="w-5 h-5" /> },
+  { value: 'keyboard', label: 'Keyboard', icon: <Music className="w-5 h-5" /> },
+];
+
+// Recording options
+const RECORDING_OPTIONS: { value: RecordingOption; label: string; price: string }[] = [
+  { value: 'audio_recording', label: 'Audio Recording', price: '₹700/song' },
+  { value: 'video_recording', label: 'Video Recording (4K)', price: '₹800/song' },
+  { value: 'chroma_key', label: 'Chroma Key (Green Screen)', price: '₹1,200/song' },
+  { value: 'sd_card_recording', label: 'SD Card Recording', price: '₹100/hour' },
+];
+
+export default function ParticipantsStep() {
+  const { draft, updateDraft, nextStep, setStep } = useBooking();
+
+  const handleKaraokeSelect = (option: KaraokeOption) => {
+    const suggestion = getStudioSuggestion('Karaoke', { karaokeOption: option });
+    const rate = getStudioRate(suggestion.recommendedStudio, 'Karaoke', { karaokeOption: option });
+    
+    updateDraft({
+      karaokeOption: option,
+      recommendedStudio: suggestion.recommendedStudio,
+      allowedStudios: suggestion.allowedStudios,
+      studio: suggestion.recommendedStudio,
+      ratePerHour: rate,
+    });
+  };
+
+  const handleLiveSelect = (option: LiveMusicianOption) => {
+    const suggestion = getStudioSuggestion('Live with musicians', { liveOption: option });
+    const rate = getStudioRate(suggestion.recommendedStudio, 'Live with musicians', { liveOption: option });
+    
+    updateDraft({
+      liveOption: option,
+      recommendedStudio: suggestion.recommendedStudio,
+      allowedStudios: suggestion.allowedStudios,
+      studio: suggestion.recommendedStudio,
+      ratePerHour: rate,
+    });
+  };
+
+  const handleBandEquipmentToggle = (equipment: BandEquipment) => {
+    const current = draft.bandEquipment;
+    let newEquipment: BandEquipment[];
+    
+    if (current.includes(equipment)) {
+      newEquipment = current.filter(e => e !== equipment);
+    } else {
+      newEquipment = [...current, equipment];
+    }
+    
+    if (newEquipment.length > 0) {
+      const suggestion = getStudioSuggestion('Band', { bandEquipment: newEquipment });
+      const rate = getStudioRate(suggestion.recommendedStudio, 'Band', { bandEquipment: newEquipment });
+      
+      updateDraft({
+        bandEquipment: newEquipment,
+        recommendedStudio: suggestion.recommendedStudio,
+        allowedStudios: suggestion.allowedStudios,
+        studio: suggestion.recommendedStudio,
+        ratePerHour: rate,
+      });
+    } else {
+      updateDraft({
+        bandEquipment: newEquipment,
+        recommendedStudio: '',
+        allowedStudios: [],
+        studio: '',
+        ratePerHour: 0,
+      });
+    }
+  };
+
+  const handleRecordingSelect = (option: RecordingOption) => {
+    const suggestion = getStudioSuggestion('Recording', { recordingOption: option });
+    const rate = getStudioRate(suggestion.recommendedStudio, 'Recording', { recordingOption: option });
+    
+    updateDraft({
+      recordingOption: option,
+      recommendedStudio: suggestion.recommendedStudio,
+      allowedStudios: suggestion.allowedStudios,
+      studio: suggestion.recommendedStudio,
+      ratePerHour: rate,
+    });
+  };
+
+  const handleNext = () => {
+    // For Drum Practice, set studio directly and skip to studio step
+    if (draft.sessionType === 'Only Drum Practice') {
+      const suggestion = getStudioSuggestion('Only Drum Practice', {});
+      const rate = getStudioRate(suggestion.recommendedStudio, 'Only Drum Practice', {});
+      
+      updateDraft({
+        recommendedStudio: suggestion.recommendedStudio,
+        allowedStudios: suggestion.allowedStudios,
+        studio: suggestion.recommendedStudio,
+        ratePerHour: rate,
+      });
+    }
+    nextStep();
+  };
+
+  const renderContent = () => {
+    switch (draft.sessionType) {
+      case 'Karaoke':
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-zinc-400 mb-2">
+              <Users className="w-4 h-4" />
+              <span className="text-sm">How many people?</span>
+            </div>
+            {KARAOKE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => handleKaraokeSelect(option.value)}
+                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${
+                  draft.karaokeOption === option.value
+                    ? 'bg-violet-500/20 border-violet-500 text-white'
+                    : 'bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800'
+                }`}
+              >
+                <div>
+                  <span className="font-medium">{option.label}</span>
+                  <p className="text-sm text-zinc-400">{option.description}</p>
+                </div>
+                {draft.karaokeOption === option.value && (
+                  <div className="w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center">
+                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        );
+
+      case 'Live with musicians':
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-zinc-400 mb-2">
+              <Users className="w-4 h-4" />
+              <span className="text-sm">How many musicians?</span>
+            </div>
+            {LIVE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => handleLiveSelect(option.value)}
+                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${
+                  draft.liveOption === option.value
+                    ? 'bg-violet-500/20 border-violet-500 text-white'
+                    : 'bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800'
+                }`}
+              >
+                <div>
+                  <span className="font-medium">{option.label}</span>
+                  <p className="text-sm text-zinc-400">{option.description}</p>
+                </div>
+                {draft.liveOption === option.value && (
+                  <div className="w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center">
+                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        );
+
+      case 'Only Drum Practice':
+        return (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="p-6 rounded-full bg-violet-500/20 mb-4">
+              <Drum className="w-12 h-12 text-violet-400" />
+            </div>
+            <h3 className="text-lg font-medium text-white mb-2">Drum Practice Session</h3>
+            <p className="text-zinc-400 text-sm max-w-xs">
+              Drum practice is available exclusively in Studio A with our professional drum kit.
+            </p>
+            <div className="mt-4 px-4 py-2 bg-zinc-800 rounded-lg">
+              <span className="text-violet-400 font-medium">₹350/hour</span>
+            </div>
+          </div>
+        );
+
+      case 'Band':
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-zinc-400 mb-2">
+              <Guitar className="w-4 h-4" />
+              <span className="text-sm">Select your equipment needs</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {BAND_EQUIPMENT.map((equipment) => (
+                <button
+                  key={equipment.value}
+                  onClick={() => handleBandEquipmentToggle(equipment.value)}
+                  className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all ${
+                    draft.bandEquipment.includes(equipment.value)
+                      ? 'bg-violet-500/20 border-violet-500 text-white'
+                      : 'bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800'
+                  }`}
+                >
+                  <div
+                    className={`p-3 rounded-lg ${
+                      draft.bandEquipment.includes(equipment.value)
+                        ? 'bg-violet-500 text-white'
+                        : 'bg-zinc-700 text-zinc-400'
+                    }`}
+                  >
+                    {equipment.icon}
+                  </div>
+                  <span className="font-medium text-sm">{equipment.label}</span>
+                </button>
+              ))}
+            </div>
+            {draft.bandEquipment.length > 0 && (
+              <div className="mt-4 p-3 bg-zinc-800/50 rounded-lg text-sm text-zinc-400">
+                Selected: {draft.bandEquipment.map(e => 
+                  BAND_EQUIPMENT.find(eq => eq.value === e)?.label
+                ).join(', ')}
+              </div>
+            )}
+          </div>
+        );
+
+      case 'Recording':
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-zinc-400 mb-2">
+              <Radio className="w-4 h-4" />
+              <span className="text-sm">Select recording type</span>
+            </div>
+            {RECORDING_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => handleRecordingSelect(option.value)}
+                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${
+                  draft.recordingOption === option.value
+                    ? 'bg-violet-500/20 border-violet-500 text-white'
+                    : 'bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800'
+                }`}
+              >
+                <div>
+                  <span className="font-medium">{option.label}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-violet-400">{option.price}</span>
+                  {draft.recordingOption === option.value && (
+                    <div className="w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center">
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        );
+
+      default:
+        return (
+          <div className="text-center py-8 text-zinc-400">
+            Please select a session type first
+          </div>
+        );
+    }
+  };
+
+  const getTitle = () => {
+    const prefix = draft.isEditMode ? 'Modify ' : '';
+    switch (draft.sessionType) {
+      case 'Karaoke':
+        return prefix + 'Group size';
+      case 'Live with musicians':
+        return prefix + 'Musicians count';
+      case 'Only Drum Practice':
+        return prefix + 'Drum Practice';
+      case 'Band':
+        return prefix + 'Equipment';
+      case 'Recording':
+        return prefix + 'Recording type';
+      default:
+        return prefix + 'Session details';
+    }
+  };
+
+  // Get the original session details for display
+  const getOriginalDetails = () => {
+    if (!draft.isEditMode || !draft.originalChoices?.sessionDetails) return null;
+    return draft.originalChoices.sessionDetails;
+  };
+
+  return (
+    <StepLayout
+      title={getTitle()}
+      subtitle={draft.isEditMode 
+        ? 'Your original choice is highlighted. Select to change or keep the same.'
+        : (draft.sessionType === 'Only Drum Practice' 
+          ? 'Available in Studio A only' 
+          : 'This helps us recommend the best studio for you')}
+      onNext={handleNext}
+    >
+      {/* Edit Mode Banner */}
+      {draft.isEditMode && getOriginalDetails() && (
+        <div className="mb-4 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-2">
+          <RotateCcw className="w-4 h-4 text-violet-400" />
+          <span className="text-sm text-violet-400">
+            Original: <span className="font-medium">{getOriginalDetails()}</span>
+          </span>
+        </div>
+      )}
+      
+      {renderContent()}
+    </StepLayout>
+  );
+}

@@ -32,7 +32,7 @@ export default function ConfirmationPage() {
   const handleBookAnotherSlot = () => {
     // User is already verified, go directly to booking
     // The verifiedUser is already in sessionStorage from the previous booking
-    router.push('/booking');
+    router.push('/booking/new');
   };
 
   const handleExit = () => {

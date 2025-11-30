@@ -25,22 +25,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    const currentTime = today.toTimeString().slice(0, 5); // HH:MM format
+    // Get today's date in YYYY-MM-DD format (using IST timezone)
+    const now = new Date();
+    // Convert to IST (UTC+5:30)
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istNow = new Date(now.getTime() + istOffset);
+    const todayStr = istNow.toISOString().split('T')[0];
+    const currentTime = istNow.toISOString().slice(11, 16); // HH:MM format
 
-    // Query upcoming bookings where:
-    // - phone_number matches
-    // - status is 'confirmed' or 'pending'
-    // - date is today or in the future
-    // For today's date, only include bookings where start_time hasn't passed
-    const { data: bookings, error: bookingsError } = await supabaseServer
+    // First, get all confirmed/pending bookings for this phone
+    const { data: allBookings, error: bookingsError } = await supabaseServer
       .from("bookings")
       .select("*")
       .eq("phone_number", normalizedPhone)
       .in("status", ["confirmed", "pending"])
-      .or(`date.gt.${todayStr},and(date.eq.${todayStr},start_time.gte.${currentTime})`)
       .order("date", { ascending: true })
       .order("start_time", { ascending: true });
 
@@ -52,7 +50,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ bookings: bookings || [] });
+    // Filter for upcoming bookings client-side for more reliable filtering
+    const upcomingBookings = (allBookings || []).filter(booking => {
+      // If date is in the future, include it
+      if (booking.date > todayStr) {
+        return true;
+      }
+      // If date is today, check if start time hasn't passed
+      if (booking.date === todayStr) {
+        return booking.start_time >= currentTime;
+      }
+      // Date is in the past
+      return false;
+    });
+
+    return NextResponse.json({ bookings: upcomingBookings });
   } catch (error) {
     console.error("[Upcoming Bookings API] Unexpected error:", error);
     return NextResponse.json(

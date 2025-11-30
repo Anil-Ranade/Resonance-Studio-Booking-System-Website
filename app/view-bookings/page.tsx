@@ -149,7 +149,8 @@ export default function ViewBookingsPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`/api/bookings?phone=${normalized}`);
+      // Fetch only upcoming bookings
+      const response = await fetch(`/api/bookings/upcoming?phone=${normalized}`);
       const data = await safeJsonParse(response);
 
       if (!response.ok) {
@@ -602,7 +603,7 @@ export default function ViewBookingsPage() {
                 We couldn&apos;t find any bookings associated with this phone number.
               </p>
               <Link
-                href="/booking"
+                href="/booking/new"
                 className="inline-flex items-center gap-2 btn-accent px-6 py-3"
               >
                 Book Your First Session
@@ -750,7 +751,7 @@ export default function ViewBookingsPage() {
                         <h3 className="text-xl font-bold text-white">Cancel Booking</h3>
                         <p className="text-green-400 text-sm flex items-center gap-1.5">
                           <ShieldCheck className="w-4 h-4" />
-                          Trusted Device
+                          Welcome back!
                         </p>
                       </div>
                     </div>
@@ -758,9 +759,7 @@ export default function ViewBookingsPage() {
                     {/* Trusted Device Info Banner */}
                     <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 mb-6">
                       <p className="text-green-400 text-sm text-center">
-                        <span className="font-medium">No OTP required!</span>
-                        <br />
-                        <span className="text-green-400/70 text-xs">Your device was verified during a previous booking and is now trusted.</span>
+                        <span className="font-medium">No OTP required — your device is trusted</span>
                       </p>
                     </div>
 

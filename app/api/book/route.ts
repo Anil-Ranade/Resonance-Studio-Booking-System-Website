@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
-import { createEvent } from "@/lib/googleCalendar";
+import { createEvent, deleteEvent, updateEvent } from "@/lib/googleCalendar";
 import { sendSMS } from "@/lib/sms";
 
 interface BookRequest {
   phone: string;
   name?: string;
+  email?: string;
   studio: string;
   session_type: string;
   session_details?: string;
@@ -14,6 +15,7 @@ interface BookRequest {
   end_time: string;
   rate_per_hour?: number;
   is_modification?: boolean;
+  original_booking_id?: string; // For updating existing booking
 }
 
 interface BookingSettings {
@@ -67,6 +69,7 @@ export async function POST(request: Request) {
     const body: BookRequest = await request.json();
     const {
       name,
+      email,
       studio,
       session_type,
       session_details,
@@ -167,6 +170,25 @@ export async function POST(request: Request) {
         { error: "Time slot is no longer available" },
         { status: 409 }
       );
+    }
+
+    // Check if user exists, if not create them
+    const { data: existingUser } = await supabaseServer
+      .from("users")
+      .select("*")
+      .eq("phone_number", phone)
+      .single();
+
+    if (!existingUser && name && email) {
+      // Create new user
+      const { error: createUserError } = await supabaseServer
+        .from("users")
+        .insert({ phone_number: phone, name, email });
+
+      if (createUserError) {
+        console.error("Failed to create user:", createUserError.message);
+        // Don't fail the booking, just log the error
+      }
     }
 
     // Calculate total amount if rate_per_hour is provided
@@ -311,6 +333,298 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, booking });
   } catch (error) {
     console.error("[Book API] Unexpected error:", error);
+    return NextResponse.json(
+      { error: "Invalid request body" },
+      { status: 400 }
+    );
+  }
+}
+
+// PUT /api/book - Update an existing booking
+export async function PUT(request: Request) {
+  try {
+    const body: BookRequest = await request.json();
+    const {
+      name,
+      studio,
+      session_type,
+      session_details,
+      date,
+      start_time,
+      end_time,
+      rate_per_hour,
+      original_booking_id,
+    } = body;
+
+    // Normalize phone to digits only
+    const phone = body.phone.replace(/\D/g, "");
+
+    // Validate booking ID
+    if (!original_booking_id) {
+      return NextResponse.json(
+        { error: "Original booking ID is required for updates" },
+        { status: 400 }
+      );
+    }
+
+    // Validate phone number (exactly 10 digits)
+    if (phone.length !== 10) {
+      return NextResponse.json(
+        { error: "Phone number must be exactly 10 digits" },
+        { status: 400 }
+      );
+    }
+
+    // Validate required fields
+    if (!studio || !date || !start_time || !end_time) {
+      return NextResponse.json(
+        { error: "Missing required fields: studio, date, start_time, end_time" },
+        { status: 400 }
+      );
+    }
+
+    // Fetch the original booking
+    const { data: originalBooking, error: fetchError } = await supabaseServer
+      .from("bookings")
+      .select("*")
+      .eq("id", original_booking_id)
+      .eq("phone_number", phone)
+      .single();
+
+    if (fetchError || !originalBooking) {
+      return NextResponse.json(
+        { error: "Booking not found or does not belong to this phone number" },
+        { status: 404 }
+      );
+    }
+
+    // Check if booking can be modified
+    if (originalBooking.status === "cancelled") {
+      return NextResponse.json(
+        { error: "Cannot modify a cancelled booking" },
+        { status: 400 }
+      );
+    }
+
+    if (originalBooking.status === "completed") {
+      return NextResponse.json(
+        { error: "Cannot modify a completed booking" },
+        { status: 400 }
+      );
+    }
+
+    // Fetch booking settings and validate against them
+    const bookingSettings = await getBookingSettings();
+
+    // Calculate booking duration in hours
+    const startParts = start_time.split(":").map(Number);
+    const endParts = end_time.split(":").map(Number);
+    const startMinutes = startParts[0] * 60 + startParts[1];
+    const endMinutes = endParts[0] * 60 + endParts[1];
+    const durationHours = (endMinutes - startMinutes) / 60;
+
+    // Validate minimum booking duration
+    if (durationHours < bookingSettings.minBookingDuration) {
+      return NextResponse.json(
+        { error: `Minimum booking duration is ${bookingSettings.minBookingDuration} hour(s)` },
+        { status: 400 }
+      );
+    }
+
+    // Validate maximum booking duration
+    if (durationHours > bookingSettings.maxBookingDuration) {
+      return NextResponse.json(
+        { error: `Maximum booking duration is ${bookingSettings.maxBookingDuration} hours` },
+        { status: 400 }
+      );
+    }
+
+    // Validate advance booking limit
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const bookingDate = new Date(date);
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + bookingSettings.advanceBookingDays);
+    
+    if (bookingDate > maxDate) {
+      return NextResponse.json(
+        { error: `Cannot book more than ${bookingSettings.advanceBookingDays} days in advance` },
+        { status: 400 }
+      );
+    }
+
+    // Re-check slot availability (excluding the current booking)
+    const bufferMinutes = bookingSettings.bookingBuffer;
+    const adjustedStartMinutes = startMinutes - bufferMinutes;
+    const adjustedEndMinutes = endMinutes + bufferMinutes;
+    const adjustedStartTime = `${Math.floor(Math.max(0, adjustedStartMinutes) / 60).toString().padStart(2, '0')}:${(Math.max(0, adjustedStartMinutes) % 60).toString().padStart(2, '0')}`;
+    const adjustedEndTime = `${Math.floor(Math.min(1439, adjustedEndMinutes) / 60).toString().padStart(2, '0')}:${(Math.min(1439, adjustedEndMinutes) % 60).toString().padStart(2, '0')}`;
+
+    const { data: conflictingBookings, error: conflictError } = await supabaseServer
+      .from("bookings")
+      .select("id")
+      .eq("studio", studio)
+      .eq("date", date)
+      .in("status", ["confirmed", "pending"])
+      .neq("id", original_booking_id) // Exclude the current booking
+      .lt("start_time", adjustedEndTime)
+      .gt("end_time", adjustedStartTime);
+
+    if (conflictError) {
+      return NextResponse.json(
+        { error: conflictError.message },
+        { status: 500 }
+      );
+    }
+
+    if (conflictingBookings && conflictingBookings.length > 0) {
+      return NextResponse.json(
+        { error: "Time slot is no longer available" },
+        { status: 409 }
+      );
+    }
+
+    // Calculate total amount if rate_per_hour is provided
+    let total_amount: number | null = null;
+    if (rate_per_hour) {
+      total_amount = Math.round(rate_per_hour * durationHours);
+    }
+
+    // Update the booking
+    const { data: updatedBooking, error: updateError } = await supabaseServer
+      .from("bookings")
+      .update({
+        name,
+        studio,
+        session_type,
+        session_details: session_details || session_type,
+        date,
+        start_time,
+        end_time,
+        total_amount,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", original_booking_id)
+      .select()
+      .single();
+
+    if (updateError) {
+      return NextResponse.json(
+        { error: updateError.message },
+        { status: 500 }
+      );
+    }
+
+    // Update Google Calendar event if it exists
+    const hasGoogleConfig =
+      process.env.GOOGLE_CLIENT_ID &&
+      process.env.GOOGLE_CLIENT_SECRET &&
+      process.env.GOOGLE_REFRESH_TOKEN &&
+      process.env.OWNER_CALENDAR_ID;
+
+    if (hasGoogleConfig) {
+      try {
+        const startDateTime = `${date}T${start_time}:00`;
+        const endDateTime = `${date}T${end_time}:00`;
+
+        if (originalBooking.google_event_id) {
+          // Update existing calendar event
+          await updateEvent({
+            eventId: originalBooking.google_event_id,
+            summary: `${studio} - ${session_type} (${name || phone})`,
+            description: `Booking ID: ${original_booking_id}\nPhone: ${phone}\nSession Type: ${session_type}\nDetails: ${session_details || 'N/A'}\n\n[UPDATED]`,
+            startDateTime,
+            endDateTime,
+          });
+        } else {
+          // Create new calendar event if none exists
+          const googleEventId = await createEvent({
+            summary: `${studio} - ${session_type} (${name || phone})`,
+            description: `Booking ID: ${original_booking_id}\nPhone: ${phone}\nSession Type: ${session_type}\nDetails: ${session_details || 'N/A'}`,
+            startDateTime,
+            endDateTime,
+            studioName: studio,
+          });
+
+          await supabaseServer
+            .from("bookings")
+            .update({ google_event_id: googleEventId })
+            .eq("id", original_booking_id);
+
+          updatedBooking.google_event_id = googleEventId;
+        }
+      } catch (calendarError) {
+        console.error("[Book API PUT] Failed to update Google Calendar event:", calendarError);
+      }
+    }
+
+    // Send SMS notification about the update
+    const hasTwilioConfig = 
+      process.env.TWILIO_ACCOUNT_SID &&
+      process.env.TWILIO_AUTH_TOKEN &&
+      process.env.TWILIO_SMS_NUMBER;
+
+    if (hasTwilioConfig) {
+      const countryCode = process.env.SMS_COUNTRY_CODE || "+91";
+      const toNumber = `${countryCode}${phone}`;
+
+      try {
+        const formattedDate = new Date(date).toLocaleDateString('en-IN', { 
+          weekday: 'short', 
+          day: 'numeric', 
+          month: 'short' 
+        });
+        
+        const message = `Booking Updated!\n\nStudio: ${studio}\nDate: ${formattedDate}\nTime: ${start_time} - ${end_time}${total_amount ? `\nAmount: ₹${total_amount}` : ''}\n\nBooking ID: ${original_booking_id.slice(0, 8)}\n\nThank you for booking with Resonance Studio!`;
+        
+        const smsResult = await sendSMS(toNumber, message);
+        
+        if (smsResult.success) {
+          console.log("[Book API PUT] SMS update notification sent successfully:", smsResult.sid);
+        } else {
+          console.error("[Book API PUT] SMS update notification failed:", smsResult.error);
+        }
+      } catch (smsError) {
+        console.error("[Book API PUT] Failed to send SMS update notification:", smsError);
+      }
+    }
+
+    // Update reminders - cancel old ones and create new ones
+    try {
+      // Cancel existing pending reminders
+      await supabaseServer
+        .from("reminders")
+        .update({ status: "cancelled" })
+        .eq("booking_id", original_booking_id)
+        .eq("status", "pending");
+
+      // Create new reminders based on updated date/time
+      const bookingDateTime = new Date(`${date}T${start_time}:00`);
+      const reminders = [
+        {
+          booking_id: original_booking_id,
+          scheduled_at: new Date(bookingDateTime.getTime() - 24 * 60 * 60 * 1000).toISOString(),
+          type: "24h_reminder",
+          status: "pending",
+        },
+        {
+          booking_id: original_booking_id,
+          scheduled_at: new Date(bookingDateTime.getTime() - 1 * 60 * 60 * 1000).toISOString(),
+          type: "1h_reminder",
+          status: "pending",
+        },
+      ];
+
+      await supabaseServer
+        .from("reminders")
+        .insert(reminders);
+    } catch (reminderError) {
+      console.error("[Book API PUT] Failed to update reminders:", reminderError);
+    }
+
+    return NextResponse.json({ success: true, booking: updatedBooking });
+  } catch (error) {
+    console.error("[Book API PUT] Unexpected error:", error);
     return NextResponse.json(
       { error: "Invalid request body" },
       { status: 400 }

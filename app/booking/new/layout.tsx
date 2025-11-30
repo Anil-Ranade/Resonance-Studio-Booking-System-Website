@@ -1,6 +1,6 @@
 'use client';
 
-export default function BookingLayout({
+export default function NewBookingLayout({
   children,
 }: {
   children: React.ReactNode;

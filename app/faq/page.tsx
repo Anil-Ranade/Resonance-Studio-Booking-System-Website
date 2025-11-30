@@ -235,7 +235,7 @@ export default function FAQPage() {
               Contact Us
             </Link>
             <Link 
-              href="/booking"
+              href="/booking/new"
               className="px-6 py-3 rounded-xl border border-violet-500/50 text-violet-400 hover:bg-violet-500/10 transition-colors font-medium"
             >
               Book a Studio

@@ -498,7 +498,7 @@ export default function AvailabilityPage() {
           <p className="text-zinc-500 text-sm">
             Click on an available slot to book. Colored slots are already booked.
           </p>
-          <Link href="/booking">
+          <Link href="/booking/new">
             <motion.button
               className="inline-flex items-center gap-2 px-6 py-2.5 bg-violet-500 hover:bg-violet-600 text-white font-medium rounded-xl transition-colors"
               whileHover={{ scale: 1.02 }}

@@ -253,24 +253,38 @@ export async function GET(request: NextRequest) {
 
     // Step 6: Filter out past time slots if the selected date is today (using IST)
     const isToday = date === todayIST;
+    let currentTimeInMinutes = 0;
     if (isToday) {
       const nowIST = getISTDate();
       const currentHour = nowIST.getHours();
       const currentMinutes = nowIST.getMinutes();
       // Calculate current time in minutes since midnight (IST)
-      const currentTimeInMinutes = currentHour * 60 + currentMinutes;
-      
-      // Filter out slots whose START time has already passed
-      // Users should not be able to book a slot that has already started
-      // For example, if it's 12:30 PM IST, slots starting at 8 AM, 9 AM, 10 AM, 11 AM, and 12 PM should not be shown
-      availableChunks = availableChunks.filter((chunk) => {
-        const slotStartMinutes = timeToMinutes(chunk.start);
-        // Only show slots that haven't started yet (start time is after current time)
-        return slotStartMinutes > currentTimeInMinutes;
-      });
+      currentTimeInMinutes = currentHour * 60 + currentMinutes;
     }
 
-    return NextResponse.json(availableChunks);
+    // Create a set of available slot start times for quick lookup
+    const availableSlotStarts = new Set(availableChunks.map(chunk => chunk.start));
+
+    // Return all slots with availability status (including past slots marked as unavailable)
+    const slotsWithAvailability = allChunks.map((chunk) => {
+      const slotStartMinutes = timeToMinutes(chunk.start);
+      const isPastSlot = isToday && slotStartMinutes <= currentTimeInMinutes;
+      const isAvailable = availableSlotStarts.has(chunk.start) && !isPastSlot;
+      
+      return {
+        start: chunk.start,
+        end: chunk.end,
+        available: isAvailable,
+      };
+    });
+
+    return NextResponse.json({ 
+      slots: slotsWithAvailability,
+      settings: {
+        minBookingDuration: bookingSettings.minBookingDuration,
+        maxBookingDuration: bookingSettings.maxBookingDuration,
+      }
+    });
   } catch (error) {
     return NextResponse.json(
       { error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}` },

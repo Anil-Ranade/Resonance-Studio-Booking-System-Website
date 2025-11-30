@@ -165,7 +165,7 @@ export default function ReviewPage() {
         setIsAlreadyVerified(true);
       }
     } else {
-      router.push('/booking');
+      router.push('/booking/new');
     }
   }, [router]);
 
@@ -757,7 +757,7 @@ export default function ReviewPage() {
           transition={{ duration: 0.5 }}
         >
           <Link 
-            href="/booking"
+            href="/booking/new"
             className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-2 text-sm"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -1055,9 +1055,11 @@ export default function ReviewPage() {
                 <div className="p-2 rounded-lg bg-green-500/10 border border-green-500/20 flex flex-col items-center justify-center gap-1 mb-4">
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-green-400" />
-                    <span className="text-green-400 text-sm font-medium">Trusted Device Verified</span>
+                    <span className="text-green-400 text-sm font-medium">
+                      Welcome back, {userData.name.split(' ')[0]}!
+                    </span>
                   </div>
-                  <span className="text-green-400/70 text-xs">No OTP required - your device was verified during a previous booking</span>
+                  <span className="text-green-400/70 text-xs">No OTP required — your device is trusted</span>
                 </div>
                 <p className="text-zinc-400 text-sm mb-4">
                   {bookingData?.isEditMode 
@@ -1284,7 +1286,7 @@ export default function ReviewPage() {
           >
             <motion.button
               type="button"
-              onClick={() => router.push('/booking')}
+              onClick={() => router.push('/booking/new')}
               disabled={isVerifyingOtp}
               className="w-full btn-secondary py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               whileHover={{ scale: 1.02 }}

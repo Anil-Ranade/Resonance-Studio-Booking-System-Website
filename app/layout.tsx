@@ -65,7 +65,7 @@ export default function RootLayout({
         </main>
 
         {/* Footer */}
-        <footer className="border-t border-white/5 bg-black/20 mt-auto">
+        <footer className="main-footer border-t border-white/5 bg-black/20 mt-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
               {/* Brand */}
@@ -82,7 +82,7 @@ export default function RootLayout({
                   Professional recording studio in Pune. State-of-the-art equipment for recording, mixing, and podcast production.
                 </p>
                 <Link
-                  href="/booking"
+                  href="/booking/new"
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-violet-500 hover:to-purple-500 transition-all duration-300 shadow-lg shadow-violet-500/25"
                 >
                   <Calendar className="w-4 h-4" />
@@ -105,7 +105,7 @@ export default function RootLayout({
                     </Link>
                   </li>
                   <li>
-                    <Link href="/booking" className="text-zinc-400 hover:text-violet-400 text-sm transition-colors">
+                    <Link href="/booking/new" className="text-zinc-400 hover:text-violet-400 text-sm transition-colors">
                       Book a Session
                     </Link>
                   </li>

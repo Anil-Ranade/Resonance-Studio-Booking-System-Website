@@ -1,22 +1,26 @@
 'use client';
 
-export default function BookingLayout({
+export default function DisplayLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
     <>
-      {/* Hide the main navigation on the booking page */}
+      {/* Hide the main navigation and footer on the display page */}
       <style jsx global>{`
-        nav.main-nav {
+        nav {
           display: none !important;
         }
         main {
           padding-top: 0 !important;
+          margin: 0 !important;
         }
-        footer.main-footer {
+        footer {
           display: none !important;
+        }
+        body {
+          overflow: hidden !important;
         }
       `}</style>
       {children}
