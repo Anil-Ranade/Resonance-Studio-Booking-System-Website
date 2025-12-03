@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Calendar, Clock, ChevronLeft, ChevronRight, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
+import { Calendar, Clock, ChevronLeft, ChevronRight, Loader2, AlertCircle, RotateCcw, Minus, Plus } from 'lucide-react';
 import { useBooking, TimeSlot } from '../contexts/BookingContext';
 import StepLayout from './StepLayout';
 
@@ -312,20 +312,32 @@ export default function TimeStep() {
               <Clock className="w-3 h-3" />
               Duration
             </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min={minBookingDuration}
-                max={maxBookingDuration}
-                value={duration}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value) || minBookingDuration;
-                  const clampedValue = Math.min(Math.max(value, minBookingDuration), maxBookingDuration);
-                  handleDurationChange(clampedValue);
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  if (duration > minBookingDuration) {
+                    handleDurationChange(duration - 1);
+                  }
                 }}
-                className="w-16 px-2 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-center font-semibold focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
-              />
-              <span className="text-zinc-400 text-sm">hrs</span>
+                disabled={duration <= minBookingDuration}
+                className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <div className="px-3 py-2 rounded-lg bg-zinc-800 border border-violet-500/50 min-w-[60px] text-center">
+                <span className="text-white font-medium text-sm">{duration} hr{duration > 1 ? 's' : ''}</span>
+              </div>
+              <button
+                onClick={() => {
+                  if (duration < maxBookingDuration) {
+                    handleDurationChange(duration + 1);
+                  }
+                }}
+                disabled={duration >= maxBookingDuration}
+                className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
@@ -353,7 +365,7 @@ export default function TimeStep() {
                 No slots available for {duration}-hour booking
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-1.5 max-h-[180px] overflow-y-auto">
+              <div className="grid grid-cols-3 gap-1.5 max-h-[140px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
                 {durationSlots.map((slot) => {
                   const isOriginal = isOriginalSlot(slot);
                   const isSelected = draft.selectedSlot?.start === slot.start && draft.selectedSlot?.end === slot.end;

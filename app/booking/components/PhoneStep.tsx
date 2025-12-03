@@ -175,12 +175,12 @@ export default function PhoneStep() {
       onNext={handleNext}
       isNextDisabled={!isValid || isCheckingUser}
     >
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Edit Mode Banner */}
         {draft.isEditMode && draft.originalChoices && (
-          <div className="p-3 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-2">
+          <div className="p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-2">
             <RotateCcw className="w-4 h-4 text-violet-400" />
-            <span className="text-sm text-violet-400">
+            <span className="text-xs text-violet-400">
               Modifying your <span className="font-medium">{draft.originalChoices.sessionType}</span> booking
             </span>
           </div>
@@ -189,8 +189,8 @@ export default function PhoneStep() {
         {/* Phone input */}
         <div className="relative">
           <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-zinc-400">
-            <Phone className="w-5 h-5" />
-            <span className="text-white font-medium">+91</span>
+            <Phone className="w-4 h-4" />
+            <span className="text-white font-medium text-sm">+91</span>
           </div>
           <input
             type="tel"
@@ -198,34 +198,34 @@ export default function PhoneStep() {
             value={phone}
             onChange={(e) => handlePhoneChange(e.target.value)}
             placeholder="98765 43210"
-            className="w-full bg-zinc-800/50 border-2 border-zinc-600 rounded-xl pl-24 pr-12 py-4 text-white text-lg placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all"
+            className="w-full bg-zinc-800/50 border-2 border-zinc-600 rounded-xl pl-20 pr-10 py-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all"
             autoFocus
           />
           <div className="absolute right-4 top-1/2 -translate-y-1/2">
             {isCheckingUser && (
-              <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
+              <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
             )}
             {!isCheckingUser && isTrustedDevice && phoneValid && (
-              <Shield className="w-5 h-5 text-green-400" />
+              <Shield className="w-4 h-4 text-green-400" />
             )}
           </div>
         </div>
 
         {/* User status indicator */}
         {phoneValid && userChecked && !isCheckingUser && (
-          <div className={`flex items-center gap-2 text-sm rounded-lg px-3 py-2 ${
+          <div className={`flex items-center gap-2 text-xs rounded-lg px-3 py-2 ${
             isExistingUser 
               ? 'text-green-400 bg-green-500/10' 
               : 'text-amber-400 bg-amber-500/10'
           }`}>
             {isExistingUser ? (
               <>
-                <CheckCircle className="w-4 h-4" />
+                <CheckCircle className="w-3.5 h-3.5" />
                 <span>Welcome back! Your details have been auto-filled.</span>
               </>
             ) : (
               <>
-                <User className="w-4 h-4" />
+                <User className="w-3.5 h-3.5" />
                 <span>New user - please enter your name and email below.</span>
               </>
             )}
@@ -236,14 +236,14 @@ export default function PhoneStep() {
         {phoneValid && userChecked && (
           <div className="relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">
-              <User className="w-5 h-5" />
+              <User className="w-4 h-4" />
             </div>
             <input
               type="text"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder={isExistingUser ? "Your name" : "Your name (required)"}
-              className={`w-full bg-zinc-800/50 border-2 rounded-xl pl-12 pr-4 py-4 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all ${
+              className={`w-full bg-zinc-800/50 border-2 rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all ${
                 isExistingUser ? 'border-zinc-600' : 'border-zinc-600'
               } ${isExistingUser ? 'opacity-75' : ''}`}
               readOnly={isExistingUser}
@@ -255,14 +255,14 @@ export default function PhoneStep() {
         {phoneValid && userChecked && (
           <div className="relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">
-              <Mail className="w-5 h-5" />
+              <Mail className="w-4 h-4" />
             </div>
             <input
               type="email"
               value={email}
               onChange={(e) => handleEmailChange(e.target.value)}
               placeholder={isExistingUser ? "Your email" : "Your email (required)"}
-              className={`w-full bg-zinc-800/50 border-2 rounded-xl pl-12 pr-4 py-4 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all ${
+              className={`w-full bg-zinc-800/50 border-2 rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all ${
                 isExistingUser ? 'border-zinc-600' : 'border-zinc-600'
               } ${isExistingUser ? 'opacity-75' : ''}`}
               readOnly={isExistingUser}
@@ -270,17 +270,9 @@ export default function PhoneStep() {
           </div>
         )}
 
-        {/* Trusted device indicator - hidden since OTP is always required */}
-        {/* {isTrustedDevice && phoneValid && !isCheckingDevice && (
-          <div className="flex items-center gap-2 text-green-400 text-sm bg-green-500/10 rounded-lg px-3 py-2">
-            <Smartphone className="w-4 h-4" />
-            <span>This device is trusted. You won&apos;t need OTP verification.</span>
-          </div>
-        )} */}
-
         {/* Info text */}
-        <p className="text-xs text-zinc-500 mt-2">
-          By continuing, you agree to receive SMS messages from Resonance Studio for booking confirmations and reminders.
+        <p className="text-xs text-zinc-500">
+          By continuing, you agree to receive SMS messages from Resonance Studio for booking confirmations.
         </p>
       </div>
     </StepLayout>

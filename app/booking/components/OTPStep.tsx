@@ -166,10 +166,10 @@ export default function OTPStep() {
       showNext={false}
       hideFooter={false}
     >
-      <div className="flex flex-col items-center justify-center space-y-4">
+      <div className="flex flex-col items-center justify-center space-y-3">
         {/* OTP Icon */}
-        <div className={`p-4 rounded-full ${draft.isEditMode ? 'bg-blue-500/20' : 'bg-violet-500/20'}`}>
-          <Shield className={`w-10 h-10 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`} />
+        <div className={`p-3 rounded-full ${draft.isEditMode ? 'bg-blue-500/20' : 'bg-violet-500/20'}`}>
+          <Shield className={`w-8 h-8 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`} />
         </div>
 
         {/* OTP Input */}
@@ -186,7 +186,7 @@ export default function OTPStep() {
               onKeyDown={(e) => handleKeyDown(index, e)}
               onPaste={handlePaste}
               disabled={isLoading}
-              className={`w-12 h-14 text-center text-2xl font-bold rounded-xl border transition-all focus:outline-none focus:ring-2 ${
+              className={`w-11 h-12 text-center text-xl font-bold rounded-xl border transition-all focus:outline-none focus:ring-2 ${
                 draft.isEditMode ? 'focus:ring-blue-500' : 'focus:ring-violet-500'
               } ${
                 error
@@ -199,16 +199,16 @@ export default function OTPStep() {
 
         {/* Error message */}
         {error && (
-          <div className="flex items-center gap-2 text-red-400 text-sm">
-            <AlertCircle className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-red-400 text-xs">
+            <AlertCircle className="w-3.5 h-3.5" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Loading indicator */}
         {isLoading && (
-          <div className={`flex items-center gap-2 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`}>
-            <Loader2 className="w-5 h-5 animate-spin" />
+          <div className={`flex items-center gap-2 text-sm ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`}>
+            <Loader2 className="w-4 h-4 animate-spin" />
             <span>Verifying...</span>
           </div>
         )}
@@ -216,19 +216,19 @@ export default function OTPStep() {
         {/* Resend OTP */}
         <div className="text-center">
           {cooldown > 0 ? (
-            <p className="text-zinc-400 text-sm">
+            <p className="text-zinc-400 text-xs">
               Resend OTP in <span className={`${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'} font-medium`}>{cooldown}s</span>
             </p>
           ) : (
             <button
               onClick={sendOTP}
               disabled={isSending}
-              className={`flex items-center gap-2 ${draft.isEditMode ? 'text-blue-400 hover:text-blue-300' : 'text-violet-400 hover:text-violet-300'} transition-colors text-sm`}
+              className={`flex items-center gap-2 ${draft.isEditMode ? 'text-blue-400 hover:text-blue-300' : 'text-violet-400 hover:text-violet-300'} transition-colors text-xs`}
             >
               {isSending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className="w-3.5 h-3.5" />
               )}
               <span>{isSending ? 'Sending...' : 'Resend OTP'}</span>
             </button>
@@ -237,7 +237,7 @@ export default function OTPStep() {
 
         {/* Trust device info */}
         <div className="flex items-center gap-2 text-xs text-zinc-500 bg-zinc-800/50 rounded-lg px-3 py-2">
-          <Smartphone className="w-4 h-4" />
+          <Smartphone className="w-3.5 h-3.5" />
           <span>This device will be remembered for future bookings</span>
         </div>
       </div>

@@ -137,24 +137,24 @@ export default function ParticipantsStep() {
     switch (draft.sessionType) {
       case 'Karaoke':
         return (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-zinc-400 mb-2">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-zinc-400 mb-1">
               <Users className="w-4 h-4" />
-              <span className="text-sm">How many participants?</span>
+              <span className="text-xs">How many participants?</span>
             </div>
             {KARAOKE_OPTIONS.map((option) => (
               <button
                 key={option.value}
                 onClick={() => handleKaraokeSelect(option.value)}
-                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${
+                className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
                   draft.karaokeOption === option.value
                     ? 'bg-violet-500/20 border-violet-500 text-white'
                     : 'bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800'
                 }`}
               >
                 <div>
-                  <span className="font-medium">{option.label}</span>
-                  <p className="text-sm text-zinc-400">{option.description}</p>
+                  <span className="font-medium text-sm">{option.label}</span>
+                  <p className="text-xs text-zinc-400">{option.description}</p>
                 </div>
                 {draft.karaokeOption === option.value && (
                   <div className="w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center">
@@ -170,24 +170,24 @@ export default function ParticipantsStep() {
 
       case 'Live with musicians':
         return (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-zinc-400 mb-2">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-zinc-400 mb-1">
               <Users className="w-4 h-4" />
-              <span className="text-sm">How many musicians?</span>
+              <span className="text-xs">How many musicians?</span>
             </div>
             {LIVE_OPTIONS.map((option) => (
               <button
                 key={option.value}
                 onClick={() => handleLiveSelect(option.value)}
-                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${
+                className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
                   draft.liveOption === option.value
                     ? 'bg-violet-500/20 border-violet-500 text-white'
                     : 'bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800'
                 }`}
               >
                 <div>
-                  <span className="font-medium">{option.label}</span>
-                  <p className="text-sm text-zinc-400">{option.description}</p>
+                  <span className="font-medium text-sm">{option.label}</span>
+                  <p className="text-xs text-zinc-400">{option.description}</p>
                 </div>
                 {draft.liveOption === option.value && (
                   <div className="w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center">
@@ -203,15 +203,15 @@ export default function ParticipantsStep() {
 
       case 'Only Drum Practice':
         return (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="p-6 rounded-full bg-violet-500/20 mb-4">
-              <Drum className="w-12 h-12 text-violet-400" />
+          <div className="flex flex-col items-center justify-center py-4 text-center">
+            <div className="p-4 rounded-full bg-violet-500/20 mb-3">
+              <Drum className="w-10 h-10 text-violet-400" />
             </div>
-            <h3 className="text-lg font-medium text-white mb-2">Drum Practice Session</h3>
-            <p className="text-zinc-400 text-sm max-w-xs">
+            <h3 className="text-base font-medium text-white mb-1">Drum Practice Session</h3>
+            <p className="text-zinc-400 text-xs max-w-xs">
               Drum practice is available exclusively in Studio A with our professional drum kit.
             </p>
-            <div className="mt-4 px-4 py-2 bg-zinc-800 rounded-lg">
+            <div className="mt-3 px-4 py-2 bg-zinc-800 rounded-lg">
               <span className="text-violet-400 font-medium">₹350/hour</span>
             </div>
           </div>
@@ -219,24 +219,24 @@ export default function ParticipantsStep() {
 
       case 'Band':
         return (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-zinc-400 mb-2">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-zinc-400 mb-1">
               <Guitar className="w-4 h-4" />
-              <span className="text-sm">Select your equipment needs</span>
+              <span className="text-xs">Select your equipment needs</span>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               {BAND_EQUIPMENT.map((equipment) => (
                 <button
                   key={equipment.value}
                   onClick={() => handleBandEquipmentToggle(equipment.value)}
-                  className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all ${
+                  className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border transition-all ${
                     draft.bandEquipment.includes(equipment.value)
                       ? 'bg-violet-500/20 border-violet-500 text-white'
                       : 'bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800'
                   }`}
                 >
                   <div
-                    className={`p-3 rounded-lg ${
+                    className={`p-2 rounded-lg ${
                       draft.bandEquipment.includes(equipment.value)
                         ? 'bg-violet-500 text-white'
                         : 'bg-zinc-700 text-zinc-400'
@@ -244,12 +244,12 @@ export default function ParticipantsStep() {
                   >
                     {equipment.icon}
                   </div>
-                  <span className="font-medium text-sm">{equipment.label}</span>
+                  <span className="font-medium text-xs">{equipment.label}</span>
                 </button>
               ))}
             </div>
             {draft.bandEquipment.length > 0 && (
-              <div className="mt-4 p-3 bg-zinc-800/50 rounded-lg text-sm text-zinc-400">
+              <div className="mt-2 p-2 bg-zinc-800/50 rounded-lg text-xs text-zinc-400">
                 Selected: {draft.bandEquipment.map(e => 
                   BAND_EQUIPMENT.find(eq => eq.value === e)?.label
                 ).join(', ')}
@@ -260,26 +260,26 @@ export default function ParticipantsStep() {
 
       case 'Recording':
         return (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-zinc-400 mb-2">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-zinc-400 mb-1">
               <Radio className="w-4 h-4" />
-              <span className="text-sm">Select recording type</span>
+              <span className="text-xs">Select recording type</span>
             </div>
             {RECORDING_OPTIONS.map((option) => (
               <button
                 key={option.value}
                 onClick={() => handleRecordingSelect(option.value)}
-                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${
+                className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
                   draft.recordingOption === option.value
                     ? 'bg-violet-500/20 border-violet-500 text-white'
                     : 'bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800'
                 }`}
               >
                 <div>
-                  <span className="font-medium">{option.label}</span>
+                  <span className="font-medium text-sm">{option.label}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-violet-400">{option.price}</span>
+                  <span className="text-xs text-violet-400">{option.price}</span>
                   {draft.recordingOption === option.value && (
                     <div className="w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center">
                       <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -295,7 +295,7 @@ export default function ParticipantsStep() {
 
       default:
         return (
-          <div className="text-center py-8 text-zinc-400">
+          <div className="text-center py-4 text-zinc-400">
             Please select a session type first
           </div>
         );
@@ -342,9 +342,9 @@ export default function ParticipantsStep() {
     >
       {/* Edit Mode Banner */}
       {draft.isEditMode && getOriginalDetails() && (
-        <div className="mb-4 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-2">
+        <div className="mb-2 p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-2">
           <RotateCcw className="w-4 h-4 text-violet-400" />
-          <span className="text-sm text-violet-400">
+          <span className="text-xs text-violet-400">
             Original: <span className="font-medium">{getOriginalDetails()}</span>
           </span>
         </div>

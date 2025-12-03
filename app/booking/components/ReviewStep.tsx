@@ -98,109 +98,109 @@ export default function ReviewStep() {
       onNext={handleNext}
       isNextDisabled={draft.isEditMode && !hasChanges}
     >
-      <div className="space-y-3">
+      <div className="space-y-2">
         {/* No Changes Warning for Edit Mode */}
         {draft.isEditMode && !hasChanges && (
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="text-amber-400 font-medium text-sm">No Changes Made</h4>
-              <p className="text-amber-400/80 text-xs mt-1">
-                You haven't made any changes to your booking. Please go back and modify the session type, studio, date, or time slot if you want to update your booking.
+              <h4 className="text-amber-400 font-medium text-xs">No Changes Made</h4>
+              <p className="text-amber-400/80 text-xs mt-0.5">
+                Please go back and modify the session, studio, date, or time slot.
               </p>
             </div>
           </div>
         )}
 
         {/* Contact Info */}
-        <div className={`p-3 rounded-xl bg-zinc-800/50 border ${draft.isEditMode ? 'border-blue-700/30' : 'border-zinc-700'}`}>
-          <h3 className="text-xs font-medium text-zinc-400 mb-2">Contact Information</h3>
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-3">
-              <span className="text-zinc-400 text-sm">Phone:</span>
-              <span className="text-white font-medium text-sm">{formatPhone(draft.phone)}</span>
+        <div className={`p-2.5 rounded-xl bg-zinc-800/50 border ${draft.isEditMode ? 'border-blue-700/30' : 'border-zinc-700'}`}>
+          <h3 className="text-xs font-medium text-zinc-400 mb-1.5">Contact Information</h3>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-400 text-xs">Phone:</span>
+              <span className="text-white font-medium text-xs">{formatPhone(draft.phone)}</span>
             </div>
             {draft.name && (
-              <div className="flex items-center gap-3">
-                <span className="text-zinc-400 text-sm">Name:</span>
-                <span className="text-white text-sm">{draft.name}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-zinc-400 text-xs">Name:</span>
+                <span className="text-white text-xs">{draft.name}</span>
               </div>
             )}
             {draft.email && (
-              <div className="flex items-center gap-3">
-                <span className="text-zinc-400 text-sm">Email:</span>
-                <span className="text-white text-sm">{draft.email}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-zinc-400 text-xs">Email:</span>
+                <span className="text-white text-xs truncate">{draft.email}</span>
               </div>
             )}
           </div>
         </div>
 
         {/* Session Details */}
-        <div className={`p-3 rounded-xl bg-zinc-800/50 border ${draft.isEditMode ? 'border-blue-700/30' : 'border-zinc-700'}`}>
-          <h3 className="text-xs font-medium text-zinc-400 mb-2">Session Details</h3>
-          <div className="space-y-1.5">
+        <div className={`p-2.5 rounded-xl bg-zinc-800/50 border ${draft.isEditMode ? 'border-blue-700/30' : 'border-zinc-700'}`}>
+          <h3 className="text-xs font-medium text-zinc-400 mb-1.5">Session Details</h3>
+          <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Mic className={`w-4 h-4 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`} />
-              <span className="text-white text-sm">{draft.sessionType}</span>
+              <Mic className={`w-3.5 h-3.5 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`} />
+              <span className="text-white text-xs">{draft.sessionType}</span>
             </div>
             {getSessionDetails() && (
               <div className="flex items-center gap-2">
-                <Users className={`w-4 h-4 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`} />
-                <span className="text-zinc-300 text-sm">{getSessionDetails()}</span>
+                <Users className={`w-3.5 h-3.5 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`} />
+                <span className="text-zinc-300 text-xs">{getSessionDetails()}</span>
               </div>
             )}
             <div className="flex items-center gap-2">
-              <Building2 className={`w-4 h-4 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`} />
-              <span className="text-white text-sm">{draft.studio}</span>
+              <Building2 className={`w-3.5 h-3.5 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`} />
+              <span className="text-white text-xs">{draft.studio}</span>
             </div>
           </div>
         </div>
 
         {/* Date & Time */}
-        <div className={`p-3 rounded-xl bg-zinc-800/50 border ${draft.isEditMode ? 'border-blue-700/30' : 'border-zinc-700'}`}>
-          <h3 className="text-xs font-medium text-zinc-400 mb-2">Date & Time</h3>
-          <div className="space-y-1.5">
+        <div className={`p-2.5 rounded-xl bg-zinc-800/50 border ${draft.isEditMode ? 'border-blue-700/30' : 'border-zinc-700'}`}>
+          <h3 className="text-xs font-medium text-zinc-400 mb-1.5">Date & Time</h3>
+          <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Calendar className={`w-4 h-4 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`} />
-              <span className="text-white text-sm">{formatDate(draft.date)}</span>
+              <Calendar className={`w-3.5 h-3.5 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`} />
+              <span className="text-white text-xs">{formatDate(draft.date)}</span>
             </div>
             {draft.selectedSlot && (
               <div className="flex items-center gap-2">
-                <Clock className={`w-4 h-4 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`} />
-                <span className="text-white text-sm">
+                <Clock className={`w-3.5 h-3.5 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`} />
+                <span className="text-white text-xs">
                   {formatTime(draft.selectedSlot.start)} - {formatTime(draft.selectedSlot.end)}
                 </span>
-                <span className="text-zinc-400 text-xs">({draft.duration} hour{draft.duration > 1 ? 's' : ''})</span>
+                <span className="text-zinc-400 text-xs">({draft.duration}hr{draft.duration > 1 ? 's' : ''})</span>
               </div>
             )}
           </div>
         </div>
 
         {/* Payment Summary */}
-        <div className={`p-3 rounded-xl ${draft.isEditMode ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-violet-500/10 border border-violet-500/20'}`}>
-          <h3 className={`text-xs font-medium ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'} mb-2`}>Payment Summary</h3>
-          <div className="space-y-1.5">
+        <div className={`p-2.5 rounded-xl ${draft.isEditMode ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-violet-500/10 border border-violet-500/20'}`}>
+          <h3 className={`text-xs font-medium ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'} mb-1.5`}>Payment Summary</h3>
+          <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-zinc-400 text-sm">Rate</span>
-              <span className="text-white text-sm">₹{draft.ratePerHour}/hour</span>
+              <span className="text-zinc-400 text-xs">Rate</span>
+              <span className="text-white text-xs">₹{draft.ratePerHour}/hour</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-zinc-400 text-sm">Duration</span>
-              <span className="text-white text-sm">{draft.duration} hour{draft.duration > 1 ? 's' : ''}</span>
+              <span className="text-zinc-400 text-xs">Duration</span>
+              <span className="text-white text-xs">{draft.duration} hour{draft.duration > 1 ? 's' : ''}</span>
             </div>
-            <div className={`border-t ${draft.isEditMode ? 'border-blue-500/20' : 'border-violet-500/20'} my-1.5`} />
+            <div className={`border-t ${draft.isEditMode ? 'border-blue-500/20' : 'border-violet-500/20'} my-1`} />
             <div className="flex items-center justify-between">
-              <span className="text-white font-medium text-sm">Total Amount</span>
-              <span className={`text-xl font-bold ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`}>₹{totalAmount}</span>
+              <span className="text-white font-medium text-xs">Total Amount</span>
+              <span className={`text-lg font-bold ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`}>₹{totalAmount}</span>
             </div>
           </div>
         </div>
 
         {/* Note */}
-        <p className="text-xs text-zinc-500 text-center pb-2">
+        <p className="text-xs text-zinc-500 text-center">
           {draft.isEditMode 
             ? "Your booking will be updated with these new details."
-            : "Payment to be made at the studio. We'll send you a confirmation SMS after verification."
+            : "Payment to be made at the studio."
           }
         </p>
       </div>

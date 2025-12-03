@@ -65,15 +65,15 @@ export default function SessionStep() {
     >
       {/* Edit Mode Banner */}
       {draft.isEditMode && draft.originalChoices && (
-        <div className="mb-4 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-2">
+        <div className="mb-3 p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-2">
           <RotateCcw className="w-4 h-4 text-violet-400" />
-          <span className="text-sm text-violet-400">
+          <span className="text-xs text-violet-400">
             Modifying booking • Original: <span className="font-medium">{draft.originalChoices.sessionType}</span>
           </span>
         </div>
       )}
       
-      <div className="grid gap-3">
+      <div className="grid gap-2">
         {SESSION_TYPES.map((session) => {
           const isOriginal = isOriginalChoice(session.name);
           const isSelected = draft.sessionType === session.name;
@@ -82,7 +82,7 @@ export default function SessionStep() {
             <button
               key={session.name}
               onClick={() => handleSelect(session.name)}
-              className={`relative flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
+              className={`relative flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
                 isSelected
                   ? 'bg-violet-500/20 border-violet-500 text-white'
                   : isOriginal
@@ -98,7 +98,7 @@ export default function SessionStep() {
               )}
               
               <div
-                className={`p-3 rounded-lg ${
+                className={`p-2 rounded-lg ${
                   isSelected
                     ? 'bg-violet-500 text-white'
                     : isOriginal
@@ -108,15 +108,15 @@ export default function SessionStep() {
               >
                 {session.icon}
               </div>
-              <div className="flex-1">
-                <h3 className="font-medium">{session.name}</h3>
-                <p className="text-sm text-zinc-400">{session.description}</p>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-sm">{session.name}</h3>
+                <p className="text-xs text-zinc-400 truncate">{session.description}</p>
               </div>
               {isSelected && (
-                <div className="ml-auto">
-                  <div className="w-6 h-6 rounded-full bg-violet-500 flex items-center justify-center">
+                <div className="ml-auto flex-shrink-0">
+                  <div className="w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center">
                     <svg
-                      className="w-4 h-4 text-white"
+                      className="w-3 h-3 text-white"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
