@@ -348,7 +348,7 @@ export default function AvailabilityPage() {
 
   return (
     <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] flex flex-col py-2 px-2 md:py-4 md:px-4 overflow-hidden">
-      <div className="max-w-6xl mx-auto w-full flex flex-col h-full">
+      <div className="max-w-6xl mx-auto w-full flex flex-col h-full overflow-hidden">
         {/* Compact Header */}
         <motion.div 
           className="mb-2 md:mb-3 flex-shrink-0"
@@ -423,7 +423,7 @@ export default function AvailabilityPage() {
 
         {/* Availability Table */}
         <motion.div 
-          className="glass rounded-xl overflow-hidden flex-1 min-h-0"
+          className="glass rounded-xl overflow-hidden flex-1 min-h-0 flex flex-col"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -433,8 +433,8 @@ export default function AvailabilityPage() {
               <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
             </div>
           ) : (
-          <div className="overflow-auto h-full">
-            <table className="w-full">
+          <div className="overflow-auto flex-1">
+            <table className="w-full mb-2">
               <thead className="sticky top-0 z-10 bg-zinc-900/95 backdrop-blur-sm">
                 {/* Date Headers */}
                 <tr className="border-b border-white/10">
