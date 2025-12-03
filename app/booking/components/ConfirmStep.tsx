@@ -16,7 +16,7 @@ export default function ConfirmStep() {
 
   // Create booking on mount
   useEffect(() => {
-    if (!draft.otpVerified && !draft.deviceTrusted) {
+    if (!draft.otpVerified) {
       router.push('/booking/new');
       return;
     }
@@ -35,18 +35,19 @@ export default function ConfirmStep() {
       
       if (draft.sessionType === 'Karaoke' && draft.karaokeOption) {
         const labels: Record<string, string> = {
-          'upto_5': 'Up to 5 people',
-          '10': '10 people',
-          '20': '20 people',
-          '21_30': '21-30 people',
+          '1_5': '1–5 participants',
+          '6_10': '6–10 participants',
+          '11_20': '11–20 participants',
+          '21_30': '21–30 participants',
         };
         sessionDetails = labels[draft.karaokeOption] || draft.sessionType || '';
       } else if (draft.sessionType === 'Live with musicians' && draft.liveOption) {
         const labels: Record<string, string> = {
-          'upto_2': 'Up to 2 musicians',
-          'upto_4_or_5': '4-5 musicians',
-          'upto_8': 'Up to 8 musicians',
-          '9_12': '9-12 musicians',
+          '1_2': '1–2 musicians',
+          '3_4': '3–4 musicians',
+          '5': '5 musicians',
+          '6_8': '6–8 musicians',
+          '9_12': '9–12 musicians',
         };
         sessionDetails = labels[draft.liveOption] || draft.sessionType || '';
       } else if (draft.sessionType === 'Band' && draft.bandEquipment.length > 0) {
@@ -62,7 +63,6 @@ export default function ConfirmStep() {
           'audio_recording': 'Audio Recording',
           'video_recording': 'Video Recording (4K)',
           'chroma_key': 'Chroma Key (Green Screen)',
-          'sd_card_recording': 'SD Card Recording',
         };
         sessionDetails = labels[draft.recordingOption] || draft.sessionType || '';
       }
@@ -130,59 +130,149 @@ export default function ConfirmStep() {
 
   if (isBooking) {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center ${draft.isEditMode ? 'bg-gradient-to-b from-blue-950 via-zinc-900 to-black' : 'bg-gradient-to-b from-zinc-900 via-zinc-900 to-black'} p-4`}>
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-center"
-        >
-          <Loader2 className={`w-16 h-16 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'} animate-spin mx-auto mb-4`} />
-          <h2 className="text-xl font-bold text-white mb-2">
-            {draft.isEditMode ? 'Updating your booking...' : 'Confirming your booking...'}
-          </h2>
-          <p className="text-zinc-400">Please wait while we process your request</p>
-        </motion.div>
+      <div className={`h-[100dvh] flex flex-col overflow-hidden ${draft.isEditMode ? 'bg-gradient-to-b from-blue-950 via-zinc-900 to-black' : 'bg-gradient-to-b from-zinc-900 via-zinc-900 to-black'}`}>
+        {/* Header */}
+        <header className="flex-shrink-0 px-4 pt-4 pb-2">
+          <div className="text-center mb-3">
+            <h1 className={`text-lg font-bold ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`}>
+              Resonance – Sinhgad Road
+            </h1>
+            <h2 className="text-sm text-zinc-400">Online Booking System</h2>
+          </div>
+          {draft.name && (
+            <h3 className={`text-base font-medium text-center mb-3 ${draft.isEditMode ? 'text-blue-300' : 'text-violet-300'}`}>
+              Welcome, {draft.name}!
+            </h3>
+          )}
+        </header>
+        
+        {/* Main content */}
+        <main className="flex-1 flex items-center justify-center px-4">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="text-center"
+          >
+            <Loader2 className={`w-16 h-16 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'} animate-spin mx-auto mb-4`} />
+            <h4 className="text-xl font-bold text-white mb-2">
+              {draft.isEditMode ? 'Updating your booking...' : 'Confirming your booking...'}
+            </h4>
+            <p className="text-zinc-400">Please wait while we process your request</p>
+          </motion.div>
+        </main>
+        
+        {/* Footer with progress bar */}
+        <footer className={`flex-shrink-0 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t ${draft.isEditMode ? 'border-blue-900/50' : 'border-zinc-800'} bg-zinc-900/80 backdrop-blur`}>
+          <div className="flex items-center gap-1 mb-2">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
+              <div
+                key={step}
+                className={`h-1.5 flex-1 rounded-full transition-colors ${
+                  step <= 8 
+                    ? (draft.isEditMode ? 'bg-blue-500' : 'bg-violet-500') 
+                    : 'bg-zinc-700'
+                }`}
+              />
+            ))}
+          </div>
+          <p className="text-center text-xs text-zinc-500">
+            Step 8 of 8
+          </p>
+        </footer>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center ${draft.isEditMode ? 'bg-gradient-to-b from-blue-950 via-zinc-900 to-black' : 'bg-gradient-to-b from-zinc-900 via-zinc-900 to-black'} p-4`}>
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-center max-w-sm"
-        >
-          <div className="p-4 rounded-full bg-red-500/20 mx-auto w-fit mb-4">
-            <AlertCircle className="w-12 h-12 text-red-400" />
+      <div className={`h-[100dvh] flex flex-col overflow-hidden ${draft.isEditMode ? 'bg-gradient-to-b from-blue-950 via-zinc-900 to-black' : 'bg-gradient-to-b from-zinc-900 via-zinc-900 to-black'}`}>
+        {/* Header */}
+        <header className="flex-shrink-0 px-4 pt-4 pb-2">
+          <div className="text-center mb-3">
+            <h1 className={`text-lg font-bold ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`}>
+              Resonance – Sinhgad Road
+            </h1>
+            <h2 className="text-sm text-zinc-400">Online Booking System</h2>
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">
-            {draft.isEditMode ? 'Update Failed' : 'Booking Failed'}
-          </h2>
-          <p className="text-red-400 mb-6">{error}</p>
-          <div className="flex gap-3">
-            <button
-              onClick={handleGoHome}
-              className="flex-1 px-4 py-3 rounded-xl bg-zinc-800 text-white font-medium hover:bg-zinc-700"
-            >
-              Go Home
-            </button>
-            <button
-              onClick={createBooking}
-              className={`flex-1 px-4 py-3 rounded-xl ${draft.isEditMode ? 'bg-blue-600 hover:bg-blue-500' : 'bg-violet-600 hover:bg-violet-500'} text-white font-medium`}
-            >
-              Try Again
-            </button>
+          {draft.name && (
+            <h3 className={`text-base font-medium text-center mb-3 ${draft.isEditMode ? 'text-blue-300' : 'text-violet-300'}`}>
+              Welcome, {draft.name}!
+            </h3>
+          )}
+        </header>
+        
+        {/* Main content */}
+        <main className="flex-1 flex items-center justify-center px-4">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="text-center max-w-sm"
+          >
+            <div className="p-4 rounded-full bg-red-500/20 mx-auto w-fit mb-4">
+              <AlertCircle className="w-12 h-12 text-red-400" />
+            </div>
+            <h4 className="text-xl font-bold text-white mb-2">
+              {draft.isEditMode ? 'Update Failed' : 'Booking Failed'}
+            </h4>
+            <p className="text-red-400 mb-6">{error}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleGoHome}
+                className="flex-1 px-4 py-3 rounded-xl bg-zinc-800 text-white font-medium hover:bg-zinc-700"
+              >
+                Go Home
+              </button>
+              <button
+                onClick={createBooking}
+                className={`flex-1 px-4 py-3 rounded-xl ${draft.isEditMode ? 'bg-blue-600 hover:bg-blue-500' : 'bg-violet-600 hover:bg-violet-500'} text-white font-medium`}
+              >
+                Try Again
+              </button>
+            </div>
+          </motion.div>
+        </main>
+        
+        {/* Footer with progress bar */}
+        <footer className={`flex-shrink-0 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t ${draft.isEditMode ? 'border-blue-900/50' : 'border-zinc-800'} bg-zinc-900/80 backdrop-blur`}>
+          <div className="flex items-center gap-1 mb-2">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
+              <div
+                key={step}
+                className={`h-1.5 flex-1 rounded-full transition-colors ${
+                  step <= 8 
+                    ? (draft.isEditMode ? 'bg-blue-500' : 'bg-violet-500') 
+                    : 'bg-zinc-700'
+                }`}
+              />
+            ))}
           </div>
-        </motion.div>
+          <p className="text-center text-xs text-zinc-500">
+            Step 8 of 8
+          </p>
+        </footer>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen flex flex-col ${draft.isEditMode ? 'bg-gradient-to-b from-blue-950 via-zinc-900 to-black' : 'bg-gradient-to-b from-zinc-900 via-zinc-900 to-black'} p-4`}>
-      <div className="flex-1 flex flex-col items-center justify-center">
+    <div className={`h-[100dvh] flex flex-col overflow-hidden ${draft.isEditMode ? 'bg-gradient-to-b from-blue-950 via-zinc-900 to-black' : 'bg-gradient-to-b from-zinc-900 via-zinc-900 to-black'}`}>
+      {/* Header */}
+      <header className="flex-shrink-0 px-4 pt-4 pb-2">
+        <div className="text-center mb-3">
+          <h1 className={`text-lg font-bold ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`}>
+            Resonance – Sinhgad Road
+          </h1>
+          <h2 className="text-sm text-zinc-400">Online Booking System</h2>
+        </div>
+        {draft.name && (
+          <h3 className={`text-base font-medium text-center mb-2 ${draft.isEditMode ? 'text-blue-300' : 'text-violet-300'}`}>
+            Welcome, {draft.name}!
+          </h3>
+        )}
+      </header>
+      
+      {/* Main content */}
+      <main className="flex-1 flex flex-col items-center justify-center px-4 overflow-hidden">
         <motion.div
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -194,16 +284,16 @@ export default function ConfirmStep() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: 'spring' }}
-            className={`p-4 rounded-full ${draft.isEditMode ? 'bg-blue-500/20' : 'bg-green-500/20'} mx-auto w-fit mb-4`}
+            className={`p-3 rounded-full ${draft.isEditMode ? 'bg-blue-500/20' : 'bg-green-500/20'} mx-auto w-fit mb-3`}
           >
-            <CheckCircle2 className={`w-16 h-16 ${draft.isEditMode ? 'text-blue-400' : 'text-green-400'}`} />
+            <CheckCircle2 className={`w-12 h-12 ${draft.isEditMode ? 'text-blue-400' : 'text-green-400'}`} />
           </motion.div>
 
-          <h1 className="text-2xl font-bold text-white mb-2">
+          <h4 className="text-xl font-bold text-white mb-1">
             {draft.isEditMode ? 'Booking Updated!' : 'Booking Confirmed!'}
-          </h1>
+          </h4>
           {bookingId && (
-            <p className="text-zinc-400 mb-6">
+            <p className="text-zinc-400 mb-4">
               Booking ID: <span className={`${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'} font-mono`}>{bookingId}</span>
             </p>
           )}
@@ -214,22 +304,22 @@ export default function ConfirmStep() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className={`w-full max-w-sm bg-zinc-800/50 border ${draft.isEditMode ? 'border-blue-700/50' : 'border-zinc-700'} rounded-2xl p-5 mt-6`}
+          className={`w-full max-w-sm bg-zinc-800/50 border ${draft.isEditMode ? 'border-blue-700/50' : 'border-zinc-700'} rounded-xl p-4 mt-3`}
         >
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="flex items-center gap-3">
               <Building2 className={`w-5 h-5 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`} />
               <div>
-                <p className="text-sm text-zinc-400">Studio</p>
-                <p className="text-white font-medium">{draft.studio}</p>
+                <p className="text-xs text-zinc-400">Studio</p>
+                <p className="text-white font-medium text-sm">{draft.studio}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <Calendar className={`w-5 h-5 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`} />
               <div>
-                <p className="text-sm text-zinc-400">Date</p>
-                <p className="text-white font-medium">{formatDate(draft.date)}</p>
+                <p className="text-xs text-zinc-400">Date</p>
+                <p className="text-white font-medium text-sm">{formatDate(draft.date)}</p>
               </div>
             </div>
 
@@ -237,18 +327,18 @@ export default function ConfirmStep() {
               <div className="flex items-center gap-3">
                 <Clock className={`w-5 h-5 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`} />
                 <div>
-                  <p className="text-sm text-zinc-400">Time</p>
-                  <p className="text-white font-medium">
+                  <p className="text-xs text-zinc-400">Time</p>
+                  <p className="text-white font-medium text-sm">
                     {formatTime(draft.selectedSlot.start)} - {formatTime(draft.selectedSlot.end)}
                   </p>
                 </div>
               </div>
             )}
 
-            <div className="border-t border-zinc-700 pt-4 mt-4">
+            <div className="border-t border-zinc-700 pt-3 mt-3">
               <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Total Amount</span>
-                <span className={`text-2xl font-bold ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`}>
+                <span className="text-zinc-400 text-sm">Total Amount</span>
+                <span className={`text-xl font-bold ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`}>
                   ₹{draft.ratePerHour * draft.duration}
                 </span>
               </div>
@@ -262,37 +352,57 @@ export default function ConfirmStep() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="text-sm text-zinc-500 mt-4 text-center"
+          className="text-xs text-zinc-500 mt-3 text-center"
         >
           {draft.isEditMode 
             ? 'Your booking has been updated. A confirmation SMS has been sent.'
             : 'A confirmation SMS has been sent to your phone'
           }
         </motion.p>
-      </div>
+      </main>
 
-      {/* Action Buttons */}
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.4 }}
-        className="flex gap-3 mt-6"
-      >
-        <button
-          onClick={handleGoHome}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-zinc-800 text-white font-medium hover:bg-zinc-700"
+      {/* Footer with Action Buttons and progress bar */}
+      <footer className={`flex-shrink-0 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t ${draft.isEditMode ? 'border-blue-900/50' : 'border-zinc-800'} bg-zinc-900/80 backdrop-blur`}>
+        {/* Progress bar */}
+        <div className="flex items-center gap-1 mb-2">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
+            <div
+              key={step}
+              className={`h-1.5 flex-1 rounded-full transition-colors ${
+                step <= 8 
+                  ? (draft.isEditMode ? 'bg-blue-500' : 'bg-violet-500') 
+                  : 'bg-zinc-700'
+              }`}
+            />
+          ))}
+        </div>
+        <p className="text-center text-xs text-zinc-500 mb-3">
+          Step 8 of 8 - Complete!
+        </p>
+        
+        {/* Action Buttons */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="flex gap-3"
         >
-          <Home className="w-4 h-4" />
-          Home
-        </button>
-        <button
-          onClick={handleNewBooking}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl ${draft.isEditMode ? 'bg-blue-600 hover:bg-blue-500' : 'bg-violet-600 hover:bg-violet-500'} text-white font-medium`}
-        >
-          <CalendarPlus className="w-4 h-4" />
-          New Booking
-        </button>
-      </motion.div>
+          <button
+            onClick={handleGoHome}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-zinc-800 text-white font-medium hover:bg-zinc-700"
+          >
+            <Home className="w-4 h-4" />
+            Home
+          </button>
+          <button
+            onClick={handleNewBooking}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl ${draft.isEditMode ? 'bg-blue-600 hover:bg-blue-500' : 'bg-violet-600 hover:bg-violet-500'} text-white font-medium`}
+          >
+            <CalendarPlus className="w-4 h-4" />
+            New Booking
+          </button>
+        </motion.div>
+      </footer>
     </div>
   );
 }

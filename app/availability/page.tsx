@@ -246,11 +246,11 @@ export default function AvailabilityPage() {
           }
         }
         
-        // Fetch bookings for each date using todays-bookings endpoint
+        // Fetch bookings for each date using display bookings endpoint
         for (const date of currentDates) {
           const dateKey = formatDateKey(date);
           bookingPromises.push(
-            fetch(`/api/todays-bookings?date=${dateKey}`)
+            fetch(`/api/display/bookings?date=${dateKey}`)
               .then(async (response) => {
                 if (response.ok) {
                   const data = await safeJsonParse(response);

@@ -40,20 +40,21 @@ export default function ReviewStep() {
 
     if (draft.sessionType === 'Karaoke' && draft.karaokeOption) {
       const labels: Record<string, string> = {
-        'upto_5': 'Up to 5 people',
-        '10': '10 people',
-        '20': '20 people',
-        '21_30': '21-30 people',
+        '1_5': '1–5 participants',
+        '6_10': '6–10 participants',
+        '11_20': '11–20 participants',
+        '21_30': '21–30 participants',
       };
       return labels[draft.karaokeOption] || '';
     }
 
     if (draft.sessionType === 'Live with musicians' && draft.liveOption) {
       const labels: Record<string, string> = {
-        'upto_2': 'Up to 2 musicians',
-        'upto_4_or_5': '4-5 musicians',
-        'upto_8': 'Up to 8 musicians',
-        '9_12': '9-12 musicians',
+        '1_2': '1–2 musicians',
+        '3_4': '3–4 musicians',
+        '5': '5 musicians',
+        '6_8': '6–8 musicians',
+        '9_12': '9–12 musicians',
       };
       return labels[draft.liveOption] || '';
     }
@@ -73,7 +74,6 @@ export default function ReviewStep() {
         'audio_recording': 'Audio Recording',
         'video_recording': 'Video Recording (4K)',
         'chroma_key': 'Chroma Key (Green Screen)',
-        'sd_card_recording': 'SD Card Recording',
       };
       return labels[draft.recordingOption] || '';
     }

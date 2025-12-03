@@ -9,25 +9,25 @@ const STUDIOS: { name: StudioName; description: string; capacity: string; featur
   { 
     name: 'Studio C', 
     description: 'Cozy space for small groups', 
-    capacity: '5 people',
+    capacity: '5 participants',
     features: ['Perfect for duets', 'Intimate setting']
   },
   { 
     name: 'Studio B', 
     description: 'Medium-sized versatile space', 
-    capacity: '12 people',
+    capacity: '12 participants',
     features: ['Band rehearsal ready', 'Karaoke setup']
   },
   { 
     name: 'Studio A', 
     description: 'Our largest studio for big groups', 
-    capacity: '30 people',
+    capacity: '30 participants',
     features: ['Full band setup', 'Recording equipment']
   },
 ];
 
 export default function StudioStep() {
-  const { draft, updateDraft, nextStep } = useBooking();
+  const { draft, updateDraft, nextStep, setStep } = useBooking();
 
   const handleStudioSelect = (studio: StudioName) => {
     // Check if studio is allowed
@@ -55,6 +55,15 @@ export default function StudioStep() {
     }
   };
 
+  // Handle back navigation - skip participants step for Only Drum Practice
+  const handleBack = () => {
+    if (draft.sessionType === 'Only Drum Practice') {
+      setStep('session');
+    } else {
+      setStep('participants');
+    }
+  };
+
   const getStudioStatus = (studio: StudioName) => {
     const isAllowed = isStudioAllowed(studio, draft.allowedStudios);
     const isRecommended = studio === draft.recommendedStudio;
@@ -71,6 +80,7 @@ export default function StudioStep() {
         ? "Your original choice is highlighted. Select to change or keep the same."
         : (draft.recommendedStudio ? `We recommend ${draft.recommendedStudio} for your session` : 'Select a studio')}
       onNext={handleNext}
+      onBack={handleBack}
     >
       {/* Edit Mode Banner */}
       {draft.isEditMode && draft.originalChoices && (
@@ -93,6 +103,25 @@ export default function StudioStep() {
             bandEquipment: draft.bandEquipment,
             recordingOption: draft.recordingOption,
           });
+
+          // Determine rate unit based on session type
+          const rateUnit = draft.sessionType === 'Recording' ? '/song' : '/hr';
+
+          // Get description based on session type
+          const getDescription = () => {
+            if (draft.sessionType === 'Recording') {
+              return 'Professional recording studio';
+            }
+            return studio.description;
+          };
+
+          // Get capacity text based on session type
+          const getCapacityText = () => {
+            if (draft.sessionType === 'Recording') {
+              return 'Recording equipment';
+            }
+            return `Up to ${studio.capacity}`;
+          };
 
           return (
             <button
@@ -133,18 +162,18 @@ export default function StudioStep() {
                     )}
                   </div>
                   <p className={`text-sm mt-1 ${isAllowed ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                    {studio.description}
+                    {getDescription()}
                   </p>
                   <div className="flex items-center gap-2 mt-2">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${isAllowed ? 'bg-zinc-700 text-zinc-300' : 'bg-zinc-800 text-zinc-500'}`}>
-                      Up to {studio.capacity}
+                      {getCapacityText()}
                     </span>
                   </div>
                 </div>
                 <div className="flex flex-col items-end">
                   {isAllowed && (
                     <span className={`text-lg font-semibold ${isOriginal && !isSelected ? 'text-amber-400' : 'text-violet-400'}`}>
-                      ₹{rate}/hr
+                      ₹{rate}{rateUnit}
                     </span>
                   )}
                   {isSelected && (

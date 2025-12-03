@@ -7,7 +7,7 @@ import StepLayout from './StepLayout';
 import { getDeviceFingerprint, addTrustedPhone } from '@/lib/deviceFingerprint';
 
 export default function OTPStep() {
-  const { draft, updateDraft, nextStep } = useBooking();
+  const { draft, updateDraft, nextStep, stepIndex } = useBooking();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -16,17 +16,7 @@ export default function OTPStep() {
   const [cooldown, setCooldown] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Check if device is already trusted
-  useEffect(() => {
-    const checkDevice = async () => {
-      if (draft.deviceTrusted) {
-        // Skip OTP - proceed to confirmation
-        updateDraft({ otpVerified: true });
-        nextStep();
-      }
-    };
-    checkDevice();
-  }, [draft.deviceTrusted, updateDraft, nextStep]);
+  // OTP is ALWAYS required - no device trust skip
 
   // Cooldown timer
   useEffect(() => {
@@ -36,9 +26,9 @@ export default function OTPStep() {
     }
   }, [cooldown]);
 
-  // Send OTP on mount
+  // Send OTP on mount - always required
   useEffect(() => {
-    if (!otpSent && !draft.deviceTrusted) {
+    if (!otpSent) {
       sendOTP();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -174,9 +164,9 @@ export default function OTPStep() {
       title={draft.isEditMode ? "Verify to update booking" : "Verify your phone"}
       subtitle={`Enter the 6-digit code sent to ${formatPhone(draft.phone)}`}
       showNext={false}
-      hideFooter
+      hideFooter={false}
     >
-      <div className="flex flex-col items-center justify-center py-4 space-y-6">
+      <div className="flex flex-col items-center justify-center space-y-4">
         {/* OTP Icon */}
         <div className={`p-4 rounded-full ${draft.isEditMode ? 'bg-blue-500/20' : 'bg-violet-500/20'}`}>
           <Shield className={`w-10 h-10 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`} />

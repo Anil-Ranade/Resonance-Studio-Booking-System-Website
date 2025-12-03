@@ -3,6 +3,7 @@
 import { Mic, Music, Drum, Guitar, Radio, RotateCcw } from 'lucide-react';
 import { useBooking, SessionType } from '../contexts/BookingContext';
 import StepLayout from './StepLayout';
+import { getStudioSuggestion, getStudioRate } from '../utils/studioSuggestion';
 
 const SESSION_TYPES: { name: SessionType; icon: React.ReactNode; description: string }[] = [
   { name: 'Karaoke', icon: <Mic className="w-6 h-6" />, description: 'Sing along with friends' },
@@ -13,7 +14,7 @@ const SESSION_TYPES: { name: SessionType; icon: React.ReactNode; description: st
 ];
 
 export default function SessionStep() {
-  const { draft, updateDraft, nextStep } = useBooking();
+  const { draft, updateDraft, nextStep, setStep } = useBooking();
 
   const handleSelect = (sessionType: SessionType) => {
     // Reset dependent fields when session type changes
@@ -31,7 +32,23 @@ export default function SessionStep() {
 
   const handleNext = () => {
     if (draft.sessionType) {
-      nextStep();
+      // Special Rule: Only Drum Practice skips participants page and goes directly to studio
+      if (draft.sessionType === 'Only Drum Practice') {
+        const suggestion = getStudioSuggestion('Only Drum Practice', {});
+        const rate = getStudioRate(suggestion.recommendedStudio, 'Only Drum Practice', {});
+        
+        updateDraft({
+          recommendedStudio: suggestion.recommendedStudio,
+          allowedStudios: suggestion.allowedStudios,
+          studio: suggestion.recommendedStudio,
+          ratePerHour: rate,
+        });
+        
+        // Skip participants step and go directly to studio
+        setStep('studio');
+      } else {
+        nextStep();
+      }
     }
   };
 

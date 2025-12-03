@@ -69,18 +69,19 @@ export default function StepLayout({
     
     if (draft.sessionType === 'Karaoke' && draft.karaokeOption) {
       const labels: Record<string, string> = {
-        'upto_5': 'Up to 5 people',
-        '10': '10 people',
-        '20': '20 people',
-        '21_30': '21-30 people',
+        '1_5': '1–5 participants',
+        '6_10': '6–10 participants',
+        '11_20': '11–20 participants',
+        '21_30': '21–30 participants',
       };
       details += ` • ${labels[draft.karaokeOption] || ''}`;
     } else if (draft.sessionType === 'Live with musicians' && draft.liveOption) {
       const labels: Record<string, string> = {
-        'upto_2': 'Up to 2 musicians',
-        'upto_4_or_5': '4-5 musicians',
-        'upto_8': 'Up to 8 musicians',
-        '9_12': '9-12 musicians',
+        '1_2': '1–2 musicians',
+        '3_4': '3–4 musicians',
+        '5': '5 musicians',
+        '6_8': '6–8 musicians',
+        '9_12': '9–12 musicians',
       };
       details += ` • ${labels[draft.liveOption] || ''}`;
     } else if (draft.sessionType === 'Band' && draft.bandEquipment.length > 0) {
@@ -98,9 +99,17 @@ export default function StepLayout({
   };
 
   return (
-    <div className={`h-[100dvh] flex flex-col ${draft.isEditMode ? 'bg-gradient-to-b from-blue-950 via-zinc-900 to-black' : 'bg-gradient-to-b from-zinc-900 via-zinc-900 to-black'}`}>
-      {/* Header with user info */}
+    <div className={`h-[100dvh] flex flex-col overflow-hidden ${draft.isEditMode ? 'bg-gradient-to-b from-blue-950 via-zinc-900 to-black' : 'bg-gradient-to-b from-zinc-900 via-zinc-900 to-black'}`}>
+      {/* Header */}
       <header className="flex-shrink-0 px-4 pt-4 pb-2">
+        {/* Main Headers - shown on ALL pages */}
+        <div className="text-center mb-3">
+          <h1 className={`text-lg font-bold ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`}>
+            Resonance – Sinhgad Road
+          </h1>
+          <h2 className="text-sm text-zinc-400">Online Booking System</h2>
+        </div>
+        
         {/* Edit Mode Banner */}
         {draft.isEditMode && (
           <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg px-3 py-2 mb-3 flex items-center gap-2">
@@ -108,20 +117,13 @@ export default function StepLayout({
             <span className="text-blue-300 text-sm font-medium">Modifying Existing Booking</span>
           </div>
         )}
-        
-        {/* Progress indicator */}
-        <div className="flex items-center gap-1 mb-3">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
-            <div
-              key={step}
-              className={`h-1 flex-1 rounded-full transition-colors ${
-                step <= stepIndex + 1 
-                  ? (draft.isEditMode ? 'bg-blue-500' : 'bg-violet-500') 
-                  : 'bg-zinc-700'
-              }`}
-            />
-          ))}
-        </div>
+
+        {/* Welcome message - shown when user name is known (after phone step) */}
+        {draft.name && (
+          <h3 className={`text-base font-medium text-center mb-3 ${draft.isEditMode ? 'text-blue-300' : 'text-violet-300'}`}>
+            Welcome, {draft.name}!
+          </h3>
+        )}
 
         {/* User details bar - shown after phone step */}
         {stepIndex > 0 && draft.phone && (
@@ -150,34 +152,51 @@ export default function StepLayout({
           </div>
         )}
 
-        {/* Title */}
+        {/* Step Title */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <h1 className="text-xl font-bold text-white">{title}</h1>
+          <h4 className="text-xl font-bold text-white">{title}</h4>
           {subtitle && <p className="text-sm text-zinc-400 mt-1">{subtitle}</p>}
         </motion.div>
       </header>
 
-      {/* Main content - scrollable when needed */}
-      <main className="flex-1 px-4 py-3 overflow-y-auto">
+      {/* Main content - fixed height, no scrolling */}
+      <main className="flex-1 px-4 py-3 overflow-hidden">
         <motion.div
           key={currentStep}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.2 }}
-          className="pb-2"
+          className="h-full"
         >
           {children}
         </motion.div>
       </main>
 
-      {/* Footer with navigation */}
+      {/* Footer with navigation and progress bar */}
       {!hideFooter && (
         <footer className={`flex-shrink-0 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t ${draft.isEditMode ? 'border-blue-900/50' : 'border-zinc-800'} bg-zinc-900/80 backdrop-blur`}>
+          {/* Progress bar at bottom of footer */}
+          <div className="flex items-center gap-1 mb-3">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
+              <div
+                key={step}
+                className={`h-1.5 flex-1 rounded-full transition-colors ${
+                  step <= stepIndex + 1 
+                    ? (draft.isEditMode ? 'bg-blue-500' : 'bg-violet-500') 
+                    : 'bg-zinc-700'
+                }`}
+              />
+            ))}
+          </div>
+          <p className="text-center text-xs text-zinc-500 mb-3">
+            Step {stepIndex + 1} of 8
+          </p>
+          
           <div className="flex items-center gap-3">
             {showBack && stepIndex > 0 && (
               <button
@@ -215,6 +234,27 @@ export default function StepLayout({
               </button>
             )}
           </div>
+        </footer>
+      )}
+      
+      {/* Progress bar shown even when footer is hidden */}
+      {hideFooter && (
+        <footer className={`flex-shrink-0 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t ${draft.isEditMode ? 'border-blue-900/50' : 'border-zinc-800'} bg-zinc-900/80 backdrop-blur`}>
+          <div className="flex items-center gap-1 mb-2">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
+              <div
+                key={step}
+                className={`h-1.5 flex-1 rounded-full transition-colors ${
+                  step <= stepIndex + 1 
+                    ? (draft.isEditMode ? 'bg-blue-500' : 'bg-violet-500') 
+                    : 'bg-zinc-700'
+                }`}
+              />
+            ))}
+          </div>
+          <p className="text-center text-xs text-zinc-500">
+            Step {stepIndex + 1} of 8
+          </p>
         </footer>
       )}
     </div>

@@ -4,75 +4,67 @@ import { NextRequest, NextResponse } from 'next/server';
 export type SessionType = 'Karaoke' | 'Live with musicians' | 'Only Drum Practice' | 'Band' | 'Recording';
 
 // Karaoke participant options
-export type KaraokeOption = 'upto_5' | 'upto_8' | '10' | '20' | '21_30';
+export type KaraokeOption = '1_5' | '6_10' | '11_20' | '21_30';
 
 // Live musician options
-export type LiveMusicianOption = 'upto_2' | 'upto_4' | '5' | 'upto_8' | '9_12';
+export type LiveMusicianOption = '1_2' | '3_4' | '5' | '6_8' | '9_12';
 
 // Band equipment
 export type BandEquipment = 'drum' | 'amps' | 'guitars' | 'keyboard';
 
 // Recording options
-export type RecordingOption = 'audio_recording' | 'video_recording' | 'chroma_key' | 'sd_card_recording';
+export type RecordingOption = 'audio_recording' | 'video_recording' | 'chroma_key';
 
 // Rate card based on the pricing page
 const rateCard = {
   'Studio A': {
     karaoke: {
-      'upto_5': 400,
-      'upto_8': 400,
-      '10': 400,
-      '20': 400,
+      '1_5': 400,
+      '6_10': 400,
+      '11_20': 400,
       '21_30': 500,
     },
     live: {
-      'upto_2': 600,
-      'upto_4': 600,
+      '1_2': 600,
+      '3_4': 600,
       '5': 600,
-      'upto_8': 600,
+      '6_8': 600,
       '9_12': 800,
     },
     drum_practice: 350,
     band: {
-      'drum_only': 400,
-      'drum_amps': 500,
-      'drum_amps_guitars': 600,
-      'full': 600, // Drums, Amps, Guitars, Keyboard
+      'with_drum': 600, // Any combination with drums
+      'without_drum': 400,
     },
     recording: {
       'audio_recording': 700,
       'video_recording': 800,
       'chroma_key': 1200,
-      'sd_card_recording': 100,
     },
   },
   'Studio B': {
     karaoke: {
-      'upto_5': 300,
-      'upto_8': 300,
-      '10': 300, // Studio B can handle up to 12 for karaoke
+      '1_5': 300,
+      '6_10': 300,
     },
     live: {
-      'upto_2': 400,
-      'upto_4': 400,
+      '1_2': 400,
+      '3_4': 400,
       '5': 500,
     },
     band: {
-      'drum_only': 350,
-      'drum_amps': 400,
-      'drum_amps_guitars': 450,
+      'without_drum': 350,
     },
   },
   'Studio C': {
     karaoke: {
-      'upto_5': 250,
+      '1_5': 250,
     },
     live: {
-      'upto_2': 350,
+      '1_2': 350,
     },
     band: {
-      'drum_only': 300,
-      'drum_amps': 350,
+      'without_drum': 300,
     },
   },
 };
@@ -97,40 +89,34 @@ function getKaraokeSuggestion(option: KaraokeOption): StudioSuggestion {
   let explanation: string;
 
   switch (option) {
-    case 'upto_5':
+    case '1_5':
       suggested = 'Studio C';
       allowed = ['Studio C', 'Studio B', 'Studio A'];
-      rate = rateCard['Studio C'].karaoke['upto_5'];
-      explanation = 'For up to 5 participants, Studio C is perfect. You can upgrade to B or A for more space.';
+      rate = rateCard['Studio C'].karaoke['1_5'];
+      explanation = 'For 1–5 participants, Studio C is perfect. You can upgrade to B or A for more space.';
       break;
-    case 'upto_8':
+    case '6_10':
       suggested = 'Studio B';
       allowed = ['Studio B', 'Studio A'];
-      rate = rateCard['Studio B'].karaoke['upto_8'];
-      explanation = 'For up to 8 participants, Studio B is recommended. You can upgrade to A for more space.';
+      rate = rateCard['Studio B'].karaoke['6_10'];
+      explanation = 'For 6–10 participants, Studio B is recommended. You can upgrade to A for more space.';
       break;
-    case '10':
-      suggested = 'Studio B';
-      allowed = ['Studio B', 'Studio A'];
-      rate = rateCard['Studio B'].karaoke['10'];
-      explanation = 'For 10 participants, Studio B works well. You can upgrade to A for extra comfort.';
-      break;
-    case '20':
+    case '11_20':
       suggested = 'Studio A';
       allowed = ['Studio A'];
-      rate = rateCard['Studio A'].karaoke['20'];
-      explanation = 'For 20 participants, only Studio A can accommodate your group.';
+      rate = rateCard['Studio A'].karaoke['11_20'];
+      explanation = 'For 11–20 participants, only Studio A can accommodate your group.';
       break;
     case '21_30':
       suggested = 'Studio A';
       allowed = ['Studio A'];
       rate = rateCard['Studio A'].karaoke['21_30'];
-      explanation = 'For 21-30 participants, Studio A is required for your group size.';
+      explanation = 'For 21–30 participants, Studio A is required for your group size.';
       break;
     default:
       suggested = 'Studio C';
       allowed = ['Studio C', 'Studio B', 'Studio A'];
-      rate = rateCard['Studio C'].karaoke['upto_5'];
+      rate = rateCard['Studio C'].karaoke['1_5'];
       explanation = 'Studio C is recommended for smaller groups.';
   }
 
@@ -166,17 +152,17 @@ function getLiveSuggestion(option: LiveMusicianOption): StudioSuggestion {
   let explanation: string;
 
   switch (option) {
-    case 'upto_2':
+    case '1_2':
       suggested = 'Studio C';
       allowed = ['Studio C', 'Studio B', 'Studio A'];
-      rate = rateCard['Studio C'].live['upto_2'];
-      explanation = 'For up to 2 musicians, Studio C is ideal. You can upgrade to B or A for more space.';
+      rate = rateCard['Studio C'].live['1_2'];
+      explanation = 'For 1–2 musicians, Studio C is ideal. You can upgrade to B or A for more space.';
       break;
-    case 'upto_4':
+    case '3_4':
       suggested = 'Studio B';
       allowed = ['Studio B', 'Studio A'];
-      rate = rateCard['Studio B'].live['upto_4'];
-      explanation = 'For up to 4 musicians, Studio B is recommended. You can upgrade to A.';
+      rate = rateCard['Studio B'].live['3_4'];
+      explanation = 'For 3–4 musicians, Studio B is recommended. You can upgrade to A.';
       break;
     case '5':
       suggested = 'Studio B';
@@ -184,22 +170,22 @@ function getLiveSuggestion(option: LiveMusicianOption): StudioSuggestion {
       rate = rateCard['Studio B'].live['5'];
       explanation = 'For 5 musicians, Studio B is suitable. You can upgrade to A for more comfort.';
       break;
-    case 'upto_8':
+    case '6_8':
       suggested = 'Studio A';
       allowed = ['Studio A'];
-      rate = rateCard['Studio A'].live['upto_8'];
-      explanation = 'For up to 8 musicians, Studio A is required for adequate space.';
+      rate = rateCard['Studio A'].live['6_8'];
+      explanation = 'For 6–8 musicians, Studio A is required for adequate space.';
       break;
     case '9_12':
       suggested = 'Studio A';
       allowed = ['Studio A'];
       rate = rateCard['Studio A'].live['9_12'];
-      explanation = 'For 9-12 musicians, only Studio A can accommodate your group.';
+      explanation = 'For 9–12 musicians, only Studio A can accommodate your group.';
       break;
     default:
       suggested = 'Studio C';
       allowed = ['Studio C', 'Studio B', 'Studio A'];
-      rate = rateCard['Studio C'].live['upto_2'];
+      rate = rateCard['Studio C'].live['1_2'];
       explanation = 'Studio C is recommended for smaller groups.';
   }
 
@@ -229,56 +215,24 @@ function getAllRatesForLive(option: LiveMusicianOption, allowed: StudioName[]): 
 // Get studio suggestion for Band
 function getBandSuggestion(equipment: BandEquipment[]): StudioSuggestion {
   const hasDrum = equipment.includes('drum');
-  const hasAmps = equipment.includes('amps');
-  const hasGuitars = equipment.includes('guitars');
-  const hasKeyboard = equipment.includes('keyboard');
 
   let suggested: StudioName;
   let allowed: StudioName[];
   let rate: number;
   let explanation: string;
-  let bandType: string;
 
-  // Full band: Drum + Amps + Guitars + Keyboard → Studio A only
-  if (hasDrum && hasAmps && hasGuitars && hasKeyboard) {
+  // Special Rule: If drums are selected, only Studio A is allowed
+  if (hasDrum) {
     suggested = 'Studio A';
     allowed = ['Studio A'];
-    rate = rateCard['Studio A'].band['full'];
-    explanation = 'Full band setup (Drums, Amps, Guitars, Keyboard) requires Studio A.';
-    bandType = 'full';
-  }
-  // Drum + Amps + Guitars → Studio B suggested
-  else if (hasDrum && hasAmps && hasGuitars) {
-    suggested = 'Studio B';
-    allowed = ['Studio B', 'Studio A'];
-    rate = rateCard['Studio B'].band['drum_amps_guitars'];
-    explanation = 'For Drums + Amps + Guitars, Studio B is recommended. You can upgrade to A.';
-    bandType = 'drum_amps_guitars';
-  }
-  // Drum + Amps → Studio C suggested
-  else if (hasDrum && hasAmps) {
+    rate = rateCard['Studio A'].band['with_drum'];
+    explanation = 'Drum equipment requires Studio A exclusively.';
+  } else {
+    // No drums - allow all studios
     suggested = 'Studio C';
     allowed = ['Studio C', 'Studio B', 'Studio A'];
-    rate = rateCard['Studio C'].band['drum_amps'];
-    explanation = 'For Drums + Amps, Studio C works well. You can upgrade to B or A.';
-    bandType = 'drum_amps';
-  }
-  // Drum only → Studio C suggested
-  else if (hasDrum) {
-    suggested = 'Studio C';
-    allowed = ['Studio C', 'Studio B', 'Studio A'];
-    rate = rateCard['Studio C'].band['drum_only'];
-    explanation = 'For Drums only, Studio C is perfect. You can upgrade to B or A.';
-    bandType = 'drum_only';
-  }
-  // Complex combination - choose smallest fitting studio
-  else {
-    // Default to Studio B for any other combination
-    suggested = 'Studio B';
-    allowed = ['Studio B', 'Studio A'];
-    rate = rateCard['Studio B'].band['drum_amps'];
-    explanation = 'Based on your equipment selection, Studio B is recommended.';
-    bandType = 'drum_amps';
+    rate = rateCard['Studio C'].band['without_drum'];
+    explanation = 'Your equipment setup fits in Studio C. You can upgrade if needed.';
   }
 
   return {
@@ -286,19 +240,20 @@ function getBandSuggestion(equipment: BandEquipment[]): StudioSuggestion {
     suggested_rate: rate,
     allowed_studios: allowed,
     explanation,
-    rate_breakdown: getAllRatesForBand(bandType, allowed),
+    rate_breakdown: getAllRatesForBand(hasDrum, allowed),
   };
 }
 
 // Get all rates for Band for allowed studios
-function getAllRatesForBand(bandType: string, allowed: StudioName[]): Record<string, number> {
+function getAllRatesForBand(hasDrum: boolean, allowed: StudioName[]): Record<string, number> {
   const rates: Record<string, number> = {};
+  const rateKey = hasDrum ? 'with_drum' : 'without_drum';
   for (const studio of allowed) {
     const studioRates = rateCard[studio]?.band;
-    if (studioRates && bandType in studioRates) {
-      rates[studio] = studioRates[bandType as keyof typeof studioRates];
+    if (studioRates && rateKey in studioRates) {
+      rates[studio] = studioRates[rateKey as keyof typeof studioRates];
     } else if (studio === 'Studio A') {
-      rates[studio] = rateCard['Studio A'].band[bandType as keyof typeof rateCard['Studio A']['band']] || 500;
+      rates[studio] = rateCard['Studio A'].band[rateKey] || 500;
     }
   }
   return rates;
@@ -322,14 +277,13 @@ function getRecordingSuggestion(option: RecordingOption): StudioSuggestion {
     'audio_recording': 'Audio Recording',
     'video_recording': 'Video Recording (4K)',
     'chroma_key': 'Chroma Key (Green Screen)',
-    'sd_card_recording': 'SD Card Recording',
   };
 
   return {
     suggested_studio: 'Studio A',
     suggested_rate: rate,
     allowed_studios: ['Studio A'],
-    explanation: `${optionLabels[option]} is available in Studio A at ₹${rate}${option === 'sd_card_recording' ? '/hour' : '/song'}.`,
+    explanation: `${optionLabels[option]} is available in Studio A at ₹${rate}/song.`,
     rate_breakdown: { 'Studio A': rate },
   };
 }
@@ -357,7 +311,7 @@ export async function GET(request: NextRequest) {
     case 'Karaoke':
       if (!subOption) {
         return NextResponse.json(
-          { error: 'subOption is required for Karaoke (upto_5, upto_8, 10, 20, 21_30)' },
+          { error: 'subOption is required for Karaoke (1_5, 6_10, 11_20, 21_30)' },
           { status: 400 }
         );
       }
@@ -367,7 +321,7 @@ export async function GET(request: NextRequest) {
     case 'Live with musicians':
       if (!subOption) {
         return NextResponse.json(
-          { error: 'subOption is required for Live with musicians (upto_2, upto_4, 5, upto_8, 9_12)' },
+          { error: 'subOption is required for Live with musicians (1_2, 3_4, 5, 6_8, 9_12)' },
           { status: 400 }
         );
       }
@@ -392,7 +346,7 @@ export async function GET(request: NextRequest) {
     case 'Recording':
       if (!subOption) {
         return NextResponse.json(
-          { error: 'subOption is required for Recording (audio_recording, video_recording, chroma_key, sd_card_recording)' },
+          { error: 'subOption is required for Recording (audio_recording, video_recording, chroma_key)' },
           { status: 400 }
         );
       }

@@ -270,16 +270,16 @@ export default function PhoneStep() {
           </div>
         )}
 
-        {/* Trusted device indicator */}
-        {isTrustedDevice && phoneValid && !isCheckingDevice && (
+        {/* Trusted device indicator - hidden since OTP is always required */}
+        {/* {isTrustedDevice && phoneValid && !isCheckingDevice && (
           <div className="flex items-center gap-2 text-green-400 text-sm bg-green-500/10 rounded-lg px-3 py-2">
             <Smartphone className="w-4 h-4" />
             <span>This device is trusted. You won&apos;t need OTP verification.</span>
           </div>
-        )}
+        )} */}
 
         {/* Info text */}
-        <p className="text-xs text-zinc-500 mt-4">
+        <p className="text-xs text-zinc-500 mt-2">
           By continuing, you agree to receive SMS messages from Resonance Studio for booking confirmations and reminders.
         </p>
       </div>

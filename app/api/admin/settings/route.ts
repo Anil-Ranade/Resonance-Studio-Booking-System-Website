@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
+import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase';
 
 interface BookingSettings {
   minBookingDuration: number;
@@ -69,12 +71,57 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Verify admin token from Authorization header
+async function verifyAdminToken(request: NextRequest) {
+  const authHeader = request.headers.get("Authorization");
+  
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+
+  const token = authHeader.split(" ")[1];
+  
+  // Create a client with the user's access token to verify it
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  });
+
+  const { data: { user }, error } = await supabaseAuth.auth.getUser();
+  
+  if (error || !user) {
+    console.error("[Admin Settings] Auth error:", error?.message);
+    return null;
+  }
+
+  // Use admin client to check admin_users table
+  const supabase = supabaseAdmin();
+  const { data: adminUser, error: adminError } = await supabase
+    .from("admin_users")
+    .select("*")
+    .eq("id", user.id)
+    .eq("is_active", true)
+    .single();
+
+  if (adminError || !adminUser) {
+    console.error("[Admin Settings] Admin check error:", adminError?.message);
+    return null;
+  }
+
+  return { user, adminUser };
+}
+
 // PUT /api/admin/settings - Update booking settings
 export async function PUT(request: NextRequest) {
   try {
-    // Verify admin auth
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    // Verify admin authentication and authorization
+    const admin = await verifyAdminToken(request);
+    if (!admin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

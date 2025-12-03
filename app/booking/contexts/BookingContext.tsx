@@ -5,10 +5,10 @@ import { getStudioSuggestion as getStudioSuggestionUtil } from '../utils/studioS
 
 // Types
 export type SessionType = 'Karaoke' | 'Live with musicians' | 'Only Drum Practice' | 'Band' | 'Recording';
-export type KaraokeOption = 'upto_5' | '10' | '20' | '21_30';
-export type LiveMusicianOption = 'upto_2' | 'upto_4_or_5' | 'upto_8' | '9_12';
+export type KaraokeOption = '1_5' | '6_10' | '11_20' | '21_30';
+export type LiveMusicianOption = '1_2' | '3_4' | '5' | '6_8' | '9_12';
 export type BandEquipment = 'drum' | 'amps' | 'guitars' | 'keyboard';
-export type RecordingOption = 'audio_recording' | 'video_recording' | 'chroma_key' | 'sd_card_recording';
+export type RecordingOption = 'audio_recording' | 'video_recording' | 'chroma_key';
 export type StudioName = 'Studio A' | 'Studio B' | 'Studio C';
 
 export interface TimeSlot {
@@ -147,14 +147,15 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     // Parse based on session type
     if (sessionType === 'Karaoke') {
       // Match against known karaoke labels
-      if (sessionDetails.includes('5') || groupSize <= 5) karaokeOption = 'upto_5';
-      else if (sessionDetails.includes('10') || groupSize <= 10) karaokeOption = '10';
-      else if (sessionDetails.includes('20') || groupSize <= 20) karaokeOption = '20';
+      if (groupSize <= 5) karaokeOption = '1_5';
+      else if (groupSize <= 10) karaokeOption = '6_10';
+      else if (groupSize <= 20) karaokeOption = '11_20';
       else karaokeOption = '21_30';
     } else if (sessionType === 'Live with musicians') {
-      if (sessionDetails.includes('2') || groupSize <= 2) liveOption = 'upto_2';
-      else if (sessionDetails.includes('4') || sessionDetails.includes('5') || groupSize <= 5) liveOption = 'upto_4_or_5';
-      else if (sessionDetails.includes('8') || groupSize <= 8) liveOption = 'upto_8';
+      if (groupSize <= 2) liveOption = '1_2';
+      else if (groupSize <= 4) liveOption = '3_4';
+      else if (groupSize === 5) liveOption = '5';
+      else if (groupSize <= 8) liveOption = '6_8';
       else liveOption = '9_12';
     } else if (sessionType === 'Band') {
       // Parse equipment from session details
@@ -170,7 +171,6 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       if (detailsLower.includes('audio')) recordingOption = 'audio_recording';
       else if (detailsLower.includes('video') && !detailsLower.includes('chroma')) recordingOption = 'video_recording';
       else if (detailsLower.includes('chroma') || detailsLower.includes('green')) recordingOption = 'chroma_key';
-      else if (detailsLower.includes('sd') || detailsLower.includes('card')) recordingOption = 'sd_card_recording';
     }
 
     return { karaokeOption, liveOption, bandEquipment, recordingOption };
@@ -400,7 +400,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       case 'review':
         return true;
       case 'otp':
-        return draft.otpVerified || draft.deviceTrusted;
+        return draft.otpVerified; // OTP is always required
       case 'confirm':
         return true;
       default:
@@ -438,9 +438,9 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       // Compare karaoke option by checking if group size category changed
       const originalKaraokeOption = (() => {
         const size = original.group_size || 1;
-        if (size <= 5) return 'upto_5';
-        if (size <= 10) return '10';
-        if (size <= 20) return '20';
+        if (size <= 5) return '1_5';
+        if (size <= 10) return '6_10';
+        if (size <= 20) return '11_20';
         return '21_30';
       })();
       if (draft.karaokeOption !== originalKaraokeOption) return true;
@@ -450,9 +450,10 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       // Compare live option by checking if group size category changed
       const originalLiveOption = (() => {
         const size = original.group_size || 1;
-        if (size <= 2) return 'upto_2';
-        if (size <= 5) return 'upto_4_or_5';
-        if (size <= 8) return 'upto_8';
+        if (size <= 2) return '1_2';
+        if (size <= 4) return '3_4';
+        if (size === 5) return '5';
+        if (size <= 8) return '6_8';
         return '9_12';
       })();
       if (draft.liveOption !== originalLiveOption) return true;

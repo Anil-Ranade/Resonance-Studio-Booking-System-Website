@@ -7,18 +7,19 @@ import { getStudioSuggestion, getStudioRate } from '../utils/studioSuggestion';
 
 // Karaoke participant options (updated to match new requirements)
 const KARAOKE_OPTIONS: { value: KaraokeOption; label: string; description: string }[] = [
-  { value: 'upto_5', label: 'Up to 5 people', description: 'Small group' },
-  { value: '10', label: '10 people', description: 'Medium group' },
-  { value: '20', label: '20 people', description: 'Large group' },
-  { value: '21_30', label: '21-30 people', description: 'Extra large group' },
+  { value: '1_5', label: '1–5 participants', description: 'Small group' },
+  { value: '6_10', label: '6–10 participants', description: 'Medium group' },
+  { value: '11_20', label: '11–20 participants', description: 'Large group' },
+  { value: '21_30', label: '21–30 participants', description: 'Extra large group' },
 ];
 
 // Live musician options (updated to match new requirements)
 const LIVE_OPTIONS: { value: LiveMusicianOption; label: string; description: string }[] = [
-  { value: 'upto_2', label: 'Up to 2 musicians', description: 'Solo or duo' },
-  { value: 'upto_4_or_5', label: '4-5 musicians', description: 'Small band' },
-  { value: 'upto_8', label: 'Up to 8 musicians', description: 'Medium ensemble' },
-  { value: '9_12', label: '9-12 musicians', description: 'Large ensemble' },
+  { value: '1_2', label: '1–2 musicians', description: 'Solo or duo' },
+  { value: '3_4', label: '3–4 musicians', description: 'Small band' },
+  { value: '5', label: '5 musicians', description: 'Medium band' },
+  { value: '6_8', label: '6–8 musicians', description: 'Medium ensemble' },
+  { value: '9_12', label: '9–12 musicians', description: 'Large ensemble' },
 ];
 
 // Band equipment options
@@ -34,7 +35,6 @@ const RECORDING_OPTIONS: { value: RecordingOption; label: string; price: string 
   { value: 'audio_recording', label: 'Audio Recording', price: '₹700/song' },
   { value: 'video_recording', label: 'Video Recording (4K)', price: '₹800/song' },
   { value: 'chroma_key', label: 'Chroma Key (Green Screen)', price: '₹1,200/song' },
-  { value: 'sd_card_recording', label: 'SD Card Recording', price: '₹100/hour' },
 ];
 
 export default function ParticipantsStep() {
@@ -51,6 +51,9 @@ export default function ParticipantsStep() {
       studio: suggestion.recommendedStudio,
       ratePerHour: rate,
     });
+    
+    // Auto-advance to next step after selection
+    setTimeout(() => nextStep(), 150);
   };
 
   const handleLiveSelect = (option: LiveMusicianOption) => {
@@ -64,6 +67,9 @@ export default function ParticipantsStep() {
       studio: suggestion.recommendedStudio,
       ratePerHour: rate,
     });
+    
+    // Auto-advance to next step after selection
+    setTimeout(() => nextStep(), 150);
   };
 
   const handleBandEquipmentToggle = (equipment: BandEquipment) => {
@@ -134,7 +140,7 @@ export default function ParticipantsStep() {
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-zinc-400 mb-2">
               <Users className="w-4 h-4" />
-              <span className="text-sm">How many people?</span>
+              <span className="text-sm">How many participants?</span>
             </div>
             {KARAOKE_OPTIONS.map((option) => (
               <button
@@ -300,7 +306,7 @@ export default function ParticipantsStep() {
     const prefix = draft.isEditMode ? 'Modify ' : '';
     switch (draft.sessionType) {
       case 'Karaoke':
-        return prefix + 'Group size';
+        return prefix + 'Participants';
       case 'Live with musicians':
         return prefix + 'Musicians count';
       case 'Only Drum Practice':
@@ -320,6 +326,9 @@ export default function ParticipantsStep() {
     return draft.originalChoices.sessionDetails;
   };
 
+  // Check if we should hide the Next button (auto-advance for Karaoke and Live with musicians)
+  const shouldHideNext = draft.sessionType === 'Karaoke' || draft.sessionType === 'Live with musicians';
+
   return (
     <StepLayout
       title={getTitle()}
@@ -327,8 +336,9 @@ export default function ParticipantsStep() {
         ? 'Your original choice is highlighted. Select to change or keep the same.'
         : (draft.sessionType === 'Only Drum Practice' 
           ? 'Available in Studio A only' 
-          : 'This helps us recommend the best studio for you')}
+          : 'This helps us to recommend the best suitable studio for you.')}
       onNext={handleNext}
+      showNext={!shouldHideNext}
     >
       {/* Edit Mode Banner */}
       {draft.isEditMode && getOriginalDetails() && (

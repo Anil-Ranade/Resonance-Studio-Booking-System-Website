@@ -1,10 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import {
-  Loader2,
-  RefreshCw,
-} from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 interface Booking {
   id: string;
@@ -25,18 +22,16 @@ interface Booking {
 export default function DisplayPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [studios, setStudios] = useState<string[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string>(() => {
-    return new Date().toISOString().split('T')[0];
-  });
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchBookings = async (date: string, isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+  // Always use today's date
+  const todayDate = new Date().toISOString().split('T')[0];
+
+  const fetchBookings = async (isRefresh = false) => {
+    if (!isRefresh) setLoading(true);
 
     try {
-      const response = await fetch(`/api/display/bookings?date=${date}`);
+      const response = await fetch(`/api/display/bookings?date=${todayDate}`);
       if (response.ok) {
         const data = await response.json();
         setBookings(data.bookings || []);
@@ -48,16 +43,15 @@ export default function DisplayPage() {
       console.error('Error fetching bookings:', error);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    fetchBookings(selectedDate);
+    fetchBookings();
     // Auto-refresh every 10 seconds for real-time updates
-    const interval = setInterval(() => fetchBookings(selectedDate, true), 10000);
+    const interval = setInterval(() => fetchBookings(true), 10000);
     return () => clearInterval(interval);
-  }, [selectedDate]);
+  }, []);
 
   // Build consolidated booking blocks for each studio
   const studioBlocks = useMemo(() => {
@@ -91,21 +85,6 @@ export default function DisplayPage() {
     return result;
   }, [bookings, studios]);
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedDate(e.target.value);
-  };
-
-  const formatDisplayDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
   // Time slots from 8 AM to 10 PM (14 slots)
   const timeSlots = Array.from({ length: 14 }, (_, i) => 8 + i);
   const startHour = 8;
@@ -117,15 +96,14 @@ export default function DisplayPage() {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 60000); // Update every minute
+    }, 1000); // Update every second for live clock
     return () => clearInterval(timer);
   }, []);
 
-  const isToday = selectedDate === new Date().toISOString().split('T')[0];
   const currentHour = currentTime.getHours();
   const currentMinutes = currentTime.getMinutes();
 
-  // Calculate current time position as percentage
+  // Calculate current time position as percentage (vertical)
   const getCurrentTimePosition = () => {
     const totalMinutes = (currentHour - startHour) * 60 + currentMinutes;
     const totalDuration = (endHour - startHour) * 60;
@@ -133,52 +111,67 @@ export default function DisplayPage() {
   };
 
   const currentTimePosition = getCurrentTimePosition();
-  const showCurrentTimeLine = isToday && currentHour >= startHour && currentHour < endHour;
+  const showCurrentTimeLine = currentHour >= startHour && currentHour < endHour;
 
-  // Check if a time slot has a booking for a specific studio
-  const hasBookingAtHour = (studio: string, hour: number) => {
-    const blocks = studioBlocks[studio] || [];
-    return blocks.some(block => hour >= block.start && hour < block.end);
-  };
-
-  // Check if a time slot is in the past (only for today)
+  // Check if a time slot is in the past
   const isPastSlot = (hour: number) => {
-    return isToday && hour < currentHour;
+    return hour < currentHour;
   };
 
   const getStudioColor = (studio: string) => {
-    if (studio === 'Studio A') return 'bg-blue-500';
-    if (studio === 'Studio B') return 'bg-amber-700';
-    if (studio === 'Studio C') return 'bg-green-500';
+    if (studio === 'Studio A') return 'bg-blue-600';
+    if (studio === 'Studio B') return 'bg-amber-600';
+    if (studio === 'Studio C') return 'bg-green-600';
     return 'bg-zinc-600';
   };
 
+  // Format hour to 12-hour format
   const formatTimeLabel = (hour: number) => {
-    return `${hour.toString().padStart(2, '0')}:00`;
+    if (hour === 12) return '12 PM';
+    if (hour < 12) return `${hour} AM`;
+    return `${hour - 12} PM`;
+  };
+
+  // Format date for display
+  const formatDisplayDate = () => {
+    return currentTime.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  // Format time for display (12-hour with seconds)
+  const formatDisplayTime = () => {
+    return currentTime.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    });
+  };
+
+  // Mask phone number: show last 4 digits
+  const maskPhoneNumber = (phone: string) => {
+    if (!phone) return '';
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length >= 4) {
+      return `***${digits.slice(-4)}`;
+    }
+    return phone;
   };
 
   return (
     <div className="h-screen w-screen bg-[#0a0a0f] flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="h-12 flex items-center justify-between px-4 bg-zinc-900 border-b border-zinc-800 flex-shrink-0">
-        <div className="flex items-center gap-4">
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={handleDateChange}
-            className="px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-          />
-          <span className="text-white font-semibold text-lg">
-            {formatDisplayDate(selectedDate)}
-          </span>
-        </div>
-        <button
-          onClick={() => fetchBookings(selectedDate, true)}
-          disabled={refreshing}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white transition-all disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-        </button>
+      {/* Date and Time Display */}
+      <div className="h-16 flex items-center justify-center gap-8 bg-zinc-900/50 border-b border-zinc-800 flex-shrink-0">
+        <span className="text-2xl font-semibold text-white">
+          {formatDisplayDate()}
+        </span>
+        <span className="text-3xl font-bold text-amber-400 tabular-nums">
+          {formatDisplayTime()}
+        </span>
       </div>
 
       {loading ? (
@@ -187,125 +180,101 @@ export default function DisplayPage() {
         </div>
       ) : (
         <div className="flex-1 flex flex-col overflow-hidden p-4">
-          {/* Table Container */}
+          {/* Table Container - Vertical Layout */}
           <div className="flex-1 flex flex-col overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900">
             {/* Column Headers */}
-            <div className="h-10 flex-shrink-0 flex bg-zinc-800 border-b border-zinc-700 rounded-t-xl">
-              <div className="w-[80px] flex-shrink-0 px-4 flex items-center text-base font-bold text-zinc-200 border-r border-zinc-700">
+            <div className="h-12 flex-shrink-0 flex bg-zinc-800 border-b border-zinc-700 rounded-t-xl">
+              <div className="w-[80px] flex-shrink-0 px-4 flex items-center justify-center text-base font-bold text-zinc-400 border-r border-zinc-700">
                 TIME
               </div>
               {studios.map((studio) => (
-                <div key={studio} className="flex-1 px-4 flex items-center justify-center text-xl font-bold text-zinc-200 border-r border-zinc-700">
+                <div key={studio} className={`flex-1 px-4 flex items-center justify-center text-xl font-bold text-white border-r border-zinc-700 last:border-r-0 ${getStudioColor(studio)}`}>
                   {studio}
                 </div>
               ))}
-              <div className="w-[80px] flex-shrink-0 px-4 flex items-center text-base font-bold text-zinc-200">
-                TIME
-              </div>
             </div>
           
-          {/* Grid Body */}
-          <div className="flex-1 flex overflow-hidden py-3 relative">
-            {/* Current Time Indicator */}
-            {showCurrentTimeLine && (
-              <div 
-                className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
-                style={{ top: `${currentTimePosition}%` }}
-              >
-                <div className="w-3 h-3 rounded-full bg-red-500 -ml-1.5 flex-shrink-0"></div>
-                <div className="flex-1 h-0.5 bg-red-500"></div>
-              </div>
-            )}
-            
-            {/* Time Column */}
-            <div className="w-[80px] flex-shrink-0 flex flex-col border-r border-zinc-700 relative">
-              {timeSlots.map((hour) => (
+            {/* Grid Body */}
+            <div className="flex-1 flex overflow-hidden relative py-4">
+              {/* Current Time Indicator - Horizontal Line */}
+              {showCurrentTimeLine && (
                 <div 
-                  key={hour} 
-                  className="flex-1 relative border-b border-zinc-800 bg-zinc-900"
+                  className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
+                  style={{ top: `calc(1rem + ${currentTimePosition}% * (100% - 2rem) / 100%)` }}
                 >
-                  <span className="absolute top-0 -translate-y-1/2 left-2 text-amber-400 font-medium text-sm bg-zinc-900 pr-1">
-                    {formatTimeLabel(hour)}
-                  </span>
+                  <div className="w-3 h-3 rounded-full bg-red-500 -ml-1.5 flex-shrink-0"></div>
+                  <div className="flex-1 h-0.5 bg-red-500"></div>
                 </div>
-              ))}
-              {/* 22:00 label at the bottom */}
-              <span className="absolute bottom-0 translate-y-1/2 left-2 text-amber-400 font-medium text-sm bg-zinc-900 pr-1">
-                22:00
-              </span>
-            </div>
-            
-            {/* Studio Columns */}
-            {studios.map((studio) => (
-              <div key={studio} className="flex-1 relative border-r border-zinc-700 last:border-r-0">
-                {/* Grid lines for empty slots */}
-                <div className="absolute inset-0 flex flex-col">
-                  {timeSlots.map((hour) => {
-                    const hasBooking = hasBookingAtHour(studio, hour);
-                    const isPast = isPastSlot(hour);
-                    const shouldBlackOut = !hasBooking || isPast;
+              )}
+              
+              {/* Time Column */}
+              <div className="w-[80px] flex-shrink-0 flex flex-col border-r border-zinc-700 relative">
+                {timeSlots.map((hour, index) => (
+                  <div 
+                    key={hour} 
+                    className="flex-1 relative border-b border-zinc-800 last:border-b-0 bg-zinc-900 flex items-start justify-center"
+                  >
+                    <span className="text-amber-400 font-semibold text-sm whitespace-nowrap -mt-2.5">
+                      {formatTimeLabel(hour)}
+                    </span>
+                  </div>
+                ))}
+                {/* 10 PM label at bottom */}
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 text-amber-400 font-semibold text-sm whitespace-nowrap bg-zinc-900 px-1">
+                  10 PM
+                </span>
+              </div>
+              
+              {/* Studio Columns */}
+              {studios.map((studio) => (
+                <div key={studio} className="flex-1 relative border-r border-zinc-700 last:border-r-0">
+                  {/* Grid lines for empty slots */}
+                  <div className="absolute inset-0 flex flex-col">
+                    {timeSlots.map((hour) => {
+                      const isPast = isPastSlot(hour);
+                      return (
+                        <div 
+                          key={hour} 
+                          className={`flex-1 border-b border-zinc-800 last:border-b-0 ${
+                            isPast ? 'bg-black/60' : 'bg-zinc-900/30'
+                          }`}
+                        />
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Booking blocks - Vertical */}
+                  {studioBlocks[studio]?.map((block, idx) => {
+                    const topPercent = ((block.start - startHour) / timeSlots.length) * 100;
+                    const heightPercent = ((block.end - block.start) / timeSlots.length) * 100;
+                    const isPast = block.end <= currentHour;
                     
                     return (
-                      <div 
-                        key={hour} 
-                        className={`flex-1 border-b border-zinc-800 flex items-center justify-center ${
-                          shouldBlackOut ? 'bg-black' : 'bg-zinc-900/50'
+                      <div
+                        key={idx}
+                        className={`absolute left-1 right-1 ${getStudioColor(studio)} text-white flex flex-col items-center justify-center px-2 z-10 rounded-lg shadow-lg border-2 border-white/20 ${
+                          isPast ? 'opacity-40' : ''
                         }`}
+                        style={{
+                          top: `${topPercent}%`,
+                          height: `${heightPercent}%`,
+                        }}
                       >
-                        {!shouldBlackOut && (
-                          <div className="w-10 h-8 rounded border border-zinc-700/50 bg-zinc-800/30"></div>
-                        )}
+                        <span className="text-lg font-bold truncate w-full text-center">
+                          {maskPhoneNumber(block.booking.phone_number)}
+                        </span>
+                        <span className="text-sm font-medium opacity-90 truncate w-full text-center">
+                          {block.booking.session_type || 'Session'}
+                        </span>
                       </div>
                     );
                   })}
                 </div>
-                
-                {/* Booking blocks */}
-                {studioBlocks[studio]?.map((block, idx) => {
-                  const topPercent = ((block.start - startHour) / timeSlots.length) * 100;
-                  const heightPercent = ((block.end - block.start) / timeSlots.length) * 100;
-                  
-                  return (
-                    <div
-                      key={idx}
-                      className={`absolute left-0 right-0 ${getStudioColor(studio)} text-white flex flex-col items-center justify-center px-2 z-10`}
-                      style={{
-                        top: `${topPercent}%`,
-                        height: `${heightPercent}%`,
-                      }}
-                    >
-                      <span className="text-lg font-bold truncate w-full text-center">
-                        {block.booking.name || ''}
-                      </span>
-                      <span className="text-sm font-normal opacity-90 truncate w-full text-center">
-                        {block.booking.session_type || ''}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-            
-            {/* Right Time Column */}
-            <div className="w-[80px] flex-shrink-0 flex flex-col border-l border-zinc-700 relative">
-              {timeSlots.map((hour) => (
-                <div 
-                  key={hour} 
-                  className="flex-1 relative border-b border-zinc-800 bg-zinc-900"
-                >
-                  <span className="absolute top-0 -translate-y-1/2 right-2 text-amber-400 font-medium text-sm bg-zinc-900 pl-1">
-                    {formatTimeLabel(hour)}
-                  </span>
-                </div>
               ))}
-              {/* 22:00 label at the bottom */}
-              <span className="absolute bottom-0 translate-y-1/2 right-2 text-amber-400 font-medium text-sm bg-zinc-900 pl-1">
-                22:00
-              </span>
             </div>
-          </div>
-            {/* Bottom padding for 10 PM label */}
-            <div className="h-4 flex-shrink-0 bg-zinc-900 rounded-b-xl"></div>
+
+            {/* Bottom padding */}
+            <div className="h-3 flex-shrink-0 bg-zinc-900 rounded-b-xl border-t border-zinc-800"></div>
           </div>
         </div>
       )}
