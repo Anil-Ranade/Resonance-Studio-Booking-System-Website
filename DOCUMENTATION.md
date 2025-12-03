@@ -114,7 +114,6 @@ A modern, full-stack studio booking application built for Resonance Studio. This
      - Audio Recording
      - Video Recording
      - Chroma Key Recording
-     - SD Card Recording
 
 4. **Date & Time Selection**
    - View availability calendar
@@ -606,7 +605,6 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 - Audio Recording (₹700/hr)
 - Video Recording (₹800/hr)
 - Chroma Key (₹1200/hr)
-- SD Card Recording (₹100 add-on)
 
 ---
 

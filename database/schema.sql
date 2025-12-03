@@ -251,7 +251,6 @@ INSERT INTO rate_cards (studio, session_type, sub_option, hourly_rate) VALUES
     ('Studio A', 'Recording', 'audio_recording', 700),
     ('Studio A', 'Recording', 'video_recording', 800),
     ('Studio A', 'Recording', 'chroma_key', 1200),
-    ('Studio A', 'Recording', 'sd_card_recording', 100),
     -- Studio B
     ('Studio B', 'Karaoke', 'upto_5', 300),
     ('Studio B', 'Karaoke', 'upto_8', 300),

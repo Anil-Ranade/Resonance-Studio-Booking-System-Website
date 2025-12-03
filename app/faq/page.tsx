@@ -85,7 +85,7 @@ const faqData: FAQSection[] = [
       },
       {
         question: "When will I receive my recorded files?",
-        answer: "Edited and mastered files are typically delivered within 3-5 business days. Raw files can be provided immediately via SD card (₹100/hour)."
+        answer: "Edited and mastered files are typically delivered within 3-5 business days."
       },
       {
         question: "What format will my recording be in?",

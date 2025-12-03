@@ -119,7 +119,6 @@ export default function RateCardPage() {
     { name: "Audio Recording", price: "₹700", description: "Per song - includes recording, editing, mixing & mastering" },
     { name: "Video Recording", price: "₹800", description: "True 4K Quality (iPhone/iPad) - includes recording, editing, mixing & mastering" },
     { name: "Chroma Key Recording", price: "₹1,200", description: "Green Screen - includes recording, editing, mixing & mastering" },
-    { name: "SD Card Recording", price: "₹100", description: "Per hour - Raw data only (unedited), transferred to your pen drive" },
   ];
 
   // Important notes
