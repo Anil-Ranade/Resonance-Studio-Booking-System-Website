@@ -163,8 +163,8 @@ export default function StepLayout({
         </motion.div>
       </header>
 
-      {/* Main content - fixed height, no scrolling */}
-      <main className="flex-1 px-4 py-3 overflow-hidden">
+      {/* Main content - fixed height */}
+      <main className="flex-1 px-4 py-2 overflow-hidden">
         <motion.div
           key={currentStep}
           initial={{ opacity: 0, x: 20 }}
