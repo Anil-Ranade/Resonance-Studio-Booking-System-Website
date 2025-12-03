@@ -527,7 +527,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 # ===================
 TWILIO_ACCOUNT_SID=your_twilio_sid
 TWILIO_AUTH_TOKEN=your_twilio_token
-TWILIO_PHONE_NUMBER=+1234567890
+TWILIO_SMS_NUMBER=+1234567890
 
 # ===================
 # GOOGLE CALENDAR
@@ -540,14 +540,25 @@ GOOGLE_CALENDAR_ID=your_calendar_id
 # ===================
 # JWT SECRETS
 # ===================
-JWT_SECRET=your_jwt_secret_for_users
-ADMIN_JWT_SECRET=your_admin_jwt_secret
+# Use strong, random strings - minimum 32 characters
+# Generate with: openssl rand -base64 32
+JWT_SECRET=your_jwt_secret_min_32_chars_random
 
 # ===================
 # APP CONFIG
 # ===================
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
+
+### Environment Variable Security Notes
+
+| Variable | Exposure | Notes |
+|----------|----------|-------|
+| `NEXT_PUBLIC_*` | Client-side | Safe to expose, limited permissions |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only | **Never expose** - bypasses RLS |
+| `TWILIO_*` | Server-only | Billing implications if leaked |
+| `GOOGLE_*` | Server-only | Calendar access if leaked |
+| `JWT_SECRET` | Server-only | Token forgery if leaked |
 
 ---
 
@@ -557,29 +568,64 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 - **Customer Auth**: Phone-based OTP verification
   - 6-digit OTP sent via Twilio SMS
   - OTP expires in 5 minutes
-  - Maximum 3 verification attempts
-  - Bcrypt-hashed OTP storage
+  - Maximum 5 verification attempts per OTP
+  - Bcrypt-hashed OTP storage (10 salt rounds)
+  - Old OTPs deleted before generating new ones
   
-- **Admin Auth**: JWT-based authentication
-  - Secure password hashing
-  - Token-based session management
-  - Protected API routes
+- **Admin Auth**: Supabase Auth + JWT
+  - Supabase handles email/password authentication
+  - Access token verification for all admin API routes
+  - Admin status verified against `admin_users` table
+  - Protected API routes with `verifyAdminToken()` middleware
+
+### HTTP Security Headers
+The application enforces the following security headers via `next.config.ts`:
+- **Strict-Transport-Security (HSTS)** - Forces HTTPS connections
+- **X-Frame-Options: SAMEORIGIN** - Prevents clickjacking attacks
+- **X-Content-Type-Options: nosniff** - Prevents MIME-type sniffing
+- **Referrer-Policy: strict-origin-when-cross-origin** - Controls referrer information
+- **Permissions-Policy** - Restricts browser feature access
+- **X-DNS-Prefetch-Control** - Controls DNS prefetching
+
+### Input Validation & Sanitization
+- All user inputs are validated server-side
+- Phone numbers validated (10 digits only)
+- OTP format validated (6 digits)
+- Contact form inputs sanitized against XSS (`<` and `>` removed)
+- Input length limits enforced (1000 chars default, 5000 for messages)
+- Email format validation with length limits (254 chars max)
 
 ### Database Security
 - Row Level Security (RLS) policies on all tables
 - Users can only view/edit their own data
 - Admins have elevated access via policy checks
 - Service role key for server-side operations only
+- UUID primary keys (non-sequential, non-guessable)
+- Enum types for constrained values (status fields)
 
 ### Device Trust
 - Device fingerprinting for trusted devices
 - Skip OTP for verified devices
 - Device trust can be revoked
+- Fingerprints stored with phone association
 
-### Rate Limiting
-- OTP request cooldown (60 seconds)
-- Maximum attempts before lockout
+### Rate Limiting & Protection
+- OTP request cooldown prevents SMS bombing
+- Maximum 5 attempts before OTP invalidation
 - Audit logging for security events
+- All admin actions logged with user ID and timestamp
+
+### Environment Security
+- All secrets stored in `.env.local` (not committed)
+- `.env*` patterns in `.gitignore`
+- Service role key used only server-side
+- Anon key used for client-side (limited permissions)
+
+### Secure Coding Practices
+- No SQL injection possible (Supabase client handles parameterization)
+- JWT secrets minimum 32 characters recommended
+- Passwords never stored (OTP-based auth for customers)
+- Admin passwords hashed by Supabase Auth
 
 ---
 
@@ -619,7 +665,33 @@ See the [Color Palette section](#-color-palette) above for the complete design s
 
 ---
 
-## 📞 Support
+## � Production Deployment Checklist
+
+### Security Checklist
+- [ ] All environment variables set in production
+- [ ] `NODE_ENV` set to `production`
+- [ ] Strong JWT_SECRET generated (32+ characters)
+- [ ] SUPABASE_SERVICE_ROLE_KEY not exposed to client
+- [ ] Twilio credentials secured
+- [ ] Google API credentials secured
+- [ ] RLS policies verified in Supabase dashboard
+- [ ] Admin users created in `admin_users` table
+
+### Performance Checklist
+- [ ] Next.js build optimized (`npm run build`)
+- [ ] Images optimized (AVIF/WebP)
+- [ ] Caching headers verified
+- [ ] Database indexes created (see schema)
+
+### Monitoring Recommendations
+- [ ] Set up error monitoring (Sentry, LogRocket)
+- [ ] Enable Supabase logging
+- [ ] Monitor Twilio SMS delivery rates
+- [ ] Set up uptime monitoring
+
+---
+
+## �📞 Support
 
 For technical support or questions about the booking system, please contact:
 - **Developer**: Ashutosh Swamy

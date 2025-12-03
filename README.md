@@ -7,10 +7,11 @@ A modern, full-stack studio booking and management platform built with Next.js 1
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38B2AC?logo=tailwind-css)
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)
+![Security](https://img.shields.io/badge/Security-Hardened-green?logo=shield)
 
 ## 📖 Overview
 
-Resonance Studio Booking is a comprehensive booking system that allows customers to book music studio sessions, manage their bookings, and provides an admin dashboard for complete studio management. The application features phone-based OTP authentication, Google Calendar integration, and SMS notifications.
+Resonance Studio Booking is a comprehensive booking system that allows customers to book music studio sessions, manage their bookings, and provides an admin dashboard for complete studio management. The application features phone-based OTP authentication, Google Calendar integration, SMS notifications, and enterprise-grade security measures.
 
 ## ✨ Features
 
@@ -136,7 +137,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
    # Twilio
    TWILIO_ACCOUNT_SID=your_twilio_sid
    TWILIO_AUTH_TOKEN=your_twilio_token
-   TWILIO_PHONE_NUMBER=your_twilio_number
+   TWILIO_SMS_NUMBER=your_twilio_number
 
    # Google Calendar
    GOOGLE_CLIENT_ID=your_client_id
@@ -144,17 +145,17 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
    GOOGLE_REFRESH_TOKEN=your_refresh_token
    GOOGLE_CALENDAR_ID=your_calendar_id
 
-   # JWT
-   JWT_SECRET=your_jwt_secret
-   ADMIN_JWT_SECRET=your_admin_jwt_secret
+   # JWT (use strong, random strings - min 32 characters)
+   JWT_SECRET=your_jwt_secret_min_32_chars
    ```
+
+   > ⚠️ **Security Note**: Never commit `.env.local` to version control. Use strong, randomly generated secrets for JWT_SECRET (minimum 32 characters). Rotate secrets periodically.
 
 4. **Set up the database**
    
    Run the SQL schema in your Supabase SQL Editor:
    ```bash
-   # database/schema.sql - Main schema
-   # database/devices.sql - Trusted devices schema
+   # database/full_schema.sql - Complete database schema with RLS policies
    ```
 
 5. **Run the development server**
@@ -241,12 +242,16 @@ See [DOCUMENTATION.md](./DOCUMENTATION.md)
 
 ## 🔒 Security Features
 
-- JWT-based authentication for admin
-- OTP verification with bcrypt hashing
-- Row Level Security (RLS) policies in Supabase
-- Trusted device management
-- Rate limiting for OTP requests
-- Audit logging for admin actions
+- **HTTP Security Headers** - HSTS, X-Frame-Options, X-Content-Type-Options, CSP-ready
+- **JWT-based authentication** for admin with Supabase Auth
+- **OTP verification** with bcrypt hashing (10 salt rounds)
+- **Row Level Security (RLS)** policies in Supabase
+- **Trusted device management** with device fingerprinting
+- **Rate limiting** for OTP requests (5 max attempts, 5-minute expiry)
+- **Input sanitization** for XSS prevention
+- **Audit logging** for all admin actions
+- **Environment variable protection** - All secrets in `.env.local`
+- **HTTPS enforcement** via Strict-Transport-Security header
 
 ## 📄 License
 
