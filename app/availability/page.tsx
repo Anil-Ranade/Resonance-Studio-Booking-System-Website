@@ -347,100 +347,101 @@ export default function AvailabilityPage() {
   };
 
   return (
-    <div className="min-h-screen py-8 px-4">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
+    <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] flex flex-col py-2 px-2 md:py-4 md:px-4 overflow-hidden">
+      <div className="max-w-6xl mx-auto w-full flex flex-col h-full">
+        {/* Compact Header */}
         <motion.div 
-          className="mb-8"
+          className="mb-2 md:mb-3 flex-shrink-0"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Link 
-            href="/home"
-            className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-6"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back to Home
-          </Link>
-          
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Studio Availability</h1>
-              <div className="flex flex-wrap items-center gap-4 md:gap-6">
-                {studios.map((studio) => (
-                  <div key={studio.id} className="flex items-center gap-2">
-                    <div className={`w-4 h-4 rounded ${studio.color}`} />
-                    <span className="text-zinc-400 text-sm">{studio.name}</span>
-                  </div>
-                ))}
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-zinc-700 border border-zinc-600" />
-                  <span className="text-zinc-400 text-sm">Available</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-zinc-900 border border-zinc-700 flex items-center justify-center text-zinc-600 text-[8px]">—</div>
-                  <span className="text-zinc-400 text-sm">Past</span>
-                </div>
-              </div>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4">
+            <div className="flex items-center gap-4">
+              <Link 
+                href="/home"
+                className="inline-flex items-center gap-1 text-zinc-400 hover:text-white transition-colors text-sm"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Back</span>
+              </Link>
+              <h1 className="text-xl md:text-2xl font-bold text-white">Studio Availability</h1>
             </div>
 
             {/* Date Navigation */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl">
-                <Calendar className="w-4 h-4 text-zinc-400" />
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg">
+                <Calendar className="w-3.5 h-3.5 text-zinc-400" />
                 <input
                   type="date"
                   value={startDate.toISOString().split('T')[0]}
                   onChange={handleDateChange}
                   min={new Date().toISOString().split('T')[0]}
                   max={getMaxDateString()}
-                  className="bg-transparent text-white text-sm outline-none cursor-pointer"
+                  className="bg-transparent text-white text-xs outline-none cursor-pointer"
                 />
               </div>
               <motion.button
                 onClick={goToPreviousDays}
                 disabled={!canGoPrevious()}
-                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:bg-white/10 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:bg-white/10 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 whileHover={{ scale: canGoPrevious() ? 1.05 : 1 }}
                 whileTap={{ scale: canGoPrevious() ? 0.95 : 1 }}
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="w-4 h-4" />
               </motion.button>
               <motion.button
                 onClick={goToNextDays}
                 disabled={!canGoNext()}
-                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:bg-white/10 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:bg-white/10 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 whileHover={{ scale: canGoNext() ? 1.05 : 1 }}
                 whileTap={{ scale: canGoNext() ? 0.95 : 1 }}
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-4 h-4" />
               </motion.button>
+            </div>
+          </div>
+          
+          {/* Legend - Compact */}
+          <div className="flex flex-wrap items-center gap-3 md:gap-4 mt-2">
+            {studios.map((studio) => (
+              <div key={studio.id} className="flex items-center gap-1.5">
+                <div className={`w-3 h-3 rounded ${studio.color}`} />
+                <span className="text-zinc-400 text-xs">{studio.key}</span>
+              </div>
+            ))}
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-zinc-700 border border-zinc-600" />
+              <span className="text-zinc-400 text-xs">Open</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-zinc-900 border border-zinc-700" />
+              <span className="text-zinc-400 text-xs">Past</span>
             </div>
           </div>
         </motion.div>
 
         {/* Availability Table */}
         <motion.div 
-          className="glass rounded-2xl overflow-hidden"
+          className="glass rounded-xl overflow-hidden flex-1 min-h-0"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
           {loading ? (
-            <div className="flex items-center justify-center py-20">
+            <div className="flex items-center justify-center h-full">
               <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
             </div>
           ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-auto h-full">
             <table className="w-full">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-zinc-900/95 backdrop-blur-sm">
                 {/* Date Headers */}
                 <tr className="border-b border-white/10">
-                  <th className="p-4 text-left" rowSpan={2}>
-                    <div className="flex items-center gap-2 text-zinc-400">
-                      <Clock className="w-4 h-4" />
-                      <span className="font-medium">TIME</span>
+                  <th className="p-2 md:p-3 text-left" rowSpan={2}>
+                    <div className="flex items-center gap-1 text-zinc-400">
+                      <Clock className="w-3 h-3" />
+                      <span className="font-medium text-xs">TIME</span>
                     </div>
                   </th>
                   {dates.map((date, index) => {
@@ -449,10 +450,10 @@ export default function AvailabilityPage() {
                       <th 
                         key={index} 
                         colSpan={3} 
-                        className={`p-4 text-center ${index < dates.length - 1 ? 'border-r border-white/10' : ''}`}
+                        className={`p-2 text-center ${index < dates.length - 1 ? 'border-r border-white/10' : ''}`}
                       >
-                        <div className="text-2xl font-bold text-white">{formatted.day}</div>
-                        <div className="text-zinc-400 text-sm">{formatted.month}</div>
+                        <div className="text-lg md:text-xl font-bold text-white">{formatted.day}</div>
+                        <div className="text-zinc-400 text-xs">{formatted.month}</div>
                       </th>
                     );
                   })}
@@ -463,7 +464,7 @@ export default function AvailabilityPage() {
                     studios.map((studio, studioIndex) => (
                       <th 
                         key={`${dateIndex}-${studio.key}`} 
-                        className={`p-3 text-center font-medium text-zinc-300 ${
+                        className={`p-1.5 md:p-2 text-center font-medium text-zinc-300 text-xs ${
                           studioIndex === 2 && dateIndex < dates.length - 1 ? 'border-r border-white/10' : ''
                         }`}
                       >
@@ -479,8 +480,8 @@ export default function AvailabilityPage() {
                     key={timeSlot.label} 
                     className={`${timeIndex < timeSlots.length - 1 ? 'border-b border-white/5' : ''} hover:bg-white/[0.02] transition-colors`}
                   >
-                    <td className="p-4 text-zinc-400 font-medium whitespace-nowrap">
-                      {timeSlot.label}
+                    <td className="p-1.5 md:p-2 text-zinc-400 font-medium whitespace-nowrap text-[10px] md:text-xs">
+                      {timeSlot.start}
                     </td>
                     {dates.map((date, dateIndex) => (
                       studios.map((studio, studioIndex) => {
@@ -492,12 +493,12 @@ export default function AvailabilityPage() {
                         return (
                           <td 
                             key={`${dateIndex}-${studio.key}-${timeSlot.label}`}
-                            className={`p-2 text-center ${
+                            className={`p-0.5 md:p-1 text-center ${
                               studioIndex === 2 && dateIndex < dates.length - 1 ? 'border-r border-white/10' : ''
                             }`}
                           >
                             <motion.div
-                              className={`w-full h-8 rounded-lg flex items-center justify-center text-xs font-medium ${
+                              className={`w-full h-5 md:h-6 rounded flex items-center justify-center text-[8px] md:text-[10px] font-medium ${
                                 isAvailable 
                                   ? 'bg-zinc-800/50 border border-zinc-700/50 cursor-pointer hover:bg-zinc-700/50 text-zinc-400' 
                                   : isBooked
@@ -537,24 +538,24 @@ export default function AvailabilityPage() {
           )}
         </motion.div>
 
-        {/* Legend & Info */}
+        {/* Footer - Compact */}
         <motion.div 
-          className="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+          className="mt-2 flex items-center justify-between gap-2 flex-shrink-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
         >
-          <p className="text-zinc-500 text-sm">
-            Click on an available slot to book. Colored slots are already booked.
+          <p className="text-zinc-500 text-xs">
+            Click available slots to book
           </p>
           <Link href="/booking/new">
             <motion.button
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-violet-500 hover:bg-violet-600 text-white font-medium rounded-xl transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-violet-500 hover:bg-violet-600 text-white text-sm font-medium rounded-lg transition-colors"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <Calendar className="w-4 h-4" />
-              Book a Session
+              <Calendar className="w-3.5 h-3.5" />
+              Book
             </motion.button>
           </Link>
         </motion.div>
