@@ -36,18 +36,19 @@ async function verifyAdminToken(request: NextRequest) {
     return { valid: false, error: "Invalid or expired token" };
   }
 
-  // Check if user has admin role
-  const { data: profile } = await supabaseAdmin()
-    .from("profiles")
-    .select("role")
+  // Check if user is in admin_users table and is active
+  const { data: adminUser, error: adminError } = await supabaseAdmin()
+    .from("admin_users")
+    .select("id, role, is_active")
     .eq("id", user.id)
+    .eq("is_active", true)
     .single();
 
-  if (!profile || profile.role !== "admin") {
+  if (adminError || !adminUser) {
     return { valid: false, error: "Insufficient permissions" };
   }
 
-  return { valid: true, user };
+  return { valid: true, user, adminUser };
 }
 
 interface AdminBookRequest {

@@ -29,12 +29,22 @@ type AvailabilityData = {
 interface TimeSlot {
   start: string;
   end: string;
+  available?: boolean;
 }
 
 interface BookingSlot {
   start_time: string;
   end_time: string;
   studio: string;
+}
+
+interface AvailabilityResponse {
+  slots: TimeSlot[];
+  settings?: {
+    minBookingDuration: number;
+    maxBookingDuration: number;
+    advanceBookingDays: number;
+  };
 }
 
 export default function AvailabilityPage() {
@@ -233,7 +243,9 @@ export default function AvailabilityPage() {
               fetch(`/api/availability?studio=${encodeURIComponent(studio.id)}&date=${dateKey}`)
                 .then(async (response) => {
                   if (response.ok) {
-                    const slots: TimeSlot[] = await safeJsonParse(response);
+                    const data: AvailabilityResponse = await safeJsonParse(response);
+                    // Handle both old format (array) and new format (object with slots)
+                    const slots = Array.isArray(data) ? data : (data.slots || []);
                     return { studioId: studio.id, studioKey: studio.key, dateKey, slots };
                   }
                   return { studioId: studio.id, studioKey: studio.key, dateKey, slots: [] };
@@ -295,20 +307,31 @@ export default function AvailabilityPage() {
           });
         });
         
-        // Process availability results
+        // Process availability results - the API already considers bookings
         availabilityResults.forEach(({ studioKey, dateKey, slots }) => {
           timeSlots.forEach(timeSlot => {
             const slotKey = `${dateKey}-${studioKey}-${timeSlot.label}`;
             
-            // Check if this slot is booked
+            // First check if this slot is booked from display bookings endpoint
             if (bookedSlotsMap[slotKey]) {
               availabilityData[dateKey][studioKey][timeSlot.label] = 'booked';
             } else {
-              // Check if slot is available from API
-              const isAvailable = slots.some(
+              // Check slot status from availability API
+              const matchingSlot = slots.find(
                 (slot: TimeSlot) => slot.start === timeSlot.start && slot.end === timeSlot.end
               );
-              availabilityData[dateKey][studioKey][timeSlot.label] = isAvailable ? 'available' : 'unavailable';
+              
+              if (matchingSlot) {
+                // If the slot has an 'available' property, use it
+                // If available is false, it means the slot is booked or unavailable
+                if (matchingSlot.available === false) {
+                  availabilityData[dateKey][studioKey][timeSlot.label] = 'booked';
+                } else {
+                  availabilityData[dateKey][studioKey][timeSlot.label] = 'available';
+                }
+              } else {
+                availabilityData[dateKey][studioKey][timeSlot.label] = 'unavailable';
+              }
             }
           });
         });
