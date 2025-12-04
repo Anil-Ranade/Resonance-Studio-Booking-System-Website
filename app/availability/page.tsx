@@ -233,7 +233,7 @@ export default function AvailabilityPage() {
         });
 
         // Fetch availability and bookings for each studio and date in parallel
-        const fetchPromises: Promise<{ studioId: string; studioKey: string; dateKey: string; slots: { start: string; end: string; available: boolean }[] }>[] = [];
+        const fetchPromises: Promise<{ studioId: string; studioKey: string; dateKey: string; slots: TimeSlot[] }>[] = [];
         const bookingPromises: Promise<{ dateKey: string; bookings: BookingSlot[] }>[] = [];
         
         for (const studio of studios) {
@@ -243,15 +243,9 @@ export default function AvailabilityPage() {
               fetch(`/api/availability?studio=${encodeURIComponent(studio.id)}&date=${dateKey}`)
                 .then(async (response) => {
                   if (response.ok) {
-<<<<<<< HEAD
-                    const data = await safeJsonParse(response);
-                    // API returns { slots: [...], settings: {...} }
-                    const slots = data.slots || [];
-=======
                     const data: AvailabilityResponse = await safeJsonParse(response);
                     // Handle both old format (array) and new format (object with slots)
                     const slots = Array.isArray(data) ? data : (data.slots || []);
->>>>>>> refs/remotes/origin/master
                     return { studioId: studio.id, studioKey: studio.key, dateKey, slots };
                   }
                   return { studioId: studio.id, studioKey: studio.key, dateKey, slots: [] };
@@ -318,23 +312,6 @@ export default function AvailabilityPage() {
           timeSlots.forEach(timeSlot => {
             const slotKey = `${dateKey}-${studioKey}-${timeSlot.label}`;
             
-<<<<<<< HEAD
-            // Check if this slot is booked from display bookings
-            if (bookedSlotsMap[slotKey]) {
-              availabilityData[dateKey][studioKey][timeSlot.label] = 'booked';
-            } else {
-              // Check if slot is available from API (using the available property)
-              const slotFromApi = slots.find(
-                (slot: { start: string; end: string; available: boolean }) => 
-                  slot.start === timeSlot.start && slot.end === timeSlot.end
-              );
-              
-              if (slotFromApi && slotFromApi.available) {
-                availabilityData[dateKey][studioKey][timeSlot.label] = 'available';
-              } else if (slotFromApi && !slotFromApi.available) {
-                // Slot exists but is not available (could be booked or blocked)
-                availabilityData[dateKey][studioKey][timeSlot.label] = 'booked';
-=======
             // First check if this slot is booked from display bookings endpoint
             if (bookedSlotsMap[slotKey]) {
               availabilityData[dateKey][studioKey][timeSlot.label] = 'booked';
@@ -352,7 +329,6 @@ export default function AvailabilityPage() {
                 } else {
                   availabilityData[dateKey][studioKey][timeSlot.label] = 'available';
                 }
->>>>>>> refs/remotes/origin/master
               } else {
                 availabilityData[dateKey][studioKey][timeSlot.label] = 'unavailable';
               }

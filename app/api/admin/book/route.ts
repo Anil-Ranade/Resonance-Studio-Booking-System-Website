@@ -36,18 +36,10 @@ async function verifyAdminToken(request: NextRequest) {
     return { valid: false, error: "Invalid or expired token" };
   }
 
-<<<<<<< HEAD
-  // Use admin client to check admin_users table
-  const supabase = supabaseAdmin();
-  const { data: adminUser, error: adminError } = await supabase
-    .from("admin_users")
-    .select("*")
-=======
   // Check if user is in admin_users table and is active
   const { data: adminUser, error: adminError } = await supabaseAdmin()
     .from("admin_users")
     .select("id, role, is_active")
->>>>>>> refs/remotes/origin/master
     .eq("id", user.id)
     .eq("is_active", true)
     .single();
