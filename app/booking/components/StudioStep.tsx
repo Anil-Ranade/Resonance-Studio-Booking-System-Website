@@ -1,6 +1,6 @@
 'use client';
 
-import { Building2, Check, Lock, AlertCircle, RotateCcw } from 'lucide-react';
+import { Building2, Lock, AlertCircle, RotateCcw } from 'lucide-react';
 import { useBooking, StudioName } from '../contexts/BookingContext';
 import StepLayout from './StepLayout';
 import { getStudioRate, isStudioAllowed } from '../utils/studioSuggestion';
@@ -47,12 +47,9 @@ export default function StudioStep() {
       studio,
       ratePerHour: rate,
     });
-  };
-
-  const handleNext = () => {
-    if (draft.studio && isStudioAllowed(draft.studio, draft.allowedStudios)) {
-      nextStep();
-    }
+    
+    // Auto-advance to next step
+    setTimeout(() => nextStep(), 150);
   };
 
   // Handle back navigation - skip participants step for Only Drum Practice
@@ -67,19 +64,17 @@ export default function StudioStep() {
   const getStudioStatus = (studio: StudioName) => {
     const isAllowed = isStudioAllowed(studio, draft.allowedStudios);
     const isRecommended = studio === draft.recommendedStudio;
-    const isSelected = studio === draft.studio;
     const isOriginal = draft.isEditMode && draft.originalChoices?.studio === studio;
     
-    return { isAllowed, isRecommended, isSelected, isOriginal };
+    return { isAllowed, isRecommended, isOriginal };
   };
 
   return (
     <StepLayout
       title={draft.isEditMode ? "Modify studio" : "Choose your studio"}
       subtitle={draft.isEditMode 
-        ? "Your original choice is highlighted. Select to change or keep the same."
+        ? "Your original choice is highlighted. Select to change."
         : (draft.recommendedStudio ? `We recommend ${draft.recommendedStudio} for your session` : 'Select a studio')}
-      onNext={handleNext}
       onBack={handleBack}
     >
       {/* Edit Mode Banner */}
@@ -94,7 +89,7 @@ export default function StudioStep() {
       
       <div className="space-y-2">
         {STUDIOS.map((studio) => {
-          const { isAllowed, isRecommended, isSelected, isOriginal } = getStudioStatus(studio.name);
+          const { isAllowed, isRecommended, isOriginal } = getStudioStatus(studio.name);
           
           // Calculate rate for display
           const rate = getStudioRate(studio.name, draft.sessionType as any, {
@@ -129,17 +124,15 @@ export default function StudioStep() {
               onClick={() => handleStudioSelect(studio.name)}
               disabled={!isAllowed}
               className={`relative w-full p-3 rounded-xl border transition-all text-left ${
-                isSelected
-                  ? 'bg-violet-500/20 border-violet-500'
-                  : isOriginal && isAllowed
-                    ? 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/15 hover:border-amber-500/50'
-                    : isAllowed
-                      ? 'bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600'
-                      : 'bg-zinc-900/50 border-zinc-800 opacity-50 cursor-not-allowed'
+                isOriginal && isAllowed
+                  ? 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/15 hover:border-amber-500/50'
+                  : isAllowed
+                    ? 'bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600'
+                    : 'bg-zinc-900/50 border-zinc-800 opacity-50 cursor-not-allowed'
               }`}
             >
               {/* Original Choice Badge */}
-              {isOriginal && !isSelected && isAllowed && (
+              {isOriginal && isAllowed && (
                 <span className="absolute -top-2 left-3 px-2 py-0.5 text-xs font-medium bg-amber-500 text-black rounded-full">
                   Original
                 </span>
@@ -148,8 +141,8 @@ export default function StudioStep() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <Building2 className={`w-4 h-4 ${isSelected ? 'text-violet-400' : isOriginal ? 'text-amber-400' : 'text-zinc-400'}`} />
-                    <h3 className={`font-medium text-sm ${isSelected ? 'text-white' : isAllowed ? 'text-zinc-200' : 'text-zinc-500'}`}>
+                    <Building2 className={`w-4 h-4 ${isOriginal ? 'text-amber-400' : 'text-zinc-400'}`} />
+                    <h3 className={`font-medium text-sm ${isAllowed ? 'text-zinc-200' : 'text-zinc-500'}`}>
                       {studio.name}
                     </h3>
                     {isRecommended && isAllowed && !isOriginal && (
@@ -172,14 +165,9 @@ export default function StudioStep() {
                 </div>
                 <div className="flex flex-col items-end">
                   {isAllowed && (
-                    <span className={`text-base font-semibold ${isOriginal && !isSelected ? 'text-amber-400' : 'text-violet-400'}`}>
+                    <span className={`text-base font-semibold ${isOriginal ? 'text-amber-400' : 'text-violet-400'}`}>
                       ₹{rate}{rateUnit}
                     </span>
-                  )}
-                  {isSelected && (
-                    <div className="w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center mt-1">
-                      <Check className="w-3 h-3 text-white" />
-                    </div>
                   )}
                 </div>
               </div>

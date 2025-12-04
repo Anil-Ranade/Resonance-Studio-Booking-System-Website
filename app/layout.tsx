@@ -4,6 +4,7 @@ import "./globals.css";
 import Link from "next/link";
 import { Music2, Calendar, MapPin, Mail } from "lucide-react";
 import Navigation from "./components/Navigation";
+import ClearCache from "./components/ClearCache";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -56,6 +57,9 @@ export default function RootLayout({
         className={`${poppins.variable} ${geistMono.variable} antialiased bg-noise font-sans flex flex-col min-h-screen`}
         style={{ fontFamily: 'var(--font-poppins), sans-serif' }}
       >
+        {/* Clear cache on app open */}
+        <ClearCache />
+
         {/* Navigation */}
         <Navigation />
 

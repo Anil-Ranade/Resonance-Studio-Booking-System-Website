@@ -240,6 +240,7 @@ export default function TimeStep() {
       subtitle={draft.isEditMode 
         ? "Your original slot is highlighted. Select to change or keep the same."
         : `Booking for ${draft.studio}`}
+      showNext={true}
       onNext={handleNext}
       isNextDisabled={!date || !draft.selectedSlot}
     >

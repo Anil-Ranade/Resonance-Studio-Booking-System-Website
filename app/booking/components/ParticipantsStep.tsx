@@ -104,6 +104,12 @@ export default function ParticipantsStep() {
     }
   };
 
+  const handleBandContinue = () => {
+    if (draft.bandEquipment.length > 0) {
+      nextStep();
+    }
+  };
+
   const handleRecordingSelect = (option: RecordingOption) => {
     const suggestion = getStudioSuggestion('Recording', { recordingOption: option });
     const rate = getStudioRate(suggestion.recommendedStudio, 'Recording', { recordingOption: option });
@@ -115,22 +121,9 @@ export default function ParticipantsStep() {
       studio: suggestion.recommendedStudio,
       ratePerHour: rate,
     });
-  };
-
-  const handleNext = () => {
-    // For Drum Practice, set studio directly and skip to studio step
-    if (draft.sessionType === 'Only Drum Practice') {
-      const suggestion = getStudioSuggestion('Only Drum Practice', {});
-      const rate = getStudioRate(suggestion.recommendedStudio, 'Only Drum Practice', {});
-      
-      updateDraft({
-        recommendedStudio: suggestion.recommendedStudio,
-        allowedStudios: suggestion.allowedStudios,
-        studio: suggestion.recommendedStudio,
-        ratePerHour: rate,
-      });
-    }
-    nextStep();
+    
+    // Auto-advance to next step after selection
+    setTimeout(() => nextStep(), 150);
   };
 
   const renderContent = () => {
@@ -146,23 +139,12 @@ export default function ParticipantsStep() {
               <button
                 key={option.value}
                 onClick={() => handleKaraokeSelect(option.value)}
-                className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
-                  draft.karaokeOption === option.value
-                    ? 'bg-violet-500/20 border-violet-500 text-white'
-                    : 'bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800'
-                }`}
+                className="w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-600"
               >
                 <div>
                   <span className="font-medium text-sm">{option.label}</span>
                   <p className="text-xs text-zinc-400">{option.description}</p>
                 </div>
-                {draft.karaokeOption === option.value && (
-                  <div className="w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center">
-                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                )}
               </button>
             ))}
           </div>
@@ -179,23 +161,12 @@ export default function ParticipantsStep() {
               <button
                 key={option.value}
                 onClick={() => handleLiveSelect(option.value)}
-                className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
-                  draft.liveOption === option.value
-                    ? 'bg-violet-500/20 border-violet-500 text-white'
-                    : 'bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800'
-                }`}
+                className="w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-600"
               >
                 <div>
                   <span className="font-medium text-sm">{option.label}</span>
                   <p className="text-xs text-zinc-400">{option.description}</p>
                 </div>
-                {draft.liveOption === option.value && (
-                  <div className="w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center">
-                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                )}
               </button>
             ))}
           </div>
@@ -222,7 +193,7 @@ export default function ParticipantsStep() {
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-zinc-400 mb-1">
               <Guitar className="w-4 h-4" />
-              <span className="text-xs">Select your equipment needs</span>
+              <span className="text-xs">Select your equipment needs (multiple)</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {BAND_EQUIPMENT.map((equipment) => (
@@ -249,11 +220,19 @@ export default function ParticipantsStep() {
               ))}
             </div>
             {draft.bandEquipment.length > 0 && (
-              <div className="mt-2 p-2 bg-zinc-800/50 rounded-lg text-xs text-zinc-400">
-                Selected: {draft.bandEquipment.map(e => 
-                  BAND_EQUIPMENT.find(eq => eq.value === e)?.label
-                ).join(', ')}
-              </div>
+              <>
+                <div className="mt-2 p-2 bg-zinc-800/50 rounded-lg text-xs text-zinc-400">
+                  Selected: {draft.bandEquipment.map(e => 
+                    BAND_EQUIPMENT.find(eq => eq.value === e)?.label
+                  ).join(', ')}
+                </div>
+                <button
+                  onClick={handleBandContinue}
+                  className="w-full mt-2 py-3 bg-violet-600 text-white font-medium rounded-xl hover:bg-violet-500 transition-colors"
+                >
+                  Continue
+                </button>
+              </>
             )}
           </div>
         );
@@ -269,24 +248,13 @@ export default function ParticipantsStep() {
               <button
                 key={option.value}
                 onClick={() => handleRecordingSelect(option.value)}
-                className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
-                  draft.recordingOption === option.value
-                    ? 'bg-violet-500/20 border-violet-500 text-white'
-                    : 'bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800'
-                }`}
+                className="w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-600"
               >
                 <div>
                   <span className="font-medium text-sm">{option.label}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-violet-400">{option.price}</span>
-                  {draft.recordingOption === option.value && (
-                    <div className="w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center">
-                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                  )}
                 </div>
               </button>
             ))}
@@ -326,19 +294,14 @@ export default function ParticipantsStep() {
     return draft.originalChoices.sessionDetails;
   };
 
-  // Check if we should hide the Next button (auto-advance for Karaoke and Live with musicians)
-  const shouldHideNext = draft.sessionType === 'Karaoke' || draft.sessionType === 'Live with musicians';
-
   return (
     <StepLayout
       title={getTitle()}
       subtitle={draft.isEditMode 
-        ? 'Your original choice is highlighted. Select to change or keep the same.'
+        ? 'Your original choice is highlighted. Select to change.'
         : (draft.sessionType === 'Only Drum Practice' 
           ? 'Available in Studio A only' 
           : 'This helps us to recommend the best suitable studio for you.')}
-      onNext={handleNext}
-      showNext={!shouldHideNext}
     >
       {/* Edit Mode Banner */}
       {draft.isEditMode && getOriginalDetails() && (

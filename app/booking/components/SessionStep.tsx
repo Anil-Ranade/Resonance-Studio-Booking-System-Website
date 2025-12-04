@@ -28,27 +28,27 @@ export default function SessionStep() {
       recommendedStudio: '',
       allowedStudios: [],
     });
-  };
-
-  const handleNext = () => {
-    if (draft.sessionType) {
-      // Special Rule: Only Drum Practice skips participants page and goes directly to studio
-      if (draft.sessionType === 'Only Drum Practice') {
-        const suggestion = getStudioSuggestion('Only Drum Practice', {});
-        const rate = getStudioRate(suggestion.recommendedStudio, 'Only Drum Practice', {});
-        
+    
+    // Auto-advance after selection
+    // Special Rule: Only Drum Practice skips participants page and goes directly to studio
+    if (sessionType === 'Only Drum Practice') {
+      const suggestion = getStudioSuggestion('Only Drum Practice', {});
+      const rate = getStudioRate(suggestion.recommendedStudio, 'Only Drum Practice', {});
+      
+      // Use setTimeout to allow state update first
+      setTimeout(() => {
         updateDraft({
           recommendedStudio: suggestion.recommendedStudio,
           allowedStudios: suggestion.allowedStudios,
           studio: suggestion.recommendedStudio,
           ratePerHour: rate,
         });
-        
-        // Skip participants step and go directly to studio
         setStep('studio');
-      } else {
+      }, 150);
+    } else {
+      setTimeout(() => {
         nextStep();
-      }
+      }, 150);
     }
   };
 
@@ -60,8 +60,7 @@ export default function SessionStep() {
   return (
     <StepLayout
       title={draft.isEditMode ? "Modify session type" : "What type of session?"}
-      subtitle={draft.isEditMode ? "Your original choice is highlighted. Select to change or keep the same." : "Select the type of session you want to book"}
-      onNext={handleNext}
+      subtitle={draft.isEditMode ? "Your original choice is highlighted. Select to change." : "Select the type of session you want to book"}
     >
       {/* Edit Mode Banner */}
       {draft.isEditMode && draft.originalChoices && (
@@ -76,22 +75,19 @@ export default function SessionStep() {
       <div className="grid gap-2">
         {SESSION_TYPES.map((session) => {
           const isOriginal = isOriginalChoice(session.name);
-          const isSelected = draft.sessionType === session.name;
           
           return (
             <button
               key={session.name}
               onClick={() => handleSelect(session.name)}
               className={`relative flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
-                isSelected
-                  ? 'bg-violet-500/20 border-violet-500 text-white'
-                  : isOriginal
-                    ? 'bg-amber-500/10 border-amber-500/30 text-zinc-300 hover:bg-amber-500/15 hover:border-amber-500/50'
-                    : 'bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-600'
+                isOriginal
+                  ? 'bg-amber-500/10 border-amber-500/30 text-zinc-300 hover:bg-amber-500/15 hover:border-amber-500/50'
+                  : 'bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-600'
               }`}
             >
               {/* Original Choice Badge */}
-              {isOriginal && !isSelected && (
+              {isOriginal && (
                 <span className="absolute -top-2 left-3 px-2 py-0.5 text-xs font-medium bg-amber-500 text-black rounded-full">
                   Original
                 </span>
@@ -99,11 +95,9 @@ export default function SessionStep() {
               
               <div
                 className={`p-2 rounded-lg ${
-                  isSelected
-                    ? 'bg-violet-500 text-white'
-                    : isOriginal
-                      ? 'bg-amber-500/20 text-amber-400'
-                      : 'bg-zinc-700 text-zinc-400'
+                  isOriginal
+                    ? 'bg-amber-500/20 text-amber-400'
+                    : 'bg-zinc-700 text-zinc-400'
                 }`}
               >
                 {session.icon}
@@ -112,25 +106,6 @@ export default function SessionStep() {
                 <h3 className="font-medium text-sm">{session.name}</h3>
                 <p className="text-xs text-zinc-400 truncate">{session.description}</p>
               </div>
-              {isSelected && (
-                <div className="ml-auto flex-shrink-0">
-                  <div className="w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center">
-                    <svg
-                      className="w-3 h-3 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              )}
             </button>
           );
         })}

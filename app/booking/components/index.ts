@@ -2,6 +2,7 @@ export { default as PhoneStep } from './PhoneStep';
 export { default as SessionStep } from './SessionStep';
 export { default as ParticipantsStep } from './ParticipantsStep';
 export { default as StudioStep } from './StudioStep';
+export { default as AvailabilityStep } from './AvailabilityStep';
 export { default as TimeStep } from './TimeStep';
 export { default as ReviewStep } from './ReviewStep';
 export { default as OTPStep } from './OTPStep';

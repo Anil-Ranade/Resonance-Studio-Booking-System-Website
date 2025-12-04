@@ -171,6 +171,7 @@ export default function PhoneStep() {
         ? "Confirm your phone number to modify this booking"
         : "We'll use this to send booking confirmations"}
       showBack={draft.isEditMode}
+      showNext={true}
       onBack={draft.isEditMode ? handleBack : undefined}
       onNext={handleNext}
       isNextDisabled={!isValid || isCheckingUser}

@@ -94,6 +94,7 @@ export default function ReviewStep() {
         ? (hasChanges ? "Confirm the updated details below" : "No changes detected")
         : "Please confirm the details below"
       }
+      showNext={true}
       nextLabel={draft.isEditMode ? "Proceed to Update" : "Proceed to Verify"}
       onNext={handleNext}
       isNextDisabled={draft.isEditMode && !hasChanges}

@@ -159,11 +159,23 @@ export default function OTPStep() {
     return phone;
   };
 
+  const isOtpComplete = otp.every(digit => digit !== '');
+
+  const handleNext = () => {
+    if (isOtpComplete) {
+      verifyOTP(otp.join(''));
+    }
+  };
+
   return (
     <StepLayout
       title={draft.isEditMode ? "Verify to update booking" : "Verify your phone"}
       subtitle={`Enter the 6-digit code sent to ${formatPhone(draft.phone)}`}
-      showNext={false}
+      showNext={true}
+      nextLabel="Verify"
+      onNext={handleNext}
+      isNextDisabled={!isOtpComplete || isLoading}
+      isLoading={isLoading}
       hideFooter={false}
     >
       <div className="flex flex-col items-center justify-center space-y-3">

@@ -7,6 +7,7 @@ import PhoneStep from '../components/PhoneStep';
 import SessionStep from '../components/SessionStep';
 import ParticipantsStep from '../components/ParticipantsStep';
 import StudioStep from '../components/StudioStep';
+import AvailabilityStep from '../components/AvailabilityStep';
 import TimeStep from '../components/TimeStep';
 import ReviewStep from '../components/ReviewStep';
 import OTPStep from '../components/OTPStep';
@@ -24,6 +25,8 @@ function BookingSteps() {
       return <ParticipantsStep />;
     case 'studio':
       return <StudioStep />;
+    case 'availability':
+      return <AvailabilityStep />;
     case 'time':
       return <TimeStep />;
     case 'review':
