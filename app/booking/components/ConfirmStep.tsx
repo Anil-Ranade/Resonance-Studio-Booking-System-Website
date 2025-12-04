@@ -16,11 +16,6 @@ export default function ConfirmStep() {
 
   // Create booking on mount
   useEffect(() => {
-    if (!draft.otpVerified) {
-      router.push('/booking/new');
-      return;
-    }
-
     createBooking();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

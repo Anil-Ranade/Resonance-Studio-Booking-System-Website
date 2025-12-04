@@ -95,7 +95,7 @@ export default function ReviewStep() {
         : "Please confirm the details below"
       }
       showNext={true}
-      nextLabel={draft.isEditMode ? "Proceed to Update" : "Proceed to Verify"}
+      nextLabel={draft.isEditMode ? "Confirm Update" : "Confirm Booking"}
       onNext={handleNext}
       isNextDisabled={draft.isEditMode && !hasChanges}
     >

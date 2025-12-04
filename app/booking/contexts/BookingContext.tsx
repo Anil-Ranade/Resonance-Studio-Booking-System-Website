@@ -82,9 +82,9 @@ export interface BookingDraft {
   originalChoices: OriginalBookingChoices | null;
 }
 
-export type BookingStep = 'phone' | 'session' | 'participants' | 'studio' | 'availability' | 'time' | 'review' | 'otp' | 'confirm';
+export type BookingStep = 'phone' | 'session' | 'participants' | 'studio' | 'availability' | 'time' | 'review' | 'confirm';
 
-const STEP_ORDER: BookingStep[] = ['phone', 'session', 'participants', 'studio', 'availability', 'time', 'review', 'otp', 'confirm'];
+const STEP_ORDER: BookingStep[] = ['phone', 'session', 'participants', 'studio', 'availability', 'time', 'review', 'confirm'];
 
 const initialDraft: BookingDraft = {
   phone: '',
@@ -401,8 +401,6 @@ export function BookingProvider({ children }: { children: ReactNode }) {
         return draft.date !== '' && draft.selectedSlot !== null;
       case 'review':
         return true;
-      case 'otp':
-        return draft.otpVerified; // OTP is always required
       case 'confirm':
         return true;
       default:

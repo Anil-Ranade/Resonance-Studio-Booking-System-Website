@@ -110,23 +110,10 @@ export default function HomePage() {
   const [error, setError] = useState('');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [step, setStep] = useState<'phone' | 'select' | 'view' | 'cancel-confirm' | 'otp' | 'success'>('phone');
+  const [step, setStep] = useState<'phone' | 'select' | 'view' | 'cancel-confirm' | 'success'>('phone');
   
-  // OTP state for cancel flow
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  // Cooldown timer for resend OTP
-  useEffect(() => {
-    if (resendCooldown > 0) {
-      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendCooldown]);
+  // Loading state for cancel
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const resetModal = () => {
     setActionMode(null);
@@ -135,9 +122,6 @@ export default function HomePage() {
     setBookings([]);
     setSelectedBooking(null);
     setStep('phone');
-    setOtp(['', '', '', '', '', '']);
-    setOtpSent(false);
-    setResendCooldown(0);
   };
 
   const formatDate = (dateStr: string) => {
@@ -212,74 +196,14 @@ export default function HomePage() {
     }
   };
 
-  const handleSendOtp = async () => {
-    setIsSendingOtp(true);
-    setError('');
-
-    try {
-      const response = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phoneNumber }),
-      });
-
-      const data = await safeJsonParse(response);
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to send OTP');
-      }
-
-      setOtpSent(true);
-      setStep('otp');
-      setResendCooldown(60);
-      setOtp(['', '', '', '', '', '']);
-      
-      setTimeout(() => {
-        otpInputRefs.current[0]?.focus();
-      }, 100);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send OTP');
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
-
-  const handleOtpChange = (index: number, value: string) => {
-    if (value && !/^\d$/.test(value)) return;
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    if (value && index < 5) {
-      otpInputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      otpInputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (pastedData.length === 6) {
-      const newOtp = pastedData.split('');
-      setOtp(newOtp);
-      otpInputRefs.current[5]?.focus();
-    }
-  };
-
+  // Cancel booking directly without OTP
   const handleConfirmCancel = async () => {
-    const otpValue = otp.join('');
-    if (!selectedBooking || otpValue.length !== 6) {
-      setError('Please enter a valid 6-digit OTP');
+    if (!selectedBooking) {
+      setError('No booking selected');
       return;
     }
 
-    setIsVerifyingOtp(true);
+    setIsCancelling(true);
     setError('');
 
     try {
@@ -289,7 +213,6 @@ export default function HomePage() {
         body: JSON.stringify({
           bookingId: selectedBooking.id,
           phone: phoneNumber,
-          otp: otpValue,
           reason: 'Cancelled by user',
         }),
       });
@@ -307,12 +230,8 @@ export default function HomePage() {
       }, 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to cancel booking');
-      setOtp(['', '', '', '', '', '']);
-      setTimeout(() => {
-        otpInputRefs.current[0]?.focus();
-      }, 100);
     } finally {
-      setIsVerifyingOtp(false);
+      setIsCancelling(false);
     }
   };
 
@@ -1127,7 +1046,7 @@ export default function HomePage() {
                   </div>
 
                   <p className="text-zinc-400 text-sm mb-6 text-center">
-                    Click below to receive a verification code on your phone number to confirm cancellation.
+                    Are you sure you want to cancel this booking? This action cannot be undone.
                   </p>
 
                   {error && (
@@ -1145,109 +1064,21 @@ export default function HomePage() {
                       Keep Booking
                     </button>
                     <motion.button
-                      onClick={handleSendOtp}
-                      disabled={isSendingOtp}
+                      onClick={handleConfirmCancel}
+                      disabled={isCancelling}
                       className="flex-1 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      {isSendingOtp ? (
+                      {isCancelling ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
                       ) : (
                         <>
-                          <Shield className="w-4 h-4" />
-                          Verify & Cancel
+                          <X className="w-4 h-4" />
+                          Cancel Booking
                         </>
                       )}
                     </motion.button>
-                  </div>
-                </>
-              )}
-
-              {/* OTP Verification Step */}
-              {step === 'otp' && selectedBooking && (
-                <>
-                  <div className="flex items-center gap-3 mb-6 pb-6 border-b border-white/10">
-                    <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                      <Shield className="w-6 h-6 text-amber-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-white">Verify Cancellation</h3>
-                      <p className="text-zinc-400 text-sm">Enter the OTP sent to your phone</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-3">
-                      <Check className="w-5 h-5 text-green-400" />
-                      <span className="text-green-400">OTP sent to +91 {phoneNumber}</span>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-zinc-400 mb-4 text-center">
-                        Enter the 6-digit OTP
-                      </label>
-                      <div className="flex justify-center gap-2 sm:gap-3 max-w-sm mx-auto">
-                        {otp.map((digit, index) => (
-                          <input
-                            key={index}
-                            ref={(el) => { otpInputRefs.current[index] = el; }}
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={1}
-                            value={digit}
-                            onChange={(e) => handleOtpChange(index, e.target.value)}
-                            onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                            onPaste={handleOtpPaste}
-                            className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold rounded-xl bg-white/5 border border-white/10 text-white focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all"
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    {error && (
-                      <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-                        <span className="text-red-400 text-sm">{error}</span>
-                      </div>
-                    )}
-
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <motion.button
-                        onClick={handleConfirmCancel}
-                        disabled={isVerifyingOtp || otp.join('').length !== 6}
-                        className="flex-1 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        {isVerifyingOtp ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                          <>
-                            <Check className="w-5 h-5" />
-                            Confirm Cancellation
-                          </>
-                        )}
-                      </motion.button>
-
-                      <motion.button
-                        onClick={handleSendOtp}
-                        disabled={isSendingOtp || resendCooldown > 0}
-                        className="flex-1 py-3 rounded-xl border border-white/10 text-zinc-400 font-medium hover:bg-white/5 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <RefreshCw className={`w-5 h-5 ${isSendingOtp ? 'animate-spin' : ''}`} />
-                        {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
-                      </motion.button>
-                    </div>
-
-                    <button
-                      onClick={() => { setStep('cancel-confirm'); setOtp(['', '', '', '', '', '']); setError(''); }}
-                      className="w-full text-center text-zinc-500 hover:text-zinc-300 text-sm font-medium transition-colors"
-                    >
-                      ← Back to booking details
-                    </button>
                   </div>
                 </>
               )}

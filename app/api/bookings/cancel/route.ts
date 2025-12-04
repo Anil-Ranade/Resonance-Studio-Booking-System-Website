@@ -1,49 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
-import { verifyOTP } from "@/lib/otpStore";
 import { deleteEvent } from "@/lib/googleCalendar";
 import { sendSMS } from "@/lib/sms";
-import { createClient } from "@supabase/supabase-js";
 
-// Initialize Supabase client with service role for trusted device verification
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-/**
- * Verify if device is trusted for this phone number
- */
-async function verifyTrustedDevice(phone: string, deviceFingerprint: string): Promise<boolean> {
-  try {
-    const { data: trustedDevice, error } = await supabase
-      .from("trusted_devices")
-      .select("id")
-      .eq("phone", phone)
-      .eq("device_fingerprint", deviceFingerprint)
-      .eq("is_active", true)
-      .single();
-
-    if (error || !trustedDevice) {
-      return false;
-    }
-
-    // Update last_used_at timestamp
-    await supabase
-      .from("trusted_devices")
-      .update({ last_used_at: new Date().toISOString() })
-      .eq("id", trustedDevice.id);
-
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// POST /api/bookings/cancel - Cancel a booking with OTP or trusted device verification
+// POST /api/bookings/cancel - Cancel a booking (no OTP verification required)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { bookingId, phone, otp, deviceFingerprint, deviceName, reason } = body;
+    const { bookingId, phone, reason } = body;
 
     // Validate inputs
     if (!bookingId) {
@@ -59,64 +23,6 @@ export async function POST(request: NextRequest) {
         { error: "Phone number must be exactly 10 digits" },
         { status: 400 }
       );
-    }
-
-    // Verify identity - either via OTP or trusted device
-    let verified = false;
-    let verificationMethod = "";
-
-    // First, check if device is trusted (faster, no OTP needed)
-    if (deviceFingerprint) {
-      verified = await verifyTrustedDevice(normalizedPhone, deviceFingerprint);
-      if (verified) {
-        verificationMethod = "trusted_device";
-        console.log(`[Cancel Booking] Verified via trusted device for ${normalizedPhone}`);
-      }
-    }
-
-    // If device not trusted, require OTP
-    if (!verified) {
-      if (!otp) {
-        return NextResponse.json(
-          { error: "OTP is required for verification" },
-          { status: 400 }
-        );
-      }
-
-      const otpResult = await verifyOTP(normalizedPhone, otp);
-      if (!otpResult.success) {
-        return NextResponse.json(
-          { error: otpResult.error },
-          { status: 400 }
-        );
-      }
-      verified = true;
-      verificationMethod = "otp";
-      console.log(`[Cancel Booking] Verified via OTP for ${normalizedPhone}`);
-
-      // Register device as trusted after successful OTP verification
-      if (deviceFingerprint) {
-        try {
-          await supabase
-            .from("trusted_devices")
-            .upsert(
-              {
-                phone: normalizedPhone,
-                device_fingerprint: deviceFingerprint,
-                device_name: deviceName || "Unknown Device",
-                last_used_at: new Date().toISOString(),
-                is_active: true,
-              },
-              {
-                onConflict: "phone,device_fingerprint",
-              }
-            );
-          console.log(`[Cancel Booking] Device registered as trusted for ${normalizedPhone}`);
-        } catch (deviceError) {
-          console.error("[Cancel Booking] Failed to register trusted device:", deviceError);
-          // Continue without failing
-        }
-      }
     }
 
     // Get the booking and verify it belongs to the user
@@ -243,14 +149,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`[Cancel Booking] Booking ${bookingId} cancelled successfully (verified via ${verificationMethod})`);
+    console.log(`[Cancel Booking] Booking ${bookingId} cancelled successfully`);
 
     return NextResponse.json({
       success: true,
       message: "Booking cancelled successfully",
       booking: updatedBooking,
-      verificationMethod,
-      deviceTrusted: verificationMethod === "otp" && !!deviceFingerprint,
     });
   } catch (error) {
     console.error("[Cancel Booking] Unexpected error:", error);
