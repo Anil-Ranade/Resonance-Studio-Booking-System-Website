@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Loader2, Clock } from 'lucide-react';
 import { useBooking } from '../contexts/BookingContext';
 import StepLayout from './StepLayout';
 
@@ -30,25 +30,31 @@ type AvailabilityData = {
 interface TimeSlotType {
   start: string;
   end: string;
+  available?: boolean;
 }
 
 interface BookingSlot {
   start_time: string;
   end_time: string;
   studio: string;
-  phone_number?: string;
-  session_type?: string;
+}
+
+interface AvailabilityResponse {
+  slots: TimeSlotType[];
+  settings?: {
+    minBookingDuration: number;
+    maxBookingDuration: number;
+    advanceBookingDays: number;
+  };
 }
 
 export default function AvailabilityStep() {
   const { draft } = useBooking();
   const [startDate, setStartDate] = useState(new Date());
   const [availability, setAvailability] = useState<AvailabilityData>({});
-  const [bookingsData, setBookingsData] = useState<{ [dateKey: string]: BookingSlot[] }>({});
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
-  const [currentTime, setCurrentTime] = useState(new Date());
 
   // Fetch booking settings on component mount
   useEffect(() => {
@@ -79,14 +85,6 @@ export default function AvailabilityStep() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Update current time every second for live indicator
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
   }, []);
 
   const studios = [
@@ -247,7 +245,9 @@ export default function AvailabilityStep() {
               fetch(`/api/availability?studio=${encodeURIComponent(studio.id)}&date=${dateKey}`)
                 .then(async (response) => {
                   if (response.ok) {
-                    const slots: TimeSlotType[] = await safeJsonParse(response);
+                    const data: AvailabilityResponse = await safeJsonParse(response);
+                    // Handle both old format (array) and new format (object with slots)
+                    const slots = Array.isArray(data) ? data : (data.slots || []);
                     return { studioId: studio.id, studioKey: studio.key, dateKey, slots };
                   }
                   return { studioId: studio.id, studioKey: studio.key, dateKey, slots: [] };
@@ -309,32 +309,36 @@ export default function AvailabilityStep() {
           });
         });
 
-        // Process availability results
+        // Process availability results - the API already considers bookings
         availabilityResults.forEach(({ studioKey, dateKey, slots }) => {
           timeSlots.forEach(timeSlot => {
             const slotKey = `${dateKey}-${studioKey}-${timeSlot.label}`;
 
-            // Check if this slot is booked
+            // First check if this slot is booked from display bookings endpoint
             if (bookedSlotsMap[slotKey]) {
               availabilityData[dateKey][studioKey][timeSlot.label] = 'booked';
             } else {
-              // Check if slot is available from API
-              const isAvailable = slots.some(
+              // Check slot status from availability API
+              const matchingSlot = slots.find(
                 (slot: TimeSlotType) => slot.start === timeSlot.start && slot.end === timeSlot.end
               );
-              availabilityData[dateKey][studioKey][timeSlot.label] = isAvailable ? 'available' : 'unavailable';
+              
+              if (matchingSlot) {
+                // If the slot has an 'available' property, use it
+                // If available is false, it means the slot is booked or unavailable
+                if (matchingSlot.available === false) {
+                  availabilityData[dateKey][studioKey][timeSlot.label] = 'booked';
+                } else {
+                  availabilityData[dateKey][studioKey][timeSlot.label] = 'available';
+                }
+              } else {
+                availabilityData[dateKey][studioKey][timeSlot.label] = 'unavailable';
+              }
             }
           });
         });
 
         setAvailability(availabilityData);
-        
-        // Store bookings data for block rendering
-        const bookingsMap: { [dateKey: string]: BookingSlot[] } = {};
-        bookingResults.forEach(({ dateKey, bookings }) => {
-          bookingsMap[dateKey] = bookings;
-        });
-        setBookingsData(bookingsMap);
       } catch (error) {
         console.error('Error fetching availability:', error);
       }
@@ -370,94 +374,6 @@ export default function AvailabilityStep() {
   // Check if the selected studio is shown in the highlighted color
   const isSelectedStudio = (studioId: string) => {
     return draft.studio === studioId;
-  };
-
-  // Time slots array for the grid (8 AM to 10 PM)
-  const timeSlotHours = Array.from({ length: 14 }, (_, i) => 8 + i);
-  const startHour = 8;
-  const endHour = 22;
-
-  // Current time calculations
-  const currentHour = currentTime.getHours();
-  const currentMinutes = currentTime.getMinutes();
-
-  // Calculate current time position as percentage (vertical)
-  const getCurrentTimePosition = () => {
-    const totalMinutes = (currentHour - startHour) * 60 + currentMinutes;
-    const totalDuration = (endHour - startHour) * 60;
-    return (totalMinutes / totalDuration) * 100;
-  };
-
-  // Check if a time slot is in the past for a given date
-  const isPastSlotForDate = (hour: number, date: Date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const checkDate = new Date(date);
-    checkDate.setHours(0, 0, 0, 0);
-    
-    if (checkDate < today) return true;
-    if (checkDate.getTime() === today.getTime()) {
-      return hour < currentHour;
-    }
-    return false;
-  };
-
-  // Build consolidated booking blocks for each date and studio
-  const getStudioBlocks = useMemo(() => {
-    const result: Record<string, Record<string, Array<{ start: number; end: number; booking: BookingSlot }>>> = {};
-    
-    dates.forEach(date => {
-      const dateKey = formatDateKey(date);
-      result[dateKey] = {};
-      
-      studios.forEach((studio) => {
-        const studioBookings = (bookingsData[dateKey] || [])
-          .filter((b) => b.studio === studio.id)
-          .sort((a, b) => a.start_time.localeCompare(b.start_time));
-        
-        const blocks: Array<{ start: number; end: number; booking: BookingSlot }> = [];
-        let currentBlock: { start: number; end: number; booking: BookingSlot } | null = null;
-
-        studioBookings.forEach((b) => {
-          const start = parseInt(b.start_time.split(':')[0], 10);
-          const end = parseInt(b.end_time.split(':')[0], 10);
-          
-          if (currentBlock && currentBlock.end === start && currentBlock.booking.phone_number === b.phone_number) {
-            // Merge consecutive bookings from same user
-            currentBlock.end = end;
-          } else {
-            if (currentBlock) blocks.push(currentBlock);
-            currentBlock = { start, end, booking: b };
-          }
-        });
-        
-        if (currentBlock) blocks.push(currentBlock);
-        result[dateKey][studio.id] = blocks;
-      });
-    });
-    
-    return result;
-  }, [bookingsData, dates, studios]);
-
-  const getStudioColor = (studioId: string) => {
-    if (studioId === 'Studio A') return 'bg-blue-600';
-    if (studioId === 'Studio B') return 'bg-amber-600';
-    if (studioId === 'Studio C') return 'bg-green-600';
-    return 'bg-zinc-600';
-  };
-
-  const getStudioHeaderColor = (studioId: string) => {
-    if (studioId === 'Studio A') return 'bg-blue-500';
-    if (studioId === 'Studio B') return 'bg-amber-700';
-    if (studioId === 'Studio C') return 'bg-green-500';
-    return 'bg-zinc-600';
-  };
-
-  // Format hour to 12-hour format
-  const formatTimeLabel = (hour: number) => {
-    if (hour === 12) return '12 PM';
-    if (hour < 12) return `${hour} AM`;
-    return `${hour - 12} PM`;
   };
 
   return (
@@ -503,12 +419,12 @@ export default function AvailabilityStep() {
           </div>
         </div>
 
-        {/* Legend - Ultra Compact */}
+        {/* Legend - Compact */}
         <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2 flex-shrink-0">
           {studios.map((studio) => (
             <div 
               key={studio.id} 
-              className={`flex items-center gap-1 ${isSelectedStudio(studio.id) ? 'opacity-100' : 'opacity-50'}`}
+              className={`flex items-center gap-1 ${isSelectedStudio(studio.id) ? 'opacity-100' : 'opacity-60'}`}
             >
               <div className={`w-2.5 h-2.5 rounded ${studio.color} ${isSelectedStudio(studio.id) ? 'ring-1 ring-white' : ''}`} />
               <span className={`text-[10px] ${isSelectedStudio(studio.id) ? 'text-white font-medium' : 'text-zinc-400'}`}>
@@ -526,133 +442,116 @@ export default function AvailabilityStep() {
           </div>
         </div>
 
-        {/* Availability Display - Like Display Page */}
-        {loading ? (
-          <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
-          </div>
-        ) : (
-          <div className="flex-1 flex gap-2 overflow-hidden">
-            {dates.map((date, dateIndex) => {
-              const dateKey = formatDateKey(date);
-              const formatted = formatDateForDisplay(date);
-              const isToday = formatDateKey(new Date()) === dateKey;
-              const showCurrentTimeLine = isToday && currentHour >= startHour && currentHour < endHour;
-              const currentTimePosition = getCurrentTimePosition();
-
-              return (
-                <div key={dateIndex} className="flex-1 flex flex-col overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900">
-                  {/* Date Header */}
-                  <div className="h-10 flex-shrink-0 flex items-center justify-center bg-zinc-800 border-b border-zinc-700 rounded-t-lg">
-                    <div className="text-center">
-                      <span className="text-sm font-bold text-white">{formatted.day}</span>
-                      <span className="text-zinc-400 text-xs ml-1">{formatted.month}</span>
-                    </div>
-                  </div>
-
-                  {/* Studio Column Headers */}
-                  <div className="h-7 flex-shrink-0 flex bg-zinc-800/50 border-b border-zinc-700">
-                    <div className="w-10 md:w-12 flex-shrink-0 px-1 flex items-center justify-center text-[9px] md:text-[10px] font-bold text-zinc-400 border-r border-zinc-700">
-                      TIME
-                    </div>
-                    {studios.map((studio) => (
-                      <div 
-                        key={studio.id} 
-                        className={`flex-1 px-1 flex items-center justify-center text-[10px] md:text-xs font-bold text-white border-r border-zinc-700 last:border-r-0 ${getStudioHeaderColor(studio.id)} ${isSelectedStudio(studio.id) ? 'ring-1 ring-inset ring-white/50' : ''}`}
-                      >
-                        {studio.key}
+        {/* Availability Table - Same style as Availability Page */}
+        <div className="glass rounded-xl overflow-hidden flex-1 min-h-0 flex flex-col">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
+            </div>
+          ) : (
+            <div className="overflow-auto flex-1">
+              <table className="w-full mb-2">
+                <thead className="sticky top-0 z-10 bg-zinc-900/95 backdrop-blur-sm">
+                  {/* Date Headers */}
+                  <tr className="border-b border-white/10">
+                    <th className="p-1.5 md:p-2 text-left" rowSpan={2}>
+                      <div className="flex items-center gap-1 text-zinc-400">
+                        <Clock className="w-3 h-3" />
+                        <span className="font-medium text-[10px] md:text-xs">TIME</span>
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Grid Body */}
-                  <div className="flex-1 flex overflow-hidden relative py-2">
-                    {/* Current Time Indicator - Horizontal Line */}
-                    {showCurrentTimeLine && (
-                      <div 
-                        className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
-                        style={{ top: `calc(0.5rem + ${currentTimePosition}% * (100% - 1rem) / 100%)` }}
-                      >
-                        <div className="w-2 h-2 rounded-full bg-red-500 -ml-1 flex-shrink-0"></div>
-                        <div className="flex-1 h-0.5 bg-red-500"></div>
-                      </div>
-                    )}
-
-                    {/* Time Column */}
-                    <div className="w-10 md:w-12 flex-shrink-0 flex flex-col border-r border-zinc-700 relative">
-                      {timeSlotHours.map((hour) => (
-                        <div 
-                          key={hour} 
-                          className="flex-1 relative border-b border-zinc-800 last:border-b-0 bg-zinc-900 flex items-start justify-center"
+                    </th>
+                    {dates.map((date, index) => {
+                      const formatted = formatDateForDisplay(date);
+                      return (
+                        <th 
+                          key={index} 
+                          colSpan={3} 
+                          className={`p-1.5 md:p-2 text-center ${index < dates.length - 1 ? 'border-r border-white/10' : ''}`}
                         >
-                          <span className="text-amber-400 font-semibold text-[8px] md:text-[9px] whitespace-nowrap -mt-1.5">
-                            {formatTimeLabel(hour)}
+                          <div className="text-base md:text-lg font-bold text-white">{formatted.day}</div>
+                          <div className="text-zinc-400 text-[10px] md:text-xs">{formatted.month}</div>
+                        </th>
+                      );
+                    })}
+                  </tr>
+                  {/* Studio Headers */}
+                  <tr className="border-b border-white/10 bg-white/[0.02]">
+                    {dates.map((_, dateIndex) => (
+                      studios.map((studio, studioIndex) => (
+                        <th 
+                          key={`${dateIndex}-${studio.key}`} 
+                          className={`p-1 md:p-1.5 text-center font-medium text-zinc-300 text-[10px] md:text-xs ${
+                            studioIndex === 2 && dateIndex < dates.length - 1 ? 'border-r border-white/10' : ''
+                          } ${isSelectedStudio(studio.id) ? 'bg-violet-500/10' : ''}`}
+                        >
+                          <span className={isSelectedStudio(studio.id) ? 'text-violet-300' : ''}>
+                            {studio.key}{isSelectedStudio(studio.id) && '*'}
                           </span>
-                        </div>
-                      ))}
-                      {/* 10 PM label at bottom */}
-                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 text-amber-400 font-semibold text-[8px] md:text-[9px] whitespace-nowrap bg-zinc-900 px-0.5">
-                        10 PM
-                      </span>
-                    </div>
-
-                    {/* Studio Columns */}
-                    {studios.map((studio) => (
-                      <div key={studio.id} className={`flex-1 relative border-r border-zinc-700 last:border-r-0 ${isSelectedStudio(studio.id) ? 'bg-violet-500/5' : ''}`}>
-                        {/* Grid lines for empty slots */}
-                        <div className="absolute inset-0 flex flex-col">
-                          {timeSlotHours.map((hour) => {
-                            const isPast = isPastSlotForDate(hour, date);
-                            return (
-                              <div 
-                                key={hour} 
-                                className={`flex-1 border-b border-zinc-800 last:border-b-0 ${
-                                  isPast ? 'bg-black/60' : 'bg-zinc-900/30'
-                                }`}
-                              />
-                            );
-                          })}
-                        </div>
-
-                        {/* Booking blocks - Vertical */}
-                        {getStudioBlocks[dateKey]?.[studio.id]?.map((block, idx) => {
-                          const topPercent = ((block.start - startHour) / timeSlotHours.length) * 100;
-                          const heightPercent = ((block.end - block.start) / timeSlotHours.length) * 100;
-                          const isPast = isPastSlotForDate(block.end, date);
-
-                          return (
-                            <div
-                              key={idx}
-                              className={`absolute left-0.5 right-0.5 ${getStudioColor(studio.id)} text-white flex flex-col items-center justify-center px-0.5 z-10 rounded shadow-lg border border-white/20 ${
-                                isPast ? 'opacity-40' : ''
-                              }`}
-                              style={{
-                                top: `${topPercent}%`,
-                                height: `${heightPercent}%`,
-                              }}
-                            >
-                              <span className="text-[8px] md:text-[10px] font-bold truncate w-full text-center">
-                                Booked
-                              </span>
-                              {block.end - block.start > 1 && (
-                                <span className="text-[7px] md:text-[8px] font-medium opacity-80 truncate w-full text-center">
-                                  {block.booking.session_type || 'Session'}
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
+                        </th>
+                      ))
                     ))}
-                  </div>
-
-                  {/* Bottom padding */}
-                  <div className="h-2 flex-shrink-0 bg-zinc-900 rounded-b-lg border-t border-zinc-800"></div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {timeSlots.map((timeSlot, timeIndex) => (
+                    <tr 
+                      key={timeSlot.label} 
+                      className={`${timeIndex < timeSlots.length - 1 ? 'border-b border-white/5' : ''} hover:bg-white/[0.02] transition-colors`}
+                    >
+                      <td className="p-1 md:p-1.5 text-zinc-400 font-medium whitespace-nowrap text-[9px] md:text-xs">
+                        {timeSlot.start}
+                      </td>
+                      {dates.map((date, dateIndex) => (
+                        studios.map((studio, studioIndex) => {
+                          const slotStatus = getSlotStatus(date, studio.key, timeSlot);
+                          const isAvailable = slotStatus === 'available';
+                          const isBooked = slotStatus === 'booked';
+                          const isPast = slotStatus === 'past';
+                          const isSelected = isSelectedStudio(studio.id);
+                          
+                          return (
+                            <td 
+                              key={`${dateIndex}-${studio.key}-${timeSlot.label}`}
+                              className={`p-0.5 text-center ${
+                                studioIndex === 2 && dateIndex < dates.length - 1 ? 'border-r border-white/10' : ''
+                              } ${isSelected ? 'bg-violet-500/5' : ''}`}
+                            >
+                              <motion.div
+                                className={`w-full h-5 md:h-6 rounded flex items-center justify-center text-[7px] md:text-[9px] font-medium ${
+                                  isAvailable 
+                                    ? `bg-zinc-800/50 border ${isSelected ? 'border-violet-500/50' : 'border-zinc-700/50'} cursor-pointer hover:bg-zinc-700/50 text-zinc-400` 
+                                    : isBooked
+                                    ? `${studio.color} cursor-not-allowed text-white/90`
+                                    : isPast
+                                    ? 'bg-zinc-900/80 border border-zinc-800/50 cursor-not-allowed text-zinc-600'
+                                    : 'bg-zinc-900/50 border border-zinc-800/30 cursor-not-allowed opacity-50'
+                                } transition-all`}
+                                whileHover={isAvailable ? { scale: 1.05 } : {}}
+                                whileTap={isAvailable ? { scale: 0.95 } : {}}
+                                title={
+                                  isAvailable 
+                                    ? `${studio.name} available at ${timeSlot.label}` 
+                                    : isBooked 
+                                    ? `${studio.name} - Booked`
+                                    : isPast
+                                    ? `${studio.name} - Past`
+                                    : `${studio.name} - Not available`
+                                }
+                              >
+                                {isBooked && 'Booked'}
+                                {isPast && '—'}
+                              </motion.div>
+                            </td>
+                          );
+                        })
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </StepLayout>
   );

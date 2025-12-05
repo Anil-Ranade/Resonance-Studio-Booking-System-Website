@@ -385,12 +385,41 @@ export default function HomePage() {
 
           {/* Subheading */}
           <motion.p 
-            className="text-lg sm:text-xl text-zinc-400 max-w-3xl mx-auto mb-6 leading-relaxed"
+            className="text-lg sm:text-xl text-zinc-400 max-w-3xl mx-auto mb-8 leading-relaxed"
             variants={fadeInUp}
           >
             Three State-of-the-Art Studios dedicated to Premium Karaoke and Live Rehearsal Sessions, Band Practices and Professional Recording Services. <br className="hidden sm:block" />
             <span className="text-violet-400">Your creative space awaits here.</span>
           </motion.p>
+
+          {/* Quick links for studios and booking system */}
+          <motion.div
+            className="flex flex-col gap-3 sm:gap-4 max-w-3xl mx-auto mb-6 sm:mb-8 px-4 sm:px-0"
+            variants={fadeInUp}
+          >
+            <Link href="/studios">
+              <motion.div 
+                className="group flex items-center justify-center sm:justify-between gap-3 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.02] hover:border-violet-500/30 hover:bg-white/[0.05] transition-all duration-300"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-violet-400 flex-shrink-0" />
+                <span className="text-white text-sm sm:text-base md:text-lg leading-snug text-center sm:text-left flex-1">Click here to know about our various studios and services</span>
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-violet-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+              </motion.div>
+            </Link>
+            <Link href="/booking">
+              <motion.div 
+                className="group flex items-center justify-center sm:justify-between gap-3 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.02] hover:border-emerald-500/30 hover:bg-white/[0.05] transition-all duration-300"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 flex-shrink-0" />
+                <span className="text-white text-sm sm:text-base md:text-lg leading-snug text-center sm:text-left flex-1">For Online Booking System ( New / Change / Cancel / View ) click here</span>
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+              </motion.div>
+            </Link>
+          </motion.div>
 
           {/* Four Action Buttons */}
           <motion.div 
@@ -434,6 +463,7 @@ export default function HomePage() {
               <span className="text-sm sm:text-base">View</span>
             </button>
           </motion.div>
+
         </motion.div>
       </section>
 
