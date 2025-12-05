@@ -73,16 +73,25 @@ const sessionTypes = [
   'Recording',
   'Walk-in',
 ];
-const timeOptions = [
-  '08:00', '09:00', '10:00', '11:00', '12:00', '13:00',
-  '14:00', '15:00', '16:00', '17:00', '18:00', '19:00',
-  '20:00', '21:00', '22:00',
-];
+
+// Helper function to generate time options based on open/close times
+function generateTimeOptions(openTime: string, closeTime: string): string[] {
+  const options: string[] = [];
+  const openHour = parseInt(openTime.split(':')[0], 10);
+  const closeHour = parseInt(closeTime.split(':')[0], 10);
+  
+  for (let hour = openHour; hour <= closeHour; hour++) {
+    options.push(`${hour.toString().padStart(2, '0')}:00`);
+  }
+  return options;
+}
 
 export default function AvailabilityManagementPage() {
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStudio, setSelectedStudio] = useState<string>('all');
+  const [defaultOpenTime, setDefaultOpenTime] = useState('08:00');
+  const [defaultCloseTime, setDefaultCloseTime] = useState('22:00');
   const [startDate, setStartDate] = useState<string>(() => {
     const today = new Date();
     return today.toISOString().split('T')[0];
@@ -92,6 +101,9 @@ export default function AvailabilityManagementPage() {
     nextWeek.setDate(nextWeek.getDate() + 7);
     return nextWeek.toISOString().split('T')[0];
   });
+
+  // Generate time options based on admin settings
+  const timeOptions = generateTimeOptions(defaultOpenTime, defaultCloseTime);
 
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
@@ -146,6 +158,31 @@ export default function AvailabilityManagementPage() {
       return localStorage.getItem('accessToken');
     }
   }, []);
+
+  // Fetch settings and update form defaults
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const token = await getAccessToken();
+        const response = await fetch('/api/admin/settings', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const openTime = data.defaultOpenTime || '08:00';
+          const closeTime = data.defaultCloseTime || '22:00';
+          setDefaultOpenTime(openTime);
+          setDefaultCloseTime(closeTime);
+          // Update form defaults with settings
+          setFormData(prev => ({ ...prev, start_time: openTime, end_time: closeTime }));
+          setBulkFormData(prev => ({ ...prev, start_time: openTime, end_time: closeTime }));
+        }
+      } catch (err) {
+        console.error('Error fetching settings:', err);
+      }
+    };
+    fetchSettings();
+  }, [getAccessToken]);
 
   // Fetch slots with bookings
   const fetchSlots = async () => {
@@ -413,8 +450,8 @@ export default function AvailabilityManagementPage() {
     setFormData({
       studio: 'Studio A',
       date: new Date().toISOString().split('T')[0],
-      start_time: '08:00',
-      end_time: '22:00',
+      start_time: defaultOpenTime,
+      end_time: defaultCloseTime,
       is_available: false, // Blocked slots have is_available = false
     });
   };

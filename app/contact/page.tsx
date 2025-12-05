@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, MapPin, Phone, Mail, Clock } from "lucide-react";
@@ -17,7 +18,35 @@ const staggerContainer = {
   },
 };
 
+// Helper function to format time from 24h to 12h format
+function formatTimeToDisplay(time: string): string {
+  const [hours] = time.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+  return `${displayHours}:00 ${period}`;
+}
+
 export default function ContactPage() {
+  const [defaultOpenTime, setDefaultOpenTime] = useState('08:00');
+  const [defaultCloseTime, setDefaultCloseTime] = useState('22:00');
+
+  // Fetch booking settings on component mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+          const data = await response.json();
+          setDefaultOpenTime(data.defaultOpenTime || '08:00');
+          setDefaultCloseTime(data.defaultCloseTime || '22:00');
+        }
+      } catch (err) {
+        console.error('Error fetching booking settings:', err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
   const phoneNumbers = [
     { name: "Anil Ranade", number: "+91 98220 29235" },
     { name: "Gafar Momin", number: "+91 98901 58080" },
@@ -144,7 +173,7 @@ export default function ContactPage() {
               <div>
                 <h3 className="text-white font-semibold mb-1">Operating Hours</h3>
                 <p className="text-zinc-400">Monday - Sunday</p>
-                <p className="text-white font-medium">Daily: 10:00 AM - 10:00 PM</p>
+                <p className="text-white font-medium">Daily: {formatTimeToDisplay(defaultOpenTime)} - {formatTimeToDisplay(defaultCloseTime)}</p>
                 <p className="text-zinc-500 text-xs mt-1">Outside hours available on request</p>
               </div>
             </div>

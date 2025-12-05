@@ -53,6 +53,8 @@ export default function AvailabilityPage() {
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
+  const [defaultOpenTime, setDefaultOpenTime] = useState('08:00');
+  const [defaultCloseTime, setDefaultCloseTime] = useState('22:00');
 
   // Fetch booking settings on component mount
   useEffect(() => {
@@ -62,6 +64,8 @@ export default function AvailabilityPage() {
         if (response.ok) {
           const data = await response.json();
           setAdvanceBookingDays(data.advanceBookingDays || 30);
+          setDefaultOpenTime(data.defaultOpenTime || '08:00');
+          setDefaultCloseTime(data.defaultCloseTime || '22:00');
         }
       } catch (err) {
         console.error('Error fetching booking settings:', err);
@@ -91,22 +95,21 @@ export default function AvailabilityPage() {
     { id: "Studio C", name: "Studio C", color: "bg-green-500", key: "C" },
   ];
 
-  const timeSlots = [
-    { label: "08:00 - 09:00", start: "08:00", end: "09:00" },
-    { label: "09:00 - 10:00", start: "09:00", end: "10:00" },
-    { label: "10:00 - 11:00", start: "10:00", end: "11:00" },
-    { label: "11:00 - 12:00", start: "11:00", end: "12:00" },
-    { label: "12:00 - 13:00", start: "12:00", end: "13:00" },
-    { label: "13:00 - 14:00", start: "13:00", end: "14:00" },
-    { label: "14:00 - 15:00", start: "14:00", end: "15:00" },
-    { label: "15:00 - 16:00", start: "15:00", end: "16:00" },
-    { label: "16:00 - 17:00", start: "16:00", end: "17:00" },
-    { label: "17:00 - 18:00", start: "17:00", end: "18:00" },
-    { label: "18:00 - 19:00", start: "18:00", end: "19:00" },
-    { label: "19:00 - 20:00", start: "19:00", end: "20:00" },
-    { label: "20:00 - 21:00", start: "20:00", end: "21:00" },
-    { label: "21:00 - 22:00", start: "21:00", end: "22:00" },
-  ];
+  // Generate time slots dynamically based on admin settings
+  const generateTimeSlots = useCallback(() => {
+    const slots: { label: string; start: string; end: string }[] = [];
+    const openHour = parseInt(defaultOpenTime.split(':')[0], 10);
+    const closeHour = parseInt(defaultCloseTime.split(':')[0], 10);
+    
+    for (let hour = openHour; hour < closeHour; hour++) {
+      const start = `${hour.toString().padStart(2, '0')}:00`;
+      const end = `${(hour + 1).toString().padStart(2, '0')}:00`;
+      slots.push({ label: `${start} - ${end}`, start, end });
+    }
+    return slots;
+  }, [defaultOpenTime, defaultCloseTime]);
+
+  const timeSlots = generateTimeSlots();
 
   // Get dates - 1 for mobile, 3 for desktop
   const getDates = useCallback(() => {

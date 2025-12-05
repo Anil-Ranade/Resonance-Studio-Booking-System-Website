@@ -23,9 +23,30 @@ export default function DisplayPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [studios, setStudios] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [startHour, setStartHour] = useState(8);
+  const [endHour, setEndHour] = useState(22);
 
   // Always use today's date
   const todayDate = new Date().toISOString().split('T')[0];
+
+  // Fetch settings on mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+          const data = await response.json();
+          const openHour = parseInt((data.defaultOpenTime || '08:00').split(':')[0], 10);
+          const closeHour = parseInt((data.defaultCloseTime || '22:00').split(':')[0], 10);
+          setStartHour(openHour);
+          setEndHour(closeHour);
+        }
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const fetchBookings = async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -85,10 +106,10 @@ export default function DisplayPage() {
     return result;
   }, [bookings, studios]);
 
-  // Time slots from 8 AM to 10 PM (14 slots)
-  const timeSlots = Array.from({ length: 14 }, (_, i) => 8 + i);
-  const startHour = 8;
-  const endHour = 22; // 10 PM
+  // Time slots based on admin settings
+  const timeSlots = useMemo(() => {
+    return Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
+  }, [startHour, endHour]);
 
   // Get current time for determining past slots and current time indicator
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -219,9 +240,9 @@ export default function DisplayPage() {
                     </span>
                   </div>
                 ))}
-                {/* 10 PM label at bottom */}
+                {/* End time label at bottom */}
                 <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 text-amber-400 font-semibold text-sm whitespace-nowrap bg-zinc-900 px-1">
-                  10 PM
+                  {formatTimeLabel(endHour)}
                 </span>
               </div>
               

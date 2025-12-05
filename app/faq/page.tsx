@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ChevronDown, Calendar, Music, CreditCard, Mic, Building2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface FAQItem {
   question: string;
@@ -16,102 +16,113 @@ interface FAQSection {
   items: FAQItem[];
 }
 
-const faqData: FAQSection[] = [
-  {
-    title: "Booking",
-    icon: <Calendar className="w-6 h-6" />,
-    items: [
-      {
-        question: "How do I book a studio?",
-        answer: "You can book online through our website by filling the booking request form, or contact us directly via phone."
-      },
-      {
-        question: "What are your operating hours?",
-        answer: "Our standard operating hours are from 8:00 AM to 10:00 PM. Outside hours can be arranged with prior request."
-      },
-      {
-        question: "How far in advance can I book?",
-        answer: "You can book from tomorrow up to 4 months in advance."
-      },
-      {
-        question: "What is your cancellation policy?",
-        answer: "Free cancellation with 24+ hours notice. Less than 24 hours: ₹100 fee. No-show: ₹200 penalty (payable at next booking)."
-      }
-    ]
-  },
-  {
-    title: "Studios & Equipment",
-    icon: <Music className="w-6 h-6" />,
-    items: [
-      {
-        question: "Which studio should I choose?",
-        answer: "Studio A is best for large bands and karaoke groups (up to 30). Studio B is ideal for medium karaoke groups (up to 12) and small bands. Studio C is perfect for recording, podcasts, and intimate sessions."
-      },
-      {
-        question: "Do you provide instruments?",
-        answer: "Yes! Studio A has drums, electric guitars, keyboard, guitar amps, and bass amp. Other studios have basic equipment. Check specific studio details for complete equipment list."
-      },
-      {
-        question: "Can I bring my own equipment?",
-        answer: "Yes, you are welcome to bring your own instruments and equipment."
-      }
-    ]
-  },
-  {
-    title: "Payment & Pricing",
-    icon: <CreditCard className="w-6 h-6" />,
-    items: [
-      {
-        question: "Do I need to pay in advance?",
-        answer: "No advance payment required. You pay at the studio after your session via cash or UPI."
-      },
-      {
-        question: "What is included in the hourly rate?",
-        answer: "The rate includes studio space, sound equipment, sound operator assistance, and listed instruments. Recording services are charged separately."
-      },
-      {
-        question: "Are there any additional charges?",
-        answer: "Additional services like recording, video production, internet, snacks, etc. are charged separately at actual cost."
-      }
-    ]
-  },
-  {
-    title: "Recording Services",
-    icon: <Mic className="w-6 h-6" />,
-    items: [
-      {
-        question: "How long does recording take?",
-        answer: "Recording time varies by project. A typical song recording takes 2-4 hours. Mixing and mastering are included in the price."
-      },
-      {
-        question: "When will I receive my recorded files?",
-        answer: "Edited and mastered files are typically delivered within 3-5 business days."
-      },
-      {
-        question: "What format will my recording be in?",
-        answer: "We provide high-quality WAV and MP3 formats. Video recordings are delivered in 4K MP4 format."
-      }
-    ]
-  },
-  {
-    title: "Facilities",
-    icon: <Building2 className="w-6 h-6" />,
-    items: [
-      {
-        question: "Is parking available?",
-        answer: "Yes, we have designated parking within our building. If full, street parking is available on the road."
-      },
-      {
-        question: "Is WiFi available?",
-        answer: "Yes, high-speed internet is available subject to availability, free of cost."
-      },
-      {
-        question: "Can we get food and beverages?",
-        answer: "Yes, tea, coffee, snacks, lunch, and dinner can be provided at additional cost based on actual price, subject to availability."
-      }
-    ]
-  }
-];
+// Helper function to format time from 24h to 12h format
+function formatTimeToDisplay(time: string): string {
+  const [hours] = time.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+  return `${displayHours}:00 ${period}`;
+}
+
+// Function to generate FAQ data with dynamic operating hours
+function generateFaqData(openTime: string, closeTime: string, advanceBookingDays: number): FAQSection[] {
+  return [
+    {
+      title: "Booking",
+      icon: <Calendar className="w-6 h-6" />,
+      items: [
+        {
+          question: "How do I book a studio?",
+          answer: "You can book online through our website by filling the booking request form, or contact us directly via phone."
+        },
+        {
+          question: "What are your operating hours?",
+          answer: `Our standard operating hours are from ${formatTimeToDisplay(openTime)} to ${formatTimeToDisplay(closeTime)}. Outside hours can be arranged with prior request.`
+        },
+        {
+          question: "How far in advance can I book?",
+          answer: `You can book from tomorrow up to ${advanceBookingDays} days in advance.`
+        },
+        {
+          question: "What is your cancellation policy?",
+          answer: "Free cancellation with 24+ hours notice. Less than 24 hours: ₹100 fee. No-show: ₹200 penalty (payable at next booking)."
+        }
+      ]
+    },
+    {
+      title: "Studios & Equipment",
+      icon: <Music className="w-6 h-6" />,
+      items: [
+        {
+          question: "Which studio should I choose?",
+          answer: "Studio A is best for large bands and karaoke groups (up to 30). Studio B is ideal for medium karaoke groups (up to 12) and small bands. Studio C is perfect for recording, podcasts, and intimate sessions."
+        },
+        {
+          question: "Do you provide instruments?",
+          answer: "Yes! Studio A has drums, electric guitars, keyboard, guitar amps, and bass amp. Other studios have basic equipment. Check specific studio details for complete equipment list."
+        },
+        {
+          question: "Can I bring my own equipment?",
+          answer: "Yes, you are welcome to bring your own instruments and equipment."
+        }
+      ]
+    },
+    {
+      title: "Payment & Pricing",
+      icon: <CreditCard className="w-6 h-6" />,
+      items: [
+        {
+          question: "Do I need to pay in advance?",
+          answer: "No advance payment required. You pay at the studio after your session via cash or UPI."
+        },
+        {
+          question: "What is included in the hourly rate?",
+          answer: "The rate includes studio space, sound equipment, sound operator assistance, and listed instruments. Recording services are charged separately."
+        },
+        {
+          question: "Are there any additional charges?",
+          answer: "Additional services like recording, video production, internet, snacks, etc. are charged separately at actual cost."
+        }
+      ]
+    },
+    {
+      title: "Recording Services",
+      icon: <Mic className="w-6 h-6" />,
+      items: [
+        {
+          question: "How long does recording take?",
+          answer: "Recording time varies by project. A typical song recording takes 2-4 hours. Mixing and mastering are included in the price."
+        },
+        {
+          question: "When will I receive my recorded files?",
+          answer: "Edited and mastered files are typically delivered within 3-5 business days."
+        },
+        {
+          question: "What format will my recording be in?",
+          answer: "We provide high-quality WAV and MP3 formats. Video recordings are delivered in 4K MP4 format."
+        }
+      ]
+    },
+    {
+      title: "Facilities",
+      icon: <Building2 className="w-6 h-6" />,
+      items: [
+        {
+          question: "Is parking available?",
+          answer: "Yes, we have designated parking within our building. If full, street parking is available on the road."
+        },
+        {
+          question: "Is WiFi available?",
+          answer: "Yes, high-speed internet is available subject to availability, free of cost."
+        },
+        {
+          question: "Can we get food and beverages?",
+          answer: "Yes, tea, coffee, snacks, lunch, and dinner can be provided at additional cost based on actual price, subject to availability."
+        }
+      ]
+    }
+  ];
+}
 
 function FAQAccordion({ item, isOpen, onToggle }: { item: FAQItem; isOpen: boolean; onToggle: () => void }) {
   return (
@@ -185,6 +196,31 @@ function FAQSectionComponent({ section, sectionIndex }: { section: FAQSection; s
 }
 
 export default function FAQPage() {
+  const [defaultOpenTime, setDefaultOpenTime] = useState('08:00');
+  const [defaultCloseTime, setDefaultCloseTime] = useState('22:00');
+  const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
+
+  // Fetch booking settings on component mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+          const data = await response.json();
+          setDefaultOpenTime(data.defaultOpenTime || '08:00');
+          setDefaultCloseTime(data.defaultCloseTime || '22:00');
+          setAdvanceBookingDays(data.advanceBookingDays || 30);
+        }
+      } catch (err) {
+        console.error('Error fetching booking settings:', err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  // Generate FAQ data with dynamic settings
+  const faqData = generateFaqData(defaultOpenTime, defaultCloseTime, advanceBookingDays);
+
   return (
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-4xl mx-auto">

@@ -1,8 +1,9 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Clock, Car, Volume2, Cigarette, Eye, AlertCircle } from "lucide-react";
+import { ArrowLeft, Clock, Car, Volume2, Cigarette, Eye, AlertCircle, Loader2 } from "lucide-react";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -17,13 +18,46 @@ const staggerContainer = {
   },
 };
 
+// Helper function to format time from 24h to 12h format
+function formatTimeToDisplay(time: string): string {
+  const [hours] = time.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+  return `${displayHours}:00 ${period}`;
+}
+
 export default function PoliciesPage() {
+  const [defaultOpenTime, setDefaultOpenTime] = useState('08:00');
+  const [defaultCloseTime, setDefaultCloseTime] = useState('22:00');
+  const [loading, setLoading] = useState(true);
+
+  // Fetch booking settings on component mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+          const data = await response.json();
+          setDefaultOpenTime(data.defaultOpenTime || '08:00');
+          setDefaultCloseTime(data.defaultCloseTime || '22:00');
+        }
+      } catch (err) {
+        console.error('Error fetching booking settings:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSettings();
+  }, []);
+
   const policies = [
     {
       icon: <Clock className="w-6 h-6" />,
       iconBg: "bg-blue-500/20 text-blue-400",
       title: "Operating Hours",
-      content: "Our standard operating hours are from 8:00 AM to 10:00 PM. Should you require studio time outside these hours, special arrangements can be considered upon prior request.",
+      content: loading 
+        ? "Loading operating hours..." 
+        : `Our standard operating hours are from ${formatTimeToDisplay(defaultOpenTime)} to ${formatTimeToDisplay(defaultCloseTime)}. Should you require studio time outside these hours, special arrangements can be considered upon prior request.`,
     },
     {
       icon: <Car className="w-6 h-6" />,
