@@ -65,7 +65,7 @@ export default function ContactPage() {
               <div>
                 <h3 className="text-white font-semibold mb-1">Address</h3>
                 <p className="text-zinc-400 text-sm">45, Shivprasad Housing Society</p>
-                <p className="text-zinc-400 text-sm">Panmala, Dattawadi</p>
+                <p className="text-zinc-400 text-sm">Dattawadi</p>
                 <p className="text-zinc-400 text-sm">Pune - 411 030</p>
                 <p className="text-zinc-500 text-xs mt-1">(Near Dandekar Pool)</p>
                 <a 
@@ -144,7 +144,7 @@ export default function ContactPage() {
               <div>
                 <h3 className="text-white font-semibold mb-1">Operating Hours</h3>
                 <p className="text-zinc-400">Monday - Sunday</p>
-                <p className="text-white font-medium">8:00 AM - 10:00 PM</p>
+                <p className="text-white font-medium">Daily: 10:00 AM - 10:00 PM</p>
                 <p className="text-zinc-500 text-xs mt-1">Outside hours available on request</p>
               </div>
             </div>

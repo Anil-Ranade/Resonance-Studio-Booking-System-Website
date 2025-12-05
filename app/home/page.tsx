@@ -389,9 +389,8 @@ export default function HomePage() {
             className="text-lg sm:text-xl text-zinc-400 max-w-3xl mx-auto mb-6 leading-relaxed"
             variants={fadeInUp}
           >
-            State-of-the-art rehearsal studios, professional recording services, and karaoke rooms.
-            <br className="hidden sm:block" />
-            <span className="text-violet-400">Your creative space awaits.</span>
+            Three State-of-the-Art Studios dedicated to Premium Karaoke and Live Rehearsal Sessions, Band Practices and Professional Recording Services. <br className="hidden sm:block" />
+            <span className="text-violet-400">Your creative space awaits here.</span>
           </motion.p>
 
           {/* Location */}
@@ -399,13 +398,10 @@ export default function HomePage() {
             className="flex flex-wrap items-center justify-center gap-2 mb-10"
             variants={fadeInUp}
           >
+            {/* Location (city and area removed as requested) */}
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20">
               <MapPin className="w-4 h-4 text-amber-400" />
-              <span className="text-amber-300 font-medium text-sm">Panmala, Dattawadi, Pune - 411 030</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-              <Clock className="w-4 h-4 text-emerald-400" />
-              <span className="text-emerald-300 font-medium text-sm">8AM - 10PM Daily</span>
+              <span className="text-amber-300 font-medium text-sm">Dattawadi, Pune - 411 030</span>
             </div>
           </motion.div>
 
@@ -450,21 +446,6 @@ export default function HomePage() {
               <Eye className="w-6 h-6" />
               <span className="text-sm sm:text-base">View</span>
             </button>
-          </motion.div>
-
-          {/* Explore Studios link */}
-          <motion.div 
-            className="mt-6"
-            variants={fadeInUp}
-          >
-            <Link href="/studios">
-              <motion.button
-                className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm"
-                whileHover={{ x: 5 }}
-              >
-                Explore Studios <ArrowRight className="w-4 h-4" />
-              </motion.button>
-            </Link>
           </motion.div>
         </motion.div>
       </section>

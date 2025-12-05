@@ -161,7 +161,7 @@ export default function RootLayout({
                     <MapPin className="w-4 h-4 text-violet-400 mt-0.5 flex-shrink-0" />
                     <span className="flex flex-col">
                       <span>45, Shivprasad Housing Society</span>
-                      <span>Panmala, Dattawadi</span>
+                      <span>Dattawadi</span>
                       <span>Pune - 411 030</span>
                       <span className="text-zinc-500 text-xs">(Near Dandekar Pool)</span>
                     </span>
