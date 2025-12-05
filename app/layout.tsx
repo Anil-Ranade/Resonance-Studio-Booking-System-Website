@@ -175,10 +175,10 @@ export default function RootLayout({
                 </ul>
                 <div className="mt-4">
                   <Link
-                    href="/my-bookings"
+                    href="/view-bookings"
                     className="text-zinc-400 hover:text-violet-400 text-sm transition-colors"
                   >
-                    My Bookings
+                    View Bookings
                   </Link>
                 </div>
               </div>

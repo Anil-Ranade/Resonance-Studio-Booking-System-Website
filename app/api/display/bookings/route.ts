@@ -50,13 +50,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Mask phone numbers for privacy (show only last 4 digits)
-    const maskedBookings = (bookings || []).map((booking: Booking) => ({
-      ...booking,
-      phone_number: `****${booking.phone_number.slice(-4)}`,
-    }));
-
-    return NextResponse.json({ bookings: maskedBookings });
+    return NextResponse.json({ bookings: bookings || [] });
   } catch (error) {
     console.error("[Display Bookings API] Unexpected error:", error);
     return NextResponse.json(

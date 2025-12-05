@@ -18,7 +18,7 @@ const menuOptions = [
     title: 'Change Existing Booking',
     description: 'Modify your current booking',
     icon: Edit,
-    href: '/my-bookings?action=change',
+    href: '/edit-booking',
     color: 'blue',
   },
   {
@@ -26,7 +26,7 @@ const menuOptions = [
     title: 'Cancel Existing Booking',
     description: 'Cancel a scheduled booking',
     icon: XCircle,
-    href: '/my-bookings?action=cancel',
+    href: '/cancel-booking',
     color: 'red',
   },
   {
@@ -34,7 +34,7 @@ const menuOptions = [
     title: 'View Upcoming Bookings',
     description: 'See all your scheduled sessions',
     icon: Eye,
-    href: '/my-bookings',
+    href: '/view-bookings',
     color: 'emerald',
   },
 ];

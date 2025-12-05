@@ -421,49 +421,6 @@ export default function HomePage() {
             </Link>
           </motion.div>
 
-          {/* Four Action Buttons */}
-          <motion.div 
-            className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto"
-            variants={fadeInUp}
-          >
-            {/* New Booking */}
-            <Link href="/booking">
-              <button
-                className="group relative bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-semibold px-4 sm:px-6 py-4 rounded-2xl flex flex-col items-center gap-2 shadow-lg shadow-violet-500/20 w-full transition-all duration-200 active:scale-[0.98]"
-              >
-                <Plus className="w-6 h-6" />
-                <span className="text-sm sm:text-base">New</span>
-              </button>
-            </Link>
-
-            {/* Change Booking */}
-            <button
-              onClick={() => { setActionMode('change'); setStep('phone'); }}
-              className="group bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold px-4 sm:px-6 py-4 rounded-2xl flex flex-col items-center gap-2 shadow-lg shadow-blue-500/20 w-full transition-all duration-200 active:scale-[0.98]"
-            >
-              <Edit3 className="w-6 h-6" />
-              <span className="text-sm sm:text-base">Change</span>
-            </button>
-
-            {/* Cancel Booking */}
-            <button
-              onClick={() => { setActionMode('cancel'); setStep('phone'); }}
-              className="group bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-semibold px-4 sm:px-6 py-4 rounded-2xl flex flex-col items-center gap-2 shadow-lg shadow-red-500/20 w-full transition-all duration-200 active:scale-[0.98]"
-            >
-              <X className="w-6 h-6" />
-              <span className="text-sm sm:text-base">Cancel</span>
-            </button>
-
-            {/* View Booking */}
-            <button
-              onClick={() => { setActionMode('view'); setStep('phone'); }}
-              className="group bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold px-4 sm:px-6 py-4 rounded-2xl flex flex-col items-center gap-2 shadow-lg shadow-emerald-500/20 w-full transition-all duration-200 active:scale-[0.98]"
-            >
-              <Eye className="w-6 h-6" />
-              <span className="text-sm sm:text-base">View</span>
-            </button>
-          </motion.div>
-
         </motion.div>
       </section>
 
