@@ -9,7 +9,6 @@ import {
   Music, 
   Radio, 
   Video, 
-  MapPin, 
   Calendar, 
   ArrowRight, 
   Headphones,
@@ -392,18 +391,6 @@ export default function HomePage() {
             Three State-of-the-Art Studios dedicated to Premium Karaoke and Live Rehearsal Sessions, Band Practices and Professional Recording Services. <br className="hidden sm:block" />
             <span className="text-violet-400">Your creative space awaits here.</span>
           </motion.p>
-
-          {/* Location */}
-          <motion.div 
-            className="flex flex-wrap items-center justify-center gap-2 mb-10"
-            variants={fadeInUp}
-          >
-            {/* Location (city and area removed as requested) */}
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20">
-              <MapPin className="w-4 h-4 text-amber-400" />
-              <span className="text-amber-300 font-medium text-sm">Dattawadi, Pune - 411 030</span>
-            </div>
-          </motion.div>
 
           {/* Four Action Buttons */}
           <motion.div 
