@@ -16,7 +16,6 @@ import {
   Award,
   Clock,
   Users,
-  Sparkles,
   Guitar,
   Speaker,
   MonitorPlay,

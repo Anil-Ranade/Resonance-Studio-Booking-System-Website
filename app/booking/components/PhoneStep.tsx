@@ -5,12 +5,22 @@ import { useRouter } from 'next/navigation';
 import { Phone, Smartphone, Shield, RotateCcw, User, Mail, Loader2, CheckCircle } from 'lucide-react';
 import { useBooking } from '../contexts/BookingContext';
 import StepLayout from './StepLayout';
-import { getDeviceFingerprint, isPhoneTrustedLocally } from '@/lib/deviceFingerprint';
+import { getDeviceFingerprint, isPhoneTrustedLocally, getTrustedPhones } from '@/lib/deviceFingerprint';
 
 export default function PhoneStep() {
   const router = useRouter();
   const { draft, updateDraft, nextStep, resetDraft } = useBooking();
-  const [phone, setPhone] = useState(draft.phone);
+  
+  // Format phone for display - ensure we always start with properly formatted phone
+  const formatPhoneForDisplay = (phoneDigits: string) => {
+    const digits = phoneDigits.replace(/\D/g, '').slice(0, 10);
+    if (digits.length > 5) {
+      return `${digits.slice(0, 5)} ${digits.slice(5)}`;
+    }
+    return digits;
+  };
+  
+  const [phone, setPhone] = useState(() => formatPhoneForDisplay(draft.phone));
   const [name, setName] = useState(draft.name);
   const [email, setEmail] = useState(draft.email);
   const [isTrustedDevice, setIsTrustedDevice] = useState(false);
@@ -63,6 +73,36 @@ export default function PhoneStep() {
     }
   }, [updateDraft]);
 
+  // Auto-populate phone number from trusted phones on mount
+  useEffect(() => {
+    // Only auto-populate if phone is empty (not already set)
+    if (draft.phone) return;
+    
+    const trustedPhones = getTrustedPhones();
+    if (trustedPhones.length > 0) {
+      // Use the most recently added (last) trusted phone
+      const lastTrustedPhone = trustedPhones[trustedPhones.length - 1];
+      
+      setPhone(formatPhoneForDisplay(lastTrustedPhone));
+      updateDraft({ phone: lastTrustedPhone });
+      
+      // Trigger user check for this phone
+      checkExistingUser(lastTrustedPhone);
+    }
+  }, []); // Run only on mount
+
+  // Verify existing phone number on mount (for page reload scenarios)
+  useEffect(() => {
+    // If phone is already in draft (from localStorage), verify it
+    if (draft.phone && !userChecked && !isCheckingUser) {
+      const digits = draft.phone.replace(/\D/g, '');
+      if (digits.length === 10) {
+        // Check if user exists
+        checkExistingUser(digits);
+      }
+    }
+  }, [draft.phone, userChecked, isCheckingUser, checkExistingUser]);
+
   // Check device trust on mount
   useEffect(() => {
     const checkDevice = async () => {
@@ -110,13 +150,7 @@ export default function PhoneStep() {
     // Limit to 10 digits
     const limited = digits.slice(0, 10);
     
-    // Format as XXXXX XXXXX
-    let formatted = limited;
-    if (limited.length > 5) {
-      formatted = `${limited.slice(0, 5)} ${limited.slice(5)}`;
-    }
-    
-    setPhone(formatted);
+    setPhone(formatPhoneForDisplay(limited));
     updateDraft({ phone: limited });
     
     // Reset user check state when phone changes
