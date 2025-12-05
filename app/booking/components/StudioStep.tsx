@@ -166,7 +166,7 @@ export default function StudioStep() {
                 <div className="flex flex-col items-end">
                   {isAllowed && (
                     <span className={`text-base font-semibold ${isOriginal ? 'text-amber-400' : 'text-violet-400'}`}>
-                      ₹{rate}{rateUnit}
+                      ₹{rate.toLocaleString('en-IN')}{rateUnit}
                     </span>
                   )}
                 </div>

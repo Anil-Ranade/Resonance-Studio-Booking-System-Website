@@ -103,7 +103,7 @@ export default function AdminDashboard() {
   const statCards = [
     {
       label: 'Total Bookings',
-      value: stats.totalBookings,
+      value: stats.totalBookings.toLocaleString('en-IN'),
       icon: Calendar,
       color: 'from-violet-500 to-purple-600',
       bgColor: 'bg-violet-500/10',
@@ -111,7 +111,7 @@ export default function AdminDashboard() {
     },
     {
       label: 'Confirmed',
-      value: stats.confirmedBookings,
+      value: stats.confirmedBookings.toLocaleString('en-IN'),
       icon: CheckCircle,
       color: 'from-emerald-500 to-green-600',
       bgColor: 'bg-emerald-500/10',
@@ -119,7 +119,7 @@ export default function AdminDashboard() {
     },
     {
       label: 'Pending',
-      value: stats.pendingBookings,
+      value: stats.pendingBookings.toLocaleString('en-IN'),
       icon: AlertCircle,
       color: 'from-amber-500 to-orange-600',
       bgColor: 'bg-amber-500/10',
@@ -127,7 +127,7 @@ export default function AdminDashboard() {
     },
     {
       label: 'Revenue',
-      value: `₹${stats.totalRevenue.toLocaleString()}`,
+      value: `₹${stats.totalRevenue.toLocaleString('en-IN')}`,
       icon: DollarSign,
       color: 'from-blue-500 to-cyan-600',
       bgColor: 'bg-blue-500/10',

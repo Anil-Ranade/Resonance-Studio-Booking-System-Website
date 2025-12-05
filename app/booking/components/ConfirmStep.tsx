@@ -334,7 +334,7 @@ export default function ConfirmStep() {
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400 text-sm">Total Amount</span>
                 <span className={`text-xl font-bold ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`}>
-                  ₹{draft.ratePerHour * draft.duration}
+                  ₹{(draft.ratePerHour * draft.duration).toLocaleString('en-IN')}
                 </span>
               </div>
               <p className="text-xs text-zinc-500 mt-1">Pay at the studio</p>

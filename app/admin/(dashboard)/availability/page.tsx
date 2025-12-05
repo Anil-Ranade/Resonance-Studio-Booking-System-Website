@@ -1312,7 +1312,7 @@ export default function AvailabilityManagementPage() {
                           bookingFormData.rate_per_hour *
                           ((parseInt(bookingFormData.end_time.split(':')[0]) * 60 + parseInt(bookingFormData.end_time.split(':')[1])) -
                            (parseInt(bookingFormData.start_time.split(':')[0]) * 60 + parseInt(bookingFormData.start_time.split(':')[1]))) / 60
-                        ).toLocaleString()}
+                        ).toLocaleString('en-IN')}
                       </p>
                     )}
                   </div>

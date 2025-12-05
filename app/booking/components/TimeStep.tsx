@@ -409,7 +409,7 @@ export default function TimeStep() {
                 </span>
                 <span className="text-zinc-400 text-xs ml-2">({duration}hr{duration > 1 ? 's' : ''})</span>
               </div>
-              <span className="text-violet-400 font-bold">₹{draft.ratePerHour * duration}</span>
+              <span className="text-violet-400 font-bold">₹{(draft.ratePerHour * duration).toLocaleString('en-IN')}</span>
             </div>
           </div>
         )}

@@ -189,7 +189,7 @@ export default function StudiosPage() {
                     <div className="bg-white/5 rounded-xl px-4 py-2">
                       <p className="text-zinc-400 text-xs">Starting from</p>
                       <p className="text-2xl font-bold text-white">
-                        ₹{studio.price}<span className="text-sm font-normal text-zinc-400">/hour</span>
+                        ₹{Number(studio.price).toLocaleString('en-IN')}<span className="text-sm font-normal text-zinc-400">/hour</span>
                       </p>
                     </div>
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>

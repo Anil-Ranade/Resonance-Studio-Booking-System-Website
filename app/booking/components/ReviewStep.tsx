@@ -183,7 +183,7 @@ export default function ReviewStep() {
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-zinc-400 text-xs">Rate</span>
-              <span className="text-white text-xs">₹{draft.ratePerHour}/hour</span>
+              <span className="text-white text-xs">₹{draft.ratePerHour.toLocaleString('en-IN')}/hour</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-zinc-400 text-xs">Duration</span>
@@ -192,7 +192,7 @@ export default function ReviewStep() {
             <div className={`border-t ${draft.isEditMode ? 'border-blue-500/20' : 'border-violet-500/20'} my-1`} />
             <div className="flex items-center justify-between">
               <span className="text-white font-medium text-xs">Total Amount</span>
-              <span className={`text-lg font-bold ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`}>₹{totalAmount}</span>
+              <span className={`text-lg font-bold ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`}>₹{totalAmount.toLocaleString('en-IN')}</span>
             </div>
           </div>
         </div>

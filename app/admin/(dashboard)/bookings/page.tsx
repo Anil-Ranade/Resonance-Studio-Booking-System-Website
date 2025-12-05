@@ -361,7 +361,7 @@ export default function BookingsManagementPage() {
                     <td className="p-4">
                       <p className="text-white">
                         {booking.total_amount
-                          ? `₹${booking.total_amount.toLocaleString()}`
+                          ? `₹${booking.total_amount.toLocaleString('en-IN')}`
                           : 'N/A'}
                       </p>
                     </td>
@@ -513,7 +513,7 @@ export default function BookingsManagementPage() {
                     <p className="text-zinc-400 text-sm mb-1">Amount</p>
                     <p className="text-white font-medium">
                       {selectedBooking.total_amount
-                        ? `₹${selectedBooking.total_amount.toLocaleString()}`
+                        ? `₹${selectedBooking.total_amount.toLocaleString('en-IN')}`
                         : 'N/A'}
                     </p>
                   </div>

@@ -272,7 +272,7 @@ export default function ReviewPage() {
                     <p className="text-sm text-zinc-400">Studio</p>
                     <p className="text-white font-medium">{draft.studioName}</p>
                     {getStudioRate() > 0 && (
-                      <p className="text-zinc-400 text-sm">₹{getStudioRate()}/hour</p>
+                      <p className="text-zinc-400 text-sm">₹{getStudioRate().toLocaleString('en-IN')}/hour</p>
                     )}
                   </div>
                 </div>
@@ -305,7 +305,7 @@ export default function ReviewPage() {
                   </div>
                   <div className="text-right text-sm text-zinc-400">
                     <p>{draft.totalHours} {draft.totalHours === 1 ? 'hour' : 'hours'}</p>
-                    <p>@ ₹{getStudioRate()}/hr</p>
+                    <p>@ ₹{getStudioRate().toLocaleString('en-IN')}/hr</p>
                   </div>
                 </div>
               </div>
