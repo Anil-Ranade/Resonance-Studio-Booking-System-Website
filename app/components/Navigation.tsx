@@ -49,7 +49,7 @@ export default function Navigation() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:shadow-violet-500/25 transition-all duration-300">
                 <Music2 className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-white hidden sm:block">
+              <span className="text-xl font-bold text-white">
                 Resonance <span className="text-violet-400">Studio</span>
               </span>
             </Link>

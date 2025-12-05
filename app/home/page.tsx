@@ -366,21 +366,6 @@ export default function HomePage() {
           animate="animate"
           variants={staggerContainer}
         >
-          {/* Badge */}
-          <motion.div 
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-violet-500/10 border border-violet-500/20 mb-8"
-            variants={fadeInUp}
-            whileHover={{ scale: 1.05 }}
-          >
-            <motion.span 
-              className="w-2 h-2 bg-emerald-400 rounded-full"
-              animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            />
-            <span className="text-sm font-medium text-zinc-300">Professional Studios in Pune</span>
-            <Sparkles className="w-4 h-4 text-amber-400" />
-          </motion.div>
-
           {/* Main Heading */}
           <motion.h1 
             className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight"
