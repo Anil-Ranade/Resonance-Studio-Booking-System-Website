@@ -190,7 +190,7 @@ export default function HomePage() {
         total_amount: booking.total_amount,
       };
       sessionStorage.setItem('editBookingData', JSON.stringify(bookingData));
-      router.push('/booking/new');
+      router.push('/booking');
     }
   };
 
@@ -398,7 +398,7 @@ export default function HomePage() {
             variants={fadeInUp}
           >
             {/* New Booking */}
-            <Link href="/booking/new">
+            <Link href="/booking">
               <button
                 className="group relative bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-semibold px-4 sm:px-6 py-4 rounded-2xl flex flex-col items-center gap-2 shadow-lg shadow-violet-500/20 w-full transition-all duration-200 active:scale-[0.98]"
               >
@@ -657,7 +657,7 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ delay: 0.4 }}
               >
-                <Link href="/booking/new">
+                <Link href="/booking">
                   <motion.button
                     className="bg-white text-violet-600 font-bold text-lg px-10 py-4 rounded-xl flex items-center gap-3 shadow-xl hover:shadow-2xl transition-shadow"
                     whileHover={{ scale: 1.02, y: -2 }}
