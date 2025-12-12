@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { deleteEvent } from "@/lib/googleCalendar";
-import { sendSMS } from "@/lib/sms";
+import { sendBookingCancellationEmail } from "@/lib/email";
 
 // POST /api/bookings/cancel - Cancel a booking (no OTP verification required)
 export async function POST(request: NextRequest) {
@@ -119,33 +119,37 @@ export async function POST(request: NextRequest) {
       console.error("[Cancel Booking] Error cancelling reminders:", reminderError);
     }
 
-    // Send cancellation SMS
-    const hasTwilioConfig = 
-      process.env.TWILIO_ACCOUNT_SID &&
-      process.env.TWILIO_AUTH_TOKEN &&
-      process.env.TWILIO_SMS_NUMBER;
+    // Send cancellation email
+    const hasResendConfig = 
+      process.env.RESEND_API_KEY &&
+      process.env.RESEND_FROM_EMAIL;
 
-    if (hasTwilioConfig) {
-      const countryCode = process.env.SMS_COUNTRY_CODE || "+91";
-      const toNumber = `${countryCode}${normalizedPhone}`;
+    // Get user email
+    const { data: userData } = await supabaseServer
+      .from("users")
+      .select("email")
+      .eq("phone_number", normalizedPhone)
+      .single();
 
+    if (hasResendConfig && userData?.email) {
       try {
-        const formattedDate = new Date(booking.date).toLocaleDateString('en-IN', { 
-          weekday: 'short', 
-          day: 'numeric', 
-          month: 'short' 
+        const emailResult = await sendBookingCancellationEmail(userData.email, {
+          id: bookingId,
+          name: booking.name || undefined,
+          studio: booking.studio,
+          session_type: booking.session_type,
+          date: booking.date,
+          start_time: booking.start_time,
+          end_time: booking.end_time,
         });
-        const message = `Booking Cancelled\n\nYour booking at ${booking.studio} on ${formattedDate} (${booking.start_time} - ${booking.end_time}) has been cancelled.\n\nBooking ID: ${bookingId.slice(0, 8)}\n\nWe hope to see you again at Resonance Studio!`;
         
-        const smsResult = await sendSMS(toNumber, message);
-        
-        if (smsResult.success) {
-          console.log("[Cancel Booking] SMS notification sent successfully:", smsResult.sid);
+        if (emailResult.success) {
+          console.log("[Cancel Booking] Email notification sent successfully:", emailResult.id);
         } else {
-          console.error("[Cancel Booking] SMS notification failed:", smsResult.error);
+          console.error("[Cancel Booking] Email notification failed:", emailResult.error);
         }
-      } catch (smsError) {
-        console.error("[Cancel Booking] Failed to send SMS notification:", smsError);
+      } catch (emailError) {
+        console.error("[Cancel Booking] Failed to send email notification:", emailError);
       }
     }
 

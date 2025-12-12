@@ -1035,7 +1035,7 @@ export default function HomePage() {
                   </motion.div>
                   <h3 className="text-xl font-bold text-white mb-2">Booking Cancelled</h3>
                   <p className="text-zinc-400">Your booking has been successfully cancelled.</p>
-                  <p className="text-zinc-500 text-sm mt-2">A cancellation SMS has been sent to your phone.</p>
+                  <p className="text-zinc-500 text-sm mt-2">A cancellation email has been sent to your email address.</p>
                 </div>
               )}
             </motion.div>

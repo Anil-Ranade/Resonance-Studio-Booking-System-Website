@@ -307,7 +307,7 @@ export default function PhoneStep() {
 
         {/* Info text */}
         <p className="text-xs text-zinc-500">
-          By continuing, you agree to receive SMS messages from Resonance Studio for booking confirmations.
+          By continuing, you agree to receive email notifications from Resonance Studio for booking confirmations.
         </p>
       </div>
     </StepLayout>

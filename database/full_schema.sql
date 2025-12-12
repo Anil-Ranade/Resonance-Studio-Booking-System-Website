@@ -335,7 +335,8 @@ CREATE TABLE IF NOT EXISTS bookings (
     
     -- Integrations
     google_event_id     VARCHAR(255),                            -- Google Calendar event ID
-    sms_sent            BOOLEAN DEFAULT false,                   -- Whether confirmation SMS was sent
+    sms_sent            BOOLEAN DEFAULT false,                   -- Whether confirmation SMS was sent (legacy)
+    email_sent          BOOLEAN DEFAULT false,                   -- Whether confirmation email was sent
     
     -- Cancellation Tracking
     cancelled_at        TIMESTAMP WITH TIME ZONE,
@@ -411,6 +412,7 @@ CREATE TABLE IF NOT EXISTS login_otps (
     
     -- OTP Details
     phone               VARCHAR(15) NOT NULL,                    -- Phone number requesting OTP
+    email               VARCHAR(255),                            -- Email address where OTP was sent
     code_hash           VARCHAR(255) NOT NULL,                   -- bcrypt hashed 6-digit OTP
     
     -- Security
@@ -430,6 +432,7 @@ CREATE TABLE IF NOT EXISTS login_otps (
 );
 
 COMMENT ON TABLE login_otps IS 'OTP codes for phone verification with rate limiting';
+COMMENT ON COLUMN login_otps.email IS 'Email address where OTP was sent via Resend';
 COMMENT ON COLUMN login_otps.code_hash IS 'bcrypt hashed OTP - never store plain text';
 COMMENT ON COLUMN login_otps.attempts IS 'Track failed attempts for rate limiting';
 

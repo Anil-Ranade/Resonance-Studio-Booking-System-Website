@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { createClient } from '@supabase/supabase-js';
-import { sendOTPSMS } from '@/lib/sms';
+import { sendOTPEmail } from '@/lib/email';
 
 // Initialize Supabase client with service role for database operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -30,6 +30,14 @@ function isValidPhone(phone: string): boolean {
   return digitsOnly.length === 10 && /^\d{10}$/.test(digitsOnly);
 }
 
+/**
+ * Validate email format
+ */
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) && email.length <= 254;
+}
+
 export async function POST(request: Request) {
   try {
     // Parse request body with error handling
@@ -52,11 +60,20 @@ export async function POST(request: Request) {
     }
 
     const phone = body.phone?.toString().trim();
+    const email = body.email?.toString().trim();
 
     // Validate phone number is provided
     if (!phone) {
       return NextResponse.json(
         { error: 'Phone number is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate email is provided
+    if (!email) {
+      return NextResponse.json(
+        { error: 'Email is required for OTP verification' },
         { status: 400 }
       );
     }
@@ -68,6 +85,14 @@ export async function POST(request: Request) {
     if (!isValidPhone(phoneDigits)) {
       return NextResponse.json(
         { error: 'Invalid phone number. Please enter a valid 10-digit phone number.' },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format
+    if (!isValidEmail(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email address. Please enter a valid email.' },
         { status: 400 }
       );
     }
@@ -95,6 +120,7 @@ export async function POST(request: Request) {
         code_hash: codeHash,
         expires_at: expiresAt,
         attempts: 0,
+        email: email, // Store the email for reference
       });
 
     if (insertError) {
@@ -105,15 +131,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if Twilio is configured
-    const hasTwilioConfig =
-      process.env.TWILIO_ACCOUNT_SID &&
-      process.env.TWILIO_AUTH_TOKEN &&
-      process.env.TWILIO_SMS_NUMBER;
+    // Check if Resend is configured
+    const hasResendConfig =
+      process.env.RESEND_API_KEY &&
+      process.env.RESEND_FROM_EMAIL;
 
-    if (!hasTwilioConfig) {
+    if (!hasResendConfig) {
       // Development mode - log OTP to console
-      console.log(`[Send OTP] Development mode - OTP for ${phoneDigits}: ${otp}`);
+      console.log(`[Send OTP] Development mode - OTP for ${phoneDigits} (${email}): ${otp}`);
       return NextResponse.json({
         success: true,
         message: 'OTP sent successfully',
@@ -122,17 +147,17 @@ export async function POST(request: Request) {
       });
     }
 
-    // Send OTP via SMS
-    const result = await sendOTPSMS(phoneDigits, otp);
+    // Send OTP via Email
+    const result = await sendOTPEmail(email, otp);
 
     if (result.success) {
-      console.log(`[Send OTP] OTP sent successfully to ${phoneDigits}`);
+      console.log(`[Send OTP] OTP sent successfully to ${email}`);
       return NextResponse.json({
         success: true,
-        message: 'OTP sent successfully to your phone number',
+        message: 'OTP sent successfully to your email address',
       });
     } else {
-      console.error(`[Send OTP] SMS send failed: ${result.error}`);
+      console.error(`[Send OTP] Email send failed: ${result.error}`);
       // Clean up the stored OTP if sending failed
       await supabase
         .from('login_otps')
@@ -140,7 +165,7 @@ export async function POST(request: Request) {
         .eq('phone', phoneDigits);
 
       return NextResponse.json(
-        { error: 'Failed to send OTP. Please check your phone number and try again.' },
+        { error: 'Failed to send OTP. Please check your email address and try again.' },
         { status: 500 }
       );
     }
@@ -152,3 +177,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

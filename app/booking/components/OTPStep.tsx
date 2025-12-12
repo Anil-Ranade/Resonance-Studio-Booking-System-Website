@@ -44,7 +44,7 @@ export default function OTPStep() {
       const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: draft.phone }),
+        body: JSON.stringify({ phone: draft.phone, email: draft.email }),
       });
 
       const data = await response.json();
@@ -169,8 +169,8 @@ export default function OTPStep() {
 
   return (
     <StepLayout
-      title={draft.isEditMode ? "Verify to update booking" : "Verify your phone"}
-      subtitle={`Enter the 6-digit code sent to ${formatPhone(draft.phone)}`}
+      title={draft.isEditMode ? "Verify to update booking" : "Verify your email"}
+      subtitle={`Enter the 6-digit code sent to ${draft.email}`}
       showNext={true}
       nextLabel="Verify"
       onNext={handleNext}

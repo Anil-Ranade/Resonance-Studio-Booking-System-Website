@@ -342,7 +342,7 @@ export default function ConfirmStep() {
           </div>
         </motion.div>
 
-        {/* SMS notification */}
+        {/* Email notification */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -350,8 +350,8 @@ export default function ConfirmStep() {
           className="text-xs text-zinc-500 mt-3 text-center"
         >
           {draft.isEditMode 
-            ? 'Your booking has been updated. A confirmation SMS has been sent.'
-            : 'A confirmation SMS has been sent to your phone'
+            ? 'Your booking has been updated. A confirmation email has been sent.'
+            : 'A confirmation email has been sent to your email address'
           }
         </motion.p>
       </main>

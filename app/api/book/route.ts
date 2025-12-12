@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { createEvent, deleteEvent, updateEvent } from "@/lib/googleCalendar";
-import { sendSMS } from "@/lib/sms";
+import { sendBookingConfirmationEmail, sendBookingUpdateEmail } from "@/lib/email";
 
 interface BookRequest {
   phone: string;
@@ -262,40 +262,52 @@ export async function POST(request: Request) {
       }
     }
 
-    // Send SMS booking confirmation
-    const hasTwilioConfig = 
-      process.env.TWILIO_ACCOUNT_SID &&
-      process.env.TWILIO_AUTH_TOKEN &&
-      process.env.TWILIO_SMS_NUMBER;
+    // Send email booking confirmation
+    const hasResendConfig = 
+      process.env.RESEND_API_KEY &&
+      process.env.RESEND_FROM_EMAIL;
 
-    if (hasTwilioConfig) {
-      const countryCode = process.env.SMS_COUNTRY_CODE || "+91";
-      const toNumber = `${countryCode}${phone}`;
+    // Get user email if not provided in request
+    let userEmail = body.email;
+    if (!userEmail) {
+      const { data: userData } = await supabaseServer
+        .from("users")
+        .select("email")
+        .eq("phone_number", phone)
+        .single();
+      userEmail = userData?.email;
+    }
 
+    if (hasResendConfig && userEmail) {
       try {
-        const formattedDate = new Date(date).toLocaleDateString('en-IN', { 
-          weekday: 'short', 
-          day: 'numeric', 
-          month: 'short' 
+        const emailResult = await sendBookingConfirmationEmail(userEmail, {
+          id: booking.id,
+          name,
+          studio,
+          session_type,
+          session_details,
+          date,
+          start_time,
+          end_time,
+          total_amount: total_amount || undefined,
         });
         
-        // Different message for new booking vs modification
-        const messageTitle = is_modification ? 'Booking Updated!' : 'Booking Confirmed!';
-        const message = `${messageTitle}\n\nStudio: ${studio}\nDate: ${formattedDate}\nTime: ${start_time} - ${end_time}${total_amount ? `\nAmount: ₹${total_amount}` : ''}\n\nBooking ID: ${booking.id.slice(0, 8)}\n\nThank you for booking with Resonance Studio!`;
-        
-        const smsResult = await sendSMS(toNumber, message);
-        
-        if (smsResult.success) {
-          console.log("[Book API] SMS confirmation sent successfully:", smsResult.sid);
+        if (emailResult.success) {
+          console.log("[Book API] Email confirmation sent successfully:", emailResult.id);
+          // Update booking to mark email as sent
+          await supabaseServer
+            .from("bookings")
+            .update({ email_sent: true })
+            .eq("id", booking.id);
         } else {
-          console.error("[Book API] SMS confirmation failed:", smsResult.error);
+          console.error("[Book API] Email confirmation failed:", emailResult.error);
         }
-      } catch (smsError) {
+      } catch (emailError) {
         // Log error but don't fail the booking
-        console.error("[Book API] Failed to send SMS confirmation:", smsError);
+        console.error("[Book API] Failed to send email confirmation:", emailError);
       }
     } else {
-      console.log("[Book API] SMS notifications disabled - Twilio credentials not configured");
+      console.log("[Book API] Email notifications disabled - Resend credentials not configured or no user email");
     }
 
     // Insert reminders (immediate confirmation, 24h before, 1h before)
@@ -558,34 +570,43 @@ export async function PUT(request: Request) {
       }
     }
 
-    // Send SMS notification about the update
-    const hasTwilioConfig = 
-      process.env.TWILIO_ACCOUNT_SID &&
-      process.env.TWILIO_AUTH_TOKEN &&
-      process.env.TWILIO_SMS_NUMBER;
+    // Send email notification about the update
+    const hasResendConfig = 
+      process.env.RESEND_API_KEY &&
+      process.env.RESEND_FROM_EMAIL;
 
-    if (hasTwilioConfig) {
-      const countryCode = process.env.SMS_COUNTRY_CODE || "+91";
-      const toNumber = `${countryCode}${phone}`;
+    // Get user email if not provided in request
+    let userEmail = body.email;
+    if (!userEmail) {
+      const { data: userData } = await supabaseServer
+        .from("users")
+        .select("email")
+        .eq("phone_number", phone)
+        .single();
+      userEmail = userData?.email;
+    }
 
+    if (hasResendConfig && userEmail) {
       try {
-        const formattedDate = new Date(date).toLocaleDateString('en-IN', { 
-          weekday: 'short', 
-          day: 'numeric', 
-          month: 'short' 
+        const emailResult = await sendBookingUpdateEmail(userEmail, {
+          id: original_booking_id,
+          name,
+          studio,
+          session_type,
+          session_details,
+          date,
+          start_time,
+          end_time,
+          total_amount: total_amount || undefined,
         });
         
-        const message = `Booking Updated!\n\nStudio: ${studio}\nDate: ${formattedDate}\nTime: ${start_time} - ${end_time}${total_amount ? `\nAmount: ₹${total_amount}` : ''}\n\nBooking ID: ${original_booking_id.slice(0, 8)}\n\nThank you for booking with Resonance Studio!`;
-        
-        const smsResult = await sendSMS(toNumber, message);
-        
-        if (smsResult.success) {
-          console.log("[Book API PUT] SMS update notification sent successfully:", smsResult.sid);
+        if (emailResult.success) {
+          console.log("[Book API PUT] Email update notification sent successfully:", emailResult.id);
         } else {
-          console.error("[Book API PUT] SMS update notification failed:", smsResult.error);
+          console.error("[Book API PUT] Email update notification failed:", emailResult.error);
         }
-      } catch (smsError) {
-        console.error("[Book API PUT] Failed to send SMS update notification:", smsError);
+      } catch (emailError) {
+        console.error("[Book API PUT] Failed to send email update notification:", emailError);
       }
     }
 

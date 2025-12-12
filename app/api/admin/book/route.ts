@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { createClient } from "@supabase/supabase-js";
 import { createEvent } from "@/lib/googleCalendar";
-import { sendSMS } from "@/lib/sms";
+import { sendBookingConfirmationEmail } from "@/lib/email";
 
 // Verify admin token from Authorization header
 async function verifyAdminToken(request: NextRequest) {
@@ -54,6 +54,7 @@ async function verifyAdminToken(request: NextRequest) {
 interface AdminBookRequest {
   phone: string;
   name?: string;
+  email?: string;
   studio: string;
   session_type: string;
   session_details?: string;
@@ -63,7 +64,7 @@ interface AdminBookRequest {
   rate_per_hour?: number;
   notes?: string;
   skip_validation?: boolean; // Admin can skip some validations
-  send_notification?: boolean; // Whether to send SMS notification
+  send_notification?: boolean; // Whether to send email notification
 }
 
 // POST /api/admin/book - Create a booking on behalf of a customer (admin only)
@@ -78,6 +79,7 @@ export async function POST(request: NextRequest) {
     const body: AdminBookRequest = await request.json();
     const {
       name,
+      email,
       studio,
       session_type,
       session_details,
@@ -166,6 +168,7 @@ export async function POST(request: NextRequest) {
       .insert({
         phone_number: phone,
         name,
+        email,
         studio,
         session_type: session_type || "Walk-in",
         session_details: session_details || session_type || "Admin booking",
@@ -218,34 +221,48 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Send SMS booking confirmation if enabled
+    // Send email booking confirmation if enabled
     if (send_notification) {
-      const hasTwilioConfig =
-        process.env.TWILIO_ACCOUNT_SID &&
-        process.env.TWILIO_AUTH_TOKEN &&
-        process.env.TWILIO_SMS_NUMBER;
+      const hasResendConfig =
+        process.env.RESEND_API_KEY &&
+        process.env.RESEND_FROM_EMAIL;
 
-      if (hasTwilioConfig) {
-        const countryCode = process.env.SMS_COUNTRY_CODE || "+91";
-        const toNumber = `${countryCode}${phone}`;
+      // Get user email if not provided in request
+      let userEmail = email;
+      if (!userEmail) {
+        const { data: userData } = await supabaseServer
+          .from("users")
+          .select("email")
+          .eq("phone_number", phone)
+          .single();
+        userEmail = userData?.email;
+      }
 
+      if (hasResendConfig && userEmail) {
         try {
-          const formattedDate = new Date(date).toLocaleDateString('en-IN', { 
-            weekday: 'short', 
-            day: 'numeric', 
-            month: 'short' 
+          const emailResult = await sendBookingConfirmationEmail(userEmail, {
+            id: booking.id,
+            name,
+            studio,
+            session_type: session_type || "Walk-in",
+            session_details,
+            date,
+            start_time,
+            end_time,
+            total_amount: total_amount || undefined,
           });
-          const message = `Booking Confirmed!\n\nStudio: ${studio}\nDate: ${formattedDate}\nTime: ${start_time} - ${end_time}${total_amount ? `\nAmount: ₹${total_amount}` : ''}\n\nBooking ID: ${booking.id.slice(0, 8)}\n\nThank you for booking with Resonance Studio!`;
-          
-          const smsResult = await sendSMS(toNumber, message);
 
-          if (smsResult.success) {
-            console.log("[Admin Book API] SMS confirmation sent successfully:", smsResult.sid);
+          if (emailResult.success) {
+            console.log("[Admin Book API] Email confirmation sent successfully:", emailResult.id);
+            await supabaseServer
+              .from("bookings")
+              .update({ email_sent: true })
+              .eq("id", booking.id);
           } else {
-            console.error("[Admin Book API] SMS confirmation failed:", smsResult.error);
+            console.error("[Admin Book API] Email confirmation failed:", emailResult.error);
           }
-        } catch (smsError) {
-          console.error("[Admin Book API] Failed to send SMS confirmation:", smsError);
+        } catch (emailError) {
+          console.error("[Admin Book API] Failed to send email confirmation:", emailError);
         }
       }
     }

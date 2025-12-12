@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
-import { sendSMS } from "@/lib/sms";
+import { sendBookingConfirmationEmail } from "@/lib/email";
 import { deleteEvent, createEvent, updateEvent } from "@/lib/googleCalendar";
 
 // Verify admin token from Authorization header
@@ -218,31 +218,44 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Send SMS notification when booking is confirmed
+    // Send email notification when booking is confirmed
     if (status === "confirmed" && booking) {
-      const hasTwilioConfig =
-        process.env.TWILIO_ACCOUNT_SID &&
-        process.env.TWILIO_AUTH_TOKEN &&
-        process.env.TWILIO_SMS_NUMBER;
+      const hasResendConfig =
+        process.env.RESEND_API_KEY &&
+        process.env.RESEND_FROM_EMAIL;
 
-      if (hasTwilioConfig && booking.phone_number) {
+      // Try to get user email
+      const { data: userData } = await supabase
+        .from("users")
+        .select("email")
+        .eq("phone_number", booking.phone_number)
+        .single();
+
+      if (hasResendConfig && userData?.email) {
         try {
-          const formattedDate = new Date(booking.date).toLocaleDateString('en-IN', { 
-            weekday: 'short', 
-            day: 'numeric', 
-            month: 'short' 
+          const emailResult = await sendBookingConfirmationEmail(userData.email, {
+            id: booking.id,
+            name: booking.name,
+            studio: booking.studio,
+            session_type: booking.session_type,
+            session_details: booking.session_details,
+            date: booking.date,
+            start_time: booking.start_time,
+            end_time: booking.end_time,
+            total_amount: booking.total_amount || undefined,
           });
-          const message = `Booking Confirmed!\n\nStudio: ${booking.studio}\nDate: ${formattedDate}\nTime: ${booking.start_time} - ${booking.end_time}${booking.total_amount ? `\nAmount: ₹${booking.total_amount}` : ''}\n\nBooking ID: ${booking.id.slice(0, 8)}\n\nThank you for booking with Resonance Studio!`;
-          
-          const smsResult = await sendSMS(booking.phone_number, message);
 
-          if (smsResult.success) {
-            console.log("[Admin Bookings] SMS confirmation sent successfully:", smsResult.sid);
+          if (emailResult.success) {
+            console.log("[Admin Bookings] Email confirmation sent successfully:", emailResult.id);
+            await supabase
+              .from("bookings")
+              .update({ email_sent: true })
+              .eq("id", id);
           } else {
-            console.error("[Admin Bookings] SMS confirmation failed:", smsResult.error);
+            console.error("[Admin Bookings] Email confirmation failed:", emailResult.error);
           }
-        } catch (smsError) {
-          console.error("[Admin Bookings] Failed to send SMS confirmation:", smsError);
+        } catch (emailError) {
+          console.error("[Admin Bookings] Failed to send email confirmation:", emailError);
         }
       }
     }
