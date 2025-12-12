@@ -16,7 +16,7 @@ async function safeJsonParse(response: Response) {
 }
 import {
   ArrowLeft,
-  Phone,
+  Mail,
   Search,
   Calendar,
   Clock,
@@ -54,11 +54,16 @@ const statusConfig: Record<string, { color: string; icon: typeof CheckCircle2; l
 };
 
 export default function ViewBookingsPage() {
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
+
+  // Validate email format
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,12 +71,8 @@ export default function ViewBookingsPage() {
     setBookings([]);
     setSearched(false);
 
-    // Normalize to digits only
-    const normalized = phone.replace(/\D/g, "");
-
-    // Validate exactly 10 digits
-    if (normalized.length !== 10) {
-      setError("Please enter a valid 10-digit phone number");
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address");
       return;
     }
 
@@ -79,7 +80,7 @@ export default function ViewBookingsPage() {
 
     try {
       // Fetch only upcoming bookings
-      const response = await fetch(`/api/bookings/upcoming?phone=${normalized}`);
+      const response = await fetch(`/api/bookings/upcoming?email=${encodeURIComponent(email.trim())}`);
       const data = await safeJsonParse(response);
 
       if (!response.ok) {
@@ -131,7 +132,7 @@ export default function ViewBookingsPage() {
           <p className="text-zinc-400 text-sm mt-1">Check your upcoming bookings</p>
         </motion.div>
 
-        {/* Phone Search */}
+        {/* Email Search */}
         <motion.div 
           className="glass-strong rounded-2xl p-4 mb-6"
           initial={{ opacity: 0, y: 20 }}
@@ -141,20 +142,18 @@ export default function ViewBookingsPage() {
           <form onSubmit={handleSubmit}>
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1 relative">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                 <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                  placeholder="Enter your phone number"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email address"
                   className="w-full py-3 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
-                  maxLength={10}
-                  inputMode="numeric"
                 />
               </div>
               <motion.button
                 type="submit"
-                disabled={loading || phone.length !== 10}
+                disabled={loading || !isValidEmail(email)}
                 className="btn-accent py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -267,7 +266,7 @@ export default function ViewBookingsPage() {
               >
                 <CalendarX className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
                 <h3 className="text-lg font-medium text-white mb-1">No Upcoming Bookings</h3>
-                <p className="text-zinc-400 text-sm">No upcoming bookings found for this phone number.</p>
+                <p className="text-zinc-400 text-sm">No upcoming bookings found for this email address.</p>
                 <Link 
                   href="/booking/new"
                   className="inline-block mt-4 btn-accent py-2 px-6 text-sm"

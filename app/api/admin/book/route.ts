@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { createClient } from "@supabase/supabase-js";
 import { createEvent } from "@/lib/googleCalendar";
-import { sendBookingConfirmationEmail } from "@/lib/email";
+import { sendAdminBookingConfirmationEmail } from "@/lib/email";
 
 // Verify admin token from Authorization header
 async function verifyAdminToken(request: NextRequest) {
@@ -240,7 +240,7 @@ export async function POST(request: NextRequest) {
 
       if (hasResendConfig && userEmail) {
         try {
-          const emailResult = await sendBookingConfirmationEmail(userEmail, {
+          const emailResult = await sendAdminBookingConfirmationEmail(userEmail, {
             id: booking.id,
             name,
             studio,

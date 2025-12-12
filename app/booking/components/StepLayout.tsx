@@ -32,7 +32,7 @@ export default function StepLayout({
   isLoading = false,
   hideFooter = false,
 }: StepLayoutProps) {
-  const { draft, stepIndex, prevStep, nextStep, canProceed, currentStep } = useBooking();
+  const { draft, stepIndex, prevStep, nextStep, canProceed, currentStep, totalSteps } = useBooking();
   
   const handleBack = () => {
     if (onBack) {
@@ -109,7 +109,7 @@ export default function StepLayout({
         <footer className={`flex-shrink-0 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t ${draft.isEditMode ? 'border-blue-900/50' : 'border-zinc-800'} bg-zinc-900/80 backdrop-blur`}>
           {/* Progress bar at bottom of footer */}
           <div className="flex items-center gap-1 mb-3">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((step) => (
+            {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
               <div
                 key={step}
                 className={`h-1.5 flex-1 rounded-full transition-colors ${
@@ -121,7 +121,7 @@ export default function StepLayout({
             ))}
           </div>
           <p className="text-center text-xs text-zinc-500 mb-3">
-            Step {stepIndex + 1} of 9
+            Step {stepIndex + 1} of {totalSteps}
           </p>
           
           <div className="flex items-center gap-3">
@@ -164,7 +164,7 @@ export default function StepLayout({
       {hideFooter && (
         <footer className={`flex-shrink-0 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t ${draft.isEditMode ? 'border-blue-900/50' : 'border-zinc-800'} bg-zinc-900/80 backdrop-blur`}>
           <div className="flex items-center gap-1 mb-2">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((step) => (
+            {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
               <div
                 key={step}
                 className={`h-1.5 flex-1 rounded-full transition-colors ${
@@ -176,7 +176,7 @@ export default function StepLayout({
             ))}
           </div>
           <p className="text-center text-xs text-zinc-500">
-            Step {stepIndex + 1} of 9
+            Step {stepIndex + 1} of {totalSteps}
           </p>
         </footer>
       )}

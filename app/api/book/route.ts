@@ -208,6 +208,7 @@ export async function POST(request: Request) {
       .insert({
         phone_number: phone,
         name,
+        email,
         studio,
         session_type,
         session_details: session_details || session_type,

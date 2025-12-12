@@ -64,6 +64,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if booking is within 24 hours
+    const hoursUntilBooking = (bookingDate.getTime() - Date.now()) / (1000 * 60 * 60);
+    if (hoursUntilBooking < 24) {
+      return NextResponse.json(
+        { error: "Cannot cancel a booking within 24 hours of the session. Please contact us directly for assistance." },
+        { status: 400 }
+      );
+    }
+
     // Update the booking status to cancelled
     const { data: updatedBooking, error: updateError } = await supabaseServer
       .from("bookings")

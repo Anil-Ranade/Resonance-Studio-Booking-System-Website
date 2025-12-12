@@ -36,7 +36,7 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 | **Next.js API Routes** | RESTful API endpoints |
 | **Supabase** | PostgreSQL database & authentication |
 | **Google Calendar API** | Calendar integration for bookings |
-| **Twilio** | SMS notifications & OTP verification |
+| **Resend** | Email notifications & OTP verification |
 
 ### Authentication & Security
 | Technology | Purpose |
@@ -374,15 +374,15 @@ Text Colors:
 │   ├── supabaseAuth.ts         # Auth utilities
 │   ├── googleCalendar.ts       # Google Calendar integration
 │   ├── google-calendar.ts      # Alternative calendar utils
-│   ├── sms.ts                  # Twilio SMS service
+│   ├── sms.ts                  # Twilio SMS service (legacy)
+│   ├── email.ts                # Resend email service
 │   ├── otpStore.ts             # OTP management
 │   ├── deviceFingerprint.ts    # Device fingerprinting
 │   ├── OptimizedMotion.tsx     # Performance-optimized animations
 │   └── useDevicePerformance.ts # Device performance hook
 │
 ├── database/
-│   ├── schema.sql              # Main database schema (711 lines)
-│   └── devices.sql             # Trusted devices schema
+│   └── full_schema.sql         # Complete database schema with RLS policies
 │
 ├── scripts/
 │   └── get_refresh_token.js    # Google OAuth token helper
@@ -523,11 +523,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
 # ===================
-# TWILIO SMS
+# EMAIL (RESEND)
 # ===================
-TWILIO_ACCOUNT_SID=your_twilio_sid
-TWILIO_AUTH_TOKEN=your_twilio_token
-TWILIO_SMS_NUMBER=+1234567890
+RESEND_API_KEY=your_resend_api_key
+RESEND_FROM_EMAIL=noreply@yourdomain.com
 
 # ===================
 # GOOGLE CALENDAR
@@ -565,8 +564,8 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ## 🔒 Security
 
 ### Authentication
-- **Customer Auth**: Phone-based OTP verification
-  - 6-digit OTP sent via Twilio SMS
+- **Customer Auth**: Email-based OTP verification
+  - 6-digit OTP sent via Resend Email
   - OTP expires in 5 minutes
   - Maximum 5 verification attempts per OTP
   - Bcrypt-hashed OTP storage (10 salt rounds)

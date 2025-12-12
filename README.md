@@ -42,10 +42,11 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Event details include customer info and booking ID
 - Automatic event updates on booking changes
 
-### 📲 SMS Notifications
-- Booking confirmation messages via Twilio
-- Cancellation notifications
-- Support for reminder notifications
+### 📧 Email Notifications
+- OTP verification codes via email (Resend)
+- Booking confirmation emails
+- Booking update and cancellation notifications
+- Beautiful dark-themed email templates
 
 ### 👤 My Bookings
 - View personal booking history
@@ -97,7 +98,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 | **Database** | Supabase (PostgreSQL) |
 | **Auth** | JWT + OTP (bcryptjs) |
 | **Calendar** | Google Calendar API |
-| **SMS** | Twilio |
+| **Email** | Resend |
 
 ## 🚀 Getting Started
 
@@ -134,10 +135,9 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-   # Twilio
-   TWILIO_ACCOUNT_SID=your_twilio_sid
-   TWILIO_AUTH_TOKEN=your_twilio_token
-   TWILIO_SMS_NUMBER=your_twilio_number
+   # Email (Resend)
+   RESEND_API_KEY=your_resend_api_key
+   RESEND_FROM_EMAIL=noreply@yourdomain.com
 
    # Google Calendar
    GOOGLE_CLIENT_ID=your_client_id

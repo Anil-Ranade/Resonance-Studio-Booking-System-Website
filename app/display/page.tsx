@@ -182,6 +182,14 @@ export default function DisplayPage() {
     return `${hour - 12} PM`;
   };
 
+  // Format time string (HH:MM) to 12-hour format
+  const formatBookingTime = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const hour12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    return `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+
   // Format date for display (using selected date)
   const formatDisplayDate = () => {
     return selectedDate.toLocaleDateString('en-US', {
@@ -338,6 +346,9 @@ export default function DisplayPage() {
                         >
                           <span className="text-[11px] font-semibold text-amber-200 text-center leading-none truncate w-full">
                             {block.booking.session_type || 'Session'}
+                          </span>
+                          <span className="text-[10px] font-medium text-white/90 text-center leading-none truncate w-full mt-0.5">
+                            {formatBookingTime(block.booking.start_time)} - {formatBookingTime(block.booking.end_time)}
                           </span>
                           <span className="text-sm font-bold text-center leading-tight truncate w-full mt-0.5">
                             {block.booking.name || 'Guest'}

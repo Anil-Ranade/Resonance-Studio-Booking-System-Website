@@ -36,6 +36,29 @@ function getFromEmail(): string {
 }
 
 /**
+ * Base email template wrapper - minimal dark theme
+ */
+function emailWrapper(content: string): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #09090b;">
+      <div style="max-width: 480px; margin: 0 auto; padding: 32px 16px;">
+        ${content}
+        <p style="color: #52525b; font-size: 11px; text-align: center; margin-top: 32px;">
+          © ${new Date().getFullYear()} Resonance Studio, Sinhgad Road, Pune
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+/**
  * Base email sending function
  */
 export async function sendEmail(
@@ -75,66 +98,31 @@ export async function sendOTPEmail(
   to: string,
   otp: string
 ): Promise<{ success: true; id: string } | { success: false; error: string }> {
-  const subject = 'Your Resonance Studio Login Code';
+  const subject = 'Your Resonance Studio Verification Code';
   
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Your Login Code</title>
-    </head>
-    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a;">
-      <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <div style="background: linear-gradient(135deg, #18181b 0%, #27272a 100%); border-radius: 16px; padding: 40px; border: 1px solid #3f3f46;">
-          <!-- Logo/Header -->
-          <div style="text-align: center; margin-bottom: 32px;">
-            <h1 style="color: #a855f7; font-size: 28px; margin: 0; font-weight: 700;">
-              🎵 Resonance Studio
-            </h1>
-          </div>
-          
-          <!-- Content -->
-          <div style="text-align: center;">
-            <p style="color: #a1a1aa; font-size: 16px; margin: 0 0 24px 0;">
-              Your one-time login code is:
-            </p>
-            
-            <!-- OTP Code -->
-            <div style="background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); border-radius: 12px; padding: 24px; margin: 0 0 24px 0;">
-              <span style="font-size: 36px; font-weight: 700; color: #ffffff; letter-spacing: 8px; font-family: 'Courier New', monospace;">
-                ${otp}
-              </span>
-            </div>
-            
-            <!-- Expiry Notice -->
-            <p style="color: #f59e0b; font-size: 14px; margin: 0 0 24px 0;">
-              ⏱️ This code expires in 5 minutes
-            </p>
-            
-            <!-- Security Warning -->
-            <div style="background-color: #1f1f23; border-radius: 8px; padding: 16px; border-left: 4px solid #ef4444;">
-              <p style="color: #fca5a5; font-size: 13px; margin: 0;">
-                🔒 <strong>Security Notice:</strong> Never share this code with anyone. Resonance Studio will never ask for your code.
-              </p>
-            </div>
-          </div>
-          
-          <!-- Footer -->
-          <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid #3f3f46; text-align: center;">
-            <p style="color: #71717a; font-size: 12px; margin: 0;">
-              This email was sent by Resonance Studio.<br>
-              If you didn't request this code, please ignore this email.
-            </p>
-          </div>
-        </div>
+  const content = `
+    <div style="background-color: #18181b; border-radius: 12px; padding: 32px; border: 1px solid #27272a;">
+      <h1 style="color: #a855f7; font-size: 20px; margin: 0 0 24px 0; text-align: center; font-weight: 600;">
+        Resonance Studio
+      </h1>
+      
+      <p style="color: #a1a1aa; font-size: 14px; margin: 0 0 24px 0; text-align: center;">
+        Your verification code is:
+      </p>
+      
+      <div style="background-color: #27272a; border-radius: 8px; padding: 20px; text-align: center; margin: 0 0 24px 0;">
+        <span style="font-size: 32px; font-weight: 700; color: #ffffff; letter-spacing: 6px; font-family: monospace;">
+          ${otp}
+        </span>
       </div>
-    </body>
-    </html>
+      
+      <p style="color: #71717a; font-size: 12px; margin: 0; text-align: center;">
+        This code expires in 5 minutes. Don't share it with anyone.
+      </p>
+    </div>
   `;
   
-  return sendEmail(to, subject, html);
+  return sendEmail(to, subject, emailWrapper(content));
 }
 
 /**
@@ -154,7 +142,7 @@ export async function sendBookingConfirmationEmail(
     total_amount?: number;
   }
 ): Promise<{ success: true; id: string } | { success: false; error: string }> {
-  const subject = '✅ Booking Confirmed - Resonance Studio';
+  const subject = 'Booking Confirmed – Resonance Studio';
   
   const formattedDate = new Date(booking.date).toLocaleDateString('en-IN', { 
     weekday: 'long', 
@@ -163,103 +151,158 @@ export async function sendBookingConfirmationEmail(
     year: 'numeric'
   });
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Booking Confirmed</title>
-    </head>
-    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a;">
-      <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <div style="background: linear-gradient(135deg, #18181b 0%, #27272a 100%); border-radius: 16px; padding: 40px; border: 1px solid #3f3f46;">
-          <!-- Logo/Header -->
-          <div style="text-align: center; margin-bottom: 32px;">
-            <h1 style="color: #a855f7; font-size: 28px; margin: 0; font-weight: 700;">
-              🎵 Resonance Studio
-            </h1>
-          </div>
-          
-          <!-- Success Banner -->
-          <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center;">
-            <h2 style="color: #ffffff; font-size: 24px; margin: 0;">✅ Booking Confirmed!</h2>
-          </div>
-          
-          ${booking.name ? `<p style="color: #e4e4e7; font-size: 16px; margin: 0 0 24px 0;">Hi ${booking.name},</p>` : ''}
-          
-          <p style="color: #a1a1aa; font-size: 16px; margin: 0 0 24px 0;">
-            Your studio session has been successfully booked. Here are your booking details:
-          </p>
-          
-          <!-- Booking Details Card -->
-          <div style="background-color: #1f1f23; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 12px 0; border-bottom: 1px solid #3f3f46;">
-                  <span style="color: #71717a; font-size: 14px;">Booking ID</span><br>
-                  <span style="color: #ffffff; font-size: 16px; font-weight: 600;">${booking.id.slice(0, 8).toUpperCase()}</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 0; border-bottom: 1px solid #3f3f46;">
-                  <span style="color: #71717a; font-size: 14px;">Studio</span><br>
-                  <span style="color: #ffffff; font-size: 16px; font-weight: 600;">${booking.studio}</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 0; border-bottom: 1px solid #3f3f46;">
-                  <span style="color: #71717a; font-size: 14px;">Session Type</span><br>
-                  <span style="color: #ffffff; font-size: 16px; font-weight: 600;">${booking.session_type}</span>
-                  ${booking.session_details ? `<br><span style="color: #a1a1aa; font-size: 14px;">${booking.session_details}</span>` : ''}
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 0; border-bottom: 1px solid #3f3f46;">
-                  <span style="color: #71717a; font-size: 14px;">Date</span><br>
-                  <span style="color: #ffffff; font-size: 16px; font-weight: 600;">${formattedDate}</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 0; ${booking.total_amount ? 'border-bottom: 1px solid #3f3f46;' : ''}">
-                  <span style="color: #71717a; font-size: 14px;">Time</span><br>
-                  <span style="color: #ffffff; font-size: 16px; font-weight: 600;">${booking.start_time} - ${booking.end_time}</span>
-                </td>
-              </tr>
-              ${booking.total_amount ? `
-              <tr>
-                <td style="padding: 12px 0;">
-                  <span style="color: #71717a; font-size: 14px;">Amount</span><br>
-                  <span style="color: #10b981; font-size: 20px; font-weight: 700;">₹${booking.total_amount}</span>
-                </td>
-              </tr>
-              ` : ''}
-            </table>
-          </div>
-          
-          <!-- Reminder -->
-          <div style="background-color: #1f1f23; border-radius: 8px; padding: 16px; border-left: 4px solid #a855f7;">
-            <p style="color: #e4e4e7; font-size: 14px; margin: 0;">
-              📍 Please arrive 10 minutes before your session time.
-            </p>
-          </div>
-          
-          <!-- Footer -->
-          <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid #3f3f46; text-align: center;">
-            <p style="color: #a1a1aa; font-size: 14px; margin: 0 0 8px 0;">
-              Thank you for choosing Resonance Studio!
-            </p>
-            <p style="color: #71717a; font-size: 12px; margin: 0;">
-              If you need to modify or cancel your booking, please visit our website.
-            </p>
-          </div>
-        </div>
+  const content = `
+    <div style="background-color: #18181b; border-radius: 12px; padding: 32px; border: 1px solid #27272a;">
+      <h1 style="color: #a855f7; font-size: 20px; margin: 0 0 8px 0; text-align: center; font-weight: 600;">
+        Resonance Studio
+      </h1>
+      <p style="color: #22c55e; font-size: 14px; margin: 0 0 24px 0; text-align: center; font-weight: 500;">
+        ✓ Booking Confirmed
+      </p>
+      
+      ${booking.name ? `<p style="color: #e4e4e7; font-size: 14px; margin: 0 0 20px 0;">Hi ${booking.name},</p>` : ''}
+      
+      <p style="color: #a1a1aa; font-size: 14px; margin: 0 0 20px 0;">
+        Your session is booked. Details below:
+      </p>
+      
+      <div style="background-color: #27272a; border-radius: 8px; padding: 16px; margin: 0 0 20px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Booking ID</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right; font-weight: 500;">${booking.id.slice(0, 8).toUpperCase()}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Session</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.session_type}</td>
+          </tr>
+          ${booking.session_details ? `
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Details</td>
+            <td style="padding: 8px 0; color: #a1a1aa; font-size: 13px; text-align: right;">${booking.session_details}</td>
+          </tr>
+          ` : ''}
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Studio</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.studio}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Date</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${formattedDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Time</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.start_time.slice(0, 5)} – ${booking.end_time.slice(0, 5)}</td>
+          </tr>
+          ${booking.total_amount ? `
+          <tr>
+            <td style="padding: 12px 0 0 0; border-top: 1px solid #3f3f46; color: #71717a; font-size: 13px;">Amount</td>
+            <td style="padding: 12px 0 0 0; border-top: 1px solid #3f3f46; color: #a855f7; font-size: 16px; text-align: right; font-weight: 600;">₹${booking.total_amount.toLocaleString('en-IN')}</td>
+          </tr>
+          ` : ''}
+        </table>
       </div>
-    </body>
-    </html>
+      
+      <p style="color: #71717a; font-size: 12px; margin: 0; text-align: center;">
+        Please arrive 10 minutes before your session.
+      </p>
+    </div>
   `;
   
-  return sendEmail(to, subject, html);
+  return sendEmail(to, subject, emailWrapper(content));
+}
+
+/**
+ * Send a booking confirmation email for admin-created bookings
+ */
+export async function sendAdminBookingConfirmationEmail(
+  to: string,
+  booking: {
+    id: string;
+    name?: string;
+    studio: string;
+    session_type: string;
+    session_details?: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+    total_amount?: number;
+  }
+): Promise<{ success: true; id: string } | { success: false; error: string }> {
+  const subject = 'Booking Confirmed – Resonance Studio';
+  
+  const formattedDate = new Date(booking.date).toLocaleDateString('en-IN', { 
+    weekday: 'long', 
+    day: 'numeric', 
+    month: 'long',
+    year: 'numeric'
+  });
+
+  const content = `
+    <div style="background-color: #18181b; border-radius: 12px; padding: 32px; border: 1px solid #27272a;">
+      <h1 style="color: #a855f7; font-size: 20px; margin: 0 0 8px 0; text-align: center; font-weight: 600;">
+        Resonance Studio
+      </h1>
+      <p style="color: #22c55e; font-size: 14px; margin: 0 0 24px 0; text-align: center; font-weight: 500;">
+        ✓ Booking Confirmed
+      </p>
+      
+      ${booking.name ? `<p style="color: #e4e4e7; font-size: 14px; margin: 0 0 20px 0;">Hi ${booking.name},</p>` : ''}
+      
+      <div style="background-color: #1e3a5f; border-radius: 6px; padding: 12px; margin: 0 0 20px 0;">
+        <p style="color: #93c5fd; font-size: 13px; margin: 0;">
+          This booking was created by the Resonance Studio team on your behalf.
+        </p>
+      </div>
+      
+      <p style="color: #a1a1aa; font-size: 14px; margin: 0 0 20px 0;">
+        Your session is booked. Details below:
+      </p>
+      
+      <div style="background-color: #27272a; border-radius: 8px; padding: 16px; margin: 0 0 20px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Booking ID</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right; font-weight: 500;">${booking.id.slice(0, 8).toUpperCase()}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Session</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.session_type}</td>
+          </tr>
+          ${booking.session_details ? `
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Details</td>
+            <td style="padding: 8px 0; color: #a1a1aa; font-size: 13px; text-align: right;">${booking.session_details}</td>
+          </tr>
+          ` : ''}
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Studio</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.studio}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Date</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${formattedDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Time</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.start_time.slice(0, 5)} – ${booking.end_time.slice(0, 5)}</td>
+          </tr>
+          ${booking.total_amount ? `
+          <tr>
+            <td style="padding: 12px 0 0 0; border-top: 1px solid #3f3f46; color: #71717a; font-size: 13px;">Amount</td>
+            <td style="padding: 12px 0 0 0; border-top: 1px solid #3f3f46; color: #a855f7; font-size: 16px; text-align: right; font-weight: 600;">₹${booking.total_amount.toLocaleString('en-IN')}</td>
+          </tr>
+          ` : ''}
+        </table>
+      </div>
+      
+      <p style="color: #71717a; font-size: 12px; margin: 0; text-align: center;">
+        Please arrive 10 minutes before your session.
+      </p>
+    </div>
+  `;
+  
+  return sendEmail(to, subject, emailWrapper(content));
 }
 
 /**
@@ -279,7 +322,7 @@ export async function sendBookingUpdateEmail(
     total_amount?: number;
   }
 ): Promise<{ success: true; id: string } | { success: false; error: string }> {
-  const subject = '📝 Booking Updated - Resonance Studio';
+  const subject = 'Booking Updated – Resonance Studio';
   
   const formattedDate = new Date(booking.date).toLocaleDateString('en-IN', { 
     weekday: 'long', 
@@ -288,103 +331,65 @@ export async function sendBookingUpdateEmail(
     year: 'numeric'
   });
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Booking Updated</title>
-    </head>
-    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a;">
-      <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <div style="background: linear-gradient(135deg, #18181b 0%, #27272a 100%); border-radius: 16px; padding: 40px; border: 1px solid #3f3f46;">
-          <!-- Logo/Header -->
-          <div style="text-align: center; margin-bottom: 32px;">
-            <h1 style="color: #a855f7; font-size: 28px; margin: 0; font-weight: 700;">
-              🎵 Resonance Studio
-            </h1>
-          </div>
-          
-          <!-- Update Banner -->
-          <div style="background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%); border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center;">
-            <h2 style="color: #ffffff; font-size: 24px; margin: 0;">📝 Booking Updated!</h2>
-          </div>
-          
-          ${booking.name ? `<p style="color: #e4e4e7; font-size: 16px; margin: 0 0 24px 0;">Hi ${booking.name},</p>` : ''}
-          
-          <p style="color: #a1a1aa; font-size: 16px; margin: 0 0 24px 0;">
-            Your booking has been successfully updated. Here are your new booking details:
-          </p>
-          
-          <!-- Booking Details Card -->
-          <div style="background-color: #1f1f23; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 12px 0; border-bottom: 1px solid #3f3f46;">
-                  <span style="color: #71717a; font-size: 14px;">Booking ID</span><br>
-                  <span style="color: #ffffff; font-size: 16px; font-weight: 600;">${booking.id.slice(0, 8).toUpperCase()}</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 0; border-bottom: 1px solid #3f3f46;">
-                  <span style="color: #71717a; font-size: 14px;">Studio</span><br>
-                  <span style="color: #ffffff; font-size: 16px; font-weight: 600;">${booking.studio}</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 0; border-bottom: 1px solid #3f3f46;">
-                  <span style="color: #71717a; font-size: 14px;">Session Type</span><br>
-                  <span style="color: #ffffff; font-size: 16px; font-weight: 600;">${booking.session_type}</span>
-                  ${booking.session_details ? `<br><span style="color: #a1a1aa; font-size: 14px;">${booking.session_details}</span>` : ''}
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 0; border-bottom: 1px solid #3f3f46;">
-                  <span style="color: #71717a; font-size: 14px;">Date</span><br>
-                  <span style="color: #ffffff; font-size: 16px; font-weight: 600;">${formattedDate}</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 0; ${booking.total_amount ? 'border-bottom: 1px solid #3f3f46;' : ''}">
-                  <span style="color: #71717a; font-size: 14px;">Time</span><br>
-                  <span style="color: #ffffff; font-size: 16px; font-weight: 600;">${booking.start_time} - ${booking.end_time}</span>
-                </td>
-              </tr>
-              ${booking.total_amount ? `
-              <tr>
-                <td style="padding: 12px 0;">
-                  <span style="color: #71717a; font-size: 14px;">Amount</span><br>
-                  <span style="color: #10b981; font-size: 20px; font-weight: 700;">₹${booking.total_amount}</span>
-                </td>
-              </tr>
-              ` : ''}
-            </table>
-          </div>
-          
-          <!-- Reminder -->
-          <div style="background-color: #1f1f23; border-radius: 8px; padding: 16px; border-left: 4px solid #f59e0b;">
-            <p style="color: #e4e4e7; font-size: 14px; margin: 0;">
-              📍 Please make note of the updated details and arrive 10 minutes before your session.
-            </p>
-          </div>
-          
-          <!-- Footer -->
-          <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid #3f3f46; text-align: center;">
-            <p style="color: #a1a1aa; font-size: 14px; margin: 0 0 8px 0;">
-              Thank you for choosing Resonance Studio!
-            </p>
-            <p style="color: #71717a; font-size: 12px; margin: 0;">
-              If you have any questions, please contact us.
-            </p>
-          </div>
-        </div>
+  const content = `
+    <div style="background-color: #18181b; border-radius: 12px; padding: 32px; border: 1px solid #27272a;">
+      <h1 style="color: #a855f7; font-size: 20px; margin: 0 0 8px 0; text-align: center; font-weight: 600;">
+        Resonance Studio
+      </h1>
+      <p style="color: #f59e0b; font-size: 14px; margin: 0 0 24px 0; text-align: center; font-weight: 500;">
+        ✎ Booking Updated
+      </p>
+      
+      ${booking.name ? `<p style="color: #e4e4e7; font-size: 14px; margin: 0 0 20px 0;">Hi ${booking.name},</p>` : ''}
+      
+      <p style="color: #a1a1aa; font-size: 14px; margin: 0 0 20px 0;">
+        Your booking has been updated. New details:
+      </p>
+      
+      <div style="background-color: #27272a; border-radius: 8px; padding: 16px; margin: 0 0 20px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Booking ID</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right; font-weight: 500;">${booking.id.slice(0, 8).toUpperCase()}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Session</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.session_type}</td>
+          </tr>
+          ${booking.session_details ? `
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Details</td>
+            <td style="padding: 8px 0; color: #a1a1aa; font-size: 13px; text-align: right;">${booking.session_details}</td>
+          </tr>
+          ` : ''}
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Studio</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.studio}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Date</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${formattedDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Time</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.start_time.slice(0, 5)} – ${booking.end_time.slice(0, 5)}</td>
+          </tr>
+          ${booking.total_amount ? `
+          <tr>
+            <td style="padding: 12px 0 0 0; border-top: 1px solid #3f3f46; color: #71717a; font-size: 13px;">Amount</td>
+            <td style="padding: 12px 0 0 0; border-top: 1px solid #3f3f46; color: #a855f7; font-size: 16px; text-align: right; font-weight: 600;">₹${booking.total_amount.toLocaleString('en-IN')}</td>
+          </tr>
+          ` : ''}
+        </table>
       </div>
-    </body>
-    </html>
+      
+      <p style="color: #71717a; font-size: 12px; margin: 0; text-align: center;">
+        Please note the updated details above.
+      </p>
+    </div>
   `;
   
-  return sendEmail(to, subject, html);
+  return sendEmail(to, subject, emailWrapper(content));
 }
 
 /**
@@ -402,7 +407,7 @@ export async function sendBookingCancellationEmail(
     end_time: string;
   }
 ): Promise<{ success: true; id: string } | { success: false; error: string }> {
-  const subject = '❌ Booking Cancelled - Resonance Studio';
+  const subject = 'Booking Cancelled – Resonance Studio';
   
   const formattedDate = new Date(booking.date).toLocaleDateString('en-IN', { 
     weekday: 'long', 
@@ -411,92 +416,51 @@ export async function sendBookingCancellationEmail(
     year: 'numeric'
   });
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Booking Cancelled</title>
-    </head>
-    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a;">
-      <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <div style="background: linear-gradient(135deg, #18181b 0%, #27272a 100%); border-radius: 16px; padding: 40px; border: 1px solid #3f3f46;">
-          <!-- Logo/Header -->
-          <div style="text-align: center; margin-bottom: 32px;">
-            <h1 style="color: #a855f7; font-size: 28px; margin: 0; font-weight: 700;">
-              🎵 Resonance Studio
-            </h1>
-          </div>
-          
-          <!-- Cancellation Banner -->
-          <div style="background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%); border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center;">
-            <h2 style="color: #ffffff; font-size: 24px; margin: 0;">❌ Booking Cancelled</h2>
-          </div>
-          
-          ${booking.name ? `<p style="color: #e4e4e7; font-size: 16px; margin: 0 0 24px 0;">Hi ${booking.name},</p>` : ''}
-          
-          <p style="color: #a1a1aa; font-size: 16px; margin: 0 0 24px 0;">
-            Your booking has been cancelled. Here are the details of the cancelled booking:
-          </p>
-          
-          <!-- Booking Details Card -->
-          <div style="background-color: #1f1f23; border-radius: 12px; padding: 24px; margin-bottom: 24px; opacity: 0.8;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 12px 0; border-bottom: 1px solid #3f3f46;">
-                  <span style="color: #71717a; font-size: 14px;">Booking ID</span><br>
-                  <span style="color: #a1a1aa; font-size: 16px; font-weight: 600; text-decoration: line-through;">${booking.id.slice(0, 8).toUpperCase()}</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 0; border-bottom: 1px solid #3f3f46;">
-                  <span style="color: #71717a; font-size: 14px;">Studio</span><br>
-                  <span style="color: #a1a1aa; font-size: 16px;">${booking.studio}</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 0; border-bottom: 1px solid #3f3f46;">
-                  <span style="color: #71717a; font-size: 14px;">Session Type</span><br>
-                  <span style="color: #a1a1aa; font-size: 16px;">${booking.session_type}</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 0; border-bottom: 1px solid #3f3f46;">
-                  <span style="color: #71717a; font-size: 14px;">Date</span><br>
-                  <span style="color: #a1a1aa; font-size: 16px;">${formattedDate}</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 0;">
-                  <span style="color: #71717a; font-size: 14px;">Time</span><br>
-                  <span style="color: #a1a1aa; font-size: 16px;">${booking.start_time} - ${booking.end_time}</span>
-                </td>
-              </tr>
-            </table>
-          </div>
-          
-          <!-- Rebook Prompt -->
-          <div style="background-color: #1f1f23; border-radius: 8px; padding: 16px; border-left: 4px solid #a855f7;">
-            <p style="color: #e4e4e7; font-size: 14px; margin: 0;">
-              🎵 Changed your mind? Visit our website to make a new booking anytime!
-            </p>
-          </div>
-          
-          <!-- Footer -->
-          <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid #3f3f46; text-align: center;">
-            <p style="color: #a1a1aa; font-size: 14px; margin: 0 0 8px 0;">
-              We hope to see you at Resonance Studio soon!
-            </p>
-            <p style="color: #71717a; font-size: 12px; margin: 0;">
-              If you have any questions, please contact us.
-            </p>
-          </div>
-        </div>
+  const content = `
+    <div style="background-color: #18181b; border-radius: 12px; padding: 32px; border: 1px solid #27272a;">
+      <h1 style="color: #a855f7; font-size: 20px; margin: 0 0 8px 0; text-align: center; font-weight: 600;">
+        Resonance Studio
+      </h1>
+      <p style="color: #ef4444; font-size: 14px; margin: 0 0 24px 0; text-align: center; font-weight: 500;">
+        ✕ Booking Cancelled
+      </p>
+      
+      ${booking.name ? `<p style="color: #e4e4e7; font-size: 14px; margin: 0 0 20px 0;">Hi ${booking.name},</p>` : ''}
+      
+      <p style="color: #a1a1aa; font-size: 14px; margin: 0 0 20px 0;">
+        Your booking has been cancelled:
+      </p>
+      
+      <div style="background-color: #27272a; border-radius: 8px; padding: 16px; margin: 0 0 20px 0; opacity: 0.7;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Booking ID</td>
+            <td style="padding: 8px 0; color: #a1a1aa; font-size: 13px; text-align: right; text-decoration: line-through;">${booking.id.slice(0, 8).toUpperCase()}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Session</td>
+            <td style="padding: 8px 0; color: #a1a1aa; font-size: 13px; text-align: right;">${booking.session_type}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Studio</td>
+            <td style="padding: 8px 0; color: #a1a1aa; font-size: 13px; text-align: right;">${booking.studio}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Date</td>
+            <td style="padding: 8px 0; color: #a1a1aa; font-size: 13px; text-align: right;">${formattedDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Time</td>
+            <td style="padding: 8px 0; color: #a1a1aa; font-size: 13px; text-align: right;">${booking.start_time.slice(0, 5)} – ${booking.end_time.slice(0, 5)}</td>
+          </tr>
+        </table>
       </div>
-    </body>
-    </html>
+      
+      <p style="color: #71717a; font-size: 12px; margin: 0; text-align: center;">
+        You can book a new session anytime on our website.
+      </p>
+    </div>
   `;
   
-  return sendEmail(to, subject, html);
+  return sendEmail(to, subject, emailWrapper(content));
 }

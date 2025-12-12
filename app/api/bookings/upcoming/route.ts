@@ -1,26 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 
-// GET /api/bookings/upcoming?phone=XXXXXXXXXX - Fetch only upcoming bookings by phone number
+// GET /api/bookings/upcoming?email=xxx@example.com - Fetch only upcoming bookings by email
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const phone = searchParams.get("phone");
+    const email = searchParams.get("email");
+    const phone = searchParams.get("phone"); // Keep phone support for backward compatibility
 
-    if (!phone) {
+    if (!email && !phone) {
       return NextResponse.json(
-        { error: "Phone number is required" },
-        { status: 400 }
-      );
-    }
-
-    // Normalize phone to digits only
-    const normalizedPhone = phone.replace(/\D/g, "");
-
-    // Validate exactly 10 digits
-    if (normalizedPhone.length !== 10) {
-      return NextResponse.json(
-        { error: "Phone number must be exactly 10 digits" },
+        { error: "Email or phone number is required" },
         { status: 400 }
       );
     }
@@ -33,11 +23,64 @@ export async function GET(request: NextRequest) {
     const todayStr = istNow.toISOString().split('T')[0];
     const currentTime = istNow.toISOString().slice(11, 16); // HH:MM format
 
-    // First, get all confirmed/pending bookings for this phone
+    let phoneToSearch: string | null = null;
+
+    if (email) {
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return NextResponse.json(
+          { error: "Please enter a valid email address" },
+          { status: 400 }
+        );
+      }
+
+      // First, look up the user by email to get their phone number
+      const { data: user, error: userError } = await supabaseServer
+        .from("users")
+        .select("phone_number")
+        .ilike("email", email.trim())
+        .single();
+
+      if (userError || !user) {
+        // Also try to find directly in bookings table (for bookings that have email)
+        const { data: bookingWithEmail } = await supabaseServer
+          .from("bookings")
+          .select("phone_number")
+          .ilike("email", email.trim())
+          .limit(1)
+          .single();
+        
+        if (bookingWithEmail) {
+          phoneToSearch = bookingWithEmail.phone_number;
+        } else {
+          console.log(`[Upcoming Bookings API] No user or booking found for email: ${email}`);
+          return NextResponse.json({ bookings: [] });
+        }
+      } else {
+        phoneToSearch = user.phone_number;
+      }
+    } else if (phone) {
+      // Normalize phone to digits only
+      const normalizedPhone = phone.replace(/\D/g, "");
+      if (normalizedPhone.length !== 10) {
+        return NextResponse.json(
+          { error: "Phone number must be exactly 10 digits" },
+          { status: 400 }
+        );
+      }
+      phoneToSearch = normalizedPhone;
+    }
+
+    if (!phoneToSearch) {
+      return NextResponse.json({ bookings: [] });
+    }
+
+    // Now fetch bookings by phone number
     const { data: allBookings, error: bookingsError } = await supabaseServer
       .from("bookings")
       .select("*")
-      .eq("phone_number", normalizedPhone)
+      .eq("phone_number", phoneToSearch)
       .in("status", ["confirmed", "pending"])
       .order("date", { ascending: true })
       .order("start_time", { ascending: true });
@@ -49,6 +92,8 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    console.log(`[Upcoming Bookings API] Found ${allBookings?.length || 0} bookings for phone: ${phoneToSearch}`);
 
     // Filter for upcoming bookings client-side for more reliable filtering
     const upcomingBookings = (allBookings || []).filter(booking => {
@@ -63,6 +108,8 @@ export async function GET(request: NextRequest) {
       // Date is in the past
       return false;
     });
+
+    console.log(`[Upcoming Bookings API] Returning ${upcomingBookings.length} upcoming bookings`);
 
     return NextResponse.json({ bookings: upcomingBookings });
   } catch (error) {

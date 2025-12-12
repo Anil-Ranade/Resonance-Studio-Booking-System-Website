@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import OTPVerification from '../components/OTPVerification';
 
 // Helper function to safely parse JSON responses
 async function safeJsonParse(response: Response) {
@@ -17,7 +18,7 @@ async function safeJsonParse(response: Response) {
 
 import {
   ArrowLeft,
-  Phone,
+  Mail,
   Search,
   Calendar,
   Clock,
@@ -28,7 +29,6 @@ import {
   AlertCircle,
   CheckCircle2,
   XCircle,
-  X,
   Check,
 } from 'lucide-react';
 
@@ -46,6 +46,8 @@ interface Booking {
   total_amount: number;
   created_at: string;
   name?: string;
+  email?: string;
+  phone_number?: string;
 }
 
 const fadeInUp = {
@@ -63,23 +65,28 @@ const statusConfig = {
 };
 
 export default function CancelBookingPage() {
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [bookings, setBookings] = useState<Booking[] | null>(null);
   const [searched, setSearched] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [step, setStep] = useState<'search' | 'select' | 'confirm' | 'success'>('search');
+  const [step, setStep] = useState<'search' | 'select' | 'verify' | 'confirm' | 'success'>('search');
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '');
-    setPhoneNumber(value);
+  // Validate email format
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
   };
 
   const fetchBookings = async () => {
-    if (phoneNumber.replace(/\D/g, '').length !== 10) {
-      setError('Please enter a valid 10-digit phone number');
+    if (!isValidEmail(email)) {
+      setError('Please enter a valid email address');
       return;
     }
 
@@ -88,7 +95,7 @@ export default function CancelBookingPage() {
     setSearched(true);
 
     try {
-      const response = await fetch(`/api/bookings/upcoming?phone=${phoneNumber}`);
+      const response = await fetch(`/api/bookings/upcoming?email=${encodeURIComponent(email.trim())}`);
       const data = await safeJsonParse(response);
 
       if (!response.ok) {
@@ -120,7 +127,7 @@ export default function CancelBookingPage() {
   const canCancelBooking = (booking: Booking) => {
     const status = booking.status?.toLowerCase();
     if (status !== 'pending' && status !== 'confirmed') {
-      return false;
+      return { canCancel: false, reason: 'Invalid status' };
     }
     
     const bookingDateStr = booking.date;
@@ -134,14 +141,34 @@ export default function CancelBookingPage() {
     const now = new Date();
     
     if (isNaN(bookingDateTime.getTime())) {
-      return true;
+      return { canCancel: true, reason: '' };
     }
     
-    return bookingDateTime >= now;
+    if (bookingDateTime < now) {
+      return { canCancel: false, reason: 'Past booking' };
+    }
+    
+    // Check 24-hour restriction
+    const hoursUntilBooking = (bookingDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+    if (hoursUntilBooking < 24) {
+      return { canCancel: false, reason: 'Within 24 hours' };
+    }
+    
+    return { canCancel: true, reason: '' };
   };
 
   const handleSelectBooking = (booking: Booking) => {
     setSelectedBooking(booking);
+    // If already verified, go directly to confirm
+    if (isVerified) {
+      setStep('confirm');
+    } else {
+      setStep('verify');
+    }
+  };
+
+  const handleVerified = () => {
+    setIsVerified(true);
     setStep('confirm');
   };
 
@@ -160,7 +187,7 @@ export default function CancelBookingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bookingId: selectedBooking.id,
-          phone: phoneNumber,
+          phone: selectedBooking.phone_number,
           reason: 'Cancelled by user',
         }),
       });
@@ -197,8 +224,9 @@ export default function CancelBookingPage() {
     setSelectedBooking(null);
     setBookings(null);
     setSearched(false);
-    setPhoneNumber('');
+    setEmail('');
     setError('');
+    setIsVerified(false);
   };
 
   return (
@@ -262,6 +290,18 @@ export default function CancelBookingPage() {
               </button>
             </div>
           </motion.div>
+        )}
+
+        {/* OTP Verification Step */}
+        {step === 'verify' && selectedBooking && (
+          <OTPVerification
+            phone={selectedBooking.phone_number || ''}
+            email={email}
+            onVerified={handleVerified}
+            onCancel={() => setStep('select')}
+            actionLabel="cancel booking"
+            accentColor="red"
+          />
         )}
 
         {/* Confirm Cancellation */}
@@ -364,7 +404,7 @@ export default function CancelBookingPage() {
                 className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Change Phone Number
+                Change Email
               </button>
             </div>
             
@@ -374,21 +414,36 @@ export default function CancelBookingPage() {
               {bookings.map((booking, index) => {
                 const config = statusConfig[booking.status] || statusConfig.pending;
                 const StatusIcon = config.icon;
-                const canCancel = canCancelBooking(booking);
+                const cancelCheck = canCancelBooking(booking);
 
-                if (!canCancel) return null;
+                // Skip past or invalid bookings entirely
+                if (cancelCheck.reason === 'Invalid status' || cancelCheck.reason === 'Past booking') return null;
+
+                const isWithin24Hours = cancelCheck.reason === 'Within 24 hours';
 
                 return (
-                  <motion.button
+                  <motion.div
                     key={booking.id}
-                    onClick={() => handleSelectBooking(booking)}
-                    className="w-full glass-strong rounded-2xl p-4 overflow-hidden text-left hover:border-red-500/30 transition-all"
+                    className={`w-full glass-strong rounded-2xl p-4 overflow-hidden text-left transition-all ${
+                      isWithin24Hours 
+                        ? 'opacity-60 cursor-not-allowed' 
+                        : 'hover:border-red-500/30 cursor-pointer'
+                    }`}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
+                    onClick={() => cancelCheck.canCancel && handleSelectBooking(booking)}
                   >
+                    {/* 24 Hour Warning */}
+                    {isWithin24Hours && (
+                      <div className="mb-3 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                        <p className="text-amber-400 text-xs flex items-center gap-2">
+                          <Clock className="w-3.5 h-3.5" />
+                          Cannot cancel within 24 hours of session
+                        </p>
+                      </div>
+                    )}
+                    
                     {/* Status Badge */}
                     <div className="flex items-center justify-between mb-3">
                       <div className={`flex items-center gap-2 px-3 py-1 rounded-full bg-${config.color}-500/20`}>
@@ -431,14 +486,14 @@ export default function CancelBookingPage() {
                       <span className="text-zinc-400 text-sm">Total Amount</span>
                       <span className="text-white font-bold">₹{booking.total_amount?.toLocaleString('en-IN') || 0}</span>
                     </div>
-                  </motion.button>
+                  </motion.div>
                 );
               })}
             </div>
           </motion.div>
         )}
 
-        {/* Phone Search - Initial Step */}
+        {/* Email Search - Initial Step */}
         {step === 'search' && (
           <>
             <motion.div 
@@ -447,41 +502,37 @@ export default function CancelBookingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <p className="text-zinc-400 text-sm mb-4">Enter your phone number to find your bookings</p>
-              <form onSubmit={handleSubmit}>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="flex-1 relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                    <input
-                      type="tel"
-                      value={phoneNumber}
-                      onChange={handlePhoneChange}
-                      placeholder="Enter your phone number"
-                      className="w-full py-3 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
-                      maxLength={10}
-                      inputMode="numeric"
-                    />
-                  </div>
-                  <motion.button
-                    type="submit"
-                    disabled={isLoading || phoneNumber.length !== 10}
-                    className="btn-accent py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Searching...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="w-4 h-4" />
-                        Search
-                      </>
-                    )}
-                  </motion.button>
+              <p className="text-zinc-400 text-sm mb-4">Enter your email address to find your bookings</p>
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={handleEmailChange}
+                    placeholder="Enter your email address"
+                    className="w-full py-3 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                  />
                 </div>
+                <motion.button
+                  type="submit"
+                  disabled={isLoading || !isValidEmail(email)}
+                  className="w-full btn-accent py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4" />
+                      Search Bookings
+                    </>
+                  )}
+                </motion.button>
               </form>
             </motion.div>
 
@@ -510,7 +561,7 @@ export default function CancelBookingPage() {
               >
                 <Calendar className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
                 <h3 className="text-lg font-medium text-white mb-1">No Bookings Found</h3>
-                <p className="text-zinc-400 text-sm">No upcoming bookings found for this phone number.</p>
+                <p className="text-zinc-400 text-sm">No upcoming bookings found for this email address.</p>
                 <Link 
                   href="/booking/new"
                   className="inline-block mt-4 btn-accent py-2 px-6 text-sm"

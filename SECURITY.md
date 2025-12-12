@@ -11,7 +11,7 @@
 ### 1. Authentication & Authorization
 
 #### Customer Authentication
-- **OTP-based authentication** via SMS (Twilio)
+- **OTP-based authentication** via Email (Resend)
 - OTPs are hashed using **bcrypt** (10 salt rounds) before storage
 - OTPs expire after **5 minutes**
 - Maximum **5 verification attempts** per OTP
@@ -57,6 +57,7 @@ The following headers are enforced via `next.config.ts`:
 - `.env*` patterns in `.gitignore`
 - JWT secrets: minimum 32 characters recommended
 - Service role key: never exposed to client
+- Resend API key: server-only, never exposed
 
 ## Reporting a Vulnerability
 

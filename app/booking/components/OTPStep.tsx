@@ -1,22 +1,77 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Shield, Smartphone, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Shield, Smartphone, Loader2, AlertCircle, RefreshCw, CheckCircle } from 'lucide-react';
 import { useBooking } from '../contexts/BookingContext';
 import StepLayout from './StepLayout';
-import { getDeviceFingerprint, addTrustedPhone } from '@/lib/deviceFingerprint';
+import { getDeviceFingerprint, addTrustedPhone, isPhoneTrustedLocally } from '@/lib/deviceFingerprint';
 
 export default function OTPStep() {
-  const { draft, updateDraft, nextStep, stepIndex } = useBooking();
+  const { draft, updateDraft, nextStep, prevStep } = useBooking();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [isCheckingDevice, setIsCheckingDevice] = useState(true);
+  const [deviceVerified, setDeviceVerified] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // OTP is ALWAYS required - no device trust skip
+  // Check if device is already trusted
+  const checkDeviceTrust = useCallback(async () => {
+    // If already verified (e.g., in edit mode coming from edit-booking page), skip
+    if (draft.otpVerified) {
+      nextStep();
+      return;
+    }
+
+    setIsCheckingDevice(true);
+    try {
+      const digits = draft.phone.replace(/\D/g, '');
+      
+      // First check local trust
+      if (!isPhoneTrustedLocally(digits)) {
+        setIsCheckingDevice(false);
+        return;
+      }
+
+      // Verify with server
+      const { fingerprint } = await getDeviceFingerprint();
+      const response = await fetch('/api/auth/verify-device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          phone: digits, 
+          deviceFingerprint: fingerprint 
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.trusted) {
+          setDeviceVerified(true);
+          updateDraft({ 
+            deviceTrusted: true, 
+            otpVerified: true,
+            deviceFingerprint: fingerprint 
+          });
+          // Auto-proceed after a brief moment to show trusted status
+          setTimeout(() => {
+            nextStep();
+          }, 1000);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('Error checking device trust:', e);
+    }
+    setIsCheckingDevice(false);
+  }, [draft.phone, draft.otpVerified, nextStep, updateDraft]);
+
+  useEffect(() => {
+    checkDeviceTrust();
+  }, [checkDeviceTrust]);
 
   // Cooldown timer
   useEffect(() => {
@@ -26,13 +81,13 @@ export default function OTPStep() {
     }
   }, [cooldown]);
 
-  // Send OTP on mount - always required
+  // Send OTP after device check (if not trusted)
   useEffect(() => {
-    if (!otpSent) {
+    if (!isCheckingDevice && !deviceVerified && !otpSent && !draft.otpVerified) {
       sendOTP();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isCheckingDevice, deviceVerified, draft.otpVerified]);
 
   const sendOTP = async () => {
     if (cooldown > 0) return;
@@ -136,8 +191,11 @@ export default function OTPStep() {
           deviceFingerprint: fingerprint,
         });
         
+        setDeviceVerified(true);
         // Proceed to confirm step
-        nextStep();
+        setTimeout(() => {
+          nextStep();
+        }, 500);
       } else {
         setError(data.error || 'Invalid OTP');
         setOtp(['', '', '', '', '', '']);
@@ -150,15 +208,6 @@ export default function OTPStep() {
     }
   };
 
-  // Format phone for display
-  const formatPhone = (phone: string) => {
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length === 10) {
-      return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
-    }
-    return phone;
-  };
-
   const isOtpComplete = otp.every(digit => digit !== '');
 
   const handleNext = () => {
@@ -167,11 +216,58 @@ export default function OTPStep() {
     }
   };
 
+  const handleBack = () => {
+    prevStep();
+  };
+
+  // Device check in progress
+  if (isCheckingDevice) {
+    return (
+      <StepLayout
+        title="Verifying device..."
+        subtitle="Checking if this device is trusted"
+        showNext={false}
+        hideFooter={true}
+      >
+        <div className="flex flex-col items-center justify-center py-8">
+          <div className={`p-4 rounded-full ${draft.isEditMode ? 'bg-blue-500/20' : 'bg-violet-500/20'} mb-4`}>
+            <Smartphone className={`w-10 h-10 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'}`} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Loader2 className={`w-5 h-5 ${draft.isEditMode ? 'text-blue-400' : 'text-violet-400'} animate-spin`} />
+            <span className="text-white font-medium">Checking device...</span>
+          </div>
+        </div>
+      </StepLayout>
+    );
+  }
+
+  // Device is verified - showing success briefly
+  if (deviceVerified) {
+    return (
+      <StepLayout
+        title="Device Verified"
+        subtitle={`Proceeding to ${draft.isEditMode ? 'update' : 'confirm'} your booking...`}
+        showNext={false}
+        hideFooter={true}
+      >
+        <div className="flex flex-col items-center justify-center py-8">
+          <div className="p-4 rounded-full bg-green-500/20 mb-4">
+            <CheckCircle className="w-10 h-10 text-green-400" />
+          </div>
+          <span className="text-white font-medium">Verified Successfully</span>
+        </div>
+      </StepLayout>
+    );
+  }
+
   return (
     <StepLayout
-      title={draft.isEditMode ? "Verify to update booking" : "Verify your email"}
+      title={draft.isEditMode ? "Verify to update booking" : "Verify to complete booking"}
       subtitle={`Enter the 6-digit code sent to ${draft.email}`}
+      showBack={true}
       showNext={true}
+      onBack={handleBack}
       nextLabel="Verify"
       onNext={handleNext}
       isNextDisabled={!isOtpComplete || isLoading}
