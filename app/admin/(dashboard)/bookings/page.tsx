@@ -19,6 +19,15 @@ import {
   UserX,
   RefreshCw,
   Trash2,
+  Plus,
+  Music,
+  Mic,
+  Drum,
+  Guitar,
+  Radio,
+  Users,
+  Mail,
+  FileText,
 } from 'lucide-react';
 import { getSession } from '@/lib/supabaseAuth';
 
@@ -37,6 +46,33 @@ interface Booking {
   notes: string | null;
   created_at: string;
 }
+
+interface BookingFormData {
+  phone: string;
+  name: string;
+  email: string;
+  studio: string;
+  session_type: string;
+  session_details: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  rate_per_hour: number;
+  notes: string;
+  send_notification: boolean;
+}
+
+// Session types matching the app
+const SESSION_TYPES = [
+  { value: 'Karaoke', label: 'Karaoke', icon: Mic, description: 'Sing along with friends' },
+  { value: 'Live with musicians', label: 'Live with Musicians', icon: Music, description: 'Live performance' },
+  { value: 'Only Drum Practice', label: 'Only Drum Practice', icon: Drum, description: 'Drum practice only' },
+  { value: 'Band', label: 'Band', icon: Guitar, description: 'Full band rehearsal' },
+  { value: 'Recording', label: 'Recording', icon: Radio, description: 'Professional recording' },
+  { value: 'Walk-in', label: 'Walk-in', icon: Users, description: 'Walk-in customer' },
+];
+
+const STUDIOS = ['Studio A', 'Studio B', 'Studio C'];
 
 // Helper function to check if a booking's time has passed
 const isBookingTimePassed = (date: string, endTime: string): boolean => {
@@ -67,6 +103,24 @@ export default function BookingsManagementPage() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [updating, setUpdating] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  
+  // New booking form states
+  const [showNewBookingModal, setShowNewBookingModal] = useState(false);
+  const [creatingBooking, setCreatingBooking] = useState(false);
+  const [bookingFormData, setBookingFormData] = useState<BookingFormData>({
+    phone: '',
+    name: '',
+    email: '',
+    studio: 'Studio A',
+    session_type: 'Walk-in',
+    session_details: '',
+    date: new Date().toISOString().split('T')[0],
+    start_time: '10:00',
+    end_time: '11:00',
+    rate_per_hour: 400,
+    notes: '',
+    send_notification: true,
+  });
 
   // Helper to get the current access token
   const getAccessToken = useCallback(async (): Promise<string | null> => {
@@ -192,6 +246,74 @@ export default function BookingsManagementPage() {
     }
   };
 
+  // Reset booking form
+  const resetBookingForm = () => {
+    setBookingFormData({
+      phone: '',
+      name: '',
+      email: '',
+      studio: 'Studio A',
+      session_type: 'Walk-in',
+      session_details: '',
+      date: new Date().toISOString().split('T')[0],
+      start_time: '10:00',
+      end_time: '11:00',
+      rate_per_hour: 400,
+      notes: '',
+      send_notification: true,
+    });
+    setMessage(null);
+  };
+
+  // Handle create new booking
+  const handleCreateBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreatingBooking(true);
+    setMessage(null);
+
+    try {
+      const token = await getAccessToken();
+      const response = await fetch('/api/admin/book', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          phone: bookingFormData.phone,
+          name: bookingFormData.name || undefined,
+          email: bookingFormData.email || undefined,
+          studio: bookingFormData.studio,
+          session_type: bookingFormData.session_type,
+          session_details: bookingFormData.session_details || bookingFormData.session_type,
+          date: bookingFormData.date,
+          start_time: bookingFormData.start_time,
+          end_time: bookingFormData.end_time,
+          rate_per_hour: bookingFormData.rate_per_hour,
+          notes: bookingFormData.notes || undefined,
+          send_notification: bookingFormData.send_notification,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setMessage({ type: 'success', text: 'Booking created successfully!' });
+        fetchBookings();
+        setTimeout(() => {
+          setShowNewBookingModal(false);
+          resetBookingForm();
+        }, 1500);
+      } else {
+        throw new Error(data.error || data.message || 'Failed to create booking');
+      }
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message });
+    } finally {
+      setCreatingBooking(false);
+    }
+  };
+
   const filteredBookings = bookings.filter((booking) => {
     const matchesSearch =
       booking.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -254,6 +376,15 @@ export default function BookingsManagementPage() {
           <h1 className="text-2xl font-bold text-white">Bookings</h1>
           <p className="text-zinc-400 mt-1">View and manage all bookings</p>
         </div>
+        <motion.button
+          onClick={() => setShowNewBookingModal(true)}
+          className="btn-primary flex items-center gap-2"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Plus className="w-5 h-5" />
+          New Booking
+        </motion.button>
       </div>
 
       {/* Filters */}
@@ -671,6 +802,264 @@ export default function BookingsManagementPage() {
                   </div>
                 </div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* New Booking Modal */}
+      <AnimatePresence>
+        {showNewBookingModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => { setShowNewBookingModal(false); resetBookingForm(); }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-2xl glass rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center">
+                    <Plus className="w-5 h-5 text-violet-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Create New Booking</h2>
+                    <p className="text-zinc-400 text-sm">Book on behalf of a customer</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setShowNewBookingModal(false); resetBookingForm(); }}
+                  className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Message */}
+              <AnimatePresence>
+                {message && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className={`mb-4 p-3 rounded-xl flex items-center gap-2 ${
+                      message.type === 'success'
+                        ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                        : 'bg-red-500/10 border border-red-500/20 text-red-400'
+                    }`}
+                  >
+                    {message.type === 'success' ? (
+                      <CheckCircle className="w-4 h-4" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4" />
+                    )}
+                    <span className="text-sm">{message.text}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <form onSubmit={handleCreateBooking} className="space-y-5">
+                {/* Customer Information */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+                    <User className="w-4 h-4" /> Customer Information
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-zinc-400 mb-1.5">Phone Number *</label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="10-digit phone"
+                        value={bookingFormData.phone}
+                        onChange={(e) => setBookingFormData({ ...bookingFormData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                        className="input"
+                        maxLength={10}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-zinc-400 mb-1.5">Name</label>
+                      <input
+                        type="text"
+                        placeholder="Customer name"
+                        value={bookingFormData.name}
+                        onChange={(e) => setBookingFormData({ ...bookingFormData, name: e.target.value })}
+                        className="input"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm text-zinc-400 mb-1.5">Email (for confirmation)</label>
+                      <input
+                        type="email"
+                        placeholder="customer@email.com"
+                        value={bookingFormData.email}
+                        onChange={(e) => setBookingFormData({ ...bookingFormData, email: e.target.value })}
+                        className="input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Session Details */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+                    <Music className="w-4 h-4" /> Session Details
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-zinc-400 mb-1.5">Session Type *</label>
+                      <select
+                        required
+                        value={bookingFormData.session_type}
+                        onChange={(e) => setBookingFormData({ ...bookingFormData, session_type: e.target.value })}
+                        className="select"
+                      >
+                        {SESSION_TYPES.map((type) => (
+                          <option key={type.value} value={type.value}>
+                            {type.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-zinc-400 mb-1.5">Studio *</label>
+                      <select
+                        required
+                        value={bookingFormData.studio}
+                        onChange={(e) => setBookingFormData({ ...bookingFormData, studio: e.target.value })}
+                        className="select"
+                      >
+                        {STUDIOS.map((studio) => (
+                          <option key={studio} value={studio}>
+                            {studio}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm text-zinc-400 mb-1.5">Session Details</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., 5 participants, Band with drums..."
+                        value={bookingFormData.session_details}
+                        onChange={(e) => setBookingFormData({ ...bookingFormData, session_details: e.target.value })}
+                        className="input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Date & Time */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+                    <Calendar className="w-4 h-4" /> Date & Time
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm text-zinc-400 mb-1.5">Date *</label>
+                      <input
+                        type="date"
+                        required
+                        value={bookingFormData.date}
+                        onChange={(e) => setBookingFormData({ ...bookingFormData, date: e.target.value })}
+                        className="input"
+                        min={new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-zinc-400 mb-1.5">Start Time *</label>
+                      <input
+                        type="time"
+                        required
+                        value={bookingFormData.start_time}
+                        onChange={(e) => setBookingFormData({ ...bookingFormData, start_time: e.target.value })}
+                        className="input"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-zinc-400 mb-1.5">End Time *</label>
+                      <input
+                        type="time"
+                        required
+                        value={bookingFormData.end_time}
+                        onChange={(e) => setBookingFormData({ ...bookingFormData, end_time: e.target.value })}
+                        className="input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pricing & Notes */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+                    <FileText className="w-4 h-4" /> Pricing & Notes
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-zinc-400 mb-1.5">Rate per Hour (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="e.g., 400"
+                        value={bookingFormData.rate_per_hour}
+                        onChange={(e) => setBookingFormData({ ...bookingFormData, rate_per_hour: parseInt(e.target.value) || 0 })}
+                        className="input"
+                        min={0}
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <label className="flex items-center gap-2 cursor-pointer p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={bookingFormData.send_notification}
+                          onChange={(e) => setBookingFormData({ ...bookingFormData, send_notification: e.target.checked })}
+                          className="w-4 h-4 rounded border-zinc-600 text-violet-500 focus:ring-violet-500 bg-zinc-800"
+                        />
+                        <span className="text-sm text-zinc-300">Send email notification</span>
+                      </label>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm text-zinc-400 mb-1.5">Notes</label>
+                      <textarea
+                        placeholder="Additional notes..."
+                        value={bookingFormData.notes}
+                        onChange={(e) => setBookingFormData({ ...bookingFormData, notes: e.target.value })}
+                        className="input min-h-[80px] resize-none"
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-4 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => { setShowNewBookingModal(false); resetBookingForm(); }}
+                    className="flex-1 py-3 rounded-xl border border-zinc-600 text-zinc-400 hover:bg-white/5 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={creatingBooking || !bookingFormData.phone || bookingFormData.phone.length !== 10}
+                    className="flex-1 btn-primary flex items-center justify-center gap-2 py-3 disabled:opacity-50"
+                  >
+                    {creatingBooking ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <CheckCircle className="w-5 h-5" />
+                    )}
+                    {creatingBooking ? 'Creating...' : 'Create Booking'}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}

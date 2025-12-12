@@ -93,8 +93,8 @@ export default function AvailabilityStep() {
 
   const studios = [
     { id: 'Studio A', name: 'Studio A', color: 'bg-blue-500', key: 'A' },
-    { id: 'Studio B', name: 'Studio B', color: 'bg-amber-700', key: 'B' },
-    { id: 'Studio C', name: 'Studio C', color: 'bg-green-500', key: 'C' },
+    { id: 'Studio B', name: 'Studio B', color: 'bg-yellow-700', key: 'B' },
+    { id: 'Studio C', name: 'Studio C', color: 'bg-emerald-500', key: 'C' },
   ];
 
   // Generate time slots dynamically based on admin settings

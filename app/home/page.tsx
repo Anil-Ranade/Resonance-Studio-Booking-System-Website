@@ -279,8 +279,8 @@ export default function HomePage() {
   ];
 
   const studios = [
-    { name: "Studio A", size: "Large", capacity: "Up to 30 people", price: "From ₹350/hr", color: "bg-red-500", id: "studio-a" },
-    { name: "Studio B", size: "Medium", capacity: "Up to 12 people", price: "From ₹250/hr", color: "bg-amber-500", id: "studio-b" },
+    { name: "Studio A", size: "Large", capacity: "Up to 30 people", price: "From ₹350/hr", color: "bg-blue-500", id: "studio-a" },
+    { name: "Studio B", size: "Medium", capacity: "Up to 12 people", price: "From ₹250/hr", color: "bg-yellow-700", id: "studio-b" },
     { name: "Studio C", size: "Compact", capacity: "Up to 5 people", price: "From ₹200/hr", color: "bg-emerald-500", id: "studio-c" },
   ];
 

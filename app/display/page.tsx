@@ -169,9 +169,9 @@ export default function DisplayPage() {
   };
 
   const getStudioColor = (studio: string) => {
-    if (studio === 'Studio A') return 'bg-blue-600';
-    if (studio === 'Studio B') return 'bg-amber-600';
-    if (studio === 'Studio C') return 'bg-green-600';
+    if (studio === 'Studio A') return 'bg-blue-500';
+    if (studio === 'Studio B') return 'bg-yellow-700';
+    if (studio === 'Studio C') return 'bg-emerald-500';
     return 'bg-zinc-600';
   };
 
@@ -292,7 +292,7 @@ export default function DisplayPage() {
                 {timeSlots.map((hour, index) => (
                   <div 
                     key={hour} 
-                    className="flex-1 relative border-b border-zinc-800 last:border-b-0"
+                    className="flex-1 relative border-b border-zinc-600 last:border-b-0"
                   >
                     {/* Time label positioned at the top of each slot */}
                     <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 text-amber-400 font-semibold text-xs whitespace-nowrap bg-zinc-900 px-1">
@@ -318,7 +318,7 @@ export default function DisplayPage() {
                         return (
                           <div 
                             key={hour} 
-                            className={`flex-1 border-b border-zinc-800 last:border-b-0 ${
+                            className={`flex-1 border-b border-zinc-600 last:border-b-0 ${
                               isPast ? 'bg-black/40' : 'bg-zinc-900/30'
                             }`}
                           />

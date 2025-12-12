@@ -502,18 +502,6 @@ export default function AvailabilityManagementPage() {
         </div>
         <div className="flex items-center gap-3">
           <motion.button
-            onClick={() => {
-              resetBookingForm();
-              setShowBookingModal(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-violet-500 text-white rounded-xl hover:bg-violet-600 transition-colors"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <UserPlus className="w-4 h-4" />
-            Book for Customer
-          </motion.button>
-          <motion.button
             onClick={() => setShowBulkModal(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500/30 transition-colors"
             whileHover={{ scale: 1.02 }}
@@ -647,7 +635,7 @@ export default function AvailabilityManagementPage() {
                                 slot.studio === 'Studio A'
                                   ? 'bg-blue-500/20 text-blue-400'
                                   : slot.studio === 'Studio B'
-                                  ? 'bg-amber-500/20 text-amber-400'
+                                  ? 'bg-yellow-700/20 text-yellow-600'
                                   : 'bg-emerald-500/20 text-emerald-400'
                               }`}
                             >
