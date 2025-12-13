@@ -69,7 +69,7 @@ interface BookingFormData {
   recording_option: RecordingOption | '';
 }
 
-// Session types matching the app (no Walk-in, as we now have proper flow)
+// Session types matching the app
 const SESSION_TYPES: { value: SessionType | 'Walk-in'; label: string; icon: React.ComponentType<{className?: string}>; description: string }[] = [
   { value: 'Karaoke', label: 'Karaoke', icon: Mic, description: 'Sing along with friends' },
   { value: 'Live with musicians', label: 'Live with Musicians', icon: Music, description: 'Live performance' },
@@ -131,7 +131,7 @@ const getEffectiveStatus = (booking: Booking): Booking['status'] | 'needs_comple
   return booking.status;
 };
 
-export default function BookingsManagementPage() {
+export default function StaffBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -167,12 +167,12 @@ export default function BookingsManagementPage() {
     try {
       const session = await getSession();
       if (session?.access_token) {
-        localStorage.setItem('accessToken', session.access_token);
+        localStorage.setItem('staffAccessToken', session.access_token);
         return session.access_token;
       }
-      return localStorage.getItem('accessToken');
+      return localStorage.getItem('staffAccessToken');
     } catch {
-      return localStorage.getItem('accessToken');
+      return localStorage.getItem('staffAccessToken');
     }
   }, []);
 
@@ -180,7 +180,7 @@ export default function BookingsManagementPage() {
     setLoading(true);
     try {
       const token = await getAccessToken();
-      const response = await fetch('/api/admin/bookings', {
+      const response = await fetch('/api/staff/bookings', {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -205,7 +205,7 @@ export default function BookingsManagementPage() {
 
     try {
       const token = await getAccessToken();
-      const response = await fetch('/api/admin/bookings', {
+      const response = await fetch('/api/staff/bookings', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -262,7 +262,7 @@ export default function BookingsManagementPage() {
 
     try {
       const token = await getAccessToken();
-      const response = await fetch(`/api/admin/bookings?id=${bookingId}`, {
+      const response = await fetch(`/api/staff/bookings?id=${bookingId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -309,7 +309,7 @@ export default function BookingsManagementPage() {
     setMessage(null);
   };
 
-  // Helper to update studio and rate based on session type and sub-options
+  // Helper to update studio and rate based on session type and sub-options (staff doesn't see rates but we still track for the booking)
   const updateStudioAndRate = (
     sessionType: string,
     karaokeOption: KaraokeOption | '',
@@ -318,7 +318,6 @@ export default function BookingsManagementPage() {
     recordingOption: RecordingOption | '',
     currentStudio: string
   ) => {
-    // Get studio suggestion based on session type and options
     const suggestion = getStudioSuggestion(sessionType as SessionType, {
       karaokeOption: karaokeOption || undefined,
       liveOption: liveOption || undefined,
@@ -326,12 +325,10 @@ export default function BookingsManagementPage() {
       recordingOption: recordingOption || undefined,
     });
 
-    // Use recommended studio or current if still allowed
     const newStudio = suggestion.allowedStudios.includes(currentStudio as StudioName) 
       ? currentStudio as StudioName
       : suggestion.recommendedStudio;
 
-    // Calculate rate
     const rate = getStudioRate(newStudio, sessionType as SessionType, {
       karaokeOption: karaokeOption || undefined,
       liveOption: liveOption || undefined,
@@ -344,7 +341,6 @@ export default function BookingsManagementPage() {
 
   // Handler for session type change
   const handleSessionTypeChange = (newSessionType: string) => {
-    // Reset sub-options when session type changes
     const updates: Partial<BookingFormData> = {
       session_type: newSessionType,
       karaoke_option: '',
@@ -354,7 +350,6 @@ export default function BookingsManagementPage() {
       session_details: '',
     };
 
-    // For session types that don't need sub-options, update studio/rate immediately
     if (newSessionType === 'Only Drum Practice' || newSessionType === 'Walk-in') {
       const { studio, rate } = updateStudioAndRate(
         newSessionType, '', '', [], '', bookingFormData.studio
@@ -372,7 +367,7 @@ export default function BookingsManagementPage() {
     type: 'karaoke' | 'live' | 'band' | 'recording',
     value: string | BandEquipment[]
   ) => {
-    let updates: Partial<BookingFormData> = {};
+    const updates: Partial<BookingFormData> = {};
     let newKaraokeOption = bookingFormData.karaoke_option;
     let newLiveOption = bookingFormData.live_option;
     let newBandEquipment = bookingFormData.band_equipment;
@@ -405,7 +400,6 @@ export default function BookingsManagementPage() {
 
     updates.session_details = sessionDetails;
 
-    // Update studio and rate
     const { studio, rate } = updateStudioAndRate(
       bookingFormData.session_type,
       newKaraokeOption,
@@ -420,7 +414,7 @@ export default function BookingsManagementPage() {
     setBookingFormData(prev => ({ ...prev, ...updates }));
   };
 
-  // Track allowed studios based on current selection
+  // Get allowed studios based on current selection
   const getAllowedStudios = (): StudioName[] => {
     const { session_type, karaoke_option, live_option, band_equipment, recording_option } = bookingFormData;
     if (!session_type || session_type === 'Walk-in') {
@@ -435,7 +429,7 @@ export default function BookingsManagementPage() {
     return suggestion.allowedStudios;
   };
 
-  // Handler for studio change - update rate
+  // Handler for studio change
   const handleStudioChange = (newStudio: string) => {
     const rate = getStudioRate(newStudio as StudioName, bookingFormData.session_type as SessionType, {
       karaokeOption: bookingFormData.karaoke_option || undefined,
@@ -454,7 +448,7 @@ export default function BookingsManagementPage() {
 
     try {
       const token = await getAccessToken();
-      const response = await fetch('/api/admin/book', {
+      const response = await fetch('/api/staff/book', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -470,7 +464,6 @@ export default function BookingsManagementPage() {
           date: bookingFormData.date,
           start_time: bookingFormData.start_time,
           end_time: bookingFormData.end_time,
-          rate_per_hour: bookingFormData.rate_per_hour,
           notes: bookingFormData.notes || undefined,
           send_notification: bookingFormData.send_notification,
         }),
@@ -554,12 +547,12 @@ export default function BookingsManagementPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Bookings</h1>
-          <p className="text-zinc-400 mt-1">View and manage all bookings</p>
+          <h1 className="text-2xl font-bold text-white">My Bookings</h1>
+          <p className="text-zinc-400 mt-1">View and manage bookings you&apos;ve created</p>
         </div>
         <motion.button
           onClick={() => setShowNewBookingModal(true)}
-          className="btn-primary flex items-center gap-2"
+          className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-semibold py-3 px-6 rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
@@ -578,7 +571,7 @@ export default function BookingsManagementPage() {
               placeholder="Search by name, phone, or studio..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 pl-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+              className="w-full px-4 pl-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
             />
           </div>
           <div className="sm:w-48">
@@ -603,12 +596,13 @@ export default function BookingsManagementPage() {
       <div className="glass rounded-2xl overflow-hidden">
         {loading ? (
           <div className="p-12 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+            <Loader2 className="w-8 h-8 text-teal-400 animate-spin" />
           </div>
         ) : filteredBookings.length === 0 ? (
           <div className="p-12 text-center">
             <Calendar className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
             <p className="text-zinc-400">No bookings found</p>
+            <p className="text-zinc-500 text-sm mt-2">Create your first booking to get started</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -623,9 +617,6 @@ export default function BookingsManagementPage() {
                   </th>
                   <th className="text-left p-4 text-sm font-medium text-zinc-400">
                     Date & Time
-                  </th>
-                  <th className="text-left p-4 text-sm font-medium text-zinc-400">
-                    Amount
                   </th>
                   <th className="text-left p-4 text-sm font-medium text-zinc-400">
                     Status
@@ -669,13 +660,6 @@ export default function BookingsManagementPage() {
                           {formatTime(booking.end_time)}
                         </p>
                       </div>
-                    </td>
-                    <td className="p-4">
-                      <p className="text-white">
-                        {booking.total_amount
-                          ? `₹${booking.total_amount.toLocaleString('en-IN')}`
-                          : 'N/A'}
-                      </p>
                     </td>
                     <td className="p-4">
                       {(() => {
@@ -759,8 +743,8 @@ export default function BookingsManagementPage() {
 
               <div className="space-y-4">
                 <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl">
-                  <div className="w-12 h-12 rounded-full bg-violet-500/20 flex items-center justify-center">
-                    <User className="w-6 h-6 text-violet-400" />
+                  <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center">
+                    <User className="w-6 h-6 text-teal-400" />
                   </div>
                   <div>
                     <p className="text-white font-medium">
@@ -789,7 +773,7 @@ export default function BookingsManagementPage() {
                   <div className="p-4 bg-white/5 rounded-xl">
                     <p className="text-zinc-400 text-sm mb-1">Studio</p>
                     <p className="text-white font-medium flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-violet-400" />
+                      <MapPin className="w-4 h-4 text-teal-400" />
                       {selectedBooking.studio}
                     </p>
                   </div>
@@ -802,14 +786,14 @@ export default function BookingsManagementPage() {
                   <div className="p-4 bg-white/5 rounded-xl">
                     <p className="text-zinc-400 text-sm mb-1">Date</p>
                     <p className="text-white font-medium flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-violet-400" />
+                      <Calendar className="w-4 h-4 text-teal-400" />
                       {formatDate(selectedBooking.date)}
                     </p>
                   </div>
                   <div className="p-4 bg-white/5 rounded-xl">
                     <p className="text-zinc-400 text-sm mb-1">Time</p>
                     <p className="text-white font-medium flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-violet-400" />
+                      <Clock className="w-4 h-4 text-teal-400" />
                       {formatTime(selectedBooking.start_time)} -{' '}
                       {formatTime(selectedBooking.end_time)}
                     </p>
@@ -819,14 +803,6 @@ export default function BookingsManagementPage() {
                     <p className="text-white font-medium">
                       {selectedBooking.group_size}{' '}
                       {selectedBooking.group_size === 1 ? 'person' : 'people'}
-                    </p>
-                  </div>
-                  <div className="p-4 bg-white/5 rounded-xl">
-                    <p className="text-zinc-400 text-sm mb-1">Amount</p>
-                    <p className="text-white font-medium">
-                      {selectedBooking.total_amount
-                        ? `₹${selectedBooking.total_amount.toLocaleString('en-IN')}`
-                        : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -848,7 +824,7 @@ export default function BookingsManagementPage() {
                         <button
                           onClick={() => handleConfirm(selectedBooking.id)}
                           disabled={updating}
-                          className="flex-1 btn-primary flex items-center justify-center gap-2 py-3 disabled:opacity-50"
+                          className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-semibold py-3 px-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                           {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                           Confirm
@@ -1007,8 +983,8 @@ export default function BookingsManagementPage() {
             >
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center">
-                    <Plus className="w-5 h-5 text-violet-400" />
+                  <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center">
+                    <Plus className="w-5 h-5 text-teal-400" />
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-white">Create New Booking</h2>
@@ -1158,7 +1134,7 @@ export default function BookingsManagementPage() {
                               key={opt.value}
                               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
                                 bookingFormData.band_equipment.includes(opt.value)
-                                  ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
+                                  ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30'
                                   : 'bg-white/5 text-zinc-400 border border-white/10 hover:bg-white/10'
                               }`}
                             >
@@ -1203,7 +1179,7 @@ export default function BookingsManagementPage() {
                     <div className={bookingFormData.session_type === 'Band' ? 'sm:col-span-2' : ''}>
                       <label className="block text-sm text-zinc-400 mb-1.5">
                         Studio * {getAllowedStudios().length < 3 && (
-                          <span className="text-xs text-violet-400 ml-2">
+                          <span className="text-xs text-teal-400 ml-2">
                             (Limited based on selection)
                           </span>
                         )}
@@ -1223,17 +1199,6 @@ export default function BookingsManagementPage() {
                           );
                         })}
                       </select>
-                    </div>
-
-                    {/* Rate Display */}
-                    <div className={bookingFormData.session_type === 'Only Drum Practice' || bookingFormData.session_type === 'Walk-in' ? '' : 'sm:col-span-2'}>
-                      <label className="block text-sm text-zinc-400 mb-1.5">Rate per Hour</label>
-                      <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-                        <span className="text-lg font-bold text-emerald-400">
-                          ₹{bookingFormData.rate_per_hour.toLocaleString('en-IN')}/hr
-                        </span>
-                        <span className="text-zinc-500 text-sm ml-2">(Auto-calculated)</span>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -1276,37 +1241,26 @@ export default function BookingsManagementPage() {
                       />
                     </div>
                   </div>
-                </div>
+              </div>
 
-                {/* Pricing & Notes */}
+                {/* Notes */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
-                    <FileText className="w-4 h-4" /> Pricing & Notes
+                    <FileText className="w-4 h-4" /> Notes & Notifications
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-zinc-400 mb-1.5">Rate per Hour (₹)</label>
-                      <input
-                        type="number"
-                        placeholder="e.g., 400"
-                        value={bookingFormData.rate_per_hour}
-                        onChange={(e) => setBookingFormData({ ...bookingFormData, rate_per_hour: parseInt(e.target.value) || 0 })}
-                        className="input"
-                        min={0}
-                      />
-                    </div>
-                    <div className="flex items-end">
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="flex items-center">
                       <label className="flex items-center gap-2 cursor-pointer p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
                         <input
                           type="checkbox"
                           checked={bookingFormData.send_notification}
                           onChange={(e) => setBookingFormData({ ...bookingFormData, send_notification: e.target.checked })}
-                          className="w-4 h-4 rounded border-zinc-600 text-violet-500 focus:ring-violet-500 bg-zinc-800"
+                          className="w-4 h-4 rounded border-zinc-600 text-teal-500 focus:ring-teal-500 bg-zinc-800"
                         />
                         <span className="text-sm text-zinc-300">Send email notification</span>
                       </label>
                     </div>
-                    <div className="sm:col-span-2">
+                    <div>
                       <label className="block text-sm text-zinc-400 mb-1.5">Notes</label>
                       <textarea
                         placeholder="Additional notes..."
@@ -1331,7 +1285,7 @@ export default function BookingsManagementPage() {
                   <button
                     type="submit"
                     disabled={creatingBooking || !bookingFormData.phone || bookingFormData.phone.length !== 10}
-                    className="flex-1 btn-primary flex items-center justify-center gap-2 py-3 disabled:opacity-50"
+                    className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {creatingBooking ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
