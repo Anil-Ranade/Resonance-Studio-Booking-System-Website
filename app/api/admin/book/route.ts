@@ -4,6 +4,7 @@ import { supabaseServer } from "@/lib/supabaseServer";
 import { createClient } from "@supabase/supabase-js";
 import { createEvent } from "@/lib/googleCalendar";
 import { sendAdminBookingConfirmationEmail } from "@/lib/email";
+import { logNewBooking } from "@/lib/googleSheets";
 
 // Verify admin token from Authorization header
 async function verifyAdminToken(request: NextRequest) {
@@ -296,6 +297,27 @@ export async function POST(request: NextRequest) {
 
     if (reminderError) {
       console.error("[Admin Book API] Failed to insert reminders:", reminderError);
+    }
+
+    // Log booking to Google Sheet
+    try {
+      await logNewBooking({
+        id: booking.id,
+        date,
+        studio,
+        session_type: session_type || "Walk-in",
+        session_details,
+        start_time,
+        end_time,
+        name,
+        phone_number: phone,
+        email,
+        total_amount: total_amount ?? undefined,
+        status: "confirmed",
+        notes: notes || "Booked by admin",
+      });
+    } catch (sheetError) {
+      console.error("[Admin Book API] Failed to log booking to Google Sheet:", sheetError);
     }
 
     return NextResponse.json({ 

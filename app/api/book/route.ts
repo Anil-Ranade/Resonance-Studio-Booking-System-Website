@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { createEvent, deleteEvent, updateEvent } from "@/lib/googleCalendar";
 import { sendBookingConfirmationEmail, sendBookingUpdateEmail } from "@/lib/email";
+import { logNewBooking, logBookingUpdate } from "@/lib/googleSheets";
 
 interface BookRequest {
   phone: string;
@@ -343,6 +344,26 @@ export async function POST(request: Request) {
       console.error("[Book API] Failed to insert reminders:", reminderError);
     }
 
+    // Log booking to Google Sheet
+    try {
+      await logNewBooking({
+        id: booking.id,
+        date,
+        studio,
+        session_type,
+        session_details,
+        start_time,
+        end_time,
+        name,
+        phone_number: phone,
+        email: userEmail,
+        total_amount: total_amount ?? undefined,
+        status: "confirmed",
+      });
+    } catch (sheetError) {
+      console.error("[Book API] Failed to log booking to Google Sheet:", sheetError);
+    }
+
     return NextResponse.json({ success: true, booking });
   } catch (error) {
     console.error("[Book API] Unexpected error:", error);
@@ -642,6 +663,26 @@ export async function PUT(request: Request) {
         .insert(reminders);
     } catch (reminderError) {
       console.error("[Book API PUT] Failed to update reminders:", reminderError);
+    }
+
+    // Log booking update to Google Sheet
+    try {
+      await logBookingUpdate({
+        id: original_booking_id,
+        date,
+        studio,
+        session_type,
+        session_details,
+        start_time,
+        end_time,
+        name,
+        phone_number: phone,
+        email: userEmail,
+        total_amount: total_amount ?? undefined,
+        status: updatedBooking.status,
+      });
+    } catch (sheetError) {
+      console.error("[Book API PUT] Failed to log booking update to Google Sheet:", sheetError);
     }
 
     return NextResponse.json({ success: true, booking: updatedBooking });
