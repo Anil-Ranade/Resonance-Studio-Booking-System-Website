@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
   let bookingsQuery = supabase
     .from("bookings")
     .select("id, name, phone_number, studio, date, start_time, end_time, status, session_type")
-    .in("status", ["pending", "confirmed"]);
+    .in("status", ["confirmed"]);
 
   if (studio && studio !== "all") {
     bookingsQuery = bookingsQuery.eq("studio", studio);

@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
       .from("bookings")
       .select("*", { count: "exact", head: true })
       .eq("date", today)
-      .in("status", ["confirmed", "pending"]);
+      .in("status", ["confirmed"]);
 
     // Get total revenue from confirmed/completed bookings
     const { data: revenueData } = await supabase

@@ -87,8 +87,44 @@ export default function ConfirmStep() {
 
       if (response.ok && data.success) {
         // For modifications, use the original booking ID; for new bookings, use the new ID
-        setBookingId(isModification ? draft.originalBookingId.slice(0, 8) : (data.booking?.id?.slice(0, 8) || ''));
+        const newBookingId = isModification ? draft.originalBookingId.slice(0, 8) : (data.booking?.id?.slice(0, 8) || '');
+        setBookingId(newBookingId);
         setBookingComplete(true);
+        
+        // Automatically open WhatsApp with draft message for owner to send to customer
+        const ownerPhone = '917798222880'; // Owner's WhatsApp number
+        const customerPhone = draft.phone.startsWith('91') ? draft.phone : `91${draft.phone}`;
+        const bookingDate = new Date(draft.date).toLocaleDateString('en-IN', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        });
+        const totalAmount = (draft.ratePerHour * draft.duration).toLocaleString('en-IN');
+        
+        const whatsappMessage = `🎵 *Resonance Studio - Booking ${isModification ? 'Updated' : 'Confirmed'}!*
+
+Hi ${draft.name || 'there'}! 👋
+
+Your booking has been ${isModification ? 'updated' : 'confirmed'}:
+
+📍 *Studio:* ${draft.studio}
+📅 *Date:* ${bookingDate}
+⏰ *Time:* ${draft.selectedSlot?.start?.slice(0, 5)} - ${draft.selectedSlot?.end?.slice(0, 5)}
+🎤 *Session:* ${draft.sessionType || 'N/A'}
+💰 *Amount:* ₹${totalAmount}
+
+Booking ID: ${newBookingId}
+
+Please arrive 10 minutes before your session.
+
+See you soon! 🎶
+
+---
+📱 *Customer Phone:* +91 ${draft.phone}`;
+        
+        // Open WhatsApp with owner's number (owner will forward to customer)
+        window.open(`https://wa.me/${ownerPhone}?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
       } else {
         setError(data.error || (isModification ? 'Failed to update booking' : 'Failed to create booking'));
       }

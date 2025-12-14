@@ -82,9 +82,9 @@ export interface BookingDraft {
   originalChoices: OriginalBookingChoices | null;
 }
 
-export type BookingStep = 'phone' | 'session' | 'participants' | 'studio' | 'availability' | 'time' | 'review' | 'otp' | 'confirm';
+export type BookingStep = 'phone' | 'session' | 'participants' | 'studio' | 'time' | 'review' | 'otp' | 'confirm';
 
-const STEP_ORDER: BookingStep[] = ['phone', 'session', 'participants', 'studio', 'availability', 'time', 'review', 'otp', 'confirm'];
+const STEP_ORDER: BookingStep[] = ['phone', 'session', 'participants', 'studio', 'time', 'review', 'otp', 'confirm'];
 
 const initialDraft: BookingDraft = {
   phone: '',
@@ -395,8 +395,6 @@ export function BookingProvider({ children }: { children: ReactNode }) {
         return false;
       case 'studio':
         return draft.studio !== '' && draft.allowedStudios.includes(draft.studio);
-      case 'availability':
-        return true; // Availability step is informational, always allow proceeding
       case 'time':
         return draft.date !== '' && draft.selectedSlot !== null;
       case 'review':

@@ -122,11 +122,10 @@ const isBookingTimePassed = (date: string, endTime: string): boolean => {
   return now > bookingDate;
 };
 
-// Get effective status - if time has passed and booking is confirmed/pending, treat as needing completion
-const getEffectiveStatus = (booking: Booking): Booking['status'] | 'needs_completion' => {
-  if ((booking.status === 'confirmed' || booking.status === 'pending') && 
-      isBookingTimePassed(booking.date, booking.end_time)) {
-    return 'needs_completion';
+// Get effective status - if time has passed and booking is confirmed, treat as completed
+const getEffectiveStatus = (booking: Booking): Booking['status'] => {
+  if (booking.status === 'confirmed' && isBookingTimePassed(booking.date, booking.end_time)) {
+    return 'completed';
   }
   return booking.status;
 };
@@ -505,7 +504,7 @@ export default function BookingsManagementPage() {
     const matchesStatus =
       statusFilter === 'all' || 
       booking.status === statusFilter ||
-      (statusFilter === 'needs_completion' && effectiveStatus === 'needs_completion');
+      (statusFilter === 'completed' && effectiveStatus === 'completed');
     return matchesSearch && matchesStatus;
   });
 
@@ -513,16 +512,12 @@ export default function BookingsManagementPage() {
     switch (status) {
       case 'confirmed':
         return 'bg-emerald-500/20 text-emerald-400';
-      case 'pending':
-        return 'bg-amber-500/20 text-amber-400';
       case 'cancelled':
         return 'bg-red-500/20 text-red-400';
       case 'completed':
         return 'bg-blue-500/20 text-blue-400';
       case 'no_show':
         return 'bg-zinc-500/20 text-zinc-400';
-      case 'needs_completion':
-        return 'bg-orange-500/20 text-orange-400';
       default:
         return 'bg-zinc-500/20 text-zinc-400';
     }
@@ -588,8 +583,6 @@ export default function BookingsManagementPage() {
               className="select"
             >
               <option value="all">All Status</option>
-              <option value="needs_completion">Needs Action</option>
-              <option value="pending">Pending</option>
               <option value="confirmed">Confirmed</option>
               <option value="completed">Completed</option>
               <option value="no_show">No Show</option>
@@ -837,6 +830,7 @@ export default function BookingsManagementPage() {
                     <p className="text-white">{selectedBooking.notes}</p>
                   </div>
                 )}
+
 
                 {/* Action Buttons based on status */}
                 <div className="pt-4 border-t border-white/10">

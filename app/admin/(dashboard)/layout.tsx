@@ -29,6 +29,7 @@ const navItems = [
   { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { label: 'Availability', href: '/admin/availability', icon: Clock },
   { label: 'Bookings', href: '/admin/bookings', icon: Calendar },
+  { label: 'Staff', href: '/admin/staff', icon: Users },
   { label: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 

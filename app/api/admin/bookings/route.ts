@@ -174,7 +174,7 @@ export async function PUT(request: NextRequest) {
             .eq("id", id);
         }
         // If booking was previously cancelled and is now confirmed/pending, create a new event
-        else if (existingBooking.status === "cancelled" && (status === "confirmed" || status === "pending") && !existingBooking.google_event_id) {
+        else if (existingBooking.status === "cancelled" && (status === "confirmed") && !existingBooking.google_event_id) {
           const startDateTime = `${booking.date}T${booking.start_time}:00`;
           const endDateTime = `${booking.date}T${booking.end_time}:00`;
 

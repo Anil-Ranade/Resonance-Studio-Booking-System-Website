@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Calendar, Clock, ChevronLeft, ChevronRight, Loader2, AlertCircle, RotateCcw, Minus, Plus } from 'lucide-react';
+import { Calendar, Clock, ChevronLeft, ChevronRight, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 import { useBooking, TimeSlot } from '../contexts/BookingContext';
 import StepLayout from './StepLayout';
 
@@ -9,16 +9,32 @@ interface AvailableSlot extends TimeSlot {
   available: boolean;
 }
 
+interface ContinuousSlab {
+  start: string;
+  end: string;
+  startHour: number;
+  endHour: number;
+  duration: number;
+  label: string;
+}
+
+// Helper to normalize time to HH:MM format (strips seconds if present)
+const normalizeTime = (time: string): string => {
+  const parts = time.split(':');
+  return `${parts[0]}:${parts[1]}`;
+};
+
 export default function TimeStep() {
   const { draft, updateDraft, nextStep } = useBooking();
   const [date, setDate] = useState(draft.date || '');
   const [slots, setSlots] = useState<AvailableSlot[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedSlots, setSelectedSlots] = useState<TimeSlot[]>([]);
-  const [duration, setDuration] = useState(draft.duration || 1);
-  const [maxBookingDuration, setMaxBookingDuration] = useState(8);
+  const [selectedSlab, setSelectedSlab] = useState<ContinuousSlab | null>(null);
+  const [startTime, setStartTime] = useState<string>('');
+  const [endTime, setEndTime] = useState<string>('');
   const [minBookingDuration, setMinBookingDuration] = useState(1);
+  const [maxBookingDuration, setMaxBookingDuration] = useState(8);
   const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
   const dateInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,25 +67,19 @@ export default function TimeStep() {
     return maxDate.toISOString().split('T')[0];
   };
 
-  // Check if slot is the original slot in edit mode
-  const isOriginalSlot = (slot: { start: string; end: string }) => {
-    if (!draft.isEditMode || !draft.originalChoices) return false;
-    return date === draft.originalChoices.date && 
-           slot.start === draft.originalChoices.start_time &&
-           slot.end === draft.originalChoices.end_time;
-  };
-
-  // Fetch available slots when date, studio, or duration changes
+  // Fetch available slots when date or studio changes
   const fetchSlots = useCallback(async () => {
     if (!date || !draft.studio) return;
 
     setLoading(true);
     setError('');
     setSlots([]);
-    setSelectedSlots([]);
+    setSelectedSlab(null);
+    setStartTime('');
+    setEndTime('');
 
     try {
-      let url = `/api/availability?date=${date}&studio=${encodeURIComponent(draft.studio)}&duration=${duration}`;
+      let url = `/api/availability?date=${date}&studio=${encodeURIComponent(draft.studio)}&duration=1`;
       if (draft.isEditMode && draft.originalBookingId) {
         url += `&excludeBookingId=${draft.originalBookingId}`;
       }
@@ -96,38 +106,146 @@ export default function TimeStep() {
     } finally {
       setLoading(false);
     }
-  }, [date, draft.studio, duration, draft.isEditMode, draft.originalBookingId]);
+  }, [date, draft.studio, draft.isEditMode, draft.originalBookingId]);
 
   useEffect(() => {
-    if (date && duration) {
+    if (date) {
       fetchSlots();
     }
-  }, [date, duration, fetchSlots]);
+  }, [date, fetchSlots]);
 
-  // Initialize selected slots from draft when in edit mode
-  useEffect(() => {
-    if (draft.selectedSlot && slots.length > 0) {
-      const startSlot = slots.find(s => s.start === draft.selectedSlot?.start);
-      if (startSlot) {
-        const slotsToSelect: TimeSlot[] = [];
-        for (let i = 0; i < duration; i++) {
-          const slotIndex = slots.findIndex(s => s.start === draft.selectedSlot?.start);
-          if (slotIndex >= 0 && slots[slotIndex + i]) {
-            slotsToSelect.push({ start: slots[slotIndex + i].start, end: slots[slotIndex + i].end });
-          }
+  // Generate continuous slabs from available slots
+  const getContinuousSlabs = useCallback((): ContinuousSlab[] => {
+    if (slots.length === 0) return [];
+
+    const availableSlots = slots.filter(s => s.available);
+    if (availableSlots.length === 0) return [];
+
+    const slabs: ContinuousSlab[] = [];
+    let currentSlabStart: string | null = null;
+    let currentSlabStartHour = 0;
+    let previousEndHour = -1;
+
+    for (let i = 0; i < slots.length; i++) {
+      const slot = slots[i];
+      const [startHour] = slot.start.split(':').map(Number);
+      const [endHour] = slot.end.split(':').map(Number);
+
+      if (slot.available) {
+        if (currentSlabStart === null) {
+          // Start a new slab
+          currentSlabStart = normalizeTime(slot.start);
+          currentSlabStartHour = startHour;
+          previousEndHour = endHour;
+        } else if (startHour === previousEndHour) {
+          // Continue the slab
+          previousEndHour = endHour;
+        } else {
+          // End current slab and start a new one
+          const slabEndTime = `${previousEndHour.toString().padStart(2, '0')}:00`;
+          const duration = previousEndHour - currentSlabStartHour;
+          slabs.push({
+            start: currentSlabStart,
+            end: slabEndTime,
+            startHour: currentSlabStartHour,
+            endHour: previousEndHour,
+            duration,
+            label: `${formatTimeDisplay(currentSlabStart)} - ${formatTimeDisplay(slabEndTime)}`,
+          });
+          currentSlabStart = normalizeTime(slot.start);
+          currentSlabStartHour = startHour;
+          previousEndHour = endHour;
         }
-        if (slotsToSelect.length > 0) {
-          setSelectedSlots(slotsToSelect);
+      } else {
+        // Slot not available, close any open slab
+        if (currentSlabStart !== null) {
+          const slabEndTime = `${previousEndHour.toString().padStart(2, '0')}:00`;
+          const duration = previousEndHour - currentSlabStartHour;
+          slabs.push({
+            start: currentSlabStart,
+            end: slabEndTime,
+            startHour: currentSlabStartHour,
+            endHour: previousEndHour,
+            duration,
+            label: `${formatTimeDisplay(currentSlabStart)} - ${formatTimeDisplay(slabEndTime)}`,
+          });
+          currentSlabStart = null;
         }
       }
     }
-  }, [slots, draft.selectedSlot, duration]);
+
+    // Close any remaining open slab
+    if (currentSlabStart !== null) {
+      const slabEndTime = `${previousEndHour.toString().padStart(2, '0')}:00`;
+      const duration = previousEndHour - currentSlabStartHour;
+      slabs.push({
+        start: currentSlabStart,
+        end: slabEndTime,
+        startHour: currentSlabStartHour,
+        endHour: previousEndHour,
+        duration,
+        label: `${formatTimeDisplay(currentSlabStart)} - ${formatTimeDisplay(slabEndTime)}`,
+      });
+    }
+
+    // Filter slabs that can accommodate at least min booking duration
+    return slabs.filter(slab => slab.duration >= minBookingDuration);
+  }, [slots, minBookingDuration]);
+
+  // Get available start times within a slab
+  const getStartTimes = useCallback(() => {
+    if (!selectedSlab) return [];
+    
+    const times: { time: string; label: string }[] = [];
+    for (let hour = selectedSlab.startHour; hour < selectedSlab.endHour; hour++) {
+      const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+      times.push({
+        time: timeStr,
+        label: formatTimeDisplay(timeStr),
+      });
+    }
+    return times;
+  }, [selectedSlab]);
+
+  // Get available end times based on selected start time
+  const getEndTimes = useCallback(() => {
+    if (!selectedSlab || !startTime) return [];
+    
+    const [startHour] = startTime.split(':').map(Number);
+    const times: { time: string; label: string; duration: number }[] = [];
+    
+    // End time must be at least minBookingDuration hours after start
+    const minEndHour = startHour + minBookingDuration;
+    // End time cannot exceed slab end or maxBookingDuration
+    const maxEndHour = Math.min(selectedSlab.endHour, startHour + maxBookingDuration);
+    
+    for (let hour = minEndHour; hour <= maxEndHour; hour++) {
+      const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+      const duration = hour - startHour;
+      times.push({
+        time: timeStr,
+        label: formatTimeDisplay(timeStr),
+        duration,
+      });
+    }
+    return times;
+  }, [selectedSlab, startTime, minBookingDuration, maxBookingDuration]);
+
+  // Format time for display in 12-hour format
+  const formatTimeDisplay = (time: string) => {
+    const [hours] = time.split(':').map(Number);
+    const displayHour = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+    const period = hours >= 12 ? 'PM' : 'AM';
+    return `${displayHour}:00 ${period}`;
+  };
 
   // Handle date change
   const handleDateChange = (newDate: string) => {
     setDate(newDate);
     updateDraft({ date: newDate, selectedSlot: null });
-    setSelectedSlots([]);
+    setSelectedSlab(null);
+    setStartTime('');
+    setEndTime('');
   };
 
   // Navigate dates
@@ -148,32 +266,31 @@ export default function TimeStep() {
     dateInputRef.current?.showPicker();
   };
 
-  // Handle slot selection
-  const handleSlotClick = (slot: AvailableSlot) => {
-    if (!slot.available) return;
+  // Handle slab selection
+  const handleSlabSelect = (slab: ContinuousSlab) => {
+    setSelectedSlab(slab);
+    setStartTime('');
+    setEndTime('');
+    updateDraft({ selectedSlot: null });
+  };
 
-    if (draft.selectedSlot && draft.selectedSlot.start === slot.start) {
-      setSelectedSlots([]);
-      updateDraft({ selectedSlot: null });
-      return;
-    }
+  // Handle start time selection
+  const handleStartTimeSelect = (time: string) => {
+    setStartTime(time);
+    setEndTime('');
+    updateDraft({ selectedSlot: null });
+  };
 
-    setSelectedSlots([slot]);
-    setError('');
+  // Handle end time selection
+  const handleEndTimeSelect = (time: string, duration: number) => {
+    setEndTime(time);
     updateDraft({
       selectedSlot: {
-        start: slot.start,
-        end: slot.end,
+        start: startTime,
+        end: time,
       },
       duration,
     });
-  };
-
-  // Handle duration change
-  const handleDurationChange = (newDuration: number) => {
-    setDuration(newDuration);
-    updateDraft({ duration: newDuration, selectedSlot: null });
-    setSelectedSlots([]);
   };
 
   const handleNext = () => {
@@ -182,48 +299,10 @@ export default function TimeStep() {
     }
   };
 
-  // Format time for display in 24-hour format (e.g., "08:00", "14:00")
-  const formatTime = (time: string) => {
-    return time.slice(0, 5);
-  };
-
-  // Format time slot for display (e.g., "08:00 - 09:00")
-  // Format time slot for display (e.g., "08:00 - 09:00")
+  // Format time slot for display
   const formatTimeSlot = (start: string, end: string) => {
-    return `${formatTime(start)} - ${formatTime(end)}`;
+    return `${formatTimeDisplay(start)} - ${formatTimeDisplay(end)}`;
   };
-
-  // Generate combined duration slots directly from available slots
-  const generateDurationSlots = () => {
-    if (slots.length === 0) return [];
-    
-    const durationSlots: { start: string; end: string; available: boolean }[] = [];
-    
-    for (let i = 0; i <= slots.length - duration; i++) {
-      const startSlot = slots[i];
-      const endSlotIndex = i + duration - 1;
-      const endSlot = slots[endSlotIndex];
-      
-      // Check if all consecutive slots for the duration are available
-      let allAvailable = true;
-      for (let j = 0; j < duration; j++) {
-        if (!slots[i + j]?.available) {
-          allAvailable = false;
-          break;
-        }
-      }
-      
-      durationSlots.push({
-        start: startSlot.start,
-        end: endSlot.end,
-        available: allAvailable,
-      });
-    }
-    
-    return durationSlots;
-  };
-
-  const durationSlots = generateDurationSlots();
 
   // Format date for display
   const formatDate = (dateStr: string) => {
@@ -233,6 +312,20 @@ export default function TimeStep() {
       month: 'short',
     });
   };
+
+  const continuousSlabs = getContinuousSlabs();
+  const startTimes = getStartTimes();
+  const endTimes = getEndTimes();
+
+  // Calculate duration and price
+  const getDuration = () => {
+    if (!startTime || !endTime) return 0;
+    const [startHour] = startTime.split(':').map(Number);
+    const [endHour] = endTime.split(':').map(Number);
+    return endHour - startHour;
+  };
+
+  const duration = getDuration();
 
   return (
     <StepLayout
@@ -244,7 +337,7 @@ export default function TimeStep() {
       onNext={handleNext}
       isNextDisabled={!date || !draft.selectedSlot}
     >
-      <div className="space-y-3">
+      <div className="space-y-4">
         {/* Edit Mode Banner */}
         {draft.isEditMode && draft.originalChoices && (
           <div className="p-2 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center gap-2">
@@ -256,140 +349,100 @@ export default function TimeStep() {
           </div>
         )}
         
-        {/* Date and Duration in a row */}
-        <div className="flex gap-3">
-          {/* Date selector */}
-          <div className="flex-1 space-y-1">
-            <label className="text-xs text-zinc-400 flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              Date
-            </label>
+        {/* Date selector */}
+        <div className="space-y-2">
+          <label className="text-xs text-zinc-400 flex items-center gap-1">
+            <Calendar className="w-3 h-3" />
+            Select Date
+          </label>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigateDate(-1)}
+              disabled={!date || date === getMinDate()}
+              className="p-2.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
             
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => navigateDate(-1)}
-                disabled={!date || date === getMinDate()}
-                className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              
-              <button
-                onClick={openDatePicker}
-                className="flex-1 p-2 rounded-lg bg-zinc-800 border border-violet-500/50 hover:border-violet-500 transition-all cursor-pointer"
-              >
-                <div className="flex items-center justify-center gap-1">
-                  <Calendar className="w-4 h-4 text-violet-400" />
-                  <span className="text-white font-medium text-sm">
-                    {date ? formatDate(date) : 'Select'}
-                  </span>
-                </div>
-              </button>
-              
-              <button
-                onClick={() => navigateDate(1)}
-                disabled={!date || date === getMaxDate()}
-                className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-            
-            {/* Hidden date input */}
-            <input
-              ref={dateInputRef}
-              type="date"
-              value={date}
-              min={getMinDate()}
-              max={getMaxDate()}
-              onChange={(e) => handleDateChange(e.target.value)}
-              className="sr-only"
-            />
-          </div>
-
-          {/* Duration selector */}
-          <div className="space-y-1">
-            <label className="text-xs text-zinc-400 flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              Duration
-            </label>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => {
-                  if (duration > minBookingDuration) {
-                    handleDurationChange(duration - 1);
-                  }
-                }}
-                disabled={duration <= minBookingDuration}
-                className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-              <div className="px-3 py-2 rounded-lg bg-zinc-800 border border-violet-500/50 min-w-[60px] text-center">
-                <span className="text-white font-medium text-sm">{duration} hr{duration > 1 ? 's' : ''}</span>
+            <button
+              onClick={openDatePicker}
+              className="flex-1 p-3 rounded-lg bg-zinc-800 border border-violet-500/50 hover:border-violet-500 transition-all cursor-pointer"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Calendar className="w-5 h-5 text-violet-400" />
+                <span className="text-white font-medium">
+                  {date ? formatDate(date) : 'Select Date'}
+                </span>
               </div>
-              <button
-                onClick={() => {
-                  if (duration < maxBookingDuration) {
-                    handleDurationChange(duration + 1);
-                  }
-                }}
-                disabled={duration >= maxBookingDuration}
-                className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
+            </button>
+            
+            <button
+              onClick={() => navigateDate(1)}
+              disabled={!date || date === getMaxDate()}
+              className="p-2.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
+          
+          {/* Hidden date input */}
+          <input
+            ref={dateInputRef}
+            type="date"
+            value={date}
+            min={getMinDate()}
+            max={getMaxDate()}
+            onChange={(e) => handleDateChange(e.target.value)}
+            className="sr-only"
+          />
         </div>
 
-        {/* Time slots */}
-        {date && duration > 0 && (
-          <div className="space-y-1">
+        {/* Loading state */}
+        {loading && (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
+            <span className="ml-2 text-sm text-zinc-400">Loading availability...</span>
+          </div>
+        )}
+
+        {/* Error state */}
+        {error && (
+          <div className="flex items-center justify-center gap-2 py-4 text-amber-400">
+            <AlertCircle className="w-4 h-4" />
+            <span className="text-sm">{error}</span>
+          </div>
+        )}
+
+        {/* Available Time Slabs */}
+        {date && !loading && !error && (
+          <div className="space-y-2">
             <label className="text-xs text-zinc-400 flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              Select Time Slot
+              Available Time Slots
             </label>
             
-            {loading ? (
-              <div className="flex items-center justify-center py-3">
-                <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
-                <span className="ml-2 text-xs text-zinc-400">Loading...</span>
-              </div>
-            ) : error ? (
-              <div className="flex items-center justify-center gap-2 py-3 text-amber-400">
-                <AlertCircle className="w-4 h-4" />
-                <span className="text-xs">{error}</span>
-              </div>
-            ) : durationSlots.length === 0 ? (
-              <div className="text-center py-3 text-zinc-500 text-xs">
-                No slots available for {duration}-hour booking
+            {continuousSlabs.length === 0 ? (
+              <div className="text-center py-4 text-zinc-500 text-sm">
+                No available slots for this date
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-1.5 max-h-[140px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
-                {durationSlots.map((slot) => {
-                  const isOriginal = isOriginalSlot(slot);
-                  const isSelected = draft.selectedSlot?.start === slot.start && draft.selectedSlot?.end === slot.end;
+              <div className="flex flex-wrap gap-2">
+                {continuousSlabs.map((slab, index) => {
+                  const isSelected = selectedSlab?.start === slab.start && selectedSlab?.end === slab.end;
                   
                   return (
                     <button
-                      key={slot.start}
-                      onClick={() => handleSlotClick(slot as AvailableSlot)}
-                      disabled={!slot.available}
-                      className={`relative py-2 px-1 rounded-lg text-xs font-medium transition-all ${
+                      key={index}
+                      onClick={() => handleSlabSelect(slab)}
+                      className={`px-4 py-2.5 rounded-xl transition-all text-sm font-medium ${
                         isSelected
                           ? 'bg-violet-500 text-white ring-2 ring-violet-400'
-                          : isOriginal && slot.available
-                            ? 'bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/50 hover:bg-amber-500/30'
-                            : slot.available
-                              ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-                              : 'bg-zinc-900 text-zinc-600 cursor-not-allowed line-through'
+                          : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
                       }`}
                     >
-                      {isOriginal && !isSelected && slot.available && (
-                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full"></span>
-                      )}
-                      {formatTimeSlot(slot.start, slot.end)}
+                      {slab.label}
+                      <span className="ml-1.5 text-xs opacity-70">({slab.duration}hr{slab.duration > 1 ? 's' : ''})</span>
                     </button>
                   );
                 })}
@@ -398,18 +451,79 @@ export default function TimeStep() {
           </div>
         )}
 
-        {/* Selected time display - compact */}
+        {/* Start Time Selection */}
+        {selectedSlab && (
+          <div className="space-y-2">
+            <label className="text-xs text-zinc-400 flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              Start Time
+            </label>
+            
+            <div className="flex flex-wrap gap-2">
+              {startTimes.map((timeOption) => {
+                const isSelected = startTime === timeOption.time;
+                
+                return (
+                  <button
+                    key={timeOption.time}
+                    onClick={() => handleStartTimeSelect(timeOption.time)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      isSelected
+                        ? 'bg-violet-500 text-white ring-2 ring-violet-400'
+                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                    }`}
+                  >
+                    {timeOption.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* End Time Selection */}
+        {startTime && (
+          <div className="space-y-2">
+            <label className="text-xs text-zinc-400 flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              End Time
+            </label>
+            
+            <div className="flex flex-wrap gap-2">
+              {endTimes.map((timeOption) => {
+                const isSelected = endTime === timeOption.time;
+                
+                return (
+                  <button
+                    key={timeOption.time}
+                    onClick={() => handleEndTimeSelect(timeOption.time, timeOption.duration)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      isSelected
+                        ? 'bg-violet-500 text-white ring-2 ring-violet-400'
+                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                    }`}
+                  >
+                    {timeOption.label}
+                    <span className="ml-1.5 text-xs opacity-70">({timeOption.duration}hr{timeOption.duration > 1 ? 's' : ''})</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Selected time display summary */}
         {draft.selectedSlot && (
-          <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/30">
+          <div className="p-4 rounded-xl bg-violet-500/10 border border-violet-500/30">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-xs text-violet-400">Selected: </span>
+                <span className="text-xs text-violet-400">Your booking: </span>
                 <span className="text-white font-semibold">
                   {formatTimeSlot(draft.selectedSlot.start, draft.selectedSlot.end)}
                 </span>
                 <span className="text-zinc-400 text-xs ml-2">({duration}hr{duration > 1 ? 's' : ''})</span>
               </div>
-              <span className="text-violet-400 font-bold">₹{(draft.ratePerHour * duration).toLocaleString('en-IN')}</span>
+              <span className="text-violet-400 font-bold text-lg">₹{(draft.ratePerHour * duration).toLocaleString('en-IN')}</span>
             </div>
           </div>
         )}

@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
       .select("id, start_time, end_time, name, phone_number")
       .eq("studio", studio)
       .eq("date", date)
-      .in("status", ["confirmed", "pending"])
+      .in("status", ["confirmed"])
       .lt("start_time", end_time)
       .gt("end_time", start_time);
 

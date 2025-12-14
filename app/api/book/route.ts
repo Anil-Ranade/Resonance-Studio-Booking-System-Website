@@ -154,7 +154,7 @@ export async function POST(request: Request) {
       .select("id")
       .eq("studio", studio)
       .eq("date", date)
-      .in("status", ["confirmed", "pending"])
+      .in("status", ["confirmed"])
       .lt("start_time", adjustedEndTime)
       .gt("end_time", adjustedStartTime);
 
@@ -478,7 +478,7 @@ export async function PUT(request: Request) {
       .select("id")
       .eq("studio", studio)
       .eq("date", date)
-      .in("status", ["confirmed", "pending"])
+      .in("status", ["confirmed"])
       .neq("id", original_booking_id) // Exclude the current booking
       .lt("start_time", adjustedEndTime)
       .gt("end_time", adjustedStartTime);

@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       .from("bookings")
       .select("*")
       .eq("phone_number", normalizedPhone)
-      .in("status", ["confirmed", "pending"])
+      .in("status", ["confirmed"])
       .order("date", { ascending: true })
       .order("start_time", { ascending: true });
 

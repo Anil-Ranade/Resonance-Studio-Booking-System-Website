@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       .from("bookings")
       .select("id, name, phone_number, start_time, end_time, status, session_type, session_details, studio, date")
       .eq("date", date)
-      .in("status", ["confirmed", "pending"])
+      .in("status", ["confirmed"])
       .order("start_time", { ascending: true });
 
     if (studio && studio !== "all") {

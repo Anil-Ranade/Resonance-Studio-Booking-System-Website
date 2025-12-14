@@ -15,8 +15,9 @@ import { getSession } from '@/lib/supabaseAuth';
 interface DashboardStats {
   totalBookings: number;
   confirmedBookings: number;
-  pendingBookings: number;
+  pendingBookings: number; // Keep for API compatibility but not displayed
   cancelledBookings: number;
+  completedBookings: number;
   totalRevenue: number;
   todayBookings: number;
   availableSlots: number;
@@ -39,6 +40,7 @@ export default function StaffDashboard() {
     confirmedBookings: 0,
     pendingBookings: 0,
     cancelledBookings: 0,
+    completedBookings: 0,
     totalRevenue: 0,
     todayBookings: 0,
     availableSlots: 0,
@@ -117,12 +119,12 @@ export default function StaffDashboard() {
       iconColor: 'text-emerald-400',
     },
     {
-      label: 'Pending',
-      value: stats.pendingBookings.toLocaleString('en-IN'),
-      icon: AlertCircle,
-      color: 'from-amber-500 to-orange-600',
-      bgColor: 'bg-amber-500/10',
-      iconColor: 'text-amber-400',
+      label: 'Completed',
+      value: (stats.completedBookings || 0).toLocaleString('en-IN'),
+      icon: CheckCircle,
+      color: 'from-blue-500 to-indigo-600',
+      bgColor: 'bg-blue-500/10',
+      iconColor: 'text-blue-400',
     },
   ];
 
@@ -230,8 +232,8 @@ export default function StaffDashboard() {
                     className={`px-2 py-1 rounded-lg text-xs font-medium ${
                       booking.status === 'confirmed'
                         ? 'bg-emerald-500/20 text-emerald-400'
-                        : booking.status === 'pending'
-                        ? 'bg-amber-500/20 text-amber-400'
+                        : booking.status === 'completed'
+                        ? 'bg-blue-500/20 text-blue-400'
                         : 'bg-red-500/20 text-red-400'
                     }`}
                   >

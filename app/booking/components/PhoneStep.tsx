@@ -113,10 +113,7 @@ export default function PhoneStep() {
             otpVerified: true, // Skip OTP since device is trusted
           });
           
-          // Auto-proceed after showing welcome message
-          setTimeout(() => {
-            nextStep();
-          }, 1500);
+          // Don't auto-proceed - let user confirm
         } else {
           // Not auto-authenticated, fall back to normal flow
           setShowManualEntry(true);
@@ -261,23 +258,9 @@ export default function PhoneStep() {
   const emailValid = email.trim() === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const isValid = phoneValid && userChecked && (isExistingUser || (name.trim() !== '' && email.trim() !== '' && emailValid));
 
-  // Handle using a different number (override auto-login)
-  const handleUseDifferentNumber = () => {
-    setAutoLoginUser(null);
-    setShowManualEntry(true);
-    setPhone('');
-    setName('');
-    setEmail('');
-    setIsExistingUser(false);
-    setUserChecked(false);
-    updateDraft({
-      phone: '',
-      name: '',
-      email: '',
-      isExistingUser: false,
-      deviceTrusted: false,
-      otpVerified: false,
-    });
+  // Handle confirming the auto-detected user
+  const handleConfirmUser = () => {
+    nextStep();
   };
 
   // Show auto-login checking state
@@ -302,14 +285,15 @@ export default function PhoneStep() {
     );
   }
 
-  // Show auto-login success state
+  // Show auto-login success state - ask user to confirm
   if (autoLoginUser && !showManualEntry) {
     return (
       <StepLayout
         title="Welcome back!"
-        subtitle="We recognized your device"
-        showNext={false}
-        hideFooter={true}
+        subtitle="Is this you?"
+        showNext={true}
+        onNext={handleConfirmUser}
+        nextLabel="Yes, continue"
       >
         <div className="flex flex-col items-center justify-center py-6">
           <div className="p-4 rounded-full bg-green-500/20 mb-4">
@@ -317,26 +301,17 @@ export default function PhoneStep() {
           </div>
           
           <div className="text-center mb-4">
-            <p className="text-white font-semibold text-lg">{autoLoginUser.name || 'Welcome back'}</p>
+            <p className="text-white font-semibold text-lg">{autoLoginUser.name || 'User'}</p>
             <p className="text-zinc-400 text-sm">+91 {formatPhoneForDisplay(autoLoginUser.phone)}</p>
+            {autoLoginUser.email && (
+              <p className="text-zinc-500 text-xs mt-1">{autoLoginUser.email}</p>
+            )}
           </div>
           
-          <div className="flex items-center gap-2 text-green-400 text-sm mb-4">
+          <div className="flex items-center gap-2 text-green-400 text-sm">
             <Shield className="w-4 h-4" />
             <span>Trusted device verified</span>
           </div>
-          
-          <div className="flex items-center gap-2 text-violet-400">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-sm">Proceeding to select session...</span>
-          </div>
-          
-          <button
-            onClick={handleUseDifferentNumber}
-            className="mt-6 text-zinc-400 hover:text-white text-sm underline transition-colors"
-          >
-            Use a different number
-          </button>
         </div>
       </StepLayout>
     );

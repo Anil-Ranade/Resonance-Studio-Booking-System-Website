@@ -136,7 +136,7 @@ export default function BookingMenu() {
       <footer className="flex-shrink-0 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-zinc-800 bg-zinc-900/80 backdrop-blur">
         {/* Progress bar */}
         <div className="flex items-center gap-1 mb-3">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((step) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
             <div
               key={step}
               className={`h-1.5 flex-1 rounded-full transition-colors ${
@@ -146,7 +146,7 @@ export default function BookingMenu() {
           ))}
         </div>
         <p className="text-center text-xs text-zinc-500 mb-3">
-          Step 1 of 9
+          Step 1 of 8
         </p>
 
         {/* Back button */}
