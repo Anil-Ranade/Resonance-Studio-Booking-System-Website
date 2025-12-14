@@ -23,6 +23,18 @@
 - Admin status verified against `admin_users` table
 - Active status check (`is_active = true`)
 
+#### Staff Authentication
+- **Supabase Auth** handles staff email/password authentication
+- Staff status verified against `admin_users` table (role: `staff`)
+- Access tokens verified on every staff API request
+- Staff has limited permissions compared to admin
+
+#### Edit/Cancel Booking Verification
+- Email-based booking lookup
+- OTP sent to registered email for verification
+- Prevents unauthorized booking modifications
+- Time-based restrictions (24h for pending, 48h for confirmed)
+
 ### 2. HTTP Security Headers
 
 The following headers are enforced via `next.config.ts`:

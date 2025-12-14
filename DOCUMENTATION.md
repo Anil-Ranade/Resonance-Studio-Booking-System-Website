@@ -23,7 +23,7 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 ### Frontend
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| **Next.js** | 16.0.4 | React framework with App Router |
+| **Next.js** | 16.0.10 | React framework with App Router |
 | **React** | 19.2.0 | UI library |
 | **TypeScript** | ^5 | Type-safe JavaScript |
 | **Tailwind CSS** | ^4 | Utility-first CSS framework |
@@ -41,7 +41,7 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 ### Authentication & Security
 | Technology | Purpose |
 |------------|---------|
-| **JWT (jsonwebtoken)** | Token-based admin authentication |
+| **Supabase Auth** | Admin & Staff authentication |
 | **bcryptjs** | Password/OTP hashing |
 | **OTP-based Auth** | Phone number verification |
 | **Device Fingerprinting** | Trusted device management |
@@ -155,7 +155,7 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 
     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
     │    Login     │────▶│  Dashboard   │────▶│   Manage     │
-    │   (JWT)      │     │  Overview    │     │   Bookings   │
+    │ (Supabase)  │     │  Overview    │     │   Bookings   │
     └──────────────┘     └──────────────┘     └──────────────┘
                                │
            ┌───────────────────┼───────────────────┐
@@ -199,6 +199,85 @@ A modern, full-stack studio booking application built for Resonance Studio. This
   - Booking buffer time (minutes)
   - Advance booking days limit
   - Operating hours configuration
+
+### Edit Booking Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           EDIT BOOKING FLOW                            │
+└─────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+    │ Enter Email  │────▶│ View Bookings│────▶│ Select to    │
+    │              │     │              │     │ Edit         │
+    └──────────────┘     └──────────────┘     └──────────────┘
+                                                     │
+                                                     ▼
+    ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+    │  Edit Done   │◀────│  Redirect to │◀────│  Verify OTP  │
+    │              │     │  Booking     │     │              │
+    └──────────────┘     └──────────────┘     └──────────────┘
+```
+
+**Edit Restrictions:**
+- Pending bookings: Can edit up to 24 hours before
+- Confirmed bookings: Can edit up to 48 hours before
+- Cancelled/completed/no_show: Cannot edit
+
+### Cancel Booking Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         CANCEL BOOKING FLOW                            │
+└─────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+    │ Enter Email  │────▶│ View Bookings│────▶│ Select to    │
+    │              │     │              │     │ Cancel       │
+    └──────────────┘     └──────────────┘     └──────────────┘
+                                                     │
+                                                     ▼
+    ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+    │  Cancelled   │◀────│  Confirm     │◀────│  Verify OTP  │
+    │  + Email     │     │  Cancellation│     │              │
+    └──────────────┘     └──────────────┘     └──────────────┘
+```
+
+**Cancel Restrictions:**
+- Same time restrictions as edit booking
+- Email confirmation sent upon cancellation
+
+### Staff Portal Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           STAFF PORTAL                                 │
+└─────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────┐     ┌──────────────┐
+    │    Login     │────▶│  Dashboard   │
+    │ (Supabase)   │     │  Overview    │
+    └──────────────┘     └──────────────┘
+                               │
+              ┌───────────────┴───────────────┐
+              ▼                               ▼
+        ┌──────────────┐               ┌──────────────┐
+        │   Manage     │               │   Create     │
+        │   Bookings   │               │   Booking    │
+        └──────────────┘               └──────────────┘
+```
+
+### Staff Features
+
+- **Dashboard** (`/staff/dashboard`)
+  - Booking statistics
+  - Today's bookings overview
+  - Quick actions
+
+- **Bookings** (`/staff/bookings`)
+  - View all bookings
+  - Filter and search bookings
+  - Create new bookings for walk-in customers
 
 ---
 
@@ -310,6 +389,8 @@ Text Colors:
 │   │
 │   ├── confirmation/           # Booking confirmation page
 │   ├── my-bookings/            # User booking history
+│   ├── edit-booking/           # Edit existing bookings with OTP
+│   ├── cancel-booking/         # Cancel bookings with verification
 │   ├── view-bookings/          # View bookings (alternative)
 │   ├── login/                  # User login page
 │   │
@@ -351,6 +432,11 @@ Text Colors:
 │   │       ├── availability/   # Availability management
 │   │       ├── settings/       # Settings management
 │   │       └── book/           # Admin booking creation
+│   │   └── staff/              # Staff-only endpoints
+│   │       ├── login/          # Staff authentication
+│   │       ├── stats/          # Staff dashboard statistics
+│   │       ├── bookings/       # Staff booking operations
+│   │       └── book/           # Staff booking creation
 │   │
 │   ├── display/                # Public display page
 │   ├── studios/                # Studio information page
@@ -361,7 +447,17 @@ Text Colors:
 │   ├── contact/                # Contact form
 │   ├── review/                 # Review page
 │   ├── faq/                    # FAQs
-│   └── policies/               # Terms & policies
+│   ├── policies/               # Terms & policies
+│   │
+│   └── staff/                  # Staff portal section
+│       ├── layout.tsx          # Staff layout
+│       ├── page.tsx            # Staff root (redirects)
+│       ├── login/              # Staff login
+│       │   └── page.tsx
+│       └── (dashboard)/        # Protected staff routes
+│           ├── layout.tsx      # Staff dashboard layout
+│           ├── dashboard/      # Staff overview stats
+│           └── bookings/       # Staff booking management
 │
 ├── components/                 # Shared components
 │   ├── Navigation.tsx          # Main navigation
@@ -407,17 +503,25 @@ Text Colors:
 - ✅ SMS booking confirmations
 - ✅ Trusted device management for faster logins
 - ✅ View and cancel bookings
+- ✅ Edit bookings with OTP verification
+- ✅ Cancel bookings with OTP verification
 - ✅ Responsive design (mobile-first)
 - ✅ Smooth animations with reduced motion support
 
 ### Admin Features
-- ✅ Secure JWT-based admin authentication
+- ✅ Secure Supabase Auth admin authentication
 - ✅ Dashboard with booking statistics & revenue
-- ✅ Booking management (confirm, cancel, view details)
+- ✅ Booking management (confirm, cancel, no_show, view details)
 - ✅ Availability slot management (block/unblock)
 - ✅ Bulk availability operations
 - ✅ Configurable booking settings
 - ✅ Audit logging for all actions
+
+### Staff Features
+- ✅ Separate staff authentication (Supabase Auth)
+- ✅ Staff dashboard with booking statistics
+- ✅ Staff booking management
+- ✅ Staff booking creation for walk-in customers
 
 ### Technical Features
 - ✅ Google Calendar integration (auto-create events)
@@ -509,6 +613,15 @@ Text Colors:
 | `GET` | `/api/admin/settings` | Get all settings |
 | `PUT` | `/api/admin/settings` | Update settings |
 | `POST` | `/api/admin/book` | Admin creates booking |
+
+### Staff
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/staff/login` | Staff authentication |
+| `GET` | `/api/staff/stats` | Staff dashboard statistics |
+| `GET` | `/api/staff/bookings` | Get bookings for staff |
+| `POST` | `/api/staff/book` | Staff creates booking |
 
 ---
 

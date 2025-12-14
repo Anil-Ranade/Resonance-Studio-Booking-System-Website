@@ -2,7 +2,7 @@
 
 A modern, full-stack studio booking and management platform built with Next.js 16 and React 19.
 
-![Next.js](https://img.shields.io/badge/Next.js-16.0.4-black?logo=next.js)
+![Next.js](https://img.shields.io/badge/Next.js-16.0.10-black?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.0-blue?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38B2AC?logo=tailwind-css)
@@ -51,19 +51,37 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 ### 👤 My Bookings
 - View personal booking history
 - Cancel bookings with confirmation
-- Track booking status (pending, confirmed, cancelled, completed)
+- Track booking status (pending, confirmed, cancelled, completed, no_show)
 - View upcoming bookings
 
+### ✏️ Edit Booking
+- Email-based booking lookup
+- OTP verification for security
+- Modify pending or confirmed bookings
+- Time restrictions (24 hours before for pending, 48 hours for confirmed)
+
+### ❌ Cancel Booking
+- Email-based booking lookup
+- OTP verification for secure cancellation
+- Cancellation restrictions based on booking time
+- Email confirmation of cancellation
+
 ### 🔧 Admin Dashboard
-- Secure JWT-based admin authentication
+- Secure Supabase Auth-based admin authentication
 - Dashboard statistics (total bookings, revenue, today's bookings)
-- Booking management (view, confirm, cancel)
+- Booking management (view, confirm, cancel, mark no_show)
 - Availability slot management (block/unblock)
 - Bulk availability operations
 - Configurable booking settings
 - Audit logging for all admin actions
 
-### 💰 Rate Card
+### � Staff Portal
+- Separate staff authentication (Supabase Auth)
+- Staff dashboard with booking statistics
+- Staff booking management (view and manage)
+- Staff booking creation capability
+
+### �💰 Rate Card
 - Dynamic studio pricing display
 - Session type-based pricing
 - Sub-options for group sizes
@@ -89,7 +107,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 
 | Category | Technology |
 |----------|------------|
-| **Framework** | Next.js 16.0.4 (App Router) |
+| **Framework** | Next.js 16.0.10 (App Router) |
 | **UI Library** | React 19.2.0 |
 | **Language** | TypeScript 5 |
 | **Styling** | Tailwind CSS 4 |
@@ -191,6 +209,8 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │   └── utils/              # Helper utilities
 │   ├── confirmation/           # Booking confirmation
 │   ├── my-bookings/            # User booking history
+│   ├── edit-booking/           # Edit existing bookings
+│   ├── cancel-booking/         # Cancel bookings with verification
 │   │
 │   ├── admin/                  # Admin section
 │   │   ├── login/              # Admin login
@@ -200,12 +220,23 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │       ├── availability/   # Slot management
 │   │       └── settings/       # Configuration
 │   │
+│   ├── staff/                  # Staff portal
+│   │   ├── login/              # Staff login
+│   │   └── (dashboard)/        # Protected staff routes
+│   │       ├── dashboard/      # Staff overview
+│   │       └── bookings/       # Staff booking management
+│   │
 │   ├── api/                    # API routes
 │   │   ├── auth/               # OTP auth endpoints
 │   │   ├── book/               # Booking creation
 │   │   ├── bookings/           # Booking operations
 │   │   ├── availability/       # Availability checks
 │   │   ├── admin/              # Admin endpoints
+│   │   ├── staff/              # Staff endpoints
+│   │   │   ├── login/          # Staff authentication
+│   │   │   ├── stats/          # Staff statistics
+│   │   │   ├── bookings/       # Staff booking ops
+│   │   │   └── book/           # Staff booking creation
 │   │   └── ...                 # Other endpoints
 │   │
 │   ├── studios/                # Studio information
@@ -243,7 +274,7 @@ See [DOCUMENTATION.md](./DOCUMENTATION.md)
 ## 🔒 Security Features
 
 - **HTTP Security Headers** - HSTS, X-Frame-Options, X-Content-Type-Options, CSP-ready
-- **JWT-based authentication** for admin with Supabase Auth
+- **Supabase Auth** for admin and staff authentication
 - **OTP verification** with bcrypt hashing (10 salt rounds)
 - **Row Level Security (RLS)** policies in Supabase
 - **Trusted device management** with device fingerprinting
