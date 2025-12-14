@@ -1,7 +1,17 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { createClient } from '@supabase/supabase-js';
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  hashRefreshToken,
+  getRefreshTokenExpiryDate,
+  createCookieHeader,
+  ACCESS_TOKEN_COOKIE,
+  REFRESH_TOKEN_COOKIE,
+  ACCESS_TOKEN_MAX_AGE,
+  REFRESH_TOKEN_MAX_AGE,
+} from '@/lib/tokens';
 
 // Initialize Supabase client with service role for database operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -11,7 +21,6 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // Configuration
 const OTP_LENGTH = 6;
 const MAX_ATTEMPTS = 5;
-const JWT_EXPIRY = '30m'; // 30 minutes
 
 /**
  * Validate phone number (10 digits only)
@@ -26,26 +35,6 @@ function isValidPhone(phone: string): boolean {
  */
 function isValidOTPFormat(code: string): boolean {
   return /^\d{6}$/.test(code);
-}
-
-/**
- * Generate JWT token for authenticated user
- */
-function generateToken(phone: string): string {
-  const jwtSecret = process.env.JWT_SECRET;
-
-  if (!jwtSecret) {
-    throw new Error('JWT_SECRET environment variable is not configured');
-  }
-
-  return jwt.sign(
-    {
-      phone,
-      iat: Math.floor(Date.now() / 1000),
-    },
-    jwtSecret,
-    { expiresIn: JWT_EXPIRY }
-  );
 }
 
 export async function POST(request: Request) {
@@ -180,16 +169,37 @@ export async function POST(request: Request) {
     // OTP is valid - delete the OTP record
     await supabase.from('login_otps').delete().eq('id', otpRecord.id);
 
-    // Generate JWT token
-    let token: string;
+    // Generate access and refresh tokens
+    let accessToken: string;
+    let refreshToken: string;
     try {
-      token = generateToken(phoneDigits);
+      accessToken = generateAccessToken(phoneDigits);
+      refreshToken = generateRefreshToken(phoneDigits, deviceFingerprint);
     } catch (tokenError) {
       console.error('[Verify OTP] Token generation error:', tokenError);
       return NextResponse.json(
         { error: 'Failed to generate authentication token. Please try again.' },
         { status: 500 }
       );
+    }
+
+    // Store refresh token hash in database
+    const refreshTokenHash = hashRefreshToken(refreshToken);
+    const refreshTokenExpiresAt = getRefreshTokenExpiryDate();
+
+    const { error: refreshTokenError } = await supabase
+      .from('refresh_tokens')
+      .insert({
+        user_phone: phoneDigits,
+        token_hash: refreshTokenHash,
+        device_fingerprint: deviceFingerprint || null,
+        device_name: deviceName || 'Unknown Device',
+        expires_at: refreshTokenExpiresAt.toISOString(),
+      });
+
+    if (refreshTokenError) {
+      console.error('[Verify OTP] Failed to store refresh token:', refreshTokenError);
+      // Don't fail - the access token will still work
     }
 
     // Register device as trusted if fingerprint is provided
@@ -227,12 +237,26 @@ export async function POST(request: Request) {
 
     console.log(`[Verify OTP] OTP verified successfully for ${phoneDigits}`);
 
-    return NextResponse.json({
+    // Create response with cookies
+    const response = NextResponse.json({
       verified: true,
-      token,
       deviceTrusted,
       message: 'OTP verified successfully',
     });
+
+    // Set access token cookie
+    response.headers.append(
+      'Set-Cookie',
+      createCookieHeader(ACCESS_TOKEN_COOKIE, accessToken, ACCESS_TOKEN_MAX_AGE)
+    );
+
+    // Set refresh token cookie
+    response.headers.append(
+      'Set-Cookie',
+      createCookieHeader(REFRESH_TOKEN_COOKIE, refreshToken, REFRESH_TOKEN_MAX_AGE)
+    );
+
+    return response;
   } catch (error) {
     console.error('[Verify OTP] Unexpected error:', error);
     return NextResponse.json(
@@ -241,3 +265,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

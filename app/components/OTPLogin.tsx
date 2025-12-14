@@ -170,9 +170,9 @@ export default function OTPLogin({ redirectUrl = '/my-bookings', onSuccess }: OT
         throw new Error(data.error || 'Failed to verify OTP');
       }
 
-      if (data.verified && data.token) {
-        // Store token in localStorage
-        localStorage.setItem('auth_token', data.token);
+      if (data.verified) {
+        // Token is now set as HTTP-only cookie by the server
+        // We just store the phone for reference (non-sensitive)
         localStorage.setItem('user_phone', phone);
         
         // Store phone as trusted locally if device was registered as trusted
@@ -184,7 +184,7 @@ export default function OTPLogin({ redirectUrl = '/my-bookings', onSuccess }: OT
         
         // Call onSuccess callback if provided
         if (onSuccess) {
-          onSuccess(data.token, phone);
+          onSuccess('cookie-auth', phone);
         }
         
         // Redirect after short delay
