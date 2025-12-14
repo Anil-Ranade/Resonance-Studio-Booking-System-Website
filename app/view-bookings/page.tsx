@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { checkAuthStatus } from "@/lib/authClient";
 
 // Helper function to safely parse JSON responses
 async function safeJsonParse(response: Response) {
@@ -28,6 +29,7 @@ import {
   CalendarX,
   Mic,
   Users,
+  Shield,
 } from "lucide-react";
 
 interface Booking {
@@ -57,30 +59,51 @@ export default function ViewBookingsPage() {
   const [email, setEmail] = useState("");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authenticatedUser, setAuthenticatedUser] = useState<{ name: string; email: string } | null>(null);
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
 
+  // Check authentication status on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const status = await checkAuthStatus();
+        if (status.authenticated && status.user && status.user.email) {
+          setIsAuthenticated(true);
+          setAuthenticatedUser({ name: status.user.name, email: status.user.email });
+          setEmail(status.user.email);
+          
+          // Auto-fetch bookings for authenticated user
+          await fetchBookingsForEmail(status.user.email);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+    
+    checkAuth();
+  }, []);
+
   // Validate email format
-  const isValidEmail = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const isValidEmail = (emailStr: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr.trim());
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setBookings([]);
-    setSearched(false);
-
-    if (!isValidEmail(email)) {
+  const fetchBookingsForEmail = async (emailToFetch: string) => {
+    if (!isValidEmail(emailToFetch)) {
       setError("Please enter a valid email address");
       return;
     }
 
     setLoading(true);
+    setError("");
 
     try {
-      // Fetch only upcoming bookings
-      const response = await fetch(`/api/bookings/upcoming?email=${encodeURIComponent(email.trim())}`);
+      const response = await fetch(`/api/bookings/upcoming?email=${encodeURIComponent(emailToFetch.trim())}`);
       const data = await safeJsonParse(response);
 
       if (!response.ok) {
@@ -95,6 +118,13 @@ export default function ViewBookingsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBookings([]);
+    setSearched(false);
+    await fetchBookingsForEmail(email);
   };
 
   const formatDate = (dateString: string) => {
@@ -132,47 +162,81 @@ export default function ViewBookingsPage() {
           <p className="text-zinc-400 text-sm mt-1">Check your upcoming bookings</p>
         </motion.div>
 
-        {/* Email Search */}
-        <motion.div 
-          className="glass-strong rounded-2xl p-4 mb-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <form onSubmit={handleSubmit}>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1 relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email address"
-                  className="w-full py-3 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
-                />
+        {/* Loading Auth State */}
+        {isCheckingAuth && (
+          <motion.div 
+            className="glass-strong rounded-2xl p-6 mb-6 flex items-center justify-center gap-3"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Loader2 className="w-5 h-5 animate-spin text-violet-400" />
+            <span className="text-zinc-300">Checking authentication...</span>
+          </motion.div>
+        )}
+
+        {/* Authenticated User Banner */}
+        {!isCheckingAuth && isAuthenticated && authenticatedUser && (
+          <motion.div 
+            className="glass-strong rounded-2xl p-4 mb-6 border border-green-500/20"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-green-400" />
               </div>
-              <motion.button
-                type="submit"
-                disabled={loading || !isValidEmail(email)}
-                className="btn-accent py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Searching...
-                  </>
-                ) : (
-                  <>
-                    <Search className="w-4 h-4" />
-                    Search
-                  </>
-                )}
-              </motion.button>
+              <div>
+                <p className="text-white font-medium">Welcome back{authenticatedUser.name ? `, ${authenticatedUser.name}` : ''}!</p>
+                <p className="text-zinc-400 text-sm">Your bookings are loaded automatically</p>
+              </div>
             </div>
-          </form>
-        </motion.div>
+          </motion.div>
+        )}
+
+        {/* Email Search - Only show if not authenticated */}
+        {!isCheckingAuth && !isAuthenticated && (
+          <motion.div 
+            className="glass-strong rounded-2xl p-4 mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <form onSubmit={handleSubmit}>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1 relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    className="w-full py-3 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                  />
+                </div>
+                <motion.button
+                  type="submit"
+                  disabled={loading || !isValidEmail(email)}
+                  className="btn-accent py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4" />
+                      Search
+                    </>
+                  )}
+                </motion.button>
+              </div>
+            </form>
+          </motion.div>
+        )}
 
         {/* Error */}
         <AnimatePresence>
