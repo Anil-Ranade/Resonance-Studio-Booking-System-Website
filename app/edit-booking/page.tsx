@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import OTPVerification from '../components/OTPVerification';
+import { checkAuthStatus } from '@/lib/authClient';
 
 // Helper function to safely parse JSON responses
 async function safeJsonParse(response: Response) {
@@ -31,6 +32,7 @@ import {
   CheckCircle2,
   XCircle,
   Edit3,
+  Shield,
 } from 'lucide-react';
 
 interface Booking {
@@ -69,6 +71,9 @@ export default function EditBookingPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authenticatedUser, setAuthenticatedUser] = useState<{ name: string; email: string } | null>(null);
   const [error, setError] = useState('');
   const [bookings, setBookings] = useState<Booking[] | null>(null);
   const [searched, setSearched] = useState(false);
@@ -76,17 +81,41 @@ export default function EditBookingPage() {
   const [step, setStep] = useState<'search' | 'select' | 'verify' | 'confirm'>('search');
   const [isVerified, setIsVerified] = useState(false);
 
+  // Check authentication status on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const status = await checkAuthStatus();
+        if (status.authenticated && status.user && status.user.email) {
+          setIsAuthenticated(true);
+          setAuthenticatedUser({ name: status.user.name, email: status.user.email });
+          setEmail(status.user.email);
+          setIsVerified(true); // Skip OTP for trusted devices
+          
+          // Auto-fetch bookings for authenticated user
+          await fetchBookingsForEmail(status.user.email);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+    
+    checkAuth();
+  }, []);
+
   // Validate email format
-  const isValidEmail = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const isValidEmail = (emailStr: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr.trim());
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
   };
 
-  const fetchBookings = async () => {
-    if (!isValidEmail(email)) {
+  const fetchBookingsForEmail = async (emailToFetch: string) => {
+    if (!isValidEmail(emailToFetch)) {
       setError('Please enter a valid email address');
       return;
     }
@@ -96,7 +125,7 @@ export default function EditBookingPage() {
     setSearched(true);
 
     try {
-      const response = await fetch(`/api/bookings/upcoming?email=${encodeURIComponent(email.trim())}`);
+      const response = await fetch(`/api/bookings/upcoming?email=${encodeURIComponent(emailToFetch.trim())}`);
       const data = await safeJsonParse(response);
 
       if (!response.ok) {
@@ -118,6 +147,10 @@ export default function EditBookingPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const fetchBookings = async () => {
+    await fetchBookingsForEmail(email);
   };
 
   const handleSubmit = (e: React.FormEvent) => {

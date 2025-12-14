@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { checkAuthStatus } from '@/lib/authClient';
 
 // Helper function to safely parse JSON responses
 async function safeJsonParse(response: Response) {
@@ -31,6 +32,7 @@ import {
   X,
   Check,
   Edit3,
+  Shield,
 } from 'lucide-react';
 
 interface Booking {
@@ -83,6 +85,9 @@ const statusConfig = {
 export default function MyBookingsPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authenticatedUser, setAuthenticatedUser] = useState<{ phone: string; name: string } | null>(null);
   const [error, setError] = useState('');
   const [bookings, setBookings] = useState<Booking[] | null>(null);
   const [searched, setSearched] = useState(false);
@@ -103,13 +108,31 @@ export default function MyBookingsPage() {
   });
   const router = useRouter();
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '');
-    setPhoneNumber(value);
-  };
+  // Check authentication status on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const status = await checkAuthStatus();
+        if (status.authenticated && status.user) {
+          setIsAuthenticated(true);
+          setAuthenticatedUser({ phone: status.user.phone, name: status.user.name });
+          setPhoneNumber(status.user.phone);
+          
+          // Auto-fetch bookings for authenticated user
+          await fetchBookingsForPhone(status.user.phone);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+    
+    checkAuth();
+  }, []);
 
-  const fetchBookings = async () => {
-    if (phoneNumber.replace(/\D/g, '').length !== 10) {
+  const fetchBookingsForPhone = async (phone: string) => {
+    if (phone.replace(/\D/g, '').length !== 10) {
       setError('Please enter a valid 10-digit phone number');
       return;
     }
@@ -119,7 +142,7 @@ export default function MyBookingsPage() {
     setSearched(true);
 
     try {
-      const response = await fetch(`/api/bookings?phone=${phoneNumber}`);
+      const response = await fetch(`/api/bookings?phone=${phone}`);
       const data = await safeJsonParse(response);
 
       if (!response.ok) {
@@ -133,6 +156,15 @@ export default function MyBookingsPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '');
+    setPhoneNumber(value);
+  };
+
+  const fetchBookings = async () => {
+    await fetchBookingsForPhone(phoneNumber);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -328,49 +360,83 @@ export default function MyBookingsPage() {
           <p className="text-zinc-400 text-sm mt-1">View and manage your studio bookings</p>
         </motion.div>
 
-        {/* Phone Search */}
-        <motion.div 
-          className="glass-strong rounded-2xl p-4 mb-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <form onSubmit={handleSubmit}>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1 relative">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                <input
-                  type="tel"
-                  value={phoneNumber}
-                  onChange={handlePhoneChange}
-                  placeholder="Enter your phone number"
-                  className="w-full py-3 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
-                  maxLength={10}
-                  inputMode="numeric"
-                />
+        {/* Loading Auth State */}
+        {isCheckingAuth && (
+          <motion.div 
+            className="glass-strong rounded-2xl p-6 mb-6 flex items-center justify-center gap-3"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Loader2 className="w-5 h-5 animate-spin text-violet-400" />
+            <span className="text-zinc-300">Checking authentication...</span>
+          </motion.div>
+        )}
+
+        {/* Authenticated User Banner */}
+        {!isCheckingAuth && isAuthenticated && authenticatedUser && (
+          <motion.div 
+            className="glass-strong rounded-2xl p-4 mb-6 border border-green-500/20"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-green-400" />
               </div>
-              <motion.button
-                type="submit"
-                disabled={isLoading || phoneNumber.length !== 10}
-                className="btn-accent py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Searching...
-                  </>
-                ) : (
-                  <>
-                    <Search className="w-4 h-4" />
-                    Search
-                  </>
-                )}
-              </motion.button>
+              <div>
+                <p className="text-white font-medium">Welcome back{authenticatedUser.name ? `, ${authenticatedUser.name}` : ''}!</p>
+                <p className="text-zinc-400 text-sm">Your bookings are loaded automatically</p>
+              </div>
             </div>
-          </form>
-        </motion.div>
+          </motion.div>
+        )}
+
+        {/* Phone Search - Only show if not authenticated */}
+        {!isCheckingAuth && !isAuthenticated && (
+          <motion.div 
+            className="glass-strong rounded-2xl p-4 mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <form onSubmit={handleSubmit}>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1 relative">
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={handlePhoneChange}
+                    placeholder="Enter your phone number"
+                    className="w-full py-3 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                    maxLength={10}
+                    inputMode="numeric"
+                  />
+                </div>
+                <motion.button
+                  type="submit"
+                  disabled={isLoading || phoneNumber.length !== 10}
+                  className="btn-accent py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4" />
+                      Search
+                    </>
+                  )}
+                </motion.button>
+              </div>
+            </form>
+          </motion.div>
+        )}
 
         {/* Error */}
         <AnimatePresence>
