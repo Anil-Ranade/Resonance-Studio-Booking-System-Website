@@ -232,3 +232,61 @@ export function removeTrustedPhone(phone: string): void {
   const filtered = phones.filter(p => p !== normalizedPhone);
   localStorage.setItem(TRUSTED_PHONES_KEY, JSON.stringify(filtered));
 }
+
+/**
+ * Auto-login response interface
+ */
+export interface AutoLoginResult {
+  authenticated: boolean;
+  user?: {
+    phone: string;
+    name: string;
+    email: string;
+  };
+  deviceName?: string;
+  trustedSince?: string;
+}
+
+/**
+ * Check if the current device can be auto-authenticated
+ * This calls the server to verify the device fingerprint is in trusted_devices
+ */
+export async function checkAutoLogin(): Promise<AutoLoginResult> {
+  if (typeof window === 'undefined') {
+    return { authenticated: false };
+  }
+
+  try {
+    const { fingerprint } = await getDeviceFingerprint();
+    
+    if (!fingerprint) {
+      return { authenticated: false };
+    }
+
+    const response = await fetch('/api/auth/auto-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceFingerprint: fingerprint }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.authenticated && data.user) {
+        // Also update local trusted phones cache
+        addTrustedPhone(data.user.phone);
+        return {
+          authenticated: true,
+          user: data.user,
+          deviceName: data.deviceName,
+          trustedSince: data.trustedSince,
+        };
+      }
+    }
+
+    return { authenticated: false };
+  } catch (error) {
+    console.error('[Auto Login] Check failed:', error);
+    return { authenticated: false };
+  }
+}
+

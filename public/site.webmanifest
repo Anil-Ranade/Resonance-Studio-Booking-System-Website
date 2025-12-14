@@ -1,7 +1,8 @@
 {
-  "name": "Resonance Studio",
+  "id": "/",
+  "name": "Resonance Jam Room",
   "short_name": "Resonance",
-  "description": "Professional Recording Studio Booking in Pune",
+  "description": "Professional Recording Studio & Jam Room Booking in Pune - Recording, Mixing, Mastering, Podcast Production",
   "start_url": "/",
   "scope": "/",
   "icons": [

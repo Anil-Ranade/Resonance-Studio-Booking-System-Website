@@ -29,11 +29,71 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Resonance Studio - Professional Recording Studio Booking",
-  description: "Book professional recording studios online. Recording, mixing, and podcast facilities available in Pune.",
-  keywords: ["recording studio", "music studio", "pune", "karaoke", "rehearsal space"],
-  robots: "index, follow",
+  // Primary Meta Tags
+  title: {
+    default: "Resonance Jam Room - Professional Recording & Jam Room Studio in Pune",
+    template: "%s | Resonance Jam Room",
+  },
+  description: "Resonance Jam Room is Pune's premier professional recording studio and jam room. Book online for music recording, mixing, mastering, podcast production, karaoke sessions, and band rehearsals. State-of-the-art equipment at affordable rates.",
+  keywords: [
+    "recording studio pune",
+    "jam room pune",
+    "music studio pune",
+    "recording studio near me",
+    "jamming studio pune",
+    "band rehearsal space pune",
+    "podcast studio pune",
+    "mixing mastering pune",
+    "karaoke room pune",
+    "music production pune",
+    "professional recording india",
+    "dattawadi recording studio",
+    "affordable recording studio",
+    "book recording studio online",
+    "resonance studio",
+    "resonance jam room",
+  ],
+  authors: [{ name: "Resonance Jam Room", url: "https://resonancejamroom.in" }],
+  creator: "Resonance Jam Room",
+  publisher: "Resonance Jam Room",
+  
+  // Canonical URL
+  metadataBase: new URL("https://resonancejamroom.in"),
+  alternates: {
+    canonical: "/",
+  },
+  
+  // Robots
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  
+  // Open Graph
+  openGraph: {
+    type: "website",
+    locale: "en_IN",
+    url: "https://resonancejamroom.in",
+    siteName: "Resonance Jam Room",
+    title: "Resonance Jam Room - Professional Recording & Jam Room Studio in Pune",
+    description: "Pune's premier professional recording studio and jam room. Book online for music recording, mixing, mastering, podcast production, karaoke sessions, and band rehearsals.",
+  },
+  
+  // App & Manifest
   manifest: "/site.webmanifest",
+  applicationName: "Resonance Jam Room",
+  
+  // Category
+  category: "Music",
+  
+  // Icons
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
@@ -43,6 +103,20 @@ export const metadata: Metadata = {
     apple: [
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
+  },
+  
+  // Verification (add your IDs here when available)
+  // verification: {
+  //   google: "your-google-verification-code",
+  //   yandex: "your-yandex-verification-code",
+  // },
+  
+  // Other
+  other: {
+    "geo.region": "IN-MH",
+    "geo.placename": "Pune",
+    "geo.position": "18.4929;73.8505",
+    "ICBM": "18.4929, 73.8505",
   },
 };
 

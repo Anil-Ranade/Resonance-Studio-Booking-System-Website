@@ -1,0 +1,36 @@
+# *************************************
+# Resonance Jam Room - robots.txt
+# https://resonancejamroom.in
+# *************************************
+
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Allow Google to index all content
+User-agent: Googlebot
+Allow: /
+
+# Allow Bing to index all content
+User-agent: Bingbot
+Allow: /
+
+# Sitemap location
+Sitemap: https://resonancejamroom.in/sitemap.xml
+
+# Disallow admin and staff areas from indexing
+Disallow: /admin/
+Disallow: /staff/
+Disallow: /api/
+
+# Allow important pages
+Allow: /home
+Allow: /studios
+Allow: /availability
+Allow: /booking/
+Allow: /rate-card
+Allow: /about
+Allow: /gallery
+Allow: /faq
+Allow: /contact
+Allow: /policies

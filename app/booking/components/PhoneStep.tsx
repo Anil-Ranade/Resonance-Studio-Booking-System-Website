@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Phone, Smartphone, Shield, RotateCcw, User, Mail, Loader2, CheckCircle } from 'lucide-react';
+import { Phone, Smartphone, Shield, RotateCcw, User, Mail, Loader2, CheckCircle, UserCheck, ArrowRight } from 'lucide-react';
 import { useBooking } from '../contexts/BookingContext';
 import StepLayout from './StepLayout';
-import { getDeviceFingerprint, isPhoneTrustedLocally, getTrustedPhones } from '@/lib/deviceFingerprint';
+import { getDeviceFingerprint, isPhoneTrustedLocally, getTrustedPhones, checkAutoLogin } from '@/lib/deviceFingerprint';
 
 export default function PhoneStep() {
   const router = useRouter();
@@ -28,6 +28,11 @@ export default function PhoneStep() {
   const [isCheckingUser, setIsCheckingUser] = useState(false);
   const [isExistingUser, setIsExistingUser] = useState(draft.isExistingUser);
   const [userChecked, setUserChecked] = useState(false);
+  
+  // Auto-login state
+  const [isAutoLoggingIn, setIsAutoLoggingIn] = useState(true);
+  const [autoLoginUser, setAutoLoginUser] = useState<{ phone: string; name: string; email: string } | null>(null);
+  const [showManualEntry, setShowManualEntry] = useState(false);
 
   // Check if user exists when phone number is complete
   const checkExistingUser = useCallback(async (phoneDigits: string) => {
@@ -73,22 +78,80 @@ export default function PhoneStep() {
     }
   }, [updateDraft]);
 
-  // Auto-populate phone number from trusted phones on mount
+  // Auto-login check on mount - check if device is trusted for auto-authentication
   useEffect(() => {
-    // Only auto-populate if phone is empty (not already set)
-    if (draft.phone) return;
-    
-    const trustedPhones = getTrustedPhones();
-    if (trustedPhones.length > 0) {
-      // Use the most recently added (last) trusted phone
-      const lastTrustedPhone = trustedPhones[trustedPhones.length - 1];
-      
-      setPhone(formatPhoneForDisplay(lastTrustedPhone));
-      updateDraft({ phone: lastTrustedPhone });
-      
-      // Trigger user check for this phone
-      checkExistingUser(lastTrustedPhone);
+    // Skip auto-login check in edit mode (user already identified)
+    if (draft.isEditMode) {
+      setIsAutoLoggingIn(false);
+      setShowManualEntry(true);
+      return;
     }
+
+    const performAutoLogin = async () => {
+      setIsAutoLoggingIn(true);
+      
+      try {
+        const result = await checkAutoLogin();
+        
+        if (result.authenticated && result.user) {
+          // Auto-login successful!
+          setAutoLoginUser(result.user);
+          setPhone(formatPhoneForDisplay(result.user.phone));
+          setName(result.user.name);
+          setEmail(result.user.email);
+          setIsExistingUser(true);
+          setUserChecked(true);
+          setIsTrustedDevice(true);
+          
+          // Update draft with user info and authentication flags
+          updateDraft({
+            phone: result.user.phone,
+            name: result.user.name,
+            email: result.user.email,
+            isExistingUser: true,
+            deviceTrusted: true,
+            otpVerified: true, // Skip OTP since device is trusted
+          });
+          
+          // Auto-proceed after showing welcome message
+          setTimeout(() => {
+            nextStep();
+          }, 1500);
+        } else {
+          // Not auto-authenticated, fall back to normal flow
+          setShowManualEntry(true);
+          
+          // Use cached draft data if available, otherwise try trusted phones
+          if (draft.phone) {
+            setPhone(formatPhoneForDisplay(draft.phone));
+            setName(draft.name || '');
+            setEmail(draft.email || '');
+            if (draft.name && draft.email) {
+              setIsExistingUser(true);
+              setUserChecked(true);
+            } else {
+              checkExistingUser(draft.phone);
+            }
+          } else {
+            // Try to auto-populate from local trusted phones
+            const trustedPhones = getTrustedPhones();
+            if (trustedPhones.length > 0) {
+              const lastTrustedPhone = trustedPhones[trustedPhones.length - 1];
+              setPhone(formatPhoneForDisplay(lastTrustedPhone));
+              updateDraft({ phone: lastTrustedPhone });
+              checkExistingUser(lastTrustedPhone);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Auto-login check failed:', error);
+        setShowManualEntry(true);
+      } finally {
+        setIsAutoLoggingIn(false);
+      }
+    };
+
+    performAutoLogin();
   }, []); // Run only on mount
 
   // Verify existing phone number on mount (for page reload scenarios)
@@ -197,6 +260,87 @@ export default function PhoneStep() {
   const phoneValid = phone.replace(/\D/g, '').length === 10;
   const emailValid = email.trim() === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const isValid = phoneValid && userChecked && (isExistingUser || (name.trim() !== '' && email.trim() !== '' && emailValid));
+
+  // Handle using a different number (override auto-login)
+  const handleUseDifferentNumber = () => {
+    setAutoLoginUser(null);
+    setShowManualEntry(true);
+    setPhone('');
+    setName('');
+    setEmail('');
+    setIsExistingUser(false);
+    setUserChecked(false);
+    updateDraft({
+      phone: '',
+      name: '',
+      email: '',
+      isExistingUser: false,
+      deviceTrusted: false,
+      otpVerified: false,
+    });
+  };
+
+  // Show auto-login checking state
+  if (isAutoLoggingIn && !showManualEntry) {
+    return (
+      <StepLayout
+        title="Checking device..."
+        subtitle="Please wait while we verify your device"
+        showNext={false}
+        hideFooter={true}
+      >
+        <div className="flex flex-col items-center justify-center py-8">
+          <div className="p-4 rounded-full bg-violet-500/20 mb-4">
+            <Smartphone className="w-10 h-10 text-violet-400" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
+            <span className="text-white font-medium">Detecting trusted device...</span>
+          </div>
+        </div>
+      </StepLayout>
+    );
+  }
+
+  // Show auto-login success state
+  if (autoLoginUser && !showManualEntry) {
+    return (
+      <StepLayout
+        title="Welcome back!"
+        subtitle="We recognized your device"
+        showNext={false}
+        hideFooter={true}
+      >
+        <div className="flex flex-col items-center justify-center py-6">
+          <div className="p-4 rounded-full bg-green-500/20 mb-4">
+            <UserCheck className="w-10 h-10 text-green-400" />
+          </div>
+          
+          <div className="text-center mb-4">
+            <p className="text-white font-semibold text-lg">{autoLoginUser.name || 'Welcome back'}</p>
+            <p className="text-zinc-400 text-sm">+91 {formatPhoneForDisplay(autoLoginUser.phone)}</p>
+          </div>
+          
+          <div className="flex items-center gap-2 text-green-400 text-sm mb-4">
+            <Shield className="w-4 h-4" />
+            <span>Trusted device verified</span>
+          </div>
+          
+          <div className="flex items-center gap-2 text-violet-400">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="text-sm">Proceeding to select session...</span>
+          </div>
+          
+          <button
+            onClick={handleUseDifferentNumber}
+            className="mt-6 text-zinc-400 hover:text-white text-sm underline transition-colors"
+          >
+            Use a different number
+          </button>
+        </div>
+      </StepLayout>
+    );
+  }
 
   return (
     <StepLayout
