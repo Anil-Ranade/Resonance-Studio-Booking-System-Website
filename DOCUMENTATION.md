@@ -43,8 +43,10 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 |------------|---------|
 | **Supabase Auth** | Admin & Staff authentication |
 | **bcryptjs** | Password/OTP hashing |
-| **OTP-based Auth** | Phone number verification |
+| **OTP-based Auth** | Email verification (via Resend) |
 | **Device Fingerprinting** | Trusted device management |
+| **Cookie Sessions** | Secure HttpOnly auth tokens |
+| **Auto-login** | Seamless trusted device access |
 
 ### Development Tools
 | Technology | Purpose |
@@ -183,9 +185,10 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 
 - **Bookings** (`/admin/bookings`)
   - View all bookings with filters
-  - Confirm pending bookings
   - Cancel bookings
+  - Mark bookings as completed or no_show
   - View booking details
+  - **Send WhatsApp messages** to customers with pre-filled booking details
 
 - **Availability** (`/admin/availability`)
   - Block specific time slots
@@ -265,19 +268,34 @@ A modern, full-stack studio booking application built for Resonance Studio. This
         │   Manage     │               │   Create     │
         │   Bookings   │               │   Booking    │
         └──────────────┘               └──────────────┘
+              │
+              ▼
+         ┌──────────────┐
+         │   WhatsApp   │
+         │   Customer   │
+         └──────────────┘
 ```
 
 ### Staff Features
 
-- **Dashboard** (`/staff/dashboard`)
-  - Booking statistics
-  - Today's bookings overview
-  - Quick actions
+-   **Dashboard** (`/staff/dashboard`)
+    -   Booking statistics
+    -   Today's bookings overview
+    -   Quick actions
 
-- **Bookings** (`/staff/bookings`)
-  - View all bookings
-  - Filter and search bookings
-  - Create new bookings for walk-in customers
+-   **Bookings** (`/staff/bookings`)
+    -   View all bookings
+    -   Filter and search bookings
+    -   Create new bookings for walk-in customers
+    -   Send WhatsApp messages to customers
+
+### Admin Staff Management
+
+-   **Staff Management** (`/admin/staff`)
+    -   Create new staff members
+    -   View and manage existing staff
+    -   Deactivate staff accounts
+    -   Reset staff passwords
 
 ---
 
@@ -364,6 +382,7 @@ Text Colors:
 │   ├── page.tsx                # Root page (redirects to /home)
 │   ├── loading.tsx             # Global loading state
 │   ├── globals.css             # Global styles & CSS variables
+│   ├── sitemap.ts              # Dynamic sitemap generator
 │   │
 │   ├── home/                   # Landing page
 │   │   ├── page.tsx
@@ -377,22 +396,23 @@ Text Colors:
 │   │   │   ├── ParticipantsStep.tsx  # Participant configuration
 │   │   │   ├── TimeStep.tsx          # Date/time selection
 │   │   │   ├── StudioStep.tsx        # Studio selection
-│   │   │   ├── PhoneStep.tsx         # Phone number input
+│   │   │   ├── PhoneStep.tsx         # Phone/email input
 │   │   │   ├── OTPStep.tsx           # OTP verification
 │   │   │   ├── ReviewStep.tsx        # Review booking
 │   │   │   ├── ConfirmStep.tsx       # Confirmation
-│   │   │   └── StepLayout.tsx        # Step wrapper
+│   │   │   ├── StepLayout.tsx        # Step wrapper
+│   │   │   └── index.ts              # Component exports
+│   │   ├── new/                      # New booking flow
 │   │   ├── contexts/
 │   │   │   └── BookingContext.tsx    # Booking state management
 │   │   └── utils/
 │   │       └── studioSuggestion.ts   # Studio recommendation logic
 │   │
 │   ├── confirmation/           # Booking confirmation page
+│   ├── view-bookings/          # View bookings (secure auth required)
 │   ├── my-bookings/            # User booking history
 │   ├── edit-booking/           # Edit existing bookings with OTP
 │   ├── cancel-booking/         # Cancel bookings with verification
-│   ├── view-bookings/          # View bookings (alternative)
-│   ├── login/                  # User login page
 │   │
 │   ├── admin/                  # Admin section
 │   │   ├── layout.tsx          # Admin layout
@@ -402,15 +422,30 @@ Text Colors:
 │   │   └── (dashboard)/        # Protected admin routes
 │   │       ├── layout.tsx      # Dashboard layout with nav
 │   │       ├── dashboard/      # Overview stats
-│   │       ├── bookings/       # Booking management
+│   │       ├── bookings/       # Booking management + WhatsApp
 │   │       ├── availability/   # Slot management
+│   │       ├── staff/          # Staff management
 │   │       └── settings/       # System settings
+│   │
+│   ├── staff/                  # Staff portal section
+│   │   ├── layout.tsx          # Staff layout
+│   │   ├── page.tsx            # Staff root (redirects)
+│   │   ├── login/              # Staff login
+│   │   │   └── page.tsx
+│   │   └── (dashboard)/        # Protected staff routes
+│   │       ├── layout.tsx      # Staff dashboard layout
+│   │       ├── dashboard/      # Staff overview stats
+│   │       └── bookings/       # Staff booking management
 │   │
 │   ├── api/                    # API routes
 │   │   ├── auth/               # Authentication
-│   │   │   ├── send-otp/       # Send OTP SMS
+│   │   │   ├── send-otp/       # Send OTP email
 │   │   │   ├── verify-otp/     # Verify OTP code
-│   │   │   └── verify-device/  # Device verification
+│   │   │   ├── verify-device/  # Device verification
+│   │   │   ├── status/         # Check auth status
+│   │   │   ├── auto-login/     # Auto-login for trusted devices
+│   │   │   ├── refresh/        # Refresh auth session
+│   │   │   └── logout/         # Logout and clear session
 │   │   ├── book/               # Create booking
 │   │   ├── bookings/           # Booking operations
 │   │   │   ├── route.ts        # Get bookings
@@ -425,18 +460,25 @@ Text Colors:
 │   │   ├── studios/            # Studio information
 │   │   ├── display/            # Display endpoints
 │   │   │   └── bookings/
-│   │   └── admin/              # Admin-only endpoints
-│   │       ├── login/          # Admin authentication
-│   │       ├── stats/          # Dashboard statistics
-│   │       ├── bookings/       # Booking management
-│   │       ├── availability/   # Availability management
-│   │       ├── settings/       # Settings management
-│   │       └── book/           # Admin booking creation
+│   │   ├── admin/              # Admin-only endpoints
+│   │   │   ├── login/          # Admin authentication
+│   │   │   ├── stats/          # Dashboard statistics
+│   │   │   ├── bookings/       # Booking management
+│   │   │   ├── availability/   # Availability management
+│   │   │   ├── staff/          # Staff CRUD operations
+│   │   │   ├── settings/       # Settings management
+│   │   │   └── book/           # Admin booking creation
 │   │   └── staff/              # Staff-only endpoints
 │   │       ├── login/          # Staff authentication
 │   │       ├── stats/          # Staff dashboard statistics
 │   │       ├── bookings/       # Staff booking operations
 │   │       └── book/           # Staff booking creation
+│   │
+│   ├── components/             # Shared components
+│   │   ├── Navigation.tsx      # Main navigation
+│   │   ├── OTPLogin.tsx        # OTP login component
+│   │   ├── OTPVerification.tsx # OTP verification component
+│   │   └── ClearCache.tsx      # Cache clearing utility
 │   │
 │   ├── display/                # Public display page
 │   ├── studios/                # Studio information page
@@ -447,21 +489,7 @@ Text Colors:
 │   ├── contact/                # Contact form
 │   ├── review/                 # Review page
 │   ├── faq/                    # FAQs
-│   ├── policies/               # Terms & policies
-│   │
-│   └── staff/                  # Staff portal section
-│       ├── layout.tsx          # Staff layout
-│       ├── page.tsx            # Staff root (redirects)
-│       ├── login/              # Staff login
-│       │   └── page.tsx
-│       └── (dashboard)/        # Protected staff routes
-│           ├── layout.tsx      # Staff dashboard layout
-│           ├── dashboard/      # Staff overview stats
-│           └── bookings/       # Staff booking management
-│
-├── components/                 # Shared components
-│   ├── Navigation.tsx          # Main navigation
-│   └── OTPLogin.tsx            # OTP login component
+│   └── policies/               # Terms & policies
 │
 ├── lib/                        # Utility libraries
 │   ├── supabase.ts             # Supabase client (server)
@@ -469,25 +497,27 @@ Text Colors:
 │   ├── supabaseServer.ts       # Supabase server utilities
 │   ├── supabaseAuth.ts         # Auth utilities
 │   ├── googleCalendar.ts       # Google Calendar integration
-│   ├── google-calendar.ts      # Alternative calendar utils
-│   ├── sms.ts                  # Twilio SMS service (legacy)
 │   ├── email.ts                # Resend email service
 │   ├── otpStore.ts             # OTP management
+│   ├── tokens.ts               # Auth token management
+│   ├── authClient.ts           # Client-side auth utilities
 │   ├── deviceFingerprint.ts    # Device fingerprinting
 │   ├── OptimizedMotion.tsx     # Performance-optimized animations
 │   └── useDevicePerformance.ts # Device performance hook
 │
 ├── database/
-│   └── full_schema.sql         # Complete database schema with RLS policies
+│   ├── full_schema.sql         # Complete database schema with RLS
+│   └── migrations/             # Database migrations
 │
 ├── scripts/
 │   └── get_refresh_token.js    # Google OAuth token helper
 │
 └── public/                     # Static assets
-    ├── favicon.ico
-    ├── android-chrome-*.png
-    ├── apple-touch-icon.png
-    └── site.webmanifest
+    ├── favicon.ico             # Favicon
+    ├── android-chrome-*.png    # Android icons
+    ├── apple-touch-icon.png    # Apple touch icon
+    ├── robots.txt              # Robots configuration
+    └── site.webmanifest        # PWA manifest
 ```
 
 ---
@@ -569,9 +599,13 @@ Text Colors:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/auth/send-otp` | Send OTP to phone number |
+| `POST` | `/api/auth/send-otp` | Send OTP to email address |
 | `POST` | `/api/auth/verify-otp` | Verify OTP code |
 | `POST` | `/api/auth/verify-device` | Verify trusted device |
+| `GET` | `/api/auth/status` | Check authentication status |
+| `POST` | `/api/auth/auto-login` | Auto-login for trusted devices |
+| `POST` | `/api/auth/refresh` | Refresh auth session token |
+| `POST` | `/api/auth/logout` | Logout and clear session |
 
 ### Bookings
 
@@ -622,6 +656,15 @@ Text Colors:
 | `GET` | `/api/staff/stats` | Staff dashboard statistics |
 | `GET` | `/api/staff/bookings` | Get bookings for staff |
 | `POST` | `/api/staff/book` | Staff creates booking |
+
+### Admin Staff Management
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/admin/staff` | Get all staff members |
+| `POST` | `/api/admin/staff` | Create new staff member |
+| `PUT` | `/api/admin/staff` | Update staff member |
+| `DELETE` | `/api/admin/staff` | Deactivate staff member |
 
 ---
 
@@ -689,6 +732,13 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
   - Access token verification for all admin API routes
   - Admin status verified against `admin_users` table
   - Protected API routes with `verifyAdminToken()` middleware
+
+### Secure Booking Page Access
+- **Authentication required** to view/edit/cancel bookings
+- Cookie-based session management with HttpOnly secure cookies
+- Auto-login for trusted devices
+- Session refreshing for seamless user experience
+- Logout clears all session cookies
 
 ### HTTP Security Headers
 The application enforces the following security headers via `next.config.ts`:

@@ -16,6 +16,8 @@
 - OTPs expire after **5 minutes**
 - Maximum **5 verification attempts** per OTP
 - Old OTPs are deleted before generating new ones (prevents replay attacks)
+- **Cookie-based session management** with HttpOnly secure cookies
+- **Auto-login** for trusted devices with valid session cookies
 
 #### Admin Authentication
 - **Supabase Auth** handles email/password authentication
@@ -28,6 +30,13 @@
 - Staff status verified against `admin_users` table (role: `staff`)
 - Access tokens verified on every staff API request
 - Staff has limited permissions compared to admin
+
+#### Secure Booking Page Access
+- **Authentication required** to view, edit, or cancel bookings
+- Session verification on every protected page load
+- Cookie-based auth tokens with HttpOnly and Secure flags
+- Automatic session refresh for seamless user experience
+- Logout endpoint clears all session cookies
 
 #### Edit/Cancel Booking Verification
 - Email-based booking lookup
@@ -70,6 +79,16 @@ The following headers are enforced via `next.config.ts`:
 - JWT secrets: minimum 32 characters recommended
 - Service role key: never exposed to client
 - Resend API key: server-only, never exposed
+- Auth cookies: HttpOnly, Secure, SameSite=Lax
+
+### 6. Session Security
+
+- HttpOnly cookies prevent XSS token theft
+- Secure flag ensures HTTPS-only transmission
+- SameSite=Lax prevents CSRF attacks
+- Session expiry with automatic refresh
+- Logout properly clears all auth cookies
+- Trusted device fingerprints stored securely
 
 ## Reporting a Vulnerability
 
@@ -119,6 +138,15 @@ A strict CSP is not currently implemented due to dynamic content requirements. C
 Run `npm audit` regularly to check for vulnerabilities in dependencies.
 
 Current status (as of December 2025): **0 vulnerabilities**
+
+## Recent Security Updates (December 2025)
+
+- Added **secure booking page access** requiring authentication
+- Implemented **cookie-based session management** with HttpOnly secure cookies
+- Added **auto-login functionality** for trusted devices
+- Enhanced **session security** with automatic token refresh
+- Added **logout endpoint** for proper session cleanup
+- Improved **staff management** with secure password handling
 
 ## Contact
 

@@ -29,12 +29,13 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Advance booking restrictions (up to 30 days)
 - Booking buffer time between sessions
 
-### 📱 OTP Authentication
-- SMS-based OTP verification via Twilio
+### 📱 Secure Authentication
+- Email-based OTP verification via Resend
 - Secure phone number verification flow
-- Trusted device management
+- **Trusted device management** with cookie-based auto-login
+- Session-based authentication for booking access
 - Rate limiting with cooldown protection
-- Bcrypt-hashed OTP storage
+- Bcrypt-hashed OTP storage (10 salt rounds)
 
 ### 📅 Google Calendar Integration
 - Automatic calendar event creation for bookings
@@ -49,10 +50,13 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Beautiful dark-themed email templates
 
 ### 👤 My Bookings
+- **Secure authentication required** to view bookings
+- Auto-login with trusted devices
 - View personal booking history
 - Cancel bookings with confirmation
-- Track booking status (pending, confirmed, cancelled, completed, no_show)
-- View upcoming bookings
+- Track booking status (confirmed, cancelled, completed, no_show)
+- View upcoming and past bookings
+- Past bookings auto-marked as completed
 
 ### ✏️ Edit Booking
 - Email-based booking lookup
@@ -69,17 +73,20 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 ### 🔧 Admin Dashboard
 - Secure Supabase Auth-based admin authentication
 - Dashboard statistics (total bookings, revenue, today's bookings)
-- Booking management (view, confirm, cancel, mark no_show)
+- Booking management (view, cancel, mark no_show, mark completed)
+- **WhatsApp integration** - Send messages to customers with pre-filled booking details
+- **Staff management** - Create and manage staff members
 - Availability slot management (block/unblock)
 - Bulk availability operations
 - Configurable booking settings
 - Audit logging for all admin actions
 
-### � Staff Portal
+### 👥 Staff Portal
 - Separate staff authentication (Supabase Auth)
 - Staff dashboard with booking statistics
-- Staff booking management (view and manage)
+- Staff booking management with WhatsApp integration
 - Staff booking creation capability
+- Limited permissions compared to admin
 
 ### �💰 Rate Card
 - Dynamic studio pricing display
@@ -198,16 +205,20 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 
 ```
 ├── app/
-│   ├── layout.tsx              # Root layout
-│   ├── page.tsx                # Root page
-│   ├── globals.css             # Global styles
+│   ├── layout.tsx              # Root layout with metadata
+│   ├── page.tsx                # Root page (redirects to /home)
+│   ├── globals.css             # Global styles & CSS variables
+│   ├── loading.tsx             # Global loading state
+│   ├── sitemap.ts              # Dynamic sitemap generator
 │   │
 │   ├── home/                   # Landing page
 │   ├── booking/                # Booking wizard
-│   │   ├── components/         # Step components
+│   │   ├── components/         # Step components (9 steps)
 │   │   ├── contexts/           # Booking context
+│   │   ├── new/                # New booking flow
 │   │   └── utils/              # Helper utilities
 │   ├── confirmation/           # Booking confirmation
+│   ├── view-bookings/          # View bookings (secure)
 │   ├── my-bookings/            # User booking history
 │   ├── edit-booking/           # Edit existing bookings
 │   ├── cancel-booking/         # Cancel bookings with verification
@@ -218,6 +229,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │       ├── dashboard/      # Overview stats
 │   │       ├── bookings/       # Booking management
 │   │       ├── availability/   # Slot management
+│   │       ├── staff/          # Staff management
 │   │       └── settings/       # Configuration
 │   │
 │   ├── staff/                  # Staff portal
@@ -227,38 +239,84 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │       └── bookings/       # Staff booking management
 │   │
 │   ├── api/                    # API routes
-│   │   ├── auth/               # OTP auth endpoints
+│   │   ├── auth/               # Authentication endpoints
+│   │   │   ├── send-otp/       # Send OTP email
+│   │   │   ├── verify-otp/     # Verify OTP code
+│   │   │   ├── verify-device/  # Verify trusted device
+│   │   │   ├── status/         # Check auth status
+│   │   │   ├── auto-login/     # Auto-login for trusted devices
+│   │   │   ├── refresh/        # Refresh auth session
+│   │   │   └── logout/         # Logout and clear session
 │   │   ├── book/               # Booking creation
 │   │   ├── bookings/           # Booking operations
+│   │   │   ├── cancel/         # Cancel with notification
+│   │   │   ├── cancel-silent/  # Silent cancellation
+│   │   │   └── upcoming/       # Upcoming bookings
 │   │   ├── availability/       # Availability checks
 │   │   ├── admin/              # Admin endpoints
+│   │   │   ├── login/          # Admin authentication
+│   │   │   ├── stats/          # Dashboard statistics
+│   │   │   ├── bookings/       # Booking management
+│   │   │   ├── availability/   # Availability management
+│   │   │   ├── staff/          # Staff CRUD operations
+│   │   │   ├── settings/       # Settings management
+│   │   │   └── book/           # Admin booking creation
 │   │   ├── staff/              # Staff endpoints
 │   │   │   ├── login/          # Staff authentication
 │   │   │   ├── stats/          # Staff statistics
 │   │   │   ├── bookings/       # Staff booking ops
 │   │   │   └── book/           # Staff booking creation
-│   │   └── ...                 # Other endpoints
+│   │   ├── rates/              # Rate card data
+│   │   ├── studios/            # Studio information
+│   │   ├── settings/           # Public settings
+│   │   ├── contact/            # Contact form
+│   │   ├── check-user/         # User verification
+│   │   └── display/            # Display endpoints
+│   │
+│   ├── components/             # Shared components
+│   │   ├── Navigation.tsx      # Main navigation
+│   │   ├── OTPLogin.tsx        # OTP login component
+│   │   ├── OTPVerification.tsx # OTP verification
+│   │   └── ClearCache.tsx      # Cache clearing utility
 │   │
 │   ├── studios/                # Studio information
-│   ├── rate-card/              # Pricing
+│   ├── rate-card/              # Pricing display
+│   ├── availability/           # Public availability view
 │   ├── gallery/                # Photo gallery
 │   ├── about/                  # About page
 │   ├── contact/                # Contact form
+│   ├── review/                 # Review page
+│   ├── display/                # Public display page
 │   ├── faq/                    # FAQs
 │   └── policies/               # Terms & policies
 │
 ├── lib/                        # Utility libraries
-│   ├── supabase.ts             # Supabase client
-│   ├── googleCalendar.ts       # Calendar integration
-│   ├── sms.ts                  # Twilio SMS service
+│   ├── supabase.ts             # Supabase client (server)
+│   ├── supabaseClient.ts       # Supabase client (browser)
+│   ├── supabaseServer.ts       # Supabase server utilities
+│   ├── supabaseAuth.ts         # Auth utilities
+│   ├── googleCalendar.ts       # Google Calendar integration
+│   ├── email.ts                # Resend email service
 │   ├── otpStore.ts             # OTP management
-│   └── deviceFingerprint.ts    # Device tracking
+│   ├── tokens.ts               # Auth token management
+│   ├── authClient.ts           # Client-side auth utilities
+│   ├── deviceFingerprint.ts    # Device fingerprinting
+│   ├── OptimizedMotion.tsx     # Performance-optimized animations
+│   └── useDevicePerformance.ts # Device performance hook
 │
 ├── database/
-│   ├── schema.sql              # Main database schema
-│   └── devices.sql             # Trusted devices schema
+│   ├── full_schema.sql         # Complete database schema with RLS
+│   └── migrations/             # Database migrations
+│
+├── scripts/
+│   └── get_refresh_token.js    # Google OAuth token helper
 │
 └── public/                     # Static assets
+    ├── favicon.ico             # Favicon
+    ├── android-chrome-*.png    # Android icons
+    ├── apple-touch-icon.png    # Apple touch icon
+    ├── robots.txt              # Robots configuration
+    └── site.webmanifest        # PWA manifest
 ```
 
 ## 📚 Documentation
@@ -275,9 +333,11 @@ See [DOCUMENTATION.md](./DOCUMENTATION.md)
 
 - **HTTP Security Headers** - HSTS, X-Frame-Options, X-Content-Type-Options, CSP-ready
 - **Supabase Auth** for admin and staff authentication
+- **Secure booking page access** - Authentication required to view/edit/cancel bookings
 - **OTP verification** with bcrypt hashing (10 salt rounds)
+- **Cookie-based session management** - Secure HttpOnly cookies for auth tokens
 - **Row Level Security (RLS)** policies in Supabase
-- **Trusted device management** with device fingerprinting
+- **Trusted device management** with device fingerprinting and auto-login
 - **Rate limiting** for OTP requests (5 max attempts, 5-minute expiry)
 - **Input sanitization** for XSS prevention
 - **Audit logging** for all admin actions
