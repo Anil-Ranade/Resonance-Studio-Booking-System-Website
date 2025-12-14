@@ -115,10 +115,43 @@ export default function PhoneStep() {
           
           // Don't auto-proceed - let user confirm
         } else {
-          // Not auto-authenticated, fall back to normal flow
+          // Not auto-authenticated from server, check for locally cached data
+          const trustedPhones = getTrustedPhones();
+          const hasTrustedPhone = trustedPhones.length > 0;
+          
+          // Check if we have complete cached user data from a previous session
+          if (draft.phone && draft.name && draft.email && hasTrustedPhone) {
+            // We have cached data and a trusted phone - show as returning user
+            const phoneDigits = draft.phone.replace(/\D/g, '');
+            if (trustedPhones.includes(phoneDigits)) {
+              // This phone is in our local trusted phones list
+              setAutoLoginUser({
+                phone: phoneDigits,
+                name: draft.name,
+                email: draft.email,
+              });
+              setPhone(formatPhoneForDisplay(phoneDigits));
+              setName(draft.name);
+              setEmail(draft.email);
+              setIsExistingUser(true);
+              setUserChecked(true);
+              setIsTrustedDevice(true);
+              
+              // Update draft with authentication flags
+              updateDraft({
+                deviceTrusted: true,
+                otpVerified: true, // Skip OTP since this is a returning trusted user
+              });
+              
+              // Don't show manual entry - show welcome screen instead
+              return;
+            }
+          }
+          
+          // Fall back to normal flow with manual entry
           setShowManualEntry(true);
           
-          // Use cached draft data if available, otherwise try trusted phones
+          // Use cached draft data if available
           if (draft.phone) {
             setPhone(formatPhoneForDisplay(draft.phone));
             setName(draft.name || '');
@@ -129,15 +162,12 @@ export default function PhoneStep() {
             } else {
               checkExistingUser(draft.phone);
             }
-          } else {
+          } else if (hasTrustedPhone) {
             // Try to auto-populate from local trusted phones
-            const trustedPhones = getTrustedPhones();
-            if (trustedPhones.length > 0) {
-              const lastTrustedPhone = trustedPhones[trustedPhones.length - 1];
-              setPhone(formatPhoneForDisplay(lastTrustedPhone));
-              updateDraft({ phone: lastTrustedPhone });
-              checkExistingUser(lastTrustedPhone);
-            }
+            const lastTrustedPhone = trustedPhones[trustedPhones.length - 1];
+            setPhone(formatPhoneForDisplay(lastTrustedPhone));
+            updateDraft({ phone: lastTrustedPhone });
+            checkExistingUser(lastTrustedPhone);
           }
         }
       } catch (error) {

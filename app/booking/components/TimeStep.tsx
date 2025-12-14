@@ -26,7 +26,11 @@ const normalizeTime = (time: string): string => {
 
 export default function TimeStep() {
   const { draft, updateDraft, nextStep } = useBooking();
-  const [date, setDate] = useState(draft.date || '');
+  
+  // Get today's date as default
+  const getTodayDate = () => new Date().toISOString().split('T')[0];
+  
+  const [date, setDate] = useState(draft.date || getTodayDate());
   const [slots, setSlots] = useState<AvailableSlot[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -55,6 +59,14 @@ export default function TimeStep() {
     };
     fetchSettings();
   }, []);
+
+  // Set today's date in draft on mount if not already set
+  useEffect(() => {
+    if (!draft.date) {
+      const today = getTodayDate();
+      updateDraft({ date: today });
+    }
+  }, [draft.date, updateDraft]);
 
   // Calculate min/max dates
   const getMinDate = () => {
