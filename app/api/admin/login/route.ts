@@ -30,6 +30,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if role is 'admin' or 'super_admin' (not staff)
+    if (adminUser.role !== "admin" && adminUser.role !== "super_admin") {
+      return NextResponse.json(
+        { error: "Unauthorized - This login is for administrators only. Staff should use /staff" },
+        { status: 403 }
+      );
+    }
+
     // Update last login timestamp
     await supabase
       .from("admin_users")

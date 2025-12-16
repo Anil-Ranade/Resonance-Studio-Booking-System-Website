@@ -19,9 +19,12 @@ export default function ReviewStep() {
     return phone;
   };
 
-  // Format time for display in 24-hour format
+  // Format time for display in 12-hour format
   const formatTime = (time: string) => {
-    return time.slice(0, 5); // Returns "HH:MM" format
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
 
   // Format date for display

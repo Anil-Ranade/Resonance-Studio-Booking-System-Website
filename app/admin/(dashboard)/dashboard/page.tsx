@@ -5,18 +5,23 @@ import { motion } from 'framer-motion';
 import {
   Calendar,
   Clock,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   CheckCircle,
-  AlertCircle,
+  XCircle,
   Loader2,
+  Building2,
+  ChevronDown,
+  X,
+  Phone,
+  User,
+  FileText,
 } from 'lucide-react';
 import { getSession } from '@/lib/supabaseAuth';
 
 interface DashboardStats {
   totalBookings: number;
   confirmedBookings: number;
-  pendingBookings: number;
   cancelledBookings: number;
   totalRevenue: number;
   todayBookings: number;
@@ -34,11 +39,24 @@ interface RecentBooking {
   status: string;
 }
 
+interface TodayBooking {
+  id: string;
+  studio: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  name: string | null;
+  phone_number: string;
+  session_type: string | null;
+  session_details: string | null;
+  total_amount: number | null;
+  status: string;
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>({
     totalBookings: 0,
     confirmedBookings: 0,
-    pendingBookings: 0,
     cancelledBookings: 0,
     totalRevenue: 0,
     todayBookings: 0,
@@ -46,6 +64,9 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
+  const [todayBookings, setTodayBookings] = useState<TodayBooking[]>([]);
+  const [selectedStudio, setSelectedStudio] = useState<string>('all');
+  const [selectedBooking, setSelectedBooking] = useState<TodayBooking | null>(null);
 
   // Helper to get the current access token
   const getAccessToken = useCallback(async (): Promise<string | null> => {
@@ -65,6 +86,7 @@ export default function AdminDashboard() {
     setLoading(true);
     try {
       const token = await getAccessToken();
+      const today = new Date().toISOString().split('T')[0];
       
       // Fetch stats from API
       const statsResponse = await fetch('/api/admin/stats', {
@@ -85,6 +107,16 @@ export default function AdminDashboard() {
         const bookingsData = await bookingsResponse.json();
         setRecentBookings(bookingsData.bookings || []);
       }
+
+      // Fetch today's bookings for the overview
+      const todayResponse = await fetch(`/api/admin/bookings?date=${today}&status=confirmed`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (todayResponse.ok) {
+        const todayData = await todayResponse.json();
+        setTodayBookings(todayData.bookings || []);
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -97,15 +129,42 @@ export default function AdminDashboard() {
   }, [fetchDashboardData]);
 
   const formatTime = (time: string) => {
-    return time.slice(0, 5); // Returns "HH:MM" format (24-hour)
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
+
+  // Group today's bookings by studio
+  const getBookingsByStudio = () => {
+    const grouped: Record<string, TodayBooking[]> = {};
+    todayBookings.forEach((booking) => {
+      if (!grouped[booking.studio]) {
+        grouped[booking.studio] = [];
+      }
+      grouped[booking.studio].push(booking);
+    });
+    // Sort each group by time
+    Object.keys(grouped).forEach((studio) => {
+      grouped[studio].sort((a, b) => a.start_time.localeCompare(b.start_time));
+    });
+    return grouped;
+  };
+
+  // Group today's bookings by time
+  const getBookingsByTime = () => {
+    const sorted = [...todayBookings].sort((a, b) => a.start_time.localeCompare(b.start_time));
+    return sorted;
+  };
+
+  const bookingsByStudio = getBookingsByStudio();
+  const bookingsByTime = getBookingsByTime();
 
   const statCards = [
     {
       label: 'Total Bookings',
       value: stats.totalBookings.toLocaleString('en-IN'),
       icon: Calendar,
-      color: 'from-violet-500 to-purple-600',
       bgColor: 'bg-violet-500/10',
       iconColor: 'text-violet-400',
     },
@@ -113,27 +172,30 @@ export default function AdminDashboard() {
       label: 'Confirmed',
       value: stats.confirmedBookings.toLocaleString('en-IN'),
       icon: CheckCircle,
-      color: 'from-emerald-500 to-green-600',
       bgColor: 'bg-emerald-500/10',
       iconColor: 'text-emerald-400',
     },
     {
-      label: 'Pending',
-      value: stats.pendingBookings.toLocaleString('en-IN'),
-      icon: AlertCircle,
-      color: 'from-amber-500 to-orange-600',
-      bgColor: 'bg-amber-500/10',
-      iconColor: 'text-amber-400',
+      label: 'Cancelled',
+      value: stats.cancelledBookings.toLocaleString('en-IN'),
+      icon: XCircle,
+      bgColor: 'bg-red-500/10',
+      iconColor: 'text-red-400',
     },
     {
       label: 'Revenue',
       value: `₹${stats.totalRevenue.toLocaleString('en-IN')}`,
-      icon: DollarSign,
-      color: 'from-blue-500 to-cyan-600',
+      icon: IndianRupee,
       bgColor: 'bg-blue-500/10',
       iconColor: 'text-blue-400',
     },
   ];
+
+  const studioColors: Record<string, string> = {
+    'Studio A': 'bg-pink-500/20 text-pink-400 border-pink-500/30',
+    'Studio B': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    'Studio C': 'bg-green-500/20 text-green-400 border-green-500/30',
+  };
 
   return (
     <div className="space-y-6">
@@ -169,85 +231,145 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Today's Overview */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="glass rounded-2xl p-6"
-        >
-          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-violet-400" />
-            Today&apos;s Overview
-          </h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white/5 rounded-xl p-4">
-              <p className="text-zinc-400 text-sm">Bookings Today</p>
-              <p className="text-2xl font-bold text-white">
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : stats.todayBookings}
-              </p>
-            </div>
-            <div className="bg-white/5 rounded-xl p-4">
-              <p className="text-zinc-400 text-sm">Available Slots</p>
-              <p className="text-2xl font-bold text-white">
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : stats.availableSlots}
-              </p>
-            </div>
+      {/* Today's Overview - Two Column Layout */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="glass rounded-2xl p-6"
+      >
+        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2 flex-wrap">
+          <Clock className="w-5 h-5 text-violet-400" />
+          Today&apos;s Overview
+          <span className="text-sm font-normal text-violet-400 ml-1">
+            — {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}
+          </span>
+          <span className="text-sm font-normal text-zinc-400 ml-auto">
+            ({stats.todayBookings} bookings)
+          </span>
+        </h2>
+        
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
           </div>
-        </motion.div>
-
-        {/* Recent Bookings */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="glass rounded-2xl p-6"
-        >
-          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-violet-400" />
-            Recent Bookings
-          </h2>
-          <div className="space-y-3">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
-              </div>
-            ) : recentBookings.length === 0 ? (
-              <div className="text-center py-8">
-                <Calendar className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
-                <p className="text-zinc-500 text-sm">No bookings yet</p>
-              </div>
-            ) : (
-              recentBookings.map((booking) => (
-                <div
-                  key={booking.id}
-                  className="flex items-center justify-between bg-white/5 rounded-xl p-3"
-                >
-                  <div>
-                    <p className="text-white font-medium">{booking.studio}</p>
-                    <p className="text-zinc-400 text-sm">
-                      {booking.date} • {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
-                    </p>
-                  </div>
-                  <span
-                    className={`px-2 py-1 rounded-lg text-xs font-medium ${
-                      booking.status === 'confirmed'
-                        ? 'bg-emerald-500/20 text-emerald-400'
-                        : booking.status === 'pending'
-                        ? 'bg-amber-500/20 text-amber-400'
-                        : 'bg-red-500/20 text-red-400'
-                    }`}
-                  >
-                    {booking.status}
-                  </span>
+        ) : todayBookings.length === 0 ? (
+          <div className="text-center py-8">
+            <Calendar className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
+            <p className="text-zinc-500 text-sm">No bookings for today</p>
+          </div>
+        ) : (
+          <div>
+            {/* Studio + Time View */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+                    <Building2 className="w-4 h-4" />
+                    By Studio
+                  </h3>
+                  <p className="text-xs text-zinc-600 mt-0.5">Grouped by studio</p>
                 </div>
-              ))
-            )}
+                <div className="relative">
+                  <select
+                    value={selectedStudio}
+                    onChange={(e) => setSelectedStudio(e.target.value)}
+                    className="appearance-none bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 pr-8 text-sm text-white focus:outline-none focus:border-violet-500 cursor-pointer"
+                  >
+                    <option value="all" className="bg-zinc-900">All Studios</option>
+                    <option value="Studio A" className="bg-zinc-900">Studio A</option>
+                    <option value="Studio B" className="bg-zinc-900">Studio B</option>
+                    <option value="Studio C" className="bg-zinc-900">Studio C</option>
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                </div>
+              </div>
+              <div className="space-y-3">
+                {Object.entries(bookingsByStudio)
+                  .filter(([studio]) => selectedStudio === 'all' || studio === selectedStudio)
+                  .map(([studio, bookings]) => (
+                  <div key={studio} className="bg-white/5 rounded-xl p-3">
+                    <div className={`inline-block px-2 py-1 rounded-lg text-xs font-medium mb-2 border ${studioColors[studio] || 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'}`}>
+                      {studio}
+                    </div>
+                    <div className="space-y-2">
+                      {bookings.map((booking) => (
+                        <div 
+                          key={booking.id} 
+                          className="flex items-center justify-between text-sm p-2 -m-2 rounded-lg hover:bg-white/10 cursor-pointer transition-colors"
+                          onClick={() => setSelectedBooking(booking)}
+                        >
+                          <span className="text-zinc-300">
+                            {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
+                          </span>
+                          <span className="text-zinc-500 text-xs truncate ml-2 max-w-[100px]">
+                            {booking.name || 'N/A'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {Object.entries(bookingsByStudio).filter(([studio]) => selectedStudio === 'all' || studio === selectedStudio).length === 0 && (
+                  <div className="text-center py-4">
+                    <p className="text-zinc-500 text-sm">No bookings for this studio</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        </motion.div>
-      </div>
+        )}
+      </motion.div>
+
+      {/* Recent Bookings */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="glass rounded-2xl p-6"
+      >
+        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-violet-400" />
+          Recent Bookings
+        </h2>
+        <div className="space-y-3">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
+            </div>
+          ) : recentBookings.length === 0 ? (
+            <div className="text-center py-8">
+              <Calendar className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
+              <p className="text-zinc-500 text-sm">No bookings yet</p>
+            </div>
+          ) : (
+            recentBookings.map((booking) => (
+              <div
+                key={booking.id}
+                className="flex items-center justify-between bg-white/5 rounded-xl p-3"
+              >
+                <div>
+                  <p className="text-white font-medium">{booking.studio}</p>
+                  <p className="text-zinc-400 text-sm">
+                    {booking.date} • {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
+                  </p>
+                </div>
+                <span
+                  className={`px-2 py-1 rounded-lg text-xs font-medium ${
+                    booking.status === 'confirmed'
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : booking.status === 'completed'
+                      ? 'bg-blue-500/20 text-blue-400'
+                      : 'bg-red-500/20 text-red-400'
+                  }`}
+                >
+                  {booking.status}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </motion.div>
 
       {/* Quick Actions */}
       <motion.div
@@ -290,6 +412,90 @@ export default function AdminDashboard() {
           </a>
         </div>
       </motion.div>
+
+      {/* Booking Details Modal */}
+      {selectedBooking && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedBooking(null)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-zinc-900 border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Booking Details</h3>
+              <button
+                onClick={() => setSelectedBooking(null)}
+                className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-zinc-400" />
+              </button>
+            </div>
+
+            {/* Studio Badge */}
+            <div className={`inline-block px-3 py-1.5 rounded-lg text-sm font-medium mb-4 border ${studioColors[selectedBooking.studio] || 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'}`}>
+              {selectedBooking.studio}
+            </div>
+
+            {/* Details Grid */}
+            <div className="space-y-3">
+              {/* Time */}
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
+                <Clock className="w-5 h-5 text-violet-400" />
+                <div>
+                  <p className="text-xs text-zinc-500">Time</p>
+                  <p className="text-white font-medium">
+                    {formatTime(selectedBooking.start_time)} - {formatTime(selectedBooking.end_time)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Customer Name */}
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
+                <User className="w-5 h-5 text-emerald-400" />
+                <div>
+                  <p className="text-xs text-zinc-500">Customer</p>
+                  <p className="text-white font-medium">{selectedBooking.name || 'N/A'}</p>
+                </div>
+              </div>
+
+              {/* Phone Number */}
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
+                <Phone className="w-5 h-5 text-blue-400" />
+                <div>
+                  <p className="text-xs text-zinc-500">Phone</p>
+                  <p className="text-white font-medium">{selectedBooking.phone_number || 'N/A'}</p>
+                </div>
+              </div>
+
+              {/* Session Type */}
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
+                <FileText className="w-5 h-5 text-amber-400" />
+                <div>
+                  <p className="text-xs text-zinc-500">Session Type</p>
+                  <p className="text-white font-medium">{selectedBooking.session_type || 'N/A'}</p>
+                </div>
+              </div>
+
+              {/* Amount */}
+              {selectedBooking.total_amount && (
+                <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
+                  <IndianRupee className="w-5 h-5 text-green-400" />
+                  <div>
+                    <p className="text-xs text-zinc-500">Amount</p>
+                    <p className="text-white font-medium">₹{selectedBooking.total_amount.toLocaleString('en-IN')}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

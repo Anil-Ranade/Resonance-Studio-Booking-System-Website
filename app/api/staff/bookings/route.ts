@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
-import { sendBookingConfirmationEmail } from "@/lib/email";
+import { sendAdminBookingConfirmationEmail } from "@/lib/email";
 import { deleteEvent, createEvent, updateEvent } from "@/lib/googleCalendar";
 
 // Verify staff token from Authorization header
@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
   const studio = searchParams.get("studio");
   const startDate = searchParams.get("startDate");
   const endDate = searchParams.get("endDate");
+  const phone = searchParams.get("phone");
 
   const supabase = supabaseAdmin();
 
@@ -72,6 +73,13 @@ export async function GET(request: NextRequest) {
     .select("*")
     .eq("created_by_staff_id", staff.user.id)
     .order("created_at", { ascending: false });
+
+  // Filter by phone number if provided
+  if (phone) {
+    // Normalize phone number (remove spaces, dashes, etc.)
+    const normalizedPhone = phone.replace(/\D/g, '');
+    query = query.ilike("phone_number", `%${normalizedPhone}%`);
+  }
 
   if (status && status !== "all") {
     query = query.eq("status", status);
@@ -244,7 +252,7 @@ export async function PUT(request: NextRequest) {
 
       if (hasResendConfig && userData?.email) {
         try {
-          const emailResult = await sendBookingConfirmationEmail(userData.email, {
+          const emailResult = await sendAdminBookingConfirmationEmail(userData.email, {
             id: booking.id,
             name: booking.name,
             studio: booking.studio,

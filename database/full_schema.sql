@@ -346,34 +346,6 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_entity_id ON audit_logs(entity_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
 
 -- =====================================================
--- TABLE: contact_submissions
--- Description: Contact form submissions
--- =====================================================
-CREATE TABLE IF NOT EXISTS contact_submissions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100),
-    email VARCHAR(255) NOT NULL,
-    phone VARCHAR(15),
-    subject VARCHAR(255),
-    message TEXT NOT NULL,
-    status VARCHAR(20) DEFAULT 'pending',
-    responded_at TIMESTAMPTZ,
-    responded_by UUID REFERENCES admin_users(id) ON DELETE SET NULL,
-    notes TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Constraints
-    CONSTRAINT chk_contact_status CHECK (status IN ('pending', 'responded', 'closed', 'spam'))
-);
-
--- Create indexes on contact_submissions
-CREATE INDEX IF NOT EXISTS idx_contact_submissions_email ON contact_submissions(email);
-CREATE INDEX IF NOT EXISTS idx_contact_submissions_status ON contact_submissions(status);
-CREATE INDEX IF NOT EXISTS idx_contact_submissions_created_at ON contact_submissions(created_at DESC);
-
--- =====================================================
 -- UPDATE TRIGGERS
 -- =====================================================
 

@@ -126,6 +126,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check for exact duplicate booking (same phone, studio, date, start_time, end_time)
+    const { data: duplicateBookings } = await supabaseServer
+      .from("bookings")
+      .select("id")
+      .eq("phone_number", phone)
+      .eq("studio", studio)
+      .eq("date", date)
+      .eq("start_time", start_time)
+      .eq("end_time", end_time)
+      .in("status", ["confirmed"]);
+
+    if (duplicateBookings && duplicateBookings.length > 0) {
+      return NextResponse.json(
+        { error: "A booking already exists for this exact time slot" },
+        { status: 409 }
+      );
+    }
+
     // Check for conflicting bookings (admin can see conflicts but we still prevent double booking)
     const { data: conflictingBookings, error: conflictError } = await supabaseServer
       .from("bookings")

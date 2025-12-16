@@ -150,6 +150,24 @@ export async function POST(request: Request) {
     const adjustedStartTime = `${Math.floor(Math.max(0, adjustedStartMinutes) / 60).toString().padStart(2, '0')}:${(Math.max(0, adjustedStartMinutes) % 60).toString().padStart(2, '0')}`;
     const adjustedEndTime = `${Math.floor(Math.min(1439, adjustedEndMinutes) / 60).toString().padStart(2, '0')}:${(Math.min(1439, adjustedEndMinutes) % 60).toString().padStart(2, '0')}`;
 
+    // Check for exact duplicate booking (same phone, studio, date, start_time, end_time)
+    const { data: duplicateBookings } = await supabaseServer
+      .from("bookings")
+      .select("id")
+      .eq("phone_number", phone)
+      .eq("studio", studio)
+      .eq("date", date)
+      .eq("start_time", start_time)
+      .eq("end_time", end_time)
+      .in("status", ["confirmed"]);
+
+    if (duplicateBookings && duplicateBookings.length > 0) {
+      return NextResponse.json(
+        { error: "You already have a booking for this exact time slot" },
+        { status: 409 }
+      );
+    }
+
     const { data: conflictingBookings, error: conflictError } = await supabaseServer
       .from("bookings")
       .select("id")

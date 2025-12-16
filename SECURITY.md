@@ -42,7 +42,7 @@
 - Email-based booking lookup
 - OTP sent to registered email for verification
 - Prevents unauthorized booking modifications
-- Time-based restrictions (24h for pending, 48h for confirmed)
+- Time-based restrictions (48h for confirmed bookings)
 
 ### 2. HTTP Security Headers
 
@@ -79,6 +79,7 @@ The following headers are enforced via `next.config.ts`:
 - JWT secrets: minimum 32 characters recommended
 - Service role key: never exposed to client
 - Resend API key: server-only, never exposed
+- Google API credentials: server-only (Calendar & Sheets access)
 - Auth cookies: HttpOnly, Secure, SameSite=Lax
 
 ### 6. Session Security
@@ -147,6 +148,9 @@ Current status (as of December 2025): **0 vulnerabilities**
 - Enhanced **session security** with automatic token refresh
 - Added **logout endpoint** for proper session cleanup
 - Improved **staff management** with secure password handling
+- Integrated **Google Sheets** for secure booking audit logs
+- Added **duplicate booking prevention** across all booking APIs
+- Implemented **admin/staff booking creation** with proper attribution
 
 ## Contact
 

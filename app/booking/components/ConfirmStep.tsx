@@ -1,18 +1,35 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, Calendar, Clock, Building2, Loader2, AlertCircle, Home, CalendarPlus } from 'lucide-react';
+import { CheckCircle2, Calendar, Clock, Building2, Loader2, AlertCircle, Home, CalendarPlus, LayoutDashboard } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useBooking } from '../contexts/BookingContext';
+import { getSession } from '@/lib/supabaseAuth';
 
 export default function ConfirmStep() {
   const router = useRouter();
-  const { draft, resetDraft } = useBooking();
+  const { draft, resetDraft, mode } = useBooking();
   const [isBooking, setIsBooking] = useState(true);
   const [bookingComplete, setBookingComplete] = useState(false);
   const [error, setError] = useState('');
   const [bookingId, setBookingId] = useState('');
+
+  // Get access token for admin/staff
+  const getAccessToken = useCallback(async (): Promise<string | null> => {
+    try {
+      const session = await getSession();
+      if (session?.access_token) {
+        return session.access_token;
+      }
+      // Fallback to localStorage
+      const storageKey = mode === 'admin' ? 'accessToken' : 'staffAccessToken';
+      return localStorage.getItem(storageKey);
+    } catch {
+      const storageKey = mode === 'admin' ? 'accessToken' : 'staffAccessToken';
+      return localStorage.getItem(storageKey);
+    }
+  }, [mode]);
 
   // Create booking on mount
   useEffect(() => {
@@ -62,12 +79,29 @@ export default function ConfirmStep() {
         sessionDetails = labels[draft.recordingOption] || draft.sessionType || '';
       }
 
+      // Select API endpoint based on mode
+      const getApiUrl = () => {
+        if (mode === 'admin') return '/api/admin/book';
+        if (mode === 'staff') return '/api/staff/book';
+        return '/api/book';
+      };
+
       // Use PUT for modifications, POST for new bookings
       const isModification = draft.isEditMode && draft.originalBookingId;
+      const apiUrl = getApiUrl();
       
-      const response = await fetch('/api/book', {
+      // Get auth headers for admin/staff
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (mode !== 'customer') {
+        const token = await getAccessToken();
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+      }
+      
+      const response = await fetch(apiUrl, {
         method: isModification ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           phone: draft.phone,
           name: draft.name,
@@ -102,17 +136,34 @@ export default function ConfirmStep() {
 
   const handleGoHome = () => {
     resetDraft();
-    router.push('/');
+    // Navigate based on mode
+    if (mode === 'admin') {
+      router.push('/admin/dashboard');
+    } else if (mode === 'staff') {
+      router.push('/staff/dashboard');
+    } else {
+      router.push('/');
+    }
   };
 
   const handleNewBooking = () => {
     resetDraft();
-    router.push('/booking/new');
+    // Navigate based on mode
+    if (mode === 'admin') {
+      router.push('/admin/booking/new');
+    } else if (mode === 'staff') {
+      router.push('/staff/booking/new');
+    } else {
+      router.push('/booking/new');
+    }
   };
 
-  // Format time for display in 24-hour format
+  // Format time for display in 12-hour format
   const formatTime = (time: string) => {
-    return time.slice(0, 5); // Returns "HH:MM" format
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
 
   // Format date for display
@@ -387,8 +438,17 @@ export default function ConfirmStep() {
             onClick={handleGoHome}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-zinc-800 text-white font-medium hover:bg-zinc-700"
           >
-            <Home className="w-4 h-4" />
-            Home
+            {mode !== 'customer' ? (
+              <>
+                <LayoutDashboard className="w-4 h-4" />
+                Dashboard
+              </>
+            ) : (
+              <>
+                <Home className="w-4 h-4" />
+                Home
+              </>
+            )}
           </button>
           <button
             onClick={handleNewBooking}

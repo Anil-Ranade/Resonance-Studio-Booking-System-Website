@@ -217,7 +217,7 @@ export async function GET(request: NextRequest) {
       .select('id, start_time, end_time')
       .eq('studio', studio)
       .eq('date', date)
-      .in('status', ['pending', 'confirmed']);
+      .in('status', ['confirmed']);
     
     if (excludeBookingId) {
       bookingsQuery = bookingsQuery.neq('id', excludeBookingId);

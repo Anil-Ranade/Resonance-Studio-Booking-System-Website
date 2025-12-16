@@ -10,6 +10,7 @@ export type LiveMusicianOption = '1_2' | '3_4' | '5' | '6_8' | '9_12';
 export type BandEquipment = 'drum' | 'amps' | 'guitars' | 'keyboard';
 export type RecordingOption = 'audio_recording' | 'video_recording' | 'chroma_key';
 export type StudioName = 'Studio A' | 'Studio B' | 'Studio C';
+export type BookingMode = 'customer' | 'admin' | 'staff';
 
 export interface TimeSlot {
   start: string;
@@ -118,6 +119,7 @@ interface BookingContextType {
   draft: BookingDraft;
   currentStep: BookingStep;
   stepIndex: number;
+  mode: BookingMode;
   updateDraft: (updates: Partial<BookingDraft>) => void;
   setStep: (step: BookingStep) => void;
   nextStep: () => void;
@@ -128,11 +130,17 @@ interface BookingContextType {
   totalSteps: number;
   loadEditData: () => void;
   hasChangesFromOriginal: () => boolean;
+  skipOtp: boolean;
 }
 
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
-export function BookingProvider({ children }: { children: ReactNode }) {
+interface BookingProviderProps {
+  children: ReactNode;
+  mode?: BookingMode;
+}
+
+export function BookingProvider({ children, mode = 'customer' }: BookingProviderProps) {
   const [draft, setDraft] = useState<BookingDraft>(initialDraft);
   const [currentStep, setCurrentStep] = useState<BookingStep>('phone');
   const [isLoaded, setIsLoaded] = useState(false);
@@ -473,6 +481,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
         draft,
         currentStep,
         stepIndex,
+        mode,
         updateDraft,
         setStep,
         nextStep,
@@ -483,6 +492,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
         totalSteps: STEP_ORDER.length,
         loadEditData,
         hasChangesFromOriginal,
+        skipOtp: mode !== 'customer',
       }}
     >
       {children}

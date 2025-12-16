@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar,
@@ -531,7 +532,10 @@ export default function BookingsManagementPage() {
   };
 
   const formatTime = (time: string) => {
-    return time.slice(0, 5); // Returns "HH:MM" format (24-hour)
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
 
   const formatDate = (dateStr: string) => {
@@ -552,15 +556,13 @@ export default function BookingsManagementPage() {
           <h1 className="text-2xl font-bold text-white">Bookings</h1>
           <p className="text-zinc-400 mt-1">View and manage all bookings</p>
         </div>
-        <motion.button
-          onClick={() => setShowNewBookingModal(true)}
+        <Link
+          href="/admin/booking"
           className="btn-primary flex items-center gap-2"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
         >
           <Plus className="w-5 h-5" />
           New Booking
-        </motion.button>
+        </Link>
       </div>
 
       {/* Filters */}

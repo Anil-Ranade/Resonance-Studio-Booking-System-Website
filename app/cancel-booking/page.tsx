@@ -43,7 +43,7 @@ interface Booking {
   date: string;
   start_time: string;
   end_time: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
+  status: 'confirmed' | 'cancelled' | 'completed' | 'no_show';
   rate_per_hour: number;
   total_amount: number;
   created_at: string;
@@ -59,7 +59,6 @@ const fadeInUp = {
 };
 
 const statusConfig = {
-  pending: { color: 'amber', icon: Clock, label: 'Pending' },
   confirmed: { color: 'green', icon: CheckCircle2, label: 'Confirmed' },
   cancelled: { color: 'red', icon: XCircle, label: 'Cancelled' },
   completed: { color: 'violet', icon: CheckCircle2, label: 'Completed' },
@@ -132,7 +131,7 @@ export default function CancelBookingPage() {
       }
 
       const upcomingBookings = (data.bookings || []).filter((b: Booking) => 
-        b.status === 'pending' || b.status === 'confirmed'
+        b.status === 'confirmed'
       );
       
       setBookings(upcomingBookings);
@@ -159,7 +158,7 @@ export default function CancelBookingPage() {
 
   const canCancelBooking = (booking: Booking) => {
     const status = booking.status?.toLowerCase();
-    if (status !== 'pending' && status !== 'confirmed') {
+    if (status !== 'confirmed') {
       return { canCancel: false, reason: 'Invalid status' };
     }
     
@@ -249,7 +248,10 @@ export default function CancelBookingPage() {
   };
 
   const formatTime = (time: string) => {
-    return time.slice(0, 5);
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
 
   const resetFlow = () => {
@@ -445,7 +447,7 @@ export default function CancelBookingPage() {
             
             <div className="space-y-4">
               {bookings.map((booking, index) => {
-                const config = statusConfig[booking.status] || statusConfig.pending;
+                const config = statusConfig[booking.status] || statusConfig.confirmed;
                 const StatusIcon = config.icon;
                 const cancelCheck = canCancelBooking(booking);
 

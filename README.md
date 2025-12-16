@@ -61,8 +61,8 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 ### ✏️ Edit Booking
 - Email-based booking lookup
 - OTP verification for security
-- Modify pending or confirmed bookings
-- Time restrictions (24 hours before for pending, 48 hours for confirmed)
+- Modify confirmed bookings
+- Time restrictions (48 hours before session)
 
 ### ❌ Cancel Booking
 - Email-based booking lookup
@@ -101,7 +101,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Studio-specific amenities
 
 ### 📞 Contact & Support
-- Contact form with submission tracking
+- Contact form
 - Comprehensive FAQ section
 - Policies page
 
@@ -132,8 +132,8 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Node.js 18+ 
 - npm or yarn
 - Supabase account
-- Twilio account (for SMS)
-- Google Cloud project (for Calendar API)
+- Resend account (for Email notifications)
+- Google Cloud project (for Calendar API & Sheets integration)
 
 ### Installation
 
@@ -170,8 +170,12 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
    GOOGLE_REFRESH_TOKEN=your_refresh_token
    GOOGLE_CALENDAR_ID=your_calendar_id
 
+   #Google Sheets
+   GOOGLE_SHEET_ID=your_google_sheet_id
+
    # JWT (use strong, random strings - min 32 characters)
    JWT_SECRET=your_jwt_secret_min_32_chars
+   REFRESH_TOKEN_SECRET=your_refresh_token_secret_min_32_chars
    ```
 
    > ⚠️ **Security Note**: Never commit `.env.local` to version control. Use strong, randomly generated secrets for JWT_SECRET (minimum 32 characters). Rotate secrets periodically.
@@ -275,6 +279,8 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │
 │   ├── components/             # Shared components
 │   │   ├── Navigation.tsx      # Main navigation
+│   │   ├── Footer.tsx          # Site footer
+│   │   ├── MainContent.tsx     # Main content wrapper
 │   │   ├── OTPLogin.tsx        # OTP login component
 │   │   ├── OTPVerification.tsx # OTP verification
 │   │   └── ClearCache.tsx      # Cache clearing utility
@@ -296,6 +302,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   ├── supabaseServer.ts       # Supabase server utilities
 │   ├── supabaseAuth.ts         # Auth utilities
 │   ├── googleCalendar.ts       # Google Calendar integration
+│   ├── googleSheets.ts         # Google Sheets integration for booking logs
 │   ├── email.ts                # Resend email service
 │   ├── otpStore.ts             # OTP management
 │   ├── tokens.ts               # Auth token management

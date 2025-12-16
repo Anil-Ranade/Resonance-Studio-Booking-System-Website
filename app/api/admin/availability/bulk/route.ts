@@ -69,8 +69,50 @@ export async function POST(request: NextRequest) {
 
     const supabase = supabaseAdmin();
 
-    // Create blocked slots for each date
-    const slotsToInsert = dates.map((date: string) => ({
+    // Check for past dates (using IST timezone)
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+    const istNow = new Date(now.getTime() + istOffset);
+    const istToday = istNow.toISOString().split('T')[0];
+    const istCurrentTime = istNow.toISOString().split('T')[1].substring(0, 5);
+
+    // Filter out past dates and today if time has passed
+    const validDates = dates.filter((date: string) => {
+      if (date < istToday) return false;
+      if (date === istToday && start_time < istCurrentTime) return false;
+      return true;
+    });
+
+    if (validDates.length === 0) {
+      return NextResponse.json(
+        { error: "All provided dates/times are in the past" },
+        { status: 400 }
+      );
+    }
+
+    // Check for conflicting bookings for all valid dates
+    const { data: conflictingBookings } = await supabase
+      .from("bookings")
+      .select("id, date")
+      .eq("studio", studio)
+      .in("date", validDates)
+      .eq("status", "confirmed")
+      .lt("start_time", end_time)
+      .gt("end_time", start_time);
+
+    // Filter out dates that have conflicting bookings
+    const conflictingDates = new Set(conflictingBookings?.map(b => b.date) || []);
+    const finalDates = validDates.filter((date: string) => !conflictingDates.has(date));
+
+    if (finalDates.length === 0) {
+      return NextResponse.json(
+        { error: "All slots conflict with existing confirmed bookings" },
+        { status: 409 }
+      );
+    }
+
+    // Create blocked slots for each valid date
+    const slotsToInsert = finalDates.map((date: string) => ({
       studio,
       date,
       start_time,

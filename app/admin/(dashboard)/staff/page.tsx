@@ -48,6 +48,7 @@ export default function StaffPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [currentAdminId, setCurrentAdminId] = useState<string | null>(null);
 
   const [form, setForm] = useState<CreateStaffForm>({
     name: '',
@@ -55,6 +56,19 @@ export default function StaffPage() {
     password: '',
     role: 'staff',
   });
+
+  // Load current admin ID from localStorage
+  useEffect(() => {
+    const storedAdmin = localStorage.getItem('admin');
+    if (storedAdmin) {
+      try {
+        const adminData = JSON.parse(storedAdmin);
+        setCurrentAdminId(adminData.id);
+      } catch {
+        console.error('Failed to parse admin data');
+      }
+    }
+  }, []);
 
   // Helper to get the current access token
   const getAccessToken = useCallback(async (): Promise<string | null> => {
@@ -363,7 +377,9 @@ export default function StaffPage() {
 
               {/* Staff Rows */}
               <div className="divide-y divide-white/5">
-                {staff.map((member) => (
+                {staff.map((member) => {
+                  const isCurrentAdmin = member.id === currentAdminId;
+                  return (
                   <motion.div
                     key={member.id}
                     initial={{ opacity: 0 }}
@@ -377,14 +393,19 @@ export default function StaffPage() {
                           {member.name?.[0]?.toUpperCase() || member.email[0].toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-white font-medium">{member.name || 'Unnamed'}</p>
+                          <p className="text-white font-medium flex items-center gap-2">
+                            {member.name || 'Unnamed'}
+                            {isCurrentAdmin && (
+                              <span className="text-xs text-zinc-500">(You)</span>
+                            )}
+                          </p>
                           <p className="text-zinc-500 text-sm">{member.email}</p>
                         </div>
                       </div>
 
                       {/* Role */}
                       <div>
-                        {editingId === member.id ? (
+                        {editingId === member.id && !isCurrentAdmin ? (
                           <select
                             value={member.role}
                             onChange={(e) => handleUpdateRole(member.id, e.target.value)}
@@ -432,41 +453,55 @@ export default function StaffPage() {
                       <div className="flex items-center gap-2 md:justify-end">
                         <motion.button
                           onClick={() =>
-                            setEditingId(editingId === member.id ? null : member.id)
+                            !isCurrentAdmin && setEditingId(editingId === member.id ? null : member.id)
                           }
-                          className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          title="Edit Role"
+                          className={`p-2 rounded-lg transition-colors ${
+                            isCurrentAdmin
+                              ? 'bg-white/5 text-zinc-600 cursor-not-allowed'
+                              : 'bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10'
+                          }`}
+                          whileHover={{ scale: isCurrentAdmin ? 1 : 1.05 }}
+                          whileTap={{ scale: isCurrentAdmin ? 1 : 0.95 }}
+                          title={isCurrentAdmin ? "Cannot edit your own role" : "Edit Role"}
+                          disabled={isCurrentAdmin}
                         >
                           <Edit2 className="w-4 h-4" />
                         </motion.button>
                         <motion.button
-                          onClick={() => handleToggleActive(member.id, member.is_active)}
+                          onClick={() => !isCurrentAdmin && handleToggleActive(member.id, member.is_active)}
                           className={`p-2 rounded-lg transition-colors ${
-                            member.is_active
-                              ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
-                              : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                            isCurrentAdmin
+                              ? 'bg-white/5 text-zinc-600 cursor-not-allowed'
+                              : member.is_active
+                                ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
+                                : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
                           }`}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          title={member.is_active ? 'Deactivate' : 'Activate'}
+                          whileHover={{ scale: isCurrentAdmin ? 1 : 1.05 }}
+                          whileTap={{ scale: isCurrentAdmin ? 1 : 0.95 }}
+                          title={isCurrentAdmin ? "Cannot deactivate yourself" : member.is_active ? 'Deactivate' : 'Activate'}
+                          disabled={isCurrentAdmin}
                         >
                           <UserX className="w-4 h-4" />
                         </motion.button>
                         <motion.button
-                          onClick={() => handleDeleteStaff(member.id, member.name)}
-                          className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          title="Delete permanently"
+                          onClick={() => !isCurrentAdmin && handleDeleteStaff(member.id, member.name)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            isCurrentAdmin
+                              ? 'bg-white/5 text-zinc-600 cursor-not-allowed'
+                              : 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                          }`}
+                          whileHover={{ scale: isCurrentAdmin ? 1 : 1.05 }}
+                          whileTap={{ scale: isCurrentAdmin ? 1 : 0.95 }}
+                          title={isCurrentAdmin ? "Cannot delete yourself" : "Delete permanently"}
+                          disabled={isCurrentAdmin}
                         >
                         <Trash2 className="w-4 h-4" />
                         </motion.button>
                       </div>
                     </div>
                   </motion.div>
-                ))}
+                  );
+                })}
               </div>
             </motion.div>
           )}

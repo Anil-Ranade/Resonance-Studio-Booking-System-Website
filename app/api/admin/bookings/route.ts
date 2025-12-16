@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
-import { sendBookingConfirmationEmail } from "@/lib/email";
+import { sendAdminBookingConfirmationEmail } from "@/lib/email";
 import { deleteEvent, createEvent, updateEvent } from "@/lib/googleCalendar";
 
 // Verify admin token from Authorization header
@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
   const limit = searchParams.get("limit");
   const status = searchParams.get("status");
   const studio = searchParams.get("studio");
+  const date = searchParams.get("date");
   const startDate = searchParams.get("startDate");
   const endDate = searchParams.get("endDate");
 
@@ -76,6 +77,11 @@ export async function GET(request: NextRequest) {
 
   if (studio) {
     query = query.eq("studio", studio);
+  }
+
+  // Exact date match (for Today's Overview)
+  if (date) {
+    query = query.eq("date", date);
   }
 
   if (startDate) {
@@ -233,7 +239,7 @@ export async function PUT(request: NextRequest) {
 
       if (hasResendConfig && userData?.email) {
         try {
-          const emailResult = await sendBookingConfirmationEmail(userData.email, {
+          const emailResult = await sendAdminBookingConfirmationEmail(userData.email, {
             id: booking.id,
             name: booking.name,
             studio: booking.studio,

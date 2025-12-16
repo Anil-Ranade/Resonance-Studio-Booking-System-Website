@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar,
@@ -43,7 +44,7 @@ interface Booking {
   date: string;
   start_time: string;
   end_time: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
+  status: 'confirmed' | 'cancelled' | 'completed' | 'no_show';
   total_amount: number | null;
   notes: string | null;
   created_at: string;
@@ -524,7 +525,10 @@ export default function StaffBookingsPage() {
   };
 
   const formatTime = (time: string) => {
-    return time.slice(0, 5); // Returns "HH:MM" format (24-hour)
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
 
   const formatDate = (dateStr: string) => {
@@ -545,15 +549,13 @@ export default function StaffBookingsPage() {
           <h1 className="text-2xl font-bold text-white">My Bookings</h1>
           <p className="text-zinc-400 mt-1">View and manage bookings you&apos;ve created</p>
         </div>
-        <motion.button
-          onClick={() => setShowNewBookingModal(true)}
+        <Link
+          href="/staff/booking"
           className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-semibold py-3 px-6 rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
         >
           <Plus className="w-5 h-5" />
           New Booking
-        </motion.button>
+        </Link>
       </div>
 
       {/* Filters */}
@@ -807,32 +809,10 @@ export default function StaffBookingsPage() {
                   </div>
                 )}
 
-
                 {/* Action Buttons based on status */}
                 <div className="pt-4 border-t border-white/10">
                   <p className="text-zinc-400 text-sm mb-3">Actions</p>
                   <div className="flex flex-wrap gap-2">
-                    {/* Pending bookings (time not passed) */}
-                    {selectedBooking.status === 'pending' && !isBookingTimePassed(selectedBooking.date, selectedBooking.end_time) && (
-                      <>
-                        <button
-                          onClick={() => handleConfirm(selectedBooking.id)}
-                          disabled={updating}
-                          className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-semibold py-3 px-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                          {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                          Confirm
-                        </button>
-                        <button
-                          onClick={() => handleCancel(selectedBooking.id)}
-                          disabled={updating}
-                          className="flex-1 py-3 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                          {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-                          Cancel
-                        </button>
-                      </>
-                    )}
 
                     {/* Confirmed bookings (time not passed) */}
                     {selectedBooking.status === 'confirmed' && !isBookingTimePassed(selectedBooking.date, selectedBooking.end_time) && (
@@ -864,8 +844,8 @@ export default function StaffBookingsPage() {
                       </>
                     )}
 
-                    {/* Bookings where time has passed (needs completion) - pending or confirmed */}
-                    {(selectedBooking.status === 'pending' || selectedBooking.status === 'confirmed') && 
+                    {/* Bookings where time has passed (needs completion) - confirmed */}
+                    {selectedBooking.status === 'confirmed' && 
                      isBookingTimePassed(selectedBooking.date, selectedBooking.end_time) && (
                       <>
                         <p className="w-full text-orange-400 text-sm mb-2 flex items-center gap-2">

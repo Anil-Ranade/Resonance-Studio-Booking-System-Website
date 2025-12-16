@@ -69,7 +69,6 @@ export async function GET(request: NextRequest) {
   // Calculate stats
   const totalBookings = bookings?.length || 0;
   const confirmedBookings = bookings?.filter(b => b.status === "confirmed").length || 0;
-  const pendingBookings = 0; // Pending status removed - all bookings are confirmed immediately
   const cancelledBookings = bookings?.filter(b => b.status === "cancelled").length || 0;
   const completedBookings = bookings?.filter(b => b.status === "completed").length || 0;
   const todayBookings = bookings?.filter(b => b.date === today && b.status === "confirmed").length || 0;
@@ -77,7 +76,6 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     totalBookings,
     confirmedBookings,
-    pendingBookings,
     cancelledBookings,
     completedBookings,
     todayBookings,

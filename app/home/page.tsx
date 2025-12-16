@@ -132,7 +132,10 @@ export default function HomePage() {
   };
 
   const formatTime = (time: string) => {
-    return time.slice(0, 5); // Returns "HH:MM" format (24-hour)
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
 
   const handleFetchBookings = async () => {

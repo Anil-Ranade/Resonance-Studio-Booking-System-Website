@@ -36,6 +36,7 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 | **Next.js API Routes** | RESTful API endpoints |
 | **Supabase** | PostgreSQL database & authentication |
 | **Google Calendar API** | Calendar integration for bookings |
+| **Google Sheets API** | Booking logs & reporting |
 | **Resend** | Email notifications & OTP verification |
 
 ### Authentication & Security
@@ -86,7 +87,8 @@ A modern, full-stack studio booking application built for Resonance Studio. This
                                                        │
                                                        ▼
     ┌──────────────────────────────────────────────────────────────────┐
-    │  ✅ Booking Confirmed + SMS Sent + Calendar Event Created        │
+    │  ✅ Booking Confirmed + Email Sent + Calendar Event Created      │
+    │     + Logged to Google Sheets                                    │
     └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -130,9 +132,9 @@ A modern, full-stack studio booking application built for Resonance Studio. This
      - Studio capacity
    - Manual studio selection available
 
-6. **Phone Verification**
-   - Enter 10-digit phone number
-   - Receive 6-digit OTP via SMS (Twilio)
+6. **Phone & Email Verification**
+   - Enter phone number and email address
+   - Receive 6-digit OTP via Email (Resend)
    - OTP expires in 5 minutes
    - Verify OTP to confirm identity
    - Trusted device option for faster future logins
@@ -145,7 +147,8 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 8. **Booking Confirmation**
    - Booking saved to database
    - Google Calendar event created
-   - SMS confirmation sent
+   - Email confirmation sent
+   - Booking logged to Google Sheets
    - Redirect to confirmation page with details
 
 ### Admin Workflow
@@ -223,7 +226,6 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 ```
 
 **Edit Restrictions:**
-- Pending bookings: Can edit up to 24 hours before
 - Confirmed bookings: Can edit up to 48 hours before
 - Cancelled/completed/no_show: Cannot edit
 
@@ -476,6 +478,8 @@ Text Colors:
 │   │
 │   ├── components/             # Shared components
 │   │   ├── Navigation.tsx      # Main navigation
+│   │   ├── Footer.tsx          # Site footer
+│   │   ├── MainContent.tsx     # Main content wrapper
 │   │   ├── OTPLogin.tsx        # OTP login component
 │   │   ├── OTPVerification.tsx # OTP verification component
 │   │   └── ClearCache.tsx      # Cache clearing utility
@@ -497,6 +501,7 @@ Text Colors:
 │   ├── supabaseServer.ts       # Supabase server utilities
 │   ├── supabaseAuth.ts         # Auth utilities
 │   ├── googleCalendar.ts       # Google Calendar integration
+│   ├── googleSheets.ts         # Google Sheets integration for booking logs
 │   ├── email.ts                # Resend email service
 │   ├── otpStore.ts             # OTP management
 │   ├── tokens.ts               # Auth token management
@@ -555,7 +560,8 @@ Text Colors:
 
 ### Technical Features
 - ✅ Google Calendar integration (auto-create events)
-- ✅ Twilio SMS notifications
+- ✅ Google Sheets integration (booking logs & reporting)
+- ✅ Email notifications via Resend
 - ✅ Supabase PostgreSQL database with RLS
 - ✅ JWT authentication for admins
 - ✅ Device fingerprinting for trusted devices
@@ -581,7 +587,6 @@ Text Colors:
 | `reminders` | Scheduled booking reminders |
 | `rate_cards` | Pricing per studio, session type, and sub-option |
 | `audit_logs` | Admin action tracking for accountability |
-| `contact_submissions` | Contact form submissions |
 | `trusted_devices` | Verified device fingerprints |
 
 ### Database Features
@@ -692,12 +697,15 @@ GOOGLE_CLIENT_SECRET=your_client_secret
 GOOGLE_REFRESH_TOKEN=your_refresh_token
 GOOGLE_CALENDAR_ID=your_calendar_id
 
+GOOGLE_SHEET_ID=your_google_sheet_id
+
 # ===================
 # JWT SECRETS
 # ===================
 # Use strong, random strings - minimum 32 characters
 # Generate with: openssl rand -base64 32
 JWT_SECRET=your_jwt_secret_min_32_chars_random
+REFRESH_TOKEN_SECRET=your_refresh_token_secret_min_32_chars_random
 
 # ===================
 # APP CONFIG
@@ -711,8 +719,8 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 |----------|----------|-------|
 | `NEXT_PUBLIC_*` | Client-side | Safe to expose, limited permissions |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-only | **Never expose** - bypasses RLS |
-| `TWILIO_*` | Server-only | Billing implications if leaked |
-| `GOOGLE_*` | Server-only | Calendar access if leaked |
+| `RESEND_API_KEY` | Server-only | Email sending access if leaked |
+| `GOOGLE_*` | Server-only | Calendar & Sheets access if leaked |
 | `JWT_SECRET` | Server-only | Token forgery if leaked |
 
 ---
@@ -827,15 +835,15 @@ See the [Color Palette section](#-color-palette) above for the complete design s
 
 ---
 
-## � Production Deployment Checklist
+## 🚀 Production Deployment Checklist
 
 ### Security Checklist
 - [ ] All environment variables set in production
 - [ ] `NODE_ENV` set to `production`
 - [ ] Strong JWT_SECRET generated (32+ characters)
 - [ ] SUPABASE_SERVICE_ROLE_KEY not exposed to client
-- [ ] Twilio credentials secured
-- [ ] Google API credentials secured
+- [ ] Resend API key secured
+- [ ] Google API credentials secured (Calendar & Sheets)
 - [ ] RLS policies verified in Supabase dashboard
 - [ ] Admin users created in `admin_users` table
 
@@ -848,12 +856,12 @@ See the [Color Palette section](#-color-palette) above for the complete design s
 ### Monitoring Recommendations
 - [ ] Set up error monitoring (Sentry, LogRocket)
 - [ ] Enable Supabase logging
-- [ ] Monitor Twilio SMS delivery rates
+- [ ] Monitor email delivery rates (Resend dashboard)
 - [ ] Set up uptime monitoring
 
 ---
 
-## �📞 Support
+## 📞 Support
 
 For technical support or questions about the booking system, please contact:
 - **Developer**: Ashutosh Swamy

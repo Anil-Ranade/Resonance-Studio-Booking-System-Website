@@ -21,6 +21,9 @@ export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
 
+  // Hide navigation on admin and staff portal routes
+  const isAdminOrStaffRoute = pathname?.startsWith('/admin') || pathname?.startsWith('/staff');
+
   // Close menu when route changes
   useEffect(() => {
     setIsMenuOpen(false);
@@ -38,6 +41,11 @@ export default function Navigation() {
       document.body.style.overflow = "unset";
     };
   }, [isMenuOpen]);
+
+  // Don't render anything for admin/staff routes
+  if (isAdminOrStaffRoute) {
+    return null;
+  }
 
   return (
     <>

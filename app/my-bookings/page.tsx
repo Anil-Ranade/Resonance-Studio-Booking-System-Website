@@ -44,7 +44,7 @@ interface Booking {
   date: string;
   start_time: string;
   end_time: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
+  status: 'confirmed' | 'cancelled' | 'completed' | 'no_show';
   rate_per_hour: number;
   total_amount: number;
   created_at: string;
@@ -75,7 +75,6 @@ const fadeInUp = {
 };
 
 const statusConfig = {
-  pending: { color: 'amber', icon: Clock, label: 'Pending' },
   confirmed: { color: 'green', icon: CheckCircle2, label: 'Confirmed' },
   cancelled: { color: 'red', icon: XCircle, label: 'Cancelled' },
   completed: { color: 'violet', icon: CheckCircle2, label: 'Completed' },
@@ -249,9 +248,9 @@ export default function MyBookingsPage() {
   };
 
   const canCancelBooking = (booking: Booking) => {
-    // Only allow cancellation for pending or confirmed bookings
+    // Only allow cancellation for confirmed bookings
     const status = booking.status?.toLowerCase();
-    if (status !== 'pending' && status !== 'confirmed') {
+    if (status !== 'confirmed') {
       return false;
     }
     
@@ -336,7 +335,10 @@ export default function MyBookingsPage() {
   };
 
   const formatTime = (time: string) => {
-    return time.slice(0, 5);
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
 
   return (
@@ -465,7 +467,7 @@ export default function MyBookingsPage() {
             {bookings && bookings.length > 0 ? (
               <div className="space-y-4">
                 {bookings.map((booking, index) => {
-                  const config = statusConfig[booking.status] || statusConfig.pending;
+                  const config = statusConfig[booking.status] || statusConfig.confirmed;
                   const StatusIcon = config.icon;
                   const canCancel = canCancelBooking(booking);
                   const canEdit = canEditBooking(booking);

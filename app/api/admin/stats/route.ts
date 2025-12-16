@@ -69,11 +69,6 @@ export async function GET(request: NextRequest) {
       .select("*", { count: "exact", head: true })
       .eq("status", "confirmed");
 
-    // Get pending bookings count
-    const { count: pendingBookings } = await supabase
-      .from("bookings")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "pending");
 
     // Get cancelled bookings count
     const { count: cancelledBookings } = await supabase
@@ -106,7 +101,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       totalBookings: totalBookings || 0,
       confirmedBookings: confirmedBookings || 0,
-      pendingBookings: pendingBookings || 0,
       cancelledBookings: cancelledBookings || 0,
       todayBookings: todayBookings || 0,
       totalRevenue,

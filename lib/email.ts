@@ -36,6 +36,16 @@ function getFromEmail(): string {
 }
 
 /**
+ * Format time to 12-hour format with AM/PM
+ */
+function formatTime12Hour(time: string): string {
+  const [hours, minutes] = time.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+  return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
+}
+
+/**
  * Base email template wrapper - minimal dark theme
  */
 function emailWrapper(content: string): string {
@@ -192,7 +202,7 @@ export async function sendBookingConfirmationEmail(
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Time</td>
-            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.start_time.slice(0, 5)} – ${booking.end_time.slice(0, 5)}</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${formatTime12Hour(booking.start_time)} – ${formatTime12Hour(booking.end_time)}</td>
           </tr>
           ${booking.total_amount ? `
           <tr>
@@ -285,7 +295,7 @@ export async function sendAdminBookingConfirmationEmail(
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Time</td>
-            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.start_time.slice(0, 5)} – ${booking.end_time.slice(0, 5)}</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${formatTime12Hour(booking.start_time)} – ${formatTime12Hour(booking.end_time)}</td>
           </tr>
           ${booking.total_amount ? `
           <tr>
@@ -372,7 +382,7 @@ export async function sendBookingUpdateEmail(
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Time</td>
-            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.start_time.slice(0, 5)} – ${booking.end_time.slice(0, 5)}</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${formatTime12Hour(booking.start_time)} – ${formatTime12Hour(booking.end_time)}</td>
           </tr>
           ${booking.total_amount ? `
           <tr>
@@ -451,7 +461,7 @@ export async function sendBookingCancellationEmail(
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Time</td>
-            <td style="padding: 8px 0; color: #a1a1aa; font-size: 13px; text-align: right;">${booking.start_time.slice(0, 5)} – ${booking.end_time.slice(0, 5)}</td>
+            <td style="padding: 8px 0; color: #a1a1aa; font-size: 13px; text-align: right;">${formatTime12Hour(booking.start_time)} – ${formatTime12Hour(booking.end_time)}</td>
           </tr>
         </table>
       </div>

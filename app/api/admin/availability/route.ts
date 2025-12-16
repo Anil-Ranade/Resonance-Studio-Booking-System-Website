@@ -110,7 +110,48 @@ export async function POST(request: NextRequest) {
 
     const supabase = supabaseAdmin();
 
-    // Check for existing slot
+    // Check if the date/time is in the past (using IST timezone)
+    const now = new Date();
+    // Convert to IST
+    const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+    const istNow = new Date(now.getTime() + istOffset);
+    const istToday = istNow.toISOString().split('T')[0];
+    const istCurrentTime = istNow.toISOString().split('T')[1].substring(0, 5); // HH:MM format
+
+    // Check if date is in the past
+    if (date < istToday) {
+      return NextResponse.json(
+        { error: "Cannot block slots on past dates" },
+        { status: 400 }
+      );
+    }
+
+    // Check if time is in the past for today's date
+    if (date === istToday && start_time < istCurrentTime) {
+      return NextResponse.json(
+        { error: "Cannot block slots in the past" },
+        { status: 400 }
+      );
+    }
+
+    // Check for overlapping confirmed bookings
+    const { data: conflictingBookings } = await supabase
+      .from("bookings")
+      .select("id")
+      .eq("studio", studio)
+      .eq("date", date)
+      .eq("status", "confirmed")
+      .lt("start_time", end_time)
+      .gt("end_time", start_time);
+
+    if (conflictingBookings && conflictingBookings.length > 0) {
+      return NextResponse.json(
+        { error: "Cannot block this slot - there is already a confirmed booking during this time" },
+        { status: 409 }
+      );
+    }
+
+    // Check for existing blocked slot
     const { data: existing } = await supabase
       .from("availability_slots")
       .select("id")
