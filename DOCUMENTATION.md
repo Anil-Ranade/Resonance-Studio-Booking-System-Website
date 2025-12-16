@@ -799,7 +799,7 @@ The application enforces the following security headers via `next.config.ts`:
 - Fingerprints stored with phone association
 
 ### Rate Limiting & Protection
-- OTP request cooldown prevents SMS bombing
+- OTP request cooldown prevents email bombing
 - Maximum 5 attempts before OTP invalidation
 - Audit logging for security events
 - All admin actions logged with user ID and timestamp
