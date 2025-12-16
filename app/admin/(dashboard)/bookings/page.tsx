@@ -29,6 +29,7 @@ import {
   Users,
   Mail,
   FileText,
+  MessageCircle,
 } from 'lucide-react';
 import { getSession } from '@/lib/supabaseAuth';
 import { getStudioSuggestion, getStudioRate } from '@/app/booking/utils/studioSuggestion';
@@ -49,6 +50,7 @@ interface Booking {
   total_amount: number | null;
   notes: string | null;
   created_at: string;
+  whatsapp_reminder_sent_at: string | null;
 }
 
 interface BookingFormData {
@@ -627,6 +629,9 @@ export default function BookingsManagementPage() {
                   <th className="text-left p-4 text-sm font-medium text-zinc-400">
                     Status
                   </th>
+                  <th className="text-center p-4 text-sm font-medium text-zinc-400">
+                    Reminder
+                  </th>
                   <th className="text-right p-4 text-sm font-medium text-zinc-400">
                     Actions
                   </th>
@@ -687,6 +692,85 @@ export default function BookingsManagementPage() {
                           </span>
                         );
                       })()}
+                    </td>
+                    {/* Reminder Column */}
+                    <td className="p-4 text-center">
+                      {booking.status === 'confirmed' && !isBookingTimePassed(booking.date, booking.end_time) ? (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const sendReminder = async () => {
+                              const phone = booking.phone_number.replace(/[^0-9]/g, '');
+                              const formattedDate = formatDate(booking.date);
+                              const formattedStartTime = formatTime(booking.start_time);
+                              const formattedEndTime = formatTime(booking.end_time);
+                              
+                              const message = `Hi ${booking.name || 'there'}!
+
+This is a friendly reminder about your upcoming booking at *Resonance Studio*:
+
+*Date:* ${formattedDate}
+*Time:* ${formattedStartTime} - ${formattedEndTime}
+*Studio:* ${booking.studio}
+*Session:* ${booking.session_type || 'N/A'}
+${booking.total_amount ? `*Amount:* ₹${booking.total_amount.toLocaleString('en-IN')}` : ''}
+
+Please arrive 10 minutes before your session. See you soon!
+
+- Team Resonance Studio`;
+                              
+                              const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                              window.open(whatsappUrl, '_blank');
+                              
+                              // Mark reminder as sent in database
+                              try {
+                                const token = await getAccessToken();
+                                const response = await fetch('/api/admin/whatsapp-reminder', {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    Authorization: `Bearer ${token}`,
+                                  },
+                                  body: JSON.stringify({ booking_id: booking.id }),
+                                });
+                                
+                                if (response.ok) {
+                                  const data = await response.json();
+                                  // Update local state
+                                  setBookings((prev) =>
+                                    prev.map((b) =>
+                                      b.id === booking.id
+                                        ? { ...b, whatsapp_reminder_sent_at: data.whatsapp_reminder_sent_at }
+                                        : b
+                                    )
+                                  );
+                                }
+                              } catch (error) {
+                                console.error('Failed to mark reminder as sent:', error);
+                              }
+                            };
+                            
+                            if (booking.whatsapp_reminder_sent_at) {
+                              if (confirm('You have already sent a reminder for this booking. Do you want to send it again?')) {
+                                await sendReminder();
+                              }
+                            } else {
+                              await sendReminder();
+                            }
+                          }}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                            booking.whatsapp_reminder_sent_at
+                              ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
+                              : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                          }`}
+                          title={booking.whatsapp_reminder_sent_at ? 'Reminder sent - Click to send again' : 'Send WhatsApp Reminder'}
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          {booking.whatsapp_reminder_sent_at ? 'Sent' : 'Send'}
+                        </button>
+                      ) : (
+                        <span className="text-zinc-600 text-sm">—</span>
+                      )}
                     </td>
                     <td className="p-4 text-right">
                       <button
@@ -835,6 +919,86 @@ export default function BookingsManagementPage() {
                   </div>
                 )}
 
+                {/* WhatsApp Reminder Button - Only show for confirmed upcoming bookings */}
+                {selectedBooking.status === 'confirmed' && !isBookingTimePassed(selectedBooking.date, selectedBooking.end_time) && (
+                  <div className="pt-4 border-t border-white/10">
+                    <p className="text-zinc-400 text-sm mb-3">Send Reminder</p>
+                    <button
+                      onClick={async () => {
+                        const sendReminder = async () => {
+                          const phone = selectedBooking.phone_number.replace(/[^0-9]/g, '');
+                          const formattedDate = formatDate(selectedBooking.date);
+                          const formattedStartTime = formatTime(selectedBooking.start_time);
+                          const formattedEndTime = formatTime(selectedBooking.end_time);
+                          
+                          const message = `Hi ${selectedBooking.name || 'there'}! 🎵
+
+This is a friendly reminder about your upcoming booking at *Resonance Studio*:
+
+📅 *Date:* ${formattedDate}
+⏰ *Time:* ${formattedStartTime} - ${formattedEndTime}
+🎤 *Studio:* ${selectedBooking.studio}
+🎶 *Session:* ${selectedBooking.session_type || 'N/A'}
+${selectedBooking.total_amount ? `💰 *Amount:* ₹${selectedBooking.total_amount.toLocaleString('en-IN')}` : ''}
+
+Please arrive 10 minutes before your session. See you soon! 🎸
+
+- Team Resonance Studio`;
+                          
+                          const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                          window.open(whatsappUrl, '_blank');
+                          
+                          // Mark reminder as sent in database
+                          try {
+                            const token = await getAccessToken();
+                            const response = await fetch('/api/admin/whatsapp-reminder', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${token}`,
+                              },
+                              body: JSON.stringify({ booking_id: selectedBooking.id }),
+                            });
+                            
+                            if (response.ok) {
+                              const data = await response.json();
+                              // Update local state
+                              setSelectedBooking({
+                                ...selectedBooking,
+                                whatsapp_reminder_sent_at: data.whatsapp_reminder_sent_at,
+                              });
+                              setBookings((prev) =>
+                                prev.map((b) =>
+                                  b.id === selectedBooking.id
+                                    ? { ...b, whatsapp_reminder_sent_at: data.whatsapp_reminder_sent_at }
+                                    : b
+                                )
+                              );
+                            }
+                          } catch (error) {
+                            console.error('Failed to mark reminder as sent:', error);
+                          }
+                        };
+                        
+                        if (selectedBooking.whatsapp_reminder_sent_at) {
+                          if (confirm('You have already sent a reminder for this booking. Do you want to send it again?')) {
+                            await sendReminder();
+                          }
+                        } else {
+                          await sendReminder();
+                        }
+                      }}
+                      className={`w-full py-3 rounded-xl transition-colors flex items-center justify-center gap-2 ${
+                        selectedBooking.whatsapp_reminder_sent_at 
+                          ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' 
+                          : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                      }`}
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      {selectedBooking.whatsapp_reminder_sent_at ? 'Reminder Sent • Send Again?' : 'Send WhatsApp Reminder'}
+                    </button>
+                  </div>
+                )}
 
                 {/* Action Buttons based on status */}
                 <div className="pt-4 border-t border-white/10">
