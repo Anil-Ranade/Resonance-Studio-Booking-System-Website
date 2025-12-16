@@ -82,7 +82,7 @@ A modern, full-stack studio booking application built for Resonance Studio. This
          ▼
     ┌──────────────┐     ┌──────────────┐     ┌─────────────────┐
     │  Enter Phone │────▶│  Verify OTP  │────▶│  Review &       │
-    │  Number      │     │  (SMS)       │     │  Confirm        │
+    │  & Email     │     │  (Email)     │     │  Confirm        │
     └──────────────┘     └──────────────┘     └────────┬────────┘
                                                        │
                                                        ▼
@@ -192,6 +192,12 @@ A modern, full-stack studio booking application built for Resonance Studio. This
   - Mark bookings as completed or no_show
   - View booking details
   - **Send WhatsApp messages** to customers with pre-filled booking details
+
+- **Create Booking** (`/admin/booking`)
+  - Create bookings on behalf of customers
+  - Walk-in customer support
+  - Duplicate booking prevention
+  - Email notifications marked as "created by team"
 
 - **Availability** (`/admin/availability`)
   - Block specific time slots
@@ -534,12 +540,13 @@ Text Colors:
 - ✅ Real-time availability checking
 - ✅ Multiple session types (Karaoke, Band, Recording, etc.)
 - ✅ Smart studio suggestions based on group size
-- ✅ OTP-based phone verification
-- ✅ SMS booking confirmations
+- ✅ OTP-based email verification
+- ✅ Email booking confirmations
 - ✅ Trusted device management for faster logins
 - ✅ View and cancel bookings
 - ✅ Edit bookings with OTP verification
 - ✅ Cancel bookings with OTP verification
+- ✅ Duplicate booking prevention
 - ✅ Responsive design (mobile-first)
 - ✅ Smooth animations with reduced motion support
 
@@ -547,6 +554,9 @@ Text Colors:
 - ✅ Secure Supabase Auth admin authentication
 - ✅ Dashboard with booking statistics & revenue
 - ✅ Booking management (confirm, cancel, no_show, view details)
+- ✅ Admin booking creation for walk-in customers
+- ✅ WhatsApp integration for customer communication
+- ✅ Staff management (create, update, deactivate)
 - ✅ Availability slot management (block/unblock)
 - ✅ Bulk availability operations
 - ✅ Configurable booking settings
@@ -568,6 +578,15 @@ Text Colors:
 - ✅ Smooth animations (Framer Motion)
 - ✅ Accessibility support (reduced motion)
 - ✅ Performance-optimized motion components
+
+### Email Notification Types
+| Email Type | Purpose |
+|------------|---------|
+| **OTP Verification** | 6-digit code for login verification |
+| **Booking Confirmation** | Confirmation of new booking with details |
+| **Admin Booking Confirmation** | Confirmation for bookings created by team |
+| **Booking Update** | Notification when booking is modified |
+| **Booking Cancellation** | Confirmation of cancelled booking |
 
 ---
 

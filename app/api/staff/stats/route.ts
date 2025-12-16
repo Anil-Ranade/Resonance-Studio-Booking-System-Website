@@ -53,14 +53,32 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const searchParams = request.nextUrl.searchParams;
+  const startDate = searchParams.get("startDate");
+  const endDate = searchParams.get("endDate");
+  const studio = searchParams.get("studio");
+
   const supabase = supabaseAdmin();
   const today = new Date().toISOString().split("T")[0];
 
-  // Get all bookings created by this staff member
-  const { data: bookings, error } = await supabase
+  // Build query for bookings created by this staff member
+  let query = supabase
     .from("bookings")
-    .select("status, total_amount, date")
+    .select("status, total_amount, date, studio")
     .eq("created_by_staff_id", staff.user.id);
+
+  // Apply filters
+  if (startDate) {
+    query = query.gte("date", startDate);
+  }
+  if (endDate) {
+    query = query.lte("date", endDate);
+  }
+  if (studio && studio !== "all") {
+    query = query.eq("studio", studio);
+  }
+
+  const { data: bookings, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -71,7 +89,13 @@ export async function GET(request: NextRequest) {
   const confirmedBookings = bookings?.filter(b => b.status === "confirmed").length || 0;
   const cancelledBookings = bookings?.filter(b => b.status === "cancelled").length || 0;
   const completedBookings = bookings?.filter(b => b.status === "completed").length || 0;
+  
+  // Today's bookings - always for today, but respects studio filter
   const todayBookings = bookings?.filter(b => b.date === today && b.status === "confirmed").length || 0;
+
+  // Calculate revenue
+  const totalRevenue = bookings?.filter(b => b.status === "confirmed" || b.status === "completed")
+    .reduce((sum, b) => sum + (b.total_amount || 0), 0) || 0;
 
   return NextResponse.json({
     totalBookings,
@@ -79,6 +103,8 @@ export async function GET(request: NextRequest) {
     cancelledBookings,
     completedBookings,
     todayBookings,
+    totalRevenue,
     availableSlots: 0, // Staff don't have access to availability management
   });
 }
+

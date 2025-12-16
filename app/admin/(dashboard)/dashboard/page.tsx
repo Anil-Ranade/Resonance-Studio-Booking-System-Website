@@ -16,13 +16,21 @@ import {
   Phone,
   User,
   FileText,
+  Filter,
+  ArrowUpDown,
+  RotateCcw,
 } from 'lucide-react';
 import { getSession } from '@/lib/supabaseAuth';
+
+type DatePreset = 'today' | 'week' | 'month' | 'all';
+type SortField = 'date' | 'status' | 'studio';
+type SortOrder = 'asc' | 'desc';
 
 interface DashboardStats {
   totalBookings: number;
   confirmedBookings: number;
   cancelledBookings: number;
+  completedBookings: number;
   totalRevenue: number;
   todayBookings: number;
   availableSlots: number;
@@ -53,11 +61,43 @@ interface TodayBooking {
   status: string;
 }
 
+// Helper functions for date calculations
+const getDateRange = (preset: DatePreset): { startDate: string; endDate: string } | null => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  switch (preset) {
+    case 'today':
+      const todayStr = today.toISOString().split('T')[0];
+      return { startDate: todayStr, endDate: todayStr };
+    case 'week':
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6); // End of week (Saturday)
+      return { 
+        startDate: weekStart.toISOString().split('T')[0], 
+        endDate: weekEnd.toISOString().split('T')[0] 
+      };
+    case 'month':
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      return { 
+        startDate: monthStart.toISOString().split('T')[0], 
+        endDate: monthEnd.toISOString().split('T')[0] 
+      };
+    case 'all':
+    default:
+      return null;
+  }
+};
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>({
     totalBookings: 0,
     confirmedBookings: 0,
     cancelledBookings: 0,
+    completedBookings: 0,
     totalRevenue: 0,
     todayBookings: 0,
     availableSlots: 0,
@@ -67,6 +107,17 @@ export default function AdminDashboard() {
   const [todayBookings, setTodayBookings] = useState<TodayBooking[]>([]);
   const [selectedStudio, setSelectedStudio] = useState<string>('all');
   const [selectedBooking, setSelectedBooking] = useState<TodayBooking | null>(null);
+  
+  // Filter states
+  const [datePreset, setDatePreset] = useState<DatePreset>('all');
+  const [filterStudio, setFilterStudio] = useState<string>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
+  const [useCustomDates, setUseCustomDates] = useState(false);
+  
+  // Sort states
+  const [sortField, setSortField] = useState<SortField>('date');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   // Helper to get the current access token
   const getAccessToken = useCallback(async (): Promise<string | null> => {
@@ -88,8 +139,29 @@ export default function AdminDashboard() {
       const token = await getAccessToken();
       const today = new Date().toISOString().split('T')[0];
       
-      // Fetch stats from API
-      const statsResponse = await fetch('/api/admin/stats', {
+      // Build query params for stats
+      const statsParams = new URLSearchParams();
+      if (filterStudio !== 'all') {
+        statsParams.set('studio', filterStudio);
+      }
+      
+      // Date range handling
+      if (useCustomDates && customStartDate) {
+        statsParams.set('startDate', customStartDate);
+        if (customEndDate) {
+          statsParams.set('endDate', customEndDate);
+        }
+      } else if (datePreset !== 'all') {
+        const range = getDateRange(datePreset);
+        if (range) {
+          statsParams.set('startDate', range.startDate);
+          statsParams.set('endDate', range.endDate);
+        }
+      }
+      
+      // Fetch stats from API with filters
+      const statsUrl = `/api/admin/stats${statsParams.toString() ? `?${statsParams.toString()}` : ''}`;
+      const statsResponse = await fetch(statsUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -98,8 +170,27 @@ export default function AdminDashboard() {
         setStats(statsData);
       }
 
-      // Fetch recent bookings
-      const bookingsResponse = await fetch('/api/admin/bookings?limit=5', {
+      // Build query params for recent bookings
+      const bookingsParams = new URLSearchParams();
+      bookingsParams.set('limit', '10');
+      if (filterStudio !== 'all') {
+        bookingsParams.set('studio', filterStudio);
+      }
+      if (useCustomDates && customStartDate) {
+        bookingsParams.set('startDate', customStartDate);
+        if (customEndDate) {
+          bookingsParams.set('endDate', customEndDate);
+        }
+      } else if (datePreset !== 'all') {
+        const range = getDateRange(datePreset);
+        if (range) {
+          bookingsParams.set('startDate', range.startDate);
+          bookingsParams.set('endDate', range.endDate);
+        }
+      }
+      
+      // Fetch recent bookings with filters
+      const bookingsResponse = await fetch(`/api/admin/bookings?${bookingsParams.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -108,8 +199,15 @@ export default function AdminDashboard() {
         setRecentBookings(bookingsData.bookings || []);
       }
 
-      // Fetch today's bookings for the overview
-      const todayResponse = await fetch(`/api/admin/bookings?date=${today}&status=confirmed`, {
+      // Fetch today's bookings for the overview (always today)
+      const todayParams = new URLSearchParams();
+      todayParams.set('date', today);
+      todayParams.set('status', 'confirmed');
+      if (filterStudio !== 'all') {
+        todayParams.set('studio', filterStudio);
+      }
+      
+      const todayResponse = await fetch(`/api/admin/bookings?${todayParams.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -122,7 +220,7 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [getAccessToken]);
+  }, [getAccessToken, datePreset, filterStudio, customStartDate, customEndDate, useCustomDates]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -157,8 +255,43 @@ export default function AdminDashboard() {
     return sorted;
   };
 
+  // Sort recent bookings
+  const getSortedRecentBookings = () => {
+    const sorted = [...recentBookings].sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case 'date':
+          comparison = a.date.localeCompare(b.date);
+          break;
+        case 'status':
+          comparison = a.status.localeCompare(b.status);
+          break;
+        case 'studio':
+          comparison = a.studio.localeCompare(b.studio);
+          break;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+    return sorted;
+  };
+
+  // Reset all filters
+  const resetFilters = () => {
+    setDatePreset('all');
+    setFilterStudio('all');
+    setCustomStartDate('');
+    setCustomEndDate('');
+    setUseCustomDates(false);
+    setSortField('date');
+    setSortOrder('desc');
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = datePreset !== 'all' || filterStudio !== 'all' || useCustomDates;
+
   const bookingsByStudio = getBookingsByStudio();
   const bookingsByTime = getBookingsByTime();
+  const sortedRecentBookings = getSortedRecentBookings();
 
   const statCards = [
     {
@@ -199,6 +332,111 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Analytics Filter Bar */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass rounded-2xl p-4"
+      >
+        <div className="flex items-center gap-2 mb-3">
+          <Filter className="w-4 h-4 text-violet-400" />
+          <h3 className="text-sm font-medium text-white">Filter Analytics</h3>
+          {hasActiveFilters && (
+            <button
+              onClick={resetFilters}
+              className="ml-auto flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Reset
+            </button>
+          )}
+        </div>
+        
+        <div className="flex flex-wrap gap-3">
+          {/* Date Presets */}
+          <div className="flex flex-wrap gap-2">
+            {[
+              { value: 'today' as DatePreset, label: 'Today' },
+              { value: 'week' as DatePreset, label: 'This Week' },
+              { value: 'month' as DatePreset, label: 'This Month' },
+              { value: 'all' as DatePreset, label: 'All Time' },
+            ].map((preset) => (
+              <button
+                key={preset.value}
+                onClick={() => {
+                  setDatePreset(preset.value);
+                  setUseCustomDates(false);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  datePreset === preset.value && !useCustomDates
+                    ? 'bg-violet-500 text-white'
+                    : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Custom Date Range */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-zinc-500">or</span>
+            <input
+              type="date"
+              value={customStartDate}
+              onChange={(e) => {
+                setCustomStartDate(e.target.value);
+                setUseCustomDates(true);
+              }}
+              className="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-violet-500"
+            />
+            <span className="text-xs text-zinc-500">to</span>
+            <input
+              type="date"
+              value={customEndDate}
+              onChange={(e) => {
+                setCustomEndDate(e.target.value);
+                setUseCustomDates(true);
+              }}
+              className="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-violet-500"
+            />
+          </div>
+
+          {/* Studio Filter */}
+          <div className="relative ml-auto">
+            <select
+              value={filterStudio}
+              onChange={(e) => setFilterStudio(e.target.value)}
+              className="appearance-none bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 pr-8 text-xs text-white focus:outline-none focus:border-violet-500 cursor-pointer"
+            >
+              <option value="all" className="bg-zinc-900">All Studios</option>
+              <option value="Studio A" className="bg-zinc-900">Studio A</option>
+              <option value="Studio B" className="bg-zinc-900">Studio B</option>
+              <option value="Studio C" className="bg-zinc-900">Studio C</option>
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-400 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Active Filter Indicator */}
+        {hasActiveFilters && (
+          <div className="mt-3 flex items-center gap-2 text-xs text-violet-400">
+            <span>Showing:</span>
+            {useCustomDates && customStartDate && (
+              <span className="bg-violet-500/20 px-2 py-0.5 rounded">
+                {customStartDate} {customEndDate && `to ${customEndDate}`}
+              </span>
+            )}
+            {!useCustomDates && datePreset !== 'all' && (
+              <span className="bg-violet-500/20 px-2 py-0.5 rounded capitalize">{datePreset}</span>
+            )}
+            {filterStudio !== 'all' && (
+              <span className="bg-violet-500/20 px-2 py-0.5 rounded">{filterStudio}</span>
+            )}
+          </div>
+        )}
+      </motion.div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, index) => {
@@ -328,22 +566,44 @@ export default function AdminDashboard() {
         transition={{ delay: 0.5 }}
         className="glass rounded-2xl p-6"
       >
-        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-violet-400" />
-          Recent Bookings
-        </h2>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-violet-400" />
+            Recent Bookings
+          </h2>
+          
+          {/* Sorting Controls */}
+          <div className="flex items-center gap-2">
+            <ArrowUpDown className="w-4 h-4 text-zinc-500" />
+            <select
+              value={sortField}
+              onChange={(e) => setSortField(e.target.value as SortField)}
+              className="appearance-none bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-violet-500 cursor-pointer"
+            >
+              <option value="date" className="bg-zinc-900">Date</option>
+              <option value="status" className="bg-zinc-900">Status</option>
+              <option value="studio" className="bg-zinc-900">Studio</option>
+            </select>
+            <button
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white hover:bg-white/10 transition-colors"
+            >
+              {sortOrder === 'asc' ? '↑ Asc' : '↓ Desc'}
+            </button>
+          </div>
+        </div>
         <div className="space-y-3">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
             </div>
-          ) : recentBookings.length === 0 ? (
+          ) : sortedRecentBookings.length === 0 ? (
             <div className="text-center py-8">
               <Calendar className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
-              <p className="text-zinc-500 text-sm">No bookings yet</p>
+              <p className="text-zinc-500 text-sm">No bookings found</p>
             </div>
           ) : (
-            recentBookings.map((booking) => (
+            sortedRecentBookings.map((booking) => (
               <div
                 key={booking.id}
                 className="flex items-center justify-between bg-white/5 rounded-xl p-3"

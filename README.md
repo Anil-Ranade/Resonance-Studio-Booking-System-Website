@@ -11,7 +11,7 @@ A modern, full-stack studio booking and management platform built with Next.js 1
 
 ## 📖 Overview
 
-Resonance Studio Booking is a comprehensive booking system that allows customers to book music studio sessions, manage their bookings, and provides an admin dashboard for complete studio management. The application features phone-based OTP authentication, Google Calendar integration, SMS notifications, and enterprise-grade security measures.
+Resonance Studio Booking is a comprehensive booking system that allows customers to book music studio sessions, manage their bookings, and provides an admin dashboard for complete studio management. The application features email-based OTP authentication, Google Calendar integration, Google Sheets logging, email notifications, and enterprise-grade security measures.
 
 ## ✨ Features
 
@@ -42,6 +42,12 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Sync bookings with owner's Google Calendar
 - Event details include customer info and booking ID
 - Automatic event updates on booking changes
+
+### 📊 Google Sheets Integration
+- All bookings logged to Google Sheets for reporting
+- Tracks new bookings, updates, and cancellations
+- Real-time audit trail of all booking activities
+- Automated timestamp and action logging
 
 ### 📧 Email Notifications
 - OTP verification codes via email (Resend)
@@ -74,6 +80,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Secure Supabase Auth-based admin authentication
 - Dashboard statistics (total bookings, revenue, today's bookings)
 - Booking management (view, cancel, mark no_show, mark completed)
+- **Admin booking creation** - Create bookings on behalf of customers
 - **WhatsApp integration** - Send messages to customers with pre-filled booking details
 - **Staff management** - Create and manage staff members
 - Availability slot management (block/unblock)
@@ -88,7 +95,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Staff booking creation capability
 - Limited permissions compared to admin
 
-### �💰 Rate Card
+### 💰 Rate Card
 - Dynamic studio pricing display
 - Session type-based pricing
 - Sub-options for group sizes
@@ -123,6 +130,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 | **Database** | Supabase (PostgreSQL) |
 | **Auth** | JWT + OTP (bcryptjs) |
 | **Calendar** | Google Calendar API |
+| **Sheets** | Google Sheets API |
 | **Email** | Resend |
 
 ## 🚀 Getting Started
@@ -217,7 +225,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │
 │   ├── home/                   # Landing page
 │   ├── booking/                # Booking wizard
-│   │   ├── components/         # Step components (9 steps)
+│   │   ├── components/         # Step components (10 steps)
 │   │   ├── contexts/           # Booking context
 │   │   ├── new/                # New booking flow
 │   │   └── utils/              # Helper utilities

@@ -91,6 +91,15 @@ The following headers are enforced via `next.config.ts`:
 - Logout properly clears all auth cookies
 - Trusted device fingerprints stored securely
 
+### 7. Booking Security
+
+- **Duplicate booking prevention** - Exact same phone, studio, date, start/end time are rejected
+- **Time-based conflict checking** - Prevents overlapping bookings for same studio
+- **Immediate confirmation** - All bookings are confirmed immediately (no pending state)
+- **Past booking protection** - Past bookings auto-marked as completed
+- **Google Sheets audit logging** - All booking actions logged for accountability
+- **Admin/Staff attribution** - Bookings created by team are clearly marked
+
 ## Reporting a Vulnerability
 
 If you discover a security vulnerability, please:
