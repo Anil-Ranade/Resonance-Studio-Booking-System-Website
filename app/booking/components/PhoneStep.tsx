@@ -9,7 +9,7 @@ import { getDeviceFingerprint, isPhoneTrustedLocally, getTrustedPhones, checkAut
 
 export default function PhoneStep() {
   const router = useRouter();
-  const { draft, updateDraft, nextStep, resetDraft } = useBooking();
+  const { draft, updateDraft, nextStep, resetDraft, mode } = useBooking();
   
   // Format phone for display - ensure we always start with properly formatted phone
   const formatPhoneForDisplay = (phoneDigits: string) => {
@@ -82,6 +82,13 @@ export default function PhoneStep() {
   useEffect(() => {
     // Skip auto-login check in edit mode (user already identified)
     if (draft.isEditMode) {
+      setIsAutoLoggingIn(false);
+      setShowManualEntry(true);
+      return;
+    }
+
+    // Skip auto-login for admin and staff modes - they book on behalf of customers
+    if (mode === 'admin' || mode === 'staff') {
       setIsAutoLoggingIn(false);
       setShowManualEntry(true);
       return;
