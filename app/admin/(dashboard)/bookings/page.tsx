@@ -38,6 +38,7 @@ interface Booking {
   id: string;
   phone_number: string;
   name: string | null;
+  email: string | null;
   studio: string;
   session_type: string | null;
   group_size: number;
@@ -496,10 +497,11 @@ export default function BookingsManagementPage() {
   };
 
   const filteredBookings = bookings.filter((booking) => {
+    const searchLower = searchTerm.toLowerCase();
     const matchesSearch =
-      booking.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.phone_number.includes(searchTerm) ||
-      booking.studio.toLowerCase().includes(searchTerm.toLowerCase());
+      booking.name?.toLowerCase().includes(searchLower) ||
+      booking.email?.toLowerCase().includes(searchLower) ||
+      booking.phone_number.includes(searchTerm);
     
     const effectiveStatus = getEffectiveStatus(booking);
     const matchesStatus =
@@ -572,7 +574,7 @@ export default function BookingsManagementPage() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 pointer-events-none" />
             <input
               type="text"
-              placeholder="Search by name, phone, or studio..."
+              placeholder="Search by name, phone, or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 pl-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
