@@ -173,6 +173,24 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
+      // Check if the booking is still in the future
+      // Create booking datetime in IST (UTC+5:30)
+      const bookingDateTimeStr = `${booking.date}T${booking.start_time}:00`;
+      const bookingDateTime = new Date(bookingDateTimeStr);
+      const currentTime = new Date();
+      
+      // Skip if booking has already started or passed
+      if (bookingDateTime <= currentTime) {
+        console.log(`[Cron] Skipping reminder ${reminder.id} - booking has already passed (${bookingDateTimeStr})`);
+        await supabaseServer
+          .from("reminders")
+          .update({ status: "cancelled", error_message: "Booking has already passed" })
+          .eq("id", reminder.id);
+        skippedCount++;
+        results.push({ id: reminder.id, status: "skipped", error: "Booking has already passed" });
+        continue;
+      }
+
       // Get email from booking or user table
       let email = booking.email;
       if (!email) {
