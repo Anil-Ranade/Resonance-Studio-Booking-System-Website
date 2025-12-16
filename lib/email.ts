@@ -403,6 +403,93 @@ export async function sendBookingUpdateEmail(
 }
 
 /**
+ * Send a booking reminder email (24h before session)
+ */
+export async function sendBookingReminderEmail(
+  to: string,
+  booking: {
+    id: string;
+    name?: string;
+    studio: string;
+    session_type: string;
+    session_details?: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+    total_amount?: number;
+  }
+): Promise<{ success: true; id: string } | { success: false; error: string }> {
+  const subject = 'Reminder: Your Session Tomorrow – Resonance Studio';
+  
+  const formattedDate = new Date(booking.date).toLocaleDateString('en-IN', { 
+    weekday: 'long', 
+    day: 'numeric', 
+    month: 'long',
+    year: 'numeric'
+  });
+
+  const content = `
+    <div style="background-color: #18181b; border-radius: 12px; padding: 32px; border: 1px solid #27272a;">
+      <h1 style="color: #a855f7; font-size: 20px; margin: 0 0 8px 0; text-align: center; font-weight: 600;">
+        Resonance Studio
+      </h1>
+      <p style="color: #38bdf8; font-size: 14px; margin: 0 0 24px 0; text-align: center; font-weight: 500;">
+        🔔 Session Reminder
+      </p>
+      
+      ${booking.name ? `<p style="color: #e4e4e7; font-size: 14px; margin: 0 0 20px 0;">Hi ${booking.name},</p>` : ''}
+      
+      <p style="color: #a1a1aa; font-size: 14px; margin: 0 0 20px 0;">
+        Just a friendly reminder – your session is <strong style="color: #fbbf24;">tomorrow</strong>! Here are the details:
+      </p>
+      
+      <div style="background-color: #27272a; border-radius: 8px; padding: 16px; margin: 0 0 20px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Booking ID</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right; font-weight: 500;">${booking.id.slice(0, 8).toUpperCase()}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Session</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.session_type}</td>
+          </tr>
+          ${booking.session_details ? `
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Details</td>
+            <td style="padding: 8px 0; color: #a1a1aa; font-size: 13px; text-align: right;">${booking.session_details}</td>
+          </tr>
+          ` : ''}
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Studio</td>
+            <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.studio}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Date</td>
+            <td style="padding: 8px 0; color: #fbbf24; font-size: 13px; text-align: right; font-weight: 500;">${formattedDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Time</td>
+            <td style="padding: 8px 0; color: #fbbf24; font-size: 13px; text-align: right; font-weight: 500;">${formatTime12Hour(booking.start_time)} – ${formatTime12Hour(booking.end_time)}</td>
+          </tr>
+          ${booking.total_amount ? `
+          <tr>
+            <td style="padding: 12px 0 0 0; border-top: 1px solid #3f3f46; color: #71717a; font-size: 13px;">Amount</td>
+            <td style="padding: 12px 0 0 0; border-top: 1px solid #3f3f46; color: #a855f7; font-size: 16px; text-align: right; font-weight: 600;">₹${booking.total_amount.toLocaleString('en-IN')}</td>
+          </tr>
+          ` : ''}
+        </table>
+      </div>
+      
+      <p style="color: #71717a; font-size: 12px; margin: 0; text-align: center;">
+        Please arrive 10 minutes before your session. See you soon! 🎵
+      </p>
+    </div>
+  `;
+  
+  return sendEmail(to, subject, emailWrapper(content));
+}
+
+/**
  * Send a booking cancellation email
  */
 export async function sendBookingCancellationEmail(
