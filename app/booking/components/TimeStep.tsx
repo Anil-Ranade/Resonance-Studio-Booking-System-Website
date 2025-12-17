@@ -1,9 +1,20 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Calendar, Clock, ChevronLeft, ChevronRight, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
-import { useBooking, TimeSlot } from '../contexts/BookingContext';
-import StepLayout from './StepLayout';
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  Calendar,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  AlertCircle,
+  RotateCcw,
+  Building2,
+  ArrowUp,
+} from "lucide-react";
+import { useBooking, TimeSlot, StudioName } from "../contexts/BookingContext";
+import StepLayout from "./StepLayout";
+import { getStudioRate } from "../utils/studioSuggestion";
 
 interface AvailableSlot extends TimeSlot {
   available: boolean;
@@ -20,33 +31,39 @@ interface ContinuousSlab {
 
 // Helper to normalize time to HH:MM format (strips seconds if present)
 const normalizeTime = (time: string): string => {
-  const parts = time.split(':');
+  const parts = time.split(":");
   return `${parts[0]}:${parts[1]}`;
 };
 
 export default function TimeStep() {
   const { draft, updateDraft, nextStep } = useBooking();
-  
+
   // Get today's date as default
-  const getTodayDate = () => new Date().toISOString().split('T')[0];
-  
+  const getTodayDate = () => new Date().toISOString().split("T")[0];
+
   const [date, setDate] = useState(draft.date || getTodayDate());
+  const [selectedStudio, setSelectedStudio] = useState<StudioName>(
+    draft.studio as StudioName
+  );
   const [slots, setSlots] = useState<AvailableSlot[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [selectedSlab, setSelectedSlab] = useState<ContinuousSlab | null>(null);
-  const [startTime, setStartTime] = useState<string>('');
-  const [endTime, setEndTime] = useState<string>('');
+  const [startTime, setStartTime] = useState<string>("");
+  const [endTime, setEndTime] = useState<string>("");
   const [minBookingDuration, setMinBookingDuration] = useState(1);
   const [maxBookingDuration, setMaxBookingDuration] = useState(8);
   const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
+  const [studioAvailability, setStudioAvailability] = useState<
+    Record<StudioName, number>
+  >({} as Record<StudioName, number>);
   const dateInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch booking settings on component mount
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await fetch('/api/settings');
+        const response = await fetch("/api/settings");
         if (response.ok) {
           const data = await response.json();
           setMinBookingDuration(data.minBookingDuration || 1);
@@ -54,7 +71,7 @@ export default function TimeStep() {
           setAdvanceBookingDays(data.advanceBookingDays || 30);
         }
       } catch (err) {
-        console.error('Error fetching booking settings:', err);
+        console.error("Error fetching booking settings:", err);
       }
     };
     fetchSettings();
@@ -70,41 +87,43 @@ export default function TimeStep() {
 
   // Calculate min/max dates
   const getMinDate = () => {
-    return new Date().toISOString().split('T')[0];
+    return new Date().toISOString().split("T")[0];
   };
 
   const getMaxDate = () => {
     const maxDate = new Date();
     maxDate.setDate(maxDate.getDate() + advanceBookingDays);
-    return maxDate.toISOString().split('T')[0];
+    return maxDate.toISOString().split("T")[0];
   };
 
   // Fetch available slots when date or studio changes
   const fetchSlots = useCallback(async () => {
-    if (!date || !draft.studio) return;
+    if (!date || !selectedStudio) return;
 
     setLoading(true);
-    setError('');
+    setError("");
     setSlots([]);
     setSelectedSlab(null);
-    setStartTime('');
-    setEndTime('');
+    setStartTime("");
+    setEndTime("");
 
     try {
-      let url = `/api/availability?date=${date}&studio=${encodeURIComponent(draft.studio)}&duration=1`;
+      let url = `/api/availability?date=${date}&studio=${encodeURIComponent(
+        selectedStudio
+      )}&duration=1`;
       if (draft.isEditMode && draft.originalBookingId) {
         url += `&excludeBookingId=${draft.originalBookingId}`;
       }
-      
+
       const response = await fetch(url);
-      
+
       if (!response.ok) {
-        throw new Error('Failed to fetch availability');
+        throw new Error("Failed to fetch availability");
       }
 
       const data = await response.json();
       setSlots(data.slots || []);
-      
+
       if (data.settings) {
         setMinBookingDuration(data.settings.minBookingDuration || 1);
         setMaxBookingDuration(data.settings.maxBookingDuration || 8);
@@ -113,24 +132,59 @@ export default function TimeStep() {
         }
       }
     } catch (err) {
-      setError('Failed to load available time slots. Please try again.');
-      console.error('Error fetching slots:', err);
+      setError("Failed to load available time slots. Please try again.");
+      console.error("Error fetching slots:", err);
     } finally {
       setLoading(false);
     }
-  }, [date, draft.studio, draft.isEditMode, draft.originalBookingId]);
+  }, [date, selectedStudio, draft.isEditMode, draft.originalBookingId]);
+
+  // Fetch availability summary for all allowed studios when date changes
+  const fetchStudioAvailability = useCallback(async () => {
+    if (!date || draft.allowedStudios.length === 0) return;
+
+    const availability: Record<StudioName, number> = {} as Record<
+      StudioName,
+      number
+    >;
+
+    try {
+      await Promise.all(
+        draft.allowedStudios.map(async (studio) => {
+          let url = `/api/availability?date=${date}&studio=${encodeURIComponent(
+            studio
+          )}&duration=1`;
+          if (draft.isEditMode && draft.originalBookingId) {
+            url += `&excludeBookingId=${draft.originalBookingId}`;
+          }
+          const response = await fetch(url);
+          if (response.ok) {
+            const data = await response.json();
+            const availableCount = (data.slots || []).filter(
+              (s: AvailableSlot) => s.available
+            ).length;
+            availability[studio] = availableCount;
+          }
+        })
+      );
+      setStudioAvailability(availability);
+    } catch (err) {
+      console.error("Error fetching studio availability:", err);
+    }
+  }, [date, draft.allowedStudios, draft.isEditMode, draft.originalBookingId]);
 
   useEffect(() => {
     if (date) {
       fetchSlots();
+      fetchStudioAvailability();
     }
-  }, [date, fetchSlots]);
+  }, [date, fetchSlots, fetchStudioAvailability]);
 
   // Generate continuous slabs from available slots
   const getContinuousSlabs = useCallback((): ContinuousSlab[] => {
     if (slots.length === 0) return [];
 
-    const availableSlots = slots.filter(s => s.available);
+    const availableSlots = slots.filter((s) => s.available);
     if (availableSlots.length === 0) return [];
 
     const slabs: ContinuousSlab[] = [];
@@ -140,8 +194,8 @@ export default function TimeStep() {
 
     for (let i = 0; i < slots.length; i++) {
       const slot = slots[i];
-      const [startHour] = slot.start.split(':').map(Number);
-      const [endHour] = slot.end.split(':').map(Number);
+      const [startHour] = slot.start.split(":").map(Number);
+      const [endHour] = slot.end.split(":").map(Number);
 
       if (slot.available) {
         if (currentSlabStart === null) {
@@ -154,7 +208,9 @@ export default function TimeStep() {
           previousEndHour = endHour;
         } else {
           // End current slab and start a new one
-          const slabEndTime = `${previousEndHour.toString().padStart(2, '0')}:00`;
+          const slabEndTime = `${previousEndHour
+            .toString()
+            .padStart(2, "0")}:00`;
           const duration = previousEndHour - currentSlabStartHour;
           slabs.push({
             start: currentSlabStart,
@@ -162,7 +218,9 @@ export default function TimeStep() {
             startHour: currentSlabStartHour,
             endHour: previousEndHour,
             duration,
-            label: `${formatTimeDisplay(currentSlabStart)} - ${formatTimeDisplay(slabEndTime)}`,
+            label: `${formatTimeDisplay(
+              currentSlabStart
+            )} - ${formatTimeDisplay(slabEndTime)}`,
           });
           currentSlabStart = normalizeTime(slot.start);
           currentSlabStartHour = startHour;
@@ -171,7 +229,9 @@ export default function TimeStep() {
       } else {
         // Slot not available, close any open slab
         if (currentSlabStart !== null) {
-          const slabEndTime = `${previousEndHour.toString().padStart(2, '0')}:00`;
+          const slabEndTime = `${previousEndHour
+            .toString()
+            .padStart(2, "0")}:00`;
           const duration = previousEndHour - currentSlabStartHour;
           slabs.push({
             start: currentSlabStart,
@@ -179,7 +239,9 @@ export default function TimeStep() {
             startHour: currentSlabStartHour,
             endHour: previousEndHour,
             duration,
-            label: `${formatTimeDisplay(currentSlabStart)} - ${formatTimeDisplay(slabEndTime)}`,
+            label: `${formatTimeDisplay(
+              currentSlabStart
+            )} - ${formatTimeDisplay(slabEndTime)}`,
           });
           currentSlabStart = null;
         }
@@ -188,7 +250,7 @@ export default function TimeStep() {
 
     // Close any remaining open slab
     if (currentSlabStart !== null) {
-      const slabEndTime = `${previousEndHour.toString().padStart(2, '0')}:00`;
+      const slabEndTime = `${previousEndHour.toString().padStart(2, "0")}:00`;
       const duration = previousEndHour - currentSlabStartHour;
       slabs.push({
         start: currentSlabStart,
@@ -196,21 +258,27 @@ export default function TimeStep() {
         startHour: currentSlabStartHour,
         endHour: previousEndHour,
         duration,
-        label: `${formatTimeDisplay(currentSlabStart)} - ${formatTimeDisplay(slabEndTime)}`,
+        label: `${formatTimeDisplay(currentSlabStart)} - ${formatTimeDisplay(
+          slabEndTime
+        )}`,
       });
     }
 
     // Filter slabs that can accommodate at least min booking duration
-    return slabs.filter(slab => slab.duration >= minBookingDuration);
+    return slabs.filter((slab) => slab.duration >= minBookingDuration);
   }, [slots, minBookingDuration]);
 
   // Get available start times within a slab
   const getStartTimes = useCallback(() => {
     if (!selectedSlab) return [];
-    
+
     const times: { time: string; label: string }[] = [];
-    for (let hour = selectedSlab.startHour; hour < selectedSlab.endHour; hour++) {
-      const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+    for (
+      let hour = selectedSlab.startHour;
+      hour < selectedSlab.endHour;
+      hour++
+    ) {
+      const timeStr = `${hour.toString().padStart(2, "0")}:00`;
       times.push({
         time: timeStr,
         label: formatTimeDisplay(timeStr),
@@ -222,17 +290,20 @@ export default function TimeStep() {
   // Get available end times based on selected start time
   const getEndTimes = useCallback(() => {
     if (!selectedSlab || !startTime) return [];
-    
-    const [startHour] = startTime.split(':').map(Number);
+
+    const [startHour] = startTime.split(":").map(Number);
     const times: { time: string; label: string; duration: number }[] = [];
-    
+
     // End time must be at least minBookingDuration hours after start
     const minEndHour = startHour + minBookingDuration;
     // End time cannot exceed slab end or maxBookingDuration
-    const maxEndHour = Math.min(selectedSlab.endHour, startHour + maxBookingDuration);
-    
+    const maxEndHour = Math.min(
+      selectedSlab.endHour,
+      startHour + maxBookingDuration
+    );
+
     for (let hour = minEndHour; hour <= maxEndHour; hour++) {
-      const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+      const timeStr = `${hour.toString().padStart(2, "0")}:00`;
       const duration = hour - startHour;
       times.push({
         time: timeStr,
@@ -245,9 +316,9 @@ export default function TimeStep() {
 
   // Format time for display in 12-hour format
   const formatTimeDisplay = (time: string) => {
-    const [hours] = time.split(':').map(Number);
+    const [hours] = time.split(":").map(Number);
     const displayHour = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
-    const period = hours >= 12 ? 'PM' : 'AM';
+    const period = hours >= 12 ? "PM" : "AM";
     return `${displayHour}:00 ${period}`;
   };
 
@@ -256,20 +327,64 @@ export default function TimeStep() {
     setDate(newDate);
     updateDraft({ date: newDate, selectedSlot: null });
     setSelectedSlab(null);
-    setStartTime('');
-    setEndTime('');
+    setStartTime("");
+    setEndTime("");
+  };
+
+  // Handle studio change
+  const handleStudioChange = (studio: StudioName) => {
+    if (!draft.allowedStudios.includes(studio)) return;
+
+    setSelectedStudio(studio);
+    setSelectedSlab(null);
+    setStartTime("");
+    setEndTime("");
+
+    // Calculate new rate for the selected studio
+    const newRate = getStudioRate(studio, draft.sessionType as any, {
+      karaokeOption: draft.karaokeOption as any,
+      liveOption: draft.liveOption as any,
+      bandEquipment: draft.bandEquipment,
+      recordingOption: draft.recordingOption,
+    });
+
+    updateDraft({
+      studio,
+      ratePerHour: newRate,
+      selectedSlot: null,
+    });
+  };
+
+  // Check if a studio is an upgrade from the recommended studio
+  const isUpgrade = (studio: StudioName): boolean => {
+    const studioOrder: StudioName[] = ["Studio C", "Studio B", "Studio A"];
+    const recommendedIndex = studioOrder.indexOf(
+      draft.recommendedStudio as StudioName
+    );
+    const studioIndex = studioOrder.indexOf(studio);
+    return studioIndex > recommendedIndex;
+  };
+
+  // Get rate for a studio
+  const getStudioRateForDisplay = (studio: StudioName): number => {
+    return getStudioRate(studio, draft.sessionType as any, {
+      karaokeOption: draft.karaokeOption as any,
+      liveOption: draft.liveOption as any,
+      bandEquipment: draft.bandEquipment,
+      recordingOption: draft.recordingOption,
+    });
   };
 
   // Navigate dates
   const navigateDate = (days: number) => {
     const current = date ? new Date(date) : new Date();
     current.setDate(current.getDate() + days);
-    
+
     const minDate = new Date(getMinDate());
     const maxDate = new Date(getMaxDate());
-    
+
     if (current >= minDate && current <= maxDate) {
-      handleDateChange(current.toISOString().split('T')[0]);
+      handleDateChange(current.toISOString().split("T")[0]);
     }
   };
 
@@ -281,15 +396,15 @@ export default function TimeStep() {
   // Handle slab selection
   const handleSlabSelect = (slab: ContinuousSlab) => {
     setSelectedSlab(slab);
-    setStartTime('');
-    setEndTime('');
+    setStartTime("");
+    setEndTime("");
     updateDraft({ selectedSlot: null });
   };
 
   // Handle start time selection
   const handleStartTimeSelect = (time: string) => {
     setStartTime(time);
-    setEndTime('');
+    setEndTime("");
     updateDraft({ selectedSlot: null });
   };
 
@@ -318,10 +433,10 @@ export default function TimeStep() {
 
   // Format date for display
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-IN', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
+    return new Date(dateStr).toLocaleDateString("en-IN", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
     });
   };
 
@@ -332,8 +447,8 @@ export default function TimeStep() {
   // Calculate duration and price
   const getDuration = () => {
     if (!startTime || !endTime) return 0;
-    const [startHour] = startTime.split(':').map(Number);
-    const [endHour] = endTime.split(':').map(Number);
+    const [startHour] = startTime.split(":").map(Number);
+    const [endHour] = endTime.split(":").map(Number);
     return endHour - startHour;
   };
 
@@ -342,62 +457,73 @@ export default function TimeStep() {
   return (
     <StepLayout
       title={draft.isEditMode ? "Modify date & time" : "Select date & time"}
-      subtitle={draft.isEditMode 
-        ? "Your original slot is highlighted. Select to change or keep the same."
-        : `Booking for ${draft.studio}`}
+      subtitle={
+        draft.isEditMode
+          ? "Your original slot is highlighted. Select to change or keep the same."
+          : `Booking for ${selectedStudio}`
+      }
       showNext={true}
       onNext={handleNext}
       isNextDisabled={!date || !draft.selectedSlot}
     >
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Edit Mode Banner */}
         {draft.isEditMode && draft.originalChoices && (
           <div className="p-2 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center gap-2">
             <RotateCcw className="w-3 h-3 text-violet-400" />
             <span className="text-xs text-violet-400">
-              Original: <span className="font-medium">{formatDate(draft.originalChoices.date)}</span> at{' '}
-              <span className="font-medium">{formatTimeSlot(draft.originalChoices.start_time, draft.originalChoices.end_time)}</span>
+              Original:{" "}
+              <span className="font-medium">
+                {formatDate(draft.originalChoices.date)}
+              </span>{" "}
+              at{" "}
+              <span className="font-medium">
+                {formatTimeSlot(
+                  draft.originalChoices.start_time,
+                  draft.originalChoices.end_time
+                )}
+              </span>
             </span>
           </div>
         )}
-        
+
         {/* Date selector */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           <label className="text-xs text-zinc-400 flex items-center gap-1">
             <Calendar className="w-3 h-3" />
             Select Date
           </label>
-          
+
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigateDate(-1)}
               disabled={!date || date === getMinDate()}
-              className="p-2.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-4 h-4" />
             </button>
-            
+
             <button
               onClick={openDatePicker}
-              className="flex-1 p-3 rounded-lg bg-zinc-800 border border-violet-500/50 hover:border-violet-500 transition-all cursor-pointer"
+              className="flex-1 p-2.5 rounded-lg bg-zinc-800 border border-violet-500/50 hover:border-violet-500 transition-all cursor-pointer"
             >
               <div className="flex items-center justify-center gap-2">
-                <Calendar className="w-5 h-5 text-violet-400" />
-                <span className="text-white font-medium">
-                  {date ? formatDate(date) : 'Select Date'}
+                <Calendar className="w-4 h-4 text-violet-400" />
+                <span className="text-white font-medium text-sm">
+                  {date ? formatDate(date) : "Select Date"}
                 </span>
               </div>
             </button>
-            
+
             <button
               onClick={() => navigateDate(1)}
               disabled={!date || date === getMaxDate()}
-              className="p-2.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          
+
           {/* Hidden date input */}
           <input
             ref={dateInputRef}
@@ -410,11 +536,75 @@ export default function TimeStep() {
           />
         </div>
 
+        {/* Studio Selector - Only show if multiple studios are allowed */}
+        {draft.allowedStudios.length > 1 && (
+          <div className="space-y-1">
+            <label className="text-xs text-zinc-400 flex items-center gap-1">
+              <Building2 className="w-3 h-3" />
+              Studio{" "}
+              {selectedStudio !== draft.recommendedStudio && (
+                <span className="text-violet-400">
+                  • Upgraded from {draft.recommendedStudio}
+                </span>
+              )}
+            </label>
+
+            <div className="flex flex-wrap gap-1.5">
+              {draft.allowedStudios.map((studio) => {
+                const isSelected = selectedStudio === studio;
+                const isRecommended = studio === draft.recommendedStudio;
+                const availableSlots = studioAvailability[studio] ?? 0;
+                const hasNoSlots = !!date && studioAvailability[studio] === 0;
+                const rate = getStudioRateForDisplay(studio);
+                const showUpgrade = isUpgrade(studio);
+
+                return (
+                  <button
+                    key={studio}
+                    onClick={() => handleStudioChange(studio)}
+                    disabled={hasNoSlots}
+                    className={`px-3 py-1.5 rounded-lg transition-all text-xs font-medium flex items-center gap-1.5 ${
+                      isSelected
+                        ? "bg-violet-500 text-white ring-1 ring-violet-400"
+                        : hasNoSlots
+                        ? "bg-zinc-900 text-zinc-600 cursor-not-allowed opacity-60"
+                        : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                    }`}
+                  >
+                    <span>{studio.replace("Studio ", "")}</span>
+                    <span className="opacity-70">₹{rate}/hr</span>
+                    {isRecommended && !isSelected && (
+                      <span className="text-[9px] px-1 py-0.5 rounded bg-violet-500/20 text-violet-400">
+                        Rec
+                      </span>
+                    )}
+                    {showUpgrade && !isSelected && (
+                      <ArrowUp className="w-2.5 h-2.5 text-emerald-400" />
+                    )}
+                    {date && (
+                      <span
+                        className={`text-[10px] ${
+                          hasNoSlots ? "text-red-400" : "text-emerald-400"
+                        }`}
+                      >
+                        {hasNoSlots ? "0" : availableSlots}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Loading state */}
+
         {loading && (
           <div className="flex items-center justify-center py-6">
             <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
-            <span className="ml-2 text-sm text-zinc-400">Loading availability...</span>
+            <span className="ml-2 text-sm text-zinc-400">
+              Loading availability...
+            </span>
           </div>
         )}
 
@@ -428,33 +618,37 @@ export default function TimeStep() {
 
         {/* Available Time Slabs */}
         {date && !loading && !error && (
-          <div className="space-y-2">
+          <div className="space-y-1">
             <label className="text-xs text-zinc-400 flex items-center gap-1">
               <Clock className="w-3 h-3" />
               Available Time Slots
             </label>
-            
+
             {continuousSlabs.length === 0 ? (
-              <div className="text-center py-4 text-zinc-500 text-sm">
+              <div className="text-center py-3 text-zinc-500 text-sm">
                 No available slots for this date
               </div>
             ) : (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {continuousSlabs.map((slab, index) => {
-                  const isSelected = selectedSlab?.start === slab.start && selectedSlab?.end === slab.end;
-                  
+                  const isSelected =
+                    selectedSlab?.start === slab.start &&
+                    selectedSlab?.end === slab.end;
+
                   return (
                     <button
                       key={index}
                       onClick={() => handleSlabSelect(slab)}
-                      className={`px-4 py-2.5 rounded-xl transition-all text-sm font-medium ${
+                      className={`px-3 py-1.5 rounded-lg transition-all text-xs font-medium ${
                         isSelected
-                          ? 'bg-violet-500 text-white ring-2 ring-violet-400'
-                          : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                          ? "bg-violet-500 text-white ring-1 ring-violet-400"
+                          : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
                       }`}
                     >
                       {slab.label}
-                      <span className="ml-1.5 text-xs opacity-70">({slab.duration}hr{slab.duration > 1 ? 's' : ''})</span>
+                      <span className="ml-1 opacity-70">
+                        ({slab.duration}hr{slab.duration > 1 ? "s" : ""})
+                      </span>
                     </button>
                   );
                 })}
@@ -465,24 +659,24 @@ export default function TimeStep() {
 
         {/* Start Time Selection */}
         {selectedSlab && (
-          <div className="space-y-2">
+          <div className="space-y-1">
             <label className="text-xs text-zinc-400 flex items-center gap-1">
               <Clock className="w-3 h-3" />
               Start Time
             </label>
-            
-            <div className="flex flex-wrap gap-2">
+
+            <div className="flex flex-wrap gap-1.5">
               {startTimes.map((timeOption) => {
                 const isSelected = startTime === timeOption.time;
-                
+
                 return (
                   <button
                     key={timeOption.time}
                     onClick={() => handleStartTimeSelect(timeOption.time)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                       isSelected
-                        ? 'bg-violet-500 text-white ring-2 ring-violet-400'
-                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                        ? "bg-violet-500 text-white ring-1 ring-violet-400"
+                        : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
                     }`}
                   >
                     {timeOption.label}
@@ -495,28 +689,33 @@ export default function TimeStep() {
 
         {/* End Time Selection */}
         {startTime && (
-          <div className="space-y-2">
+          <div className="space-y-1">
             <label className="text-xs text-zinc-400 flex items-center gap-1">
               <Clock className="w-3 h-3" />
               End Time
             </label>
-            
-            <div className="flex flex-wrap gap-2">
+
+            <div className="flex flex-wrap gap-1.5">
               {endTimes.map((timeOption) => {
                 const isSelected = endTime === timeOption.time;
-                
+
                 return (
                   <button
                     key={timeOption.time}
-                    onClick={() => handleEndTimeSelect(timeOption.time, timeOption.duration)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    onClick={() =>
+                      handleEndTimeSelect(timeOption.time, timeOption.duration)
+                    }
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                       isSelected
-                        ? 'bg-violet-500 text-white ring-2 ring-violet-400'
-                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                        ? "bg-violet-500 text-white ring-1 ring-violet-400"
+                        : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
                     }`}
                   >
                     {timeOption.label}
-                    <span className="ml-1.5 text-xs opacity-70">({timeOption.duration}hr{timeOption.duration > 1 ? 's' : ''})</span>
+                    <span className="ml-1 opacity-70">
+                      ({timeOption.duration}hr
+                      {timeOption.duration > 1 ? "s" : ""})
+                    </span>
                   </button>
                 );
               })}
@@ -526,16 +725,23 @@ export default function TimeStep() {
 
         {/* Selected time display summary */}
         {draft.selectedSlot && (
-          <div className="p-4 rounded-xl bg-violet-500/10 border border-violet-500/30">
+          <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/30">
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-xs text-violet-400">Your booking: </span>
-                <span className="text-white font-semibold">
-                  {formatTimeSlot(draft.selectedSlot.start, draft.selectedSlot.end)}
+                <span className="text-white font-semibold text-sm">
+                  {formatTimeSlot(
+                    draft.selectedSlot.start,
+                    draft.selectedSlot.end
+                  )}
                 </span>
-                <span className="text-zinc-400 text-xs ml-2">({duration}hr{duration > 1 ? 's' : ''})</span>
+                <span className="text-zinc-400 text-xs ml-1.5">
+                  ({duration}hr{duration > 1 ? "s" : ""})
+                </span>
               </div>
-              <span className="text-violet-400 font-bold text-lg">₹{(draft.ratePerHour * duration).toLocaleString('en-IN')}</span>
+              <span className="text-violet-400 font-bold">
+                ₹{(draft.ratePerHour * duration).toLocaleString("en-IN")}
+              </span>
             </div>
           </div>
         )}
