@@ -829,9 +829,13 @@ Hi ${booking.name || "there"},
 
 This is a reminder for your upcoming booking at our studio.
 
-Date: *${formattedDate}*
-Time: *${formattedStartTime} – ${formattedEndTime}*
-*${booking.session_details || booking.session_type || "Session"}*
+Date: ${formattedDate}
+Time: ${formattedStartTime} – ${formattedEndTime}
+*${booking.session_type || "Session"}${
+                                booking.session_details
+                                  ? ` with ${booking.session_details}`
+                                  : ""
+                              }*
 *${booking.studio}*
 
 Enjoy your session!
@@ -1098,7 +1102,11 @@ This is a reminder for your upcoming booking at our studio.
 
 Date: ${formattedDate}
 Time: ${formattedStartTime} – ${formattedEndTime}
-${selectedBooking.session_details || selectedBooking.session_type || "Session"}
+${selectedBooking.session_type || "Session"}${
+                              selectedBooking.session_details
+                                ? ` with ${selectedBooking.session_details}`
+                                : ""
+                            }
 ${selectedBooking.studio}
 
 Enjoy your session!
