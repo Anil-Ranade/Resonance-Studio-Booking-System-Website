@@ -16,6 +16,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 ## ✨ Features
 
 ### 🎵 Studio Booking
+
 - Interactive multi-step booking wizard
 - Real-time studio availability checking
 - Multiple session types support:
@@ -30,6 +31,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Booking buffer time between sessions
 
 ### 📱 Secure Authentication
+
 - Email-based OTP verification via Resend
 - Secure phone number verification flow
 - **Trusted device management** with cookie-based auto-login
@@ -38,24 +40,28 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Bcrypt-hashed OTP storage (10 salt rounds)
 
 ### 📅 Google Calendar Integration
+
 - Automatic calendar event creation for bookings
 - Sync bookings with owner's Google Calendar
 - Event details include customer info and booking ID
 - Automatic event updates on booking changes
 
 ### 📊 Google Sheets Integration
+
 - All bookings logged to Google Sheets for reporting
 - Tracks new bookings, updates, and cancellations
 - Real-time audit trail of all booking activities
 - Automated timestamp and action logging
 
 ### 📧 Email Notifications
+
 - OTP verification codes via email (Resend)
 - Booking confirmation emails
 - Booking update and cancellation notifications
 - Beautiful dark-themed email templates
 
 ### 👤 My Bookings
+
 - **Secure authentication required** to view bookings
 - Auto-login with trusted devices
 - View personal booking history
@@ -65,18 +71,21 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Past bookings auto-marked as completed
 
 ### ✏️ Edit Booking
+
 - Email-based booking lookup
 - OTP verification for security
 - Modify confirmed bookings
 - Time restrictions (48 hours before session)
 
 ### ❌ Cancel Booking
+
 - Email-based booking lookup
 - OTP verification for secure cancellation
 - Cancellation restrictions based on booking time
 - Email confirmation of cancellation
 
 ### 🔧 Admin Dashboard
+
 - Secure Supabase Auth-based admin authentication
 - Dashboard statistics (total bookings, revenue, today's bookings)
 - Booking management (view, cancel, mark no_show, mark completed)
@@ -89,6 +98,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Audit logging for all admin actions
 
 ### 👥 Staff Portal
+
 - Separate staff authentication (Supabase Auth)
 - Staff dashboard with booking statistics
 - Staff booking management with WhatsApp integration
@@ -96,48 +106,52 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Limited permissions compared to admin
 
 ### 💰 Rate Card
+
 - Dynamic studio pricing display
 - Session type-based pricing
 - Sub-options for group sizes
 - Per-studio rate configuration
 
 ### 📍 Multiple Studios
+
 - Support for 3 studio spaces (Studio A, B, C)
 - Per-studio capacity management
 - Individual availability per studio
 - Studio-specific amenities
 
 ### 📞 Contact & Support
+
 - Contact form
 - Comprehensive FAQ section
 - Policies page
 
 ### 🖼️ Additional Pages
+
 - Photo gallery
 - About page
 - Rate card display
 
 ## 🛠 Tech Stack
 
-| Category | Technology |
-|----------|------------|
-| **Framework** | Next.js 16.0.10 (App Router) |
-| **UI Library** | React 19.2.0 |
-| **Language** | TypeScript 5 |
-| **Styling** | Tailwind CSS 4 |
-| **Animations** | Framer Motion 12 |
-| **Icons** | Lucide React |
-| **Database** | Supabase (PostgreSQL) |
-| **Auth** | JWT + OTP (bcryptjs) |
-| **Calendar** | Google Calendar API |
-| **Sheets** | Google Sheets API |
-| **Email** | Resend |
+| Category       | Technology                   |
+| -------------- | ---------------------------- |
+| **Framework**  | Next.js 16.0.10 (App Router) |
+| **UI Library** | React 19.2.0                 |
+| **Language**   | TypeScript 5                 |
+| **Styling**    | Tailwind CSS 4               |
+| **Animations** | Framer Motion 12             |
+| **Icons**      | Lucide React                 |
+| **Database**   | Supabase (PostgreSQL)        |
+| **Auth**       | JWT + OTP (bcryptjs)         |
+| **Calendar**   | Google Calendar API          |
+| **Sheets**     | Google Sheets API            |
+| **Email**      | Resend                       |
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
 - Supabase account
 - Resend account (for Email notifications)
@@ -146,22 +160,26 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/ashutoshswamy/Resonance-Studio-Booking.git
    cd Resonance-Studio-Booking
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp .env.example .env.local
    ```
 
    Configure the following variables:
+
    ```env
    # Supabase
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
@@ -189,29 +207,31 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
    > ⚠️ **Security Note**: Never commit `.env.local` to version control. Use strong, randomly generated secrets for JWT_SECRET (minimum 32 characters). Rotate secrets periodically.
 
 4. **Set up the database**
-   
+
    Run the SQL schema in your Supabase SQL Editor:
+
    ```bash
    # database/full_schema.sql - Complete database schema with RLS policies
    ```
 
 5. **Run the development server**
+
    ```bash
    npm run dev
    ```
 
 6. **Open the app**
-   
+
    Visit [http://localhost:3000](http://localhost:3000)
 
 ### Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
+| Command         | Description              |
+| --------------- | ------------------------ |
+| `npm run dev`   | Start development server |
+| `npm run build` | Build for production     |
+| `npm run start` | Start production server  |
+| `npm run lint`  | Run ESLint               |
 
 ## 📁 Project Structure
 
@@ -337,6 +357,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 ## 📚 Documentation
 
 For detailed documentation including:
+
 - Application workflow diagrams
 - Color palette reference
 - Database schema details
@@ -366,8 +387,9 @@ This project is proprietary software developed for Resonance Studio.
 ## 👨‍💻 Author
 
 **Ashutosh Swamy**
+
 - GitHub: [@ashutoshswamy](https://github.com/ashutoshswamy)
 
 ---
 
-*Built with ❤️ for Resonance Studio*
+_Built for Resonance Studio_

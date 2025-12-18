@@ -21,40 +21,44 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 ## 🛠 Tech Stack
 
 ### Frontend
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **Next.js** | 16.0.10 | React framework with App Router |
-| **React** | 19.2.0 | UI library |
-| **TypeScript** | ^5 | Type-safe JavaScript |
-| **Tailwind CSS** | ^4 | Utility-first CSS framework |
-| **Framer Motion** | ^12.23.24 | Animation library |
-| **Lucide React** | ^0.554.0 | Icon library |
+
+| Technology        | Version   | Purpose                         |
+| ----------------- | --------- | ------------------------------- |
+| **Next.js**       | 16.0.10   | React framework with App Router |
+| **React**         | 19.2.0    | UI library                      |
+| **TypeScript**    | ^5        | Type-safe JavaScript            |
+| **Tailwind CSS**  | ^4        | Utility-first CSS framework     |
+| **Framer Motion** | ^12.23.24 | Animation library               |
+| **Lucide React**  | ^0.554.0  | Icon library                    |
 
 ### Backend
-| Technology | Purpose |
-|------------|---------|
-| **Next.js API Routes** | RESTful API endpoints |
-| **Supabase** | PostgreSQL database & authentication |
-| **Google Calendar API** | Calendar integration for bookings |
-| **Google Sheets API** | Booking logs & reporting |
-| **Resend** | Email notifications & OTP verification |
+
+| Technology              | Purpose                                |
+| ----------------------- | -------------------------------------- |
+| **Next.js API Routes**  | RESTful API endpoints                  |
+| **Supabase**            | PostgreSQL database & authentication   |
+| **Google Calendar API** | Calendar integration for bookings      |
+| **Google Sheets API**   | Booking logs & reporting               |
+| **Resend**              | Email notifications & OTP verification |
 
 ### Authentication & Security
-| Technology | Purpose |
-|------------|---------|
-| **Supabase Auth** | Admin & Staff authentication |
-| **bcryptjs** | Password/OTP hashing |
-| **OTP-based Auth** | Email verification (via Resend) |
-| **Device Fingerprinting** | Trusted device management |
-| **Cookie Sessions** | Secure HttpOnly auth tokens |
-| **Auto-login** | Seamless trusted device access |
+
+| Technology                | Purpose                         |
+| ------------------------- | ------------------------------- |
+| **Supabase Auth**         | Admin & Staff authentication    |
+| **bcryptjs**              | Password/OTP hashing            |
+| **OTP-based Auth**        | Email verification (via Resend) |
+| **Device Fingerprinting** | Trusted device management       |
+| **Cookie Sessions**       | Secure HttpOnly auth tokens     |
+| **Auto-login**            | Seamless trusted device access  |
 
 ### Development Tools
-| Technology | Purpose |
-|------------|---------|
-| **ESLint** | Code linting |
-| **PostCSS** | CSS processing |
-| **TypeScript** | Type checking |
+
+| Technology     | Purpose        |
+| -------------- | -------------- |
+| **ESLint**     | Code linting   |
+| **PostCSS**    | CSS processing |
+| **TypeScript** | Type checking  |
 
 ---
 
@@ -95,11 +99,13 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 ### Step-by-Step Booking Process
 
 1. **Home Page (`/home`)**
+
    - Browse studio information and services
    - View available session types
    - Access quick booking actions
 
 2. **Session Selection (`/booking`)**
+
    - Choose session type:
      - 🎤 **Karaoke** - Sing along with friends (up to 30 people)
      - 🎵 **Live with Musicians** - Live performance session (up to 12 people)
@@ -108,6 +114,7 @@ A modern, full-stack studio booking application built for Resonance Studio. This
      - 📻 **Recording** - Audio/Video/Chroma Key packages
 
 3. **Configure Session Details**
+
    - Select participant count (varies by session type)
    - Choose equipment needs (for Band sessions):
      - Drum Only
@@ -120,12 +127,14 @@ A modern, full-stack studio booking application built for Resonance Studio. This
      - Chroma Key Recording
 
 4. **Date & Time Selection**
+
    - View availability calendar
    - Select available time slots (1-8 hours)
    - Real-time availability checking
    - 30-day advance booking limit
 
 5. **Studio Selection**
+
    - System auto-suggests appropriate studio based on:
      - Group size
      - Session type
@@ -133,6 +142,7 @@ A modern, full-stack studio booking application built for Resonance Studio. This
    - Manual studio selection available
 
 6. **Phone & Email Verification**
+
    - Enter phone number and email address
    - Receive 6-digit OTP via Email (Resend)
    - OTP expires in 5 minutes
@@ -140,6 +150,7 @@ A modern, full-stack studio booking application built for Resonance Studio. This
    - Trusted device option for faster future logins
 
 7. **Review & Confirmation**
+
    - Review all booking details
    - View calculated pricing
    - Confirm booking
@@ -181,12 +192,14 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 ### Admin Features
 
 - **Dashboard** (`/admin/dashboard`)
+
   - Total bookings count
   - Revenue statistics
   - Today's bookings
   - Recent booking activity
 
 - **Bookings** (`/admin/bookings`)
+
   - View all bookings with filters
   - Cancel bookings
   - Mark bookings as completed or no_show
@@ -194,12 +207,14 @@ A modern, full-stack studio booking application built for Resonance Studio. This
   - **Send WhatsApp messages** to customers with pre-filled booking details
 
 - **Create Booking** (`/admin/booking`)
+
   - Create bookings on behalf of customers
   - Walk-in customer support
   - Duplicate booking prevention
   - Email notifications marked as "created by team"
 
 - **Availability** (`/admin/availability`)
+
   - Block specific time slots
   - Unblock time slots
   - Bulk availability management
@@ -232,6 +247,7 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 ```
 
 **Edit Restrictions:**
+
 - Confirmed bookings: Can edit up to 48 hours before
 - Cancelled/completed/no_show: Cannot edit
 
@@ -255,6 +271,7 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 ```
 
 **Cancel Restrictions:**
+
 - Same time restrictions as edit booking
 - Email confirmation sent upon cancellation
 
@@ -286,24 +303,25 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 
 ### Staff Features
 
--   **Dashboard** (`/staff/dashboard`)
-    -   Booking statistics
-    -   Today's bookings overview
-    -   Quick actions
+- **Dashboard** (`/staff/dashboard`)
 
--   **Bookings** (`/staff/bookings`)
-    -   View all bookings
-    -   Filter and search bookings
-    -   Create new bookings for walk-in customers
-    -   Send WhatsApp messages to customers
+  - Booking statistics
+  - Today's bookings overview
+  - Quick actions
+
+- **Bookings** (`/staff/bookings`)
+  - View all bookings
+  - Filter and search bookings
+  - Create new bookings for walk-in customers
+  - Send WhatsApp messages to customers
 
 ### Admin Staff Management
 
--   **Staff Management** (`/admin/staff`)
-    -   Create new staff members
-    -   View and manage existing staff
-    -   Deactivate staff accounts
-    -   Reset staff passwords
+- **Staff Management** (`/admin/staff`)
+  - Create new staff members
+  - View and manage existing staff
+  - Deactivate staff accounts
+  - Reset staff passwords
 
 ---
 
@@ -311,51 +329,51 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 
 ### Primary Colors
 
-| Color Name | Hex Code | Usage |
-|------------|----------|-------|
-| **Primary** | `#8b5cf6` | Main brand color, buttons, accents |
-| **Primary Light** | `#a78bfa` | Hover states, highlights |
-| **Primary Dark** | `#7c3aed` | Active states, emphasis |
+| Color Name        | Hex Code  | Usage                              |
+| ----------------- | --------- | ---------------------------------- |
+| **Primary**       | `#8b5cf6` | Main brand color, buttons, accents |
+| **Primary Light** | `#a78bfa` | Hover states, highlights           |
+| **Primary Dark**  | `#7c3aed` | Active states, emphasis            |
 
 ### Accent Colors
 
-| Color Name | Hex Code | Usage |
-|------------|----------|-------|
-| **Accent** | `#f59e0b` | Call-to-action, highlights |
-| **Accent Light** | `#fbbf24` | Hover states |
-| **Accent Dark** | `#d97706` | Active states |
+| Color Name       | Hex Code  | Usage                      |
+| ---------------- | --------- | -------------------------- |
+| **Accent**       | `#f59e0b` | Call-to-action, highlights |
+| **Accent Light** | `#fbbf24` | Hover states               |
+| **Accent Dark**  | `#d97706` | Active states              |
 
 ### Background Colors
 
-| Color Name | Hex Code / Value | Usage |
-|------------|------------------|-------|
-| **Background Dark** | `#0f0f1a` | Main background |
-| **Background Darker** | `#080810` | Secondary background |
-| **Card Background** | `rgba(255, 255, 255, 0.03)` | Card surfaces |
-| **Card Hover** | `rgba(255, 255, 255, 0.06)` | Card hover states |
+| Color Name            | Hex Code / Value            | Usage                |
+| --------------------- | --------------------------- | -------------------- |
+| **Background Dark**   | `#0f0f1a`                   | Main background      |
+| **Background Darker** | `#080810`                   | Secondary background |
+| **Card Background**   | `rgba(255, 255, 255, 0.03)` | Card surfaces        |
+| **Card Hover**        | `rgba(255, 255, 255, 0.06)` | Card hover states    |
 
 ### Text Colors
 
-| Color Name | Hex Code | Usage |
-|------------|----------|-------|
-| **Text Primary** | `#ffffff` | Main text |
-| **Text Secondary** | `#a1a1aa` | Secondary text |
-| **Text Muted** | `#71717a` | Muted/disabled text |
+| Color Name         | Hex Code  | Usage               |
+| ------------------ | --------- | ------------------- |
+| **Text Primary**   | `#ffffff` | Main text           |
+| **Text Secondary** | `#a1a1aa` | Secondary text      |
+| **Text Muted**     | `#71717a` | Muted/disabled text |
 
 ### Border Colors
 
-| Color Name | Value | Usage |
-|------------|-------|-------|
-| **Border Light** | `rgba(255, 255, 255, 0.1)` | Subtle borders |
+| Color Name        | Value                       | Usage           |
+| ----------------- | --------------------------- | --------------- |
+| **Border Light**  | `rgba(255, 255, 255, 0.1)`  | Subtle borders  |
 | **Border Medium** | `rgba(255, 255, 255, 0.15)` | Visible borders |
 
 ### Gradients
 
-| Gradient Name | Value | Usage |
-|---------------|-------|-------|
-| **Primary Gradient** | `linear-gradient(135deg, #667eea 0%, #764ba2 100%)` | Buttons, highlights |
-| **Accent Gradient** | `linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)` | CTAs, emphasis |
-| **Background Gradient** | `linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%)` | Page background |
+| Gradient Name           | Value                                                            | Usage               |
+| ----------------------- | ---------------------------------------------------------------- | ------------------- |
+| **Primary Gradient**    | `linear-gradient(135deg, #667eea 0%, #764ba2 100%)`              | Buttons, highlights |
+| **Accent Gradient**     | `linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)`              | CTAs, emphasis      |
+| **Background Gradient** | `linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%)` | Page background     |
 
 ### Visual Color Reference
 
@@ -536,6 +554,7 @@ Text Colors:
 ## ✨ Features
 
 ### Customer Features
+
 - ✅ Interactive multi-step booking wizard
 - ✅ Real-time availability checking
 - ✅ Multiple session types (Karaoke, Band, Recording, etc.)
@@ -551,6 +570,7 @@ Text Colors:
 - ✅ Smooth animations with reduced motion support
 
 ### Admin Features
+
 - ✅ Secure Supabase Auth admin authentication
 - ✅ Dashboard with booking statistics & revenue
 - ✅ Booking management (confirm, cancel, no_show, view details)
@@ -563,12 +583,14 @@ Text Colors:
 - ✅ Audit logging for all actions
 
 ### Staff Features
+
 - ✅ Separate staff authentication (Supabase Auth)
 - ✅ Staff dashboard with booking statistics
 - ✅ Staff booking management
 - ✅ Staff booking creation for walk-in customers
 
 ### Technical Features
+
 - ✅ Google Calendar integration (auto-create events)
 - ✅ Google Sheets integration (booking logs & reporting)
 - ✅ Email notifications via Resend
@@ -580,14 +602,15 @@ Text Colors:
 - ✅ Performance-optimized motion components
 
 ### Email Notification Types
-| Email Type | Purpose |
-|------------|---------|
-| **OTP Verification** | 6-digit code for login verification |
-| **Booking Confirmation** | Confirmation of new booking with details |
-| **Admin Booking Confirmation** | Confirmation for bookings created by team |
-| **Booking Update** | Notification when booking is modified |
-| **Booking Cancellation** | Confirmation of cancelled booking |
-| **24h Booking Reminder** | Reminder email sent 24 hours before session |
+
+| Email Type                     | Purpose                                     |
+| ------------------------------ | ------------------------------------------- |
+| **OTP Verification**           | 6-digit code for login verification         |
+| **Booking Confirmation**       | Confirmation of new booking with details    |
+| **Admin Booking Confirmation** | Confirmation for bookings created by team   |
+| **Booking Update**             | Notification when booking is modified       |
+| **Booking Cancellation**       | Confirmation of cancelled booking           |
+| **24h Booking Reminder**       | Reminder email sent 24 hours before session |
 
 ---
 
@@ -595,21 +618,22 @@ Text Colors:
 
 ### Core Tables
 
-| Table | Purpose |
-|-------|---------|
-| `studios` | Studio information (name, type, capacity, hourly rates, amenities) |
-| `users` | Customer information (phone, name, email, verification status) |
-| `admin_users` | Admin user accounts (roles: admin, super_admin, staff) |
-| `bookings` | All booking records with status tracking |
-| `availability_slots` | Blocked time slots per studio |
-| `booking_settings` | System configuration (min/max hours, buffer, etc.) |
-| `login_otps` | OTP verification records (bcrypt hashed) |
-| `reminders` | Scheduled booking reminders |
-| `rate_cards` | Pricing per studio, session type, and sub-option |
-| `audit_logs` | Admin action tracking for accountability |
-| `trusted_devices` | Verified device fingerprints |
+| Table                | Purpose                                                            |
+| -------------------- | ------------------------------------------------------------------ |
+| `studios`            | Studio information (name, type, capacity, hourly rates, amenities) |
+| `users`              | Customer information (phone, name, email, verification status)     |
+| `admin_users`        | Admin user accounts (roles: admin, super_admin, staff)             |
+| `bookings`           | All booking records with status tracking                           |
+| `availability_slots` | Blocked time slots per studio                                      |
+| `booking_settings`   | System configuration (min/max hours, buffer, etc.)                 |
+| `login_otps`         | OTP verification records (bcrypt hashed)                           |
+| `reminders`          | Scheduled booking reminders                                        |
+| `rate_cards`         | Pricing per studio, session type, and sub-option                   |
+| `audit_logs`         | Admin action tracking for accountability                           |
+| `trusted_devices`    | Verified device fingerprints                                       |
 
 ### Database Features
+
 - UUID primary keys throughout
 - Row Level Security (RLS) policies
 - Automatic timestamps (created_at, updated_at)
@@ -622,80 +646,80 @@ Text Colors:
 
 ### Authentication
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/auth/send-otp` | Send OTP to email address |
-| `POST` | `/api/auth/verify-otp` | Verify OTP code |
-| `POST` | `/api/auth/verify-device` | Verify trusted device |
-| `GET` | `/api/auth/status` | Check authentication status |
-| `POST` | `/api/auth/auto-login` | Auto-login for trusted devices |
-| `POST` | `/api/auth/refresh` | Refresh auth session token |
-| `POST` | `/api/auth/logout` | Logout and clear session |
+| Method | Endpoint                  | Description                    |
+| ------ | ------------------------- | ------------------------------ |
+| `POST` | `/api/auth/send-otp`      | Send OTP to email address      |
+| `POST` | `/api/auth/verify-otp`    | Verify OTP code                |
+| `POST` | `/api/auth/verify-device` | Verify trusted device          |
+| `GET`  | `/api/auth/status`        | Check authentication status    |
+| `POST` | `/api/auth/auto-login`    | Auto-login for trusted devices |
+| `POST` | `/api/auth/refresh`       | Refresh auth session token     |
+| `POST` | `/api/auth/logout`        | Logout and clear session       |
 
 ### Bookings
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/bookings` | Get user's bookings |
-| `POST` | `/api/book` | Create new booking |
-| `POST` | `/api/bookings/cancel` | Cancel booking with notification |
-| `POST` | `/api/bookings/cancel-silent` | Cancel booking silently |
-| `GET` | `/api/bookings/upcoming` | Get upcoming bookings |
+| Method | Endpoint                      | Description                      |
+| ------ | ----------------------------- | -------------------------------- |
+| `GET`  | `/api/bookings`               | Get user's bookings              |
+| `POST` | `/api/book`                   | Create new booking               |
+| `POST` | `/api/bookings/cancel`        | Cancel booking with notification |
+| `POST` | `/api/bookings/cancel-silent` | Cancel booking silently          |
+| `GET`  | `/api/bookings/upcoming`      | Get upcoming bookings            |
 
 ### Availability
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/availability` | Check studio availability |
-| `GET` | `/api/studios` | Get studio information |
-| `GET` | `/api/rates` | Get rate card data |
+| Method | Endpoint            | Description               |
+| ------ | ------------------- | ------------------------- |
+| `GET`  | `/api/availability` | Check studio availability |
+| `GET`  | `/api/studios`      | Get studio information    |
+| `GET`  | `/api/rates`        | Get rate card data        |
 
 ### Public
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/settings` | Get public booking settings |
-| `POST` | `/api/contact` | Submit contact form |
-| `POST` | `/api/check-user` | Check if user exists |
+| Method | Endpoint          | Description                 |
+| ------ | ----------------- | --------------------------- |
+| `GET`  | `/api/settings`   | Get public booking settings |
+| `POST` | `/api/contact`    | Submit contact form         |
+| `POST` | `/api/check-user` | Check if user exists        |
 
 ### Admin
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/admin/login` | Admin authentication |
-| `GET` | `/api/admin/stats` | Dashboard statistics |
-| `GET` | `/api/admin/bookings` | Get all bookings |
-| `PUT` | `/api/admin/bookings` | Update booking status |
-| `GET` | `/api/admin/availability` | Get blocked slots |
-| `POST` | `/api/admin/availability` | Block time slots |
-| `DELETE` | `/api/admin/availability` | Unblock time slots |
-| `GET` | `/api/admin/settings` | Get all settings |
-| `PUT` | `/api/admin/settings` | Update settings |
-| `POST` | `/api/admin/book` | Admin creates booking |
+| Method   | Endpoint                  | Description           |
+| -------- | ------------------------- | --------------------- |
+| `POST`   | `/api/admin/login`        | Admin authentication  |
+| `GET`    | `/api/admin/stats`        | Dashboard statistics  |
+| `GET`    | `/api/admin/bookings`     | Get all bookings      |
+| `PUT`    | `/api/admin/bookings`     | Update booking status |
+| `GET`    | `/api/admin/availability` | Get blocked slots     |
+| `POST`   | `/api/admin/availability` | Block time slots      |
+| `DELETE` | `/api/admin/availability` | Unblock time slots    |
+| `GET`    | `/api/admin/settings`     | Get all settings      |
+| `PUT`    | `/api/admin/settings`     | Update settings       |
+| `POST`   | `/api/admin/book`         | Admin creates booking |
 
 ### Staff
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/staff/login` | Staff authentication |
-| `GET` | `/api/staff/stats` | Staff dashboard statistics |
-| `GET` | `/api/staff/bookings` | Get bookings for staff |
-| `POST` | `/api/staff/book` | Staff creates booking |
+| Method | Endpoint              | Description                |
+| ------ | --------------------- | -------------------------- |
+| `POST` | `/api/staff/login`    | Staff authentication       |
+| `GET`  | `/api/staff/stats`    | Staff dashboard statistics |
+| `GET`  | `/api/staff/bookings` | Get bookings for staff     |
+| `POST` | `/api/staff/book`     | Staff creates booking      |
 
 ### Admin Staff Management
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/admin/staff` | Get all staff members |
-| `POST` | `/api/admin/staff` | Create new staff member |
-| `PUT` | `/api/admin/staff` | Update staff member |
+| Method   | Endpoint           | Description             |
+| -------- | ------------------ | ----------------------- |
+| `GET`    | `/api/admin/staff` | Get all staff members   |
+| `POST`   | `/api/admin/staff` | Create new staff member |
+| `PUT`    | `/api/admin/staff` | Update staff member     |
 | `DELETE` | `/api/admin/staff` | Deactivate staff member |
 
 ### CRON Jobs
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/cron/send-reminders` | Process and send pending reminder emails |
+| Method | Endpoint                   | Description                              |
+| ------ | -------------------------- | ---------------------------------------- |
+| `GET`  | `/api/cron/send-reminders` | Process and send pending reminder emails |
 
 > **Note**: The CRON endpoint should be called periodically (e.g., every 15 minutes) by an external scheduler. Protect it with `CRON_SECRET` environment variable.
 
@@ -743,26 +767,26 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ### Environment Variable Security Notes
 
-| Variable | Exposure | Notes |
-|----------|----------|-------|
-| `NEXT_PUBLIC_*` | Client-side | Safe to expose, limited permissions |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server-only | **Never expose** - bypasses RLS |
-| `RESEND_API_KEY` | Server-only | Email sending access if leaked |
-| `GOOGLE_*` | Server-only | Calendar & Sheets access if leaked |
-| `JWT_SECRET` | Server-only | Token forgery if leaked |
+| Variable                    | Exposure    | Notes                               |
+| --------------------------- | ----------- | ----------------------------------- |
+| `NEXT_PUBLIC_*`             | Client-side | Safe to expose, limited permissions |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only | **Never expose** - bypasses RLS     |
+| `RESEND_API_KEY`            | Server-only | Email sending access if leaked      |
+| `GOOGLE_*`                  | Server-only | Calendar & Sheets access if leaked  |
+| `JWT_SECRET`                | Server-only | Token forgery if leaked             |
 
 ---
 
 ## 🔒 Security
 
 ### Authentication
+
 - **Customer Auth**: Email-based OTP verification
   - 6-digit OTP sent via Resend Email
   - OTP expires in 5 minutes
   - Maximum 5 verification attempts per OTP
   - Bcrypt-hashed OTP storage (10 salt rounds)
   - Old OTPs deleted before generating new ones
-  
 - **Admin Auth**: Supabase Auth + JWT
   - Supabase handles email/password authentication
   - Access token verification for all admin API routes
@@ -770,6 +794,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
   - Protected API routes with `verifyAdminToken()` middleware
 
 ### Secure Booking Page Access
+
 - **Authentication required** to view/edit/cancel bookings
 - Cookie-based session management with HttpOnly secure cookies
 - Auto-login for trusted devices
@@ -777,7 +802,9 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 - Logout clears all session cookies
 
 ### HTTP Security Headers
+
 The application enforces the following security headers via `next.config.ts`:
+
 - **Strict-Transport-Security (HSTS)** - Forces HTTPS connections
 - **X-Frame-Options: SAMEORIGIN** - Prevents clickjacking attacks
 - **X-Content-Type-Options: nosniff** - Prevents MIME-type sniffing
@@ -786,6 +813,7 @@ The application enforces the following security headers via `next.config.ts`:
 - **X-DNS-Prefetch-Control** - Controls DNS prefetching
 
 ### Input Validation & Sanitization
+
 - All user inputs are validated server-side
 - Phone numbers validated (10 digits only)
 - OTP format validated (6 digits)
@@ -794,6 +822,7 @@ The application enforces the following security headers via `next.config.ts`:
 - Email format validation with length limits (254 chars max)
 
 ### Database Security
+
 - Row Level Security (RLS) policies on all tables
 - Users can only view/edit their own data
 - Admins have elevated access via policy checks
@@ -802,24 +831,28 @@ The application enforces the following security headers via `next.config.ts`:
 - Enum types for constrained values (status fields)
 
 ### Device Trust
+
 - Device fingerprinting for trusted devices
 - Skip OTP for verified devices
 - Device trust can be revoked
 - Fingerprints stored with phone association
 
 ### Rate Limiting & Protection
+
 - OTP request cooldown prevents email bombing
 - Maximum 5 attempts before OTP invalidation
 - Audit logging for security events
 - All admin actions logged with user ID and timestamp
 
 ### Environment Security
+
 - All secrets stored in `.env.local` (not committed)
 - `.env*` patterns in `.gitignore`
 - Service role key used only server-side
 - Anon key used for client-side (limited permissions)
 
 ### Secure Coding Practices
+
 - No SQL injection possible (Supabase client handles parameterization)
 - JWT secrets minimum 32 characters recommended
 - Passwords never stored (OTP-based auth for customers)
@@ -831,21 +864,23 @@ The application enforces the following security headers via `next.config.ts`:
 
 ### Session Type Details
 
-| Session Type | Max Capacity | Equipment | Studios |
-|--------------|--------------|-----------|---------|
-| **Karaoke** | 30 people | Sound system | A, B, C |
-| **Live with Musicians** | 12 people | Full setup | A, B, C |
-| **Only Drum Practice** | 1 person | Drums only | A |
-| **Band** | 6 people | Configurable | A, B, C |
-| **Recording** | 4 people | Pro equipment | A |
+| Session Type            | Max Capacity | Equipment     | Studios |
+| ----------------------- | ------------ | ------------- | ------- |
+| **Karaoke**             | 30 people    | Sound system  | A, B, C |
+| **Live with Musicians** | 12 people    | Full setup    | A, B, C |
+| **Only Drum Practice**  | 1 person     | Drums only    | A       |
+| **Band**                | 6 people     | Configurable  | A, B, C |
+| **Recording**           | 4 people     | Pro equipment | A       |
 
 ### Band Equipment Options
+
 - Drum Only (₹350-400/hr)
 - Drum + Amps (₹400-500/hr)
 - Drum + Amps + Guitars (₹450-600/hr)
 - Full Setup (₹600/hr)
 
 ### Recording Options
+
 - Audio Recording (₹700/hr)
 - Video Recording (₹800/hr)
 - Chroma Key (₹1200/hr)
@@ -855,6 +890,7 @@ The application enforces the following security headers via `next.config.ts`:
 ## 🎨 Color Palette Reference
 
 See the [Color Palette section](#-color-palette) above for the complete design system including:
+
 - Primary colors (Purple: `#8b5cf6`)
 - Accent colors (Amber: `#f59e0b`)
 - Background colors (Dark theme)
@@ -866,6 +902,7 @@ See the [Color Palette section](#-color-palette) above for the complete design s
 ## 🚀 Production Deployment Checklist
 
 ### Security Checklist
+
 - [ ] All environment variables set in production
 - [ ] `NODE_ENV` set to `production`
 - [ ] Strong JWT_SECRET generated (32+ characters)
@@ -876,12 +913,14 @@ See the [Color Palette section](#-color-palette) above for the complete design s
 - [ ] Admin users created in `admin_users` table
 
 ### Performance Checklist
+
 - [ ] Next.js build optimized (`npm run build`)
 - [ ] Images optimized (AVIF/WebP)
 - [ ] Caching headers verified
 - [ ] Database indexes created (see schema)
 
 ### Monitoring Recommendations
+
 - [ ] Set up error monitoring (Sentry, LogRocket)
 - [ ] Enable Supabase logging
 - [ ] Monitor email delivery rates (Resend dashboard)
@@ -892,11 +931,12 @@ See the [Color Palette section](#-color-palette) above for the complete design s
 ## 📞 Support
 
 For technical support or questions about the booking system, please contact:
+
 - **Developer**: Ashutosh Swamy
 - **GitHub**: [@ashutoshswamy](https://github.com/ashutoshswamy)
 
 ---
 
-*Last updated: December 2025*
+_Last updated: December 2025_
 
-*Built with ❤️ for Resonance Studio*
+_Built for Resonance Studio_
