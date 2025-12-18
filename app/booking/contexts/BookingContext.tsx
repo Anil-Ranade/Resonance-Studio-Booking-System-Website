@@ -1,16 +1,31 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { getStudioSuggestion as getStudioSuggestionUtil } from '../utils/studioSuggestion';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from "react";
+import { getStudioSuggestion as getStudioSuggestionUtil } from "../utils/studioSuggestion";
 
 // Types
-export type SessionType = 'Karaoke' | 'Live with musicians' | 'Only Drum Practice' | 'Band' | 'Recording';
-export type KaraokeOption = '1_5' | '6_10' | '11_20' | '21_30';
-export type LiveMusicianOption = '1_2' | '3_4' | '5' | '6_8' | '9_12';
-export type BandEquipment = 'drum' | 'amps' | 'guitars' | 'keyboard';
-export type RecordingOption = 'audio_recording' | 'video_recording' | 'chroma_key';
-export type StudioName = 'Studio A' | 'Studio B' | 'Studio C';
-export type BookingMode = 'customer' | 'admin' | 'staff';
+export type SessionType =
+  | "Karaoke"
+  | "Live with musicians"
+  | "Only Drum Practice"
+  | "Band"
+  | "Recording";
+export type KaraokeOption = "1_5" | "6_10" | "11_20" | "21_30";
+export type LiveMusicianOption = "1_2" | "3_4" | "5" | "6_8" | "9_12";
+export type BandEquipment = "drum" | "amps" | "guitars" | "keyboard";
+export type RecordingOption =
+  | "audio_recording"
+  | "video_recording"
+  | "chroma_key";
+export type StudioName = "Studio A" | "Studio B" | "Studio C";
+export type BookingMode = "customer" | "admin" | "staff";
 
 export interface TimeSlot {
   start: string;
@@ -33,9 +48,9 @@ export interface EditBookingData {
 
 // Store original booking choices for edit mode
 export interface OriginalBookingChoices {
-  sessionType: SessionType | '';
+  sessionType: SessionType | "";
   sessionDetails: string;
-  studio: StudioName | '';
+  studio: StudioName | "";
   date: string;
   start_time: string;
   end_time: string;
@@ -48,72 +63,89 @@ export interface BookingDraft {
   name: string;
   email: string;
   isExistingUser: boolean;
-  
+
   // Step 2: Session
-  sessionType: SessionType | '';
-  
+  sessionType: SessionType | "";
+
   // Step 3: Participants
-  karaokeOption: KaraokeOption | '';
-  liveOption: LiveMusicianOption | '';
+  karaokeOption: KaraokeOption | "";
+  liveOption: LiveMusicianOption | "";
   bandEquipment: BandEquipment[];
-  recordingOption: RecordingOption | '';
+  recordingOption: RecordingOption | "";
   participantCount: number;
-  
+
   // Step 4: Studio
-  studio: StudioName | '';
-  recommendedStudio: StudioName | '';
+  studio: StudioName | "";
+  recommendedStudio: StudioName | "";
   allowedStudios: StudioName[];
   ratePerHour: number;
-  
+
   // Step 5: Time
   date: string;
   selectedSlot: TimeSlot | null;
   duration: number;
-  
+
   // Device
   deviceFingerprint: string;
   deviceTrusted: boolean;
-  
+
   // OTP verified
   otpVerified: boolean;
-  
+
   // Edit mode
   isEditMode: boolean;
   originalBookingId: string;
   originalChoices: OriginalBookingChoices | null;
 }
 
-export type BookingStep = 'phone' | 'session' | 'participants' | 'studio' | 'time' | 'review' | 'otp' | 'confirm';
+export type BookingStep =
+  | "phone"
+  | "session"
+  | "participants"
+  | "studio"
+  | "time"
+  | "review"
+  | "otp"
+  | "confirm";
 
-const STEP_ORDER: BookingStep[] = ['phone', 'session', 'participants', 'studio', 'time', 'review', 'otp', 'confirm'];
+const STEP_ORDER: BookingStep[] = [
+  "phone",
+  "session",
+  "participants",
+  "studio",
+  "time",
+  "review",
+  "otp",
+  "confirm",
+];
 
 const initialDraft: BookingDraft = {
-  phone: '',
-  name: '',
-  email: '',
+  phone: "",
+  name: "",
+  email: "",
   isExistingUser: false,
-  sessionType: '',
-  karaokeOption: '',
-  liveOption: '',
+  sessionType: "",
+  karaokeOption: "",
+  liveOption: "",
   bandEquipment: [],
-  recordingOption: '',
+  recordingOption: "",
   participantCount: 1,
-  studio: '',
-  recommendedStudio: '',
+  studio: "",
+  recommendedStudio: "",
   allowedStudios: [],
   ratePerHour: 0,
-  date: '',
+  date: "",
   selectedSlot: null,
   duration: 1,
-  deviceFingerprint: '',
+  deviceFingerprint: "",
   deviceTrusted: false,
   otpVerified: false,
   isEditMode: false,
-  originalBookingId: '',
+  originalBookingId: "",
   originalChoices: null,
 };
 
-const STORAGE_KEY = 'resonance_booking_draft';
+const STORAGE_KEY = "resonance_booking_draft";
 
 interface BookingContextType {
   draft: BookingDraft;
@@ -140,45 +172,60 @@ interface BookingProviderProps {
   mode?: BookingMode;
 }
 
-export function BookingProvider({ children, mode = 'customer' }: BookingProviderProps) {
+export function BookingProvider({
+  children,
+  mode = "customer",
+}: BookingProviderProps) {
   const [draft, setDraft] = useState<BookingDraft>(initialDraft);
-  const [currentStep, setCurrentStep] = useState<BookingStep>('phone');
+  const [currentStep, setCurrentStep] = useState<BookingStep>("phone");
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Helper function to parse session details and extract participant options
-  const parseSessionDetails = (sessionType: string, sessionDetails: string, groupSize: number) => {
-    let karaokeOption: KaraokeOption | '' = '';
-    let liveOption: LiveMusicianOption | '' = '';
+  const parseSessionDetails = (
+    sessionType: string,
+    sessionDetails: string,
+    groupSize: number
+  ) => {
+    let karaokeOption: KaraokeOption | "" = "";
+    let liveOption: LiveMusicianOption | "" = "";
     let bandEquipment: BandEquipment[] = [];
-    let recordingOption: RecordingOption | '' = '';
+    let recordingOption: RecordingOption | "" = "";
 
     // Parse based on session type
-    if (sessionType === 'Karaoke') {
+    if (sessionType === "Karaoke") {
       // Match against known karaoke labels
-      if (groupSize <= 5) karaokeOption = '1_5';
-      else if (groupSize <= 10) karaokeOption = '6_10';
-      else if (groupSize <= 20) karaokeOption = '11_20';
-      else karaokeOption = '21_30';
-    } else if (sessionType === 'Live with musicians') {
-      if (groupSize <= 2) liveOption = '1_2';
-      else if (groupSize <= 4) liveOption = '3_4';
-      else if (groupSize === 5) liveOption = '5';
-      else if (groupSize <= 8) liveOption = '6_8';
-      else liveOption = '9_12';
-    } else if (sessionType === 'Band') {
+      if (groupSize <= 5) karaokeOption = "1_5";
+      else if (groupSize <= 10) karaokeOption = "6_10";
+      else if (groupSize <= 20) karaokeOption = "11_20";
+      else karaokeOption = "21_30";
+    } else if (sessionType === "Live with musicians") {
+      if (groupSize <= 2) liveOption = "1_2";
+      else if (groupSize <= 4) liveOption = "3_4";
+      else if (groupSize === 5) liveOption = "5";
+      else if (groupSize <= 8) liveOption = "6_8";
+      else liveOption = "9_12";
+    } else if (sessionType === "Band") {
       // Parse equipment from session details
       const detailsLower = sessionDetails.toLowerCase();
-      if (detailsLower.includes('drum')) bandEquipment.push('drum');
-      if (detailsLower.includes('amp')) bandEquipment.push('amps');
-      if (detailsLower.includes('guitar')) bandEquipment.push('guitars');
-      if (detailsLower.includes('keyboard')) bandEquipment.push('keyboard');
+      if (detailsLower.includes("drum")) bandEquipment.push("drum");
+      if (detailsLower.includes("amp")) bandEquipment.push("amps");
+      if (detailsLower.includes("guitar")) bandEquipment.push("guitars");
+      if (detailsLower.includes("keyboard")) bandEquipment.push("keyboard");
       // If nothing parsed, default to drum
-      if (bandEquipment.length === 0) bandEquipment.push('drum');
-    } else if (sessionType === 'Recording') {
+      if (bandEquipment.length === 0) bandEquipment.push("drum");
+    } else if (sessionType === "Recording") {
       const detailsLower = sessionDetails.toLowerCase();
-      if (detailsLower.includes('audio')) recordingOption = 'audio_recording';
-      else if (detailsLower.includes('video') && !detailsLower.includes('chroma')) recordingOption = 'video_recording';
-      else if (detailsLower.includes('chroma') || detailsLower.includes('green')) recordingOption = 'chroma_key';
+      if (detailsLower.includes("audio")) recordingOption = "audio_recording";
+      else if (
+        detailsLower.includes("video") &&
+        !detailsLower.includes("chroma")
+      )
+        recordingOption = "video_recording";
+      else if (
+        detailsLower.includes("chroma") ||
+        detailsLower.includes("green")
+      )
+        recordingOption = "chroma_key";
     }
 
     return { karaokeOption, liveOption, bandEquipment, recordingOption };
@@ -186,8 +233,8 @@ export function BookingProvider({ children, mode = 'customer' }: BookingProvider
 
   // Calculate duration from start and end time
   const calculateDuration = (startTime: string, endTime: string): number => {
-    const [startHour, startMin] = startTime.split(':').map(Number);
-    const [endHour, endMin] = endTime.split(':').map(Number);
+    const [startHour, startMin] = startTime.split(":").map(Number);
+    const [endHour, endMin] = endTime.split(":").map(Number);
     const startMinutes = startHour * 60 + startMin;
     const endMinutes = endHour * 60 + endMin;
     return Math.round((endMinutes - startMinutes) / 60);
@@ -195,25 +242,36 @@ export function BookingProvider({ children, mode = 'customer' }: BookingProvider
 
   // Load edit mode data from sessionStorage
   const loadEditData = useCallback(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
-        const editData = sessionStorage.getItem('editBookingData');
+        const editData = sessionStorage.getItem("editBookingData");
         if (editData) {
           const parsed = JSON.parse(editData);
           if (parsed.editMode) {
-            const { karaokeOption, liveOption, bandEquipment, recordingOption } = 
-              parseSessionDetails(parsed.sessionType, parsed.sessionDetails || '', parsed.group_size || 1);
-            
-            const duration = calculateDuration(parsed.start_time, parsed.end_time);
-            
+            const {
+              karaokeOption,
+              liveOption,
+              bandEquipment,
+              recordingOption,
+            } = parseSessionDetails(
+              parsed.sessionType,
+              parsed.sessionDetails || "",
+              parsed.group_size || 1
+            );
+
+            const duration = calculateDuration(
+              parsed.start_time,
+              parsed.end_time
+            );
+
             // Create original choices for display
             const originalChoices: OriginalBookingChoices = {
-              sessionType: parsed.sessionType as SessionType || '',
-              sessionDetails: parsed.sessionDetails || '',
-              studio: parsed.studio as StudioName || '',
-              date: parsed.date || '',
-              start_time: parsed.start_time || '',
-              end_time: parsed.end_time || '',
+              sessionType: (parsed.sessionType as SessionType) || "",
+              sessionDetails: parsed.sessionDetails || "",
+              studio: (parsed.studio as StudioName) || "",
+              date: parsed.date || "",
+              start_time: parsed.start_time || "",
+              end_time: parsed.end_time || "",
               group_size: parsed.group_size || 1,
             };
 
@@ -229,62 +287,75 @@ export function BookingProvider({ children, mode = 'customer' }: BookingProvider
             );
 
             // Pre-fill the draft with edit data
-            setDraft(prev => ({
+            setDraft((prev) => ({
               ...prev,
-              phone: parsed.phone_number || '',
-              name: parsed.name || '',
-              sessionType: parsed.sessionType as SessionType || '',
+              phone: parsed.phone_number || "",
+              name: parsed.name || "",
+              sessionType: (parsed.sessionType as SessionType) || "",
               karaokeOption,
               liveOption,
               bandEquipment,
               recordingOption,
               participantCount: parsed.group_size || 1,
-              studio: parsed.studio as StudioName || '',
+              studio: (parsed.studio as StudioName) || "",
               recommendedStudio: studioSuggestion.recommendedStudio,
               allowedStudios: studioSuggestion.allowedStudios,
-              ratePerHour: parsed.total_amount ? parsed.total_amount / duration : 0,
-              date: parsed.date || '',
+              ratePerHour: parsed.total_amount
+                ? parsed.total_amount / duration
+                : 0,
+              date: parsed.date || "",
               selectedSlot: {
-                start: parsed.start_time || '',
-                end: parsed.end_time || '',
+                start: parsed.start_time || "",
+                end: parsed.end_time || "",
               },
               duration,
               isEditMode: true,
-              originalBookingId: parsed.originalBookingId || '',
+              originalBookingId: parsed.originalBookingId || "",
               originalChoices,
             }));
             // Clear the edit data from sessionStorage after loading
-            sessionStorage.removeItem('editBookingData');
+            sessionStorage.removeItem("editBookingData");
           }
         }
       } catch (e) {
-        console.error('Failed to load edit booking data:', e);
+        console.error("Failed to load edit booking data:", e);
       }
     }
   }, []);
 
   // Load from localStorage on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
         // First check for edit mode
-        const editData = sessionStorage.getItem('editBookingData');
+        const editData = sessionStorage.getItem("editBookingData");
         if (editData) {
           const parsed = JSON.parse(editData);
           if (parsed.editMode) {
-            const { karaokeOption, liveOption, bandEquipment, recordingOption } = 
-              parseSessionDetails(parsed.sessionType, parsed.sessionDetails || '', parsed.group_size || 1);
-            
-            const duration = calculateDuration(parsed.start_time, parsed.end_time);
-            
+            const {
+              karaokeOption,
+              liveOption,
+              bandEquipment,
+              recordingOption,
+            } = parseSessionDetails(
+              parsed.sessionType,
+              parsed.sessionDetails || "",
+              parsed.group_size || 1
+            );
+
+            const duration = calculateDuration(
+              parsed.start_time,
+              parsed.end_time
+            );
+
             // Create original choices for display
             const originalChoices: OriginalBookingChoices = {
-              sessionType: parsed.sessionType as SessionType || '',
-              sessionDetails: parsed.sessionDetails || '',
-              studio: parsed.studio as StudioName || '',
-              date: parsed.date || '',
-              start_time: parsed.start_time || '',
-              end_time: parsed.end_time || '',
+              sessionType: (parsed.sessionType as SessionType) || "",
+              sessionDetails: parsed.sessionDetails || "",
+              studio: (parsed.studio as StudioName) || "",
+              date: parsed.date || "",
+              start_time: parsed.start_time || "",
+              end_time: parsed.end_time || "",
               group_size: parsed.group_size || 1,
             };
 
@@ -302,44 +373,46 @@ export function BookingProvider({ children, mode = 'customer' }: BookingProvider
             // Pre-fill the draft with edit data
             setDraft({
               ...initialDraft,
-              phone: parsed.phone_number || '',
-              name: parsed.name || '',
-              sessionType: parsed.sessionType as SessionType || '',
+              phone: parsed.phone_number || "",
+              name: parsed.name || "",
+              sessionType: (parsed.sessionType as SessionType) || "",
               karaokeOption,
               liveOption,
               bandEquipment,
               recordingOption,
               participantCount: parsed.group_size || 1,
-              studio: parsed.studio as StudioName || '',
+              studio: (parsed.studio as StudioName) || "",
               recommendedStudio: studioSuggestion.recommendedStudio,
               allowedStudios: studioSuggestion.allowedStudios,
-              ratePerHour: parsed.total_amount ? parsed.total_amount / duration : 0,
-              date: parsed.date || '',
+              ratePerHour: parsed.total_amount
+                ? parsed.total_amount / duration
+                : 0,
+              date: parsed.date || "",
               selectedSlot: {
-                start: parsed.start_time || '',
-                end: parsed.end_time || '',
+                start: parsed.start_time || "",
+                end: parsed.end_time || "",
               },
               duration,
               isEditMode: true,
-              originalBookingId: parsed.originalBookingId || '',
+              originalBookingId: parsed.originalBookingId || "",
               originalChoices,
             });
             // Clear the edit data from sessionStorage after loading
-            sessionStorage.removeItem('editBookingData');
+            sessionStorage.removeItem("editBookingData");
             setIsLoaded(true);
             return;
           }
         }
-        
+
         // Otherwise load from localStorage
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
           const parsed = JSON.parse(stored);
-          setDraft(prev => ({ ...prev, ...parsed.draft }));
+          setDraft((prev) => ({ ...prev, ...parsed.draft }));
           // Don't restore step - always start at phone for security
         }
       } catch (e) {
-        console.error('Failed to load booking draft:', e);
+        console.error("Failed to load booking draft:", e);
       }
       setIsLoaded(true);
     }
@@ -347,17 +420,17 @@ export function BookingProvider({ children, mode = 'customer' }: BookingProvider
 
   // Save to localStorage on draft change
   useEffect(() => {
-    if (isLoaded && typeof window !== 'undefined') {
+    if (isLoaded && typeof window !== "undefined") {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ draft }));
       } catch (e) {
-        console.error('Failed to save booking draft:', e);
+        console.error("Failed to save booking draft:", e);
       }
     }
   }, [draft, isLoaded]);
 
   const updateDraft = useCallback((updates: Partial<BookingDraft>) => {
-    setDraft(prev => ({ ...prev, ...updates }));
+    setDraft((prev) => ({ ...prev, ...updates }));
   }, []);
 
   const setStep = useCallback((step: BookingStep) => {
@@ -382,39 +455,48 @@ export function BookingProvider({ children, mode = 'customer' }: BookingProvider
 
   const resetDraft = useCallback(() => {
     setDraft(initialDraft);
-    setCurrentStep('phone');
-    if (typeof window !== 'undefined') {
+    setCurrentStep("phone");
+    if (typeof window !== "undefined") {
       localStorage.removeItem(STORAGE_KEY);
     }
   }, []);
 
-  const canProceed = useCallback((step: BookingStep): boolean => {
-    switch (step) {
-      case 'phone':
-        return draft.phone.replace(/\D/g, '').length === 10;
-      case 'session':
-        return draft.sessionType !== '';
-      case 'participants':
-        if (draft.sessionType === 'Karaoke') return draft.karaokeOption !== '';
-        if (draft.sessionType === 'Live with musicians') return draft.liveOption !== '';
-        if (draft.sessionType === 'Only Drum Practice') return true;
-        if (draft.sessionType === 'Band') return draft.bandEquipment.length > 0;
-        if (draft.sessionType === 'Recording') return draft.recordingOption !== '';
-        return false;
-      case 'studio':
-        return draft.studio !== '' && draft.allowedStudios.includes(draft.studio);
-      case 'time':
-        return draft.date !== '' && draft.selectedSlot !== null;
-      case 'review':
-        return true;
-      case 'otp':
-        return draft.otpVerified || draft.deviceTrusted;
-      case 'confirm':
-        return true;
-      default:
-        return false;
-    }
-  }, [draft]);
+  const canProceed = useCallback(
+    (step: BookingStep): boolean => {
+      switch (step) {
+        case "phone":
+          return draft.phone.replace(/\D/g, "").length === 10;
+        case "session":
+          return draft.sessionType !== "";
+        case "participants":
+          if (draft.sessionType === "Karaoke")
+            return draft.karaokeOption !== "";
+          if (draft.sessionType === "Live with musicians")
+            return draft.liveOption !== "";
+          if (draft.sessionType === "Only Drum Practice") return true;
+          if (draft.sessionType === "Band")
+            return draft.bandEquipment.length > 0;
+          if (draft.sessionType === "Recording")
+            return draft.recordingOption !== "";
+          return false;
+        case "studio":
+          return (
+            draft.studio !== "" && draft.allowedStudios.includes(draft.studio)
+          );
+        case "time":
+          return draft.date !== "" && draft.selectedSlot !== null;
+        case "review":
+          return true;
+        case "otp":
+          return draft.otpVerified || draft.deviceTrusted;
+        case "confirm":
+          return true;
+        default:
+          return false;
+      }
+    },
+    [draft]
+  );
 
   const getStepNumber = useCallback((step: BookingStep): number => {
     return STEP_ORDER.indexOf(step) + 1;
@@ -442,27 +524,27 @@ export function BookingProvider({ children, mode = 'customer' }: BookingProvider
     if (draft.selectedSlot?.end !== original.end_time) return true;
 
     // Compare participant options based on session type
-    if (draft.sessionType === 'Karaoke') {
+    if (draft.sessionType === "Karaoke") {
       // Compare karaoke option by checking if group size category changed
       const originalKaraokeOption = (() => {
         const size = original.group_size || 1;
-        if (size <= 5) return '1_5';
-        if (size <= 10) return '6_10';
-        if (size <= 20) return '11_20';
-        return '21_30';
+        if (size <= 5) return "1_5";
+        if (size <= 10) return "6_10";
+        if (size <= 20) return "11_20";
+        return "21_30";
       })();
       if (draft.karaokeOption !== originalKaraokeOption) return true;
     }
 
-    if (draft.sessionType === 'Live with musicians') {
+    if (draft.sessionType === "Live with musicians") {
       // Compare live option by checking if group size category changed
       const originalLiveOption = (() => {
         const size = original.group_size || 1;
-        if (size <= 2) return '1_2';
-        if (size <= 4) return '3_4';
-        if (size === 5) return '5';
-        if (size <= 8) return '6_8';
-        return '9_12';
+        if (size <= 2) return "1_2";
+        if (size <= 4) return "3_4";
+        if (size === 5) return "5";
+        if (size <= 8) return "6_8";
+        return "9_12";
       })();
       if (draft.liveOption !== originalLiveOption) return true;
     }
@@ -489,10 +571,10 @@ export function BookingProvider({ children, mode = 'customer' }: BookingProvider
         resetDraft,
         canProceed,
         getStepNumber,
-        totalSteps: STEP_ORDER.length,
+        totalSteps: 7, // Display 7 steps to user (OTP/confirm counted as final step)
         loadEditData,
         hasChangesFromOriginal,
-        skipOtp: mode !== 'customer',
+        skipOtp: mode !== "customer",
       }}
     >
       {children}
@@ -503,7 +585,7 @@ export function BookingProvider({ children, mode = 'customer' }: BookingProvider
 export function useBooking() {
   const context = useContext(BookingContext);
   if (context === undefined) {
-    throw new Error('useBooking must be used within a BookingProvider');
+    throw new Error("useBooking must be used within a BookingProvider");
   }
   return context;
 }

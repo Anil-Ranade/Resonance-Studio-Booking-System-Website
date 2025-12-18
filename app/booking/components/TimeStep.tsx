@@ -541,12 +541,7 @@ export default function TimeStep() {
           <div className="space-y-1">
             <label className="text-xs text-zinc-400 flex items-center gap-1">
               <Building2 className="w-3 h-3" />
-              Studio{" "}
-              {selectedStudio !== draft.recommendedStudio && (
-                <span className="text-violet-400">
-                  • Upgraded from {draft.recommendedStudio}
-                </span>
-              )}
+              Studio
             </label>
 
             <div className="flex flex-wrap gap-1.5">
@@ -573,13 +568,10 @@ export default function TimeStep() {
                   >
                     <span>{studio.replace("Studio ", "")}</span>
                     <span className="opacity-70">₹{rate}/hr</span>
-                    {isRecommended && !isSelected && (
-                      <span className="text-[9px] px-1 py-0.5 rounded bg-violet-500/20 text-violet-400">
-                        Rec
-                      </span>
-                    )}
                     {showUpgrade && !isSelected && (
-                      <ArrowUp className="w-2.5 h-2.5 text-emerald-400" />
+                      <span className="flex items-center gap-0.5 text-emerald-400">
+                        <ArrowUp className="w-2.5 h-2.5" />
+                      </span>
                     )}
                     {date && (
                       <span
@@ -594,6 +586,36 @@ export default function TimeStep() {
                 );
               })}
             </div>
+
+            {/* Clear upgrade message - always show when upgrades are available */}
+            {draft.allowedStudios.some((s) => isUpgrade(s)) && (
+              <div
+                className={`mt-1.5 p-2 rounded-lg flex items-center gap-2 ${
+                  selectedStudio !== draft.recommendedStudio
+                    ? "bg-emerald-500/10 border border-emerald-500/30"
+                    : "bg-blue-500/10 border border-blue-500/30"
+                }`}
+              >
+                <ArrowUp
+                  className={`w-3.5 h-3.5 ${
+                    selectedStudio !== draft.recommendedStudio
+                      ? "text-emerald-400"
+                      : "text-blue-400"
+                  }`}
+                />
+                <span
+                  className={`text-xs ${
+                    selectedStudio !== draft.recommendedStudio
+                      ? "text-emerald-400"
+                      : "text-blue-400"
+                  }`}
+                >
+                  {selectedStudio !== draft.recommendedStudio
+                    ? `You've upgraded from ${draft.recommendedStudio} to ${selectedStudio} for more space and comfort.`
+                    : `You can upgrade to a larger studio for more space and comfort.`}
+                </span>
+              </div>
+            )}
           </div>
         )}
 
@@ -646,9 +668,6 @@ export default function TimeStep() {
                       }`}
                     >
                       {slab.label}
-                      <span className="ml-1 opacity-70">
-                        ({slab.duration}hr{slab.duration > 1 ? "s" : ""})
-                      </span>
                     </button>
                   );
                 })}
@@ -712,10 +731,6 @@ export default function TimeStep() {
                     }`}
                   >
                     {timeOption.label}
-                    <span className="ml-1 opacity-70">
-                      ({timeOption.duration}hr
-                      {timeOption.duration > 1 ? "s" : ""})
-                    </span>
                   </button>
                 );
               })}
@@ -727,17 +742,23 @@ export default function TimeStep() {
         {draft.selectedSlot && (
           <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/30">
             <div className="flex items-center justify-between">
-              <div>
-                <span className="text-xs text-violet-400">Your booking: </span>
-                <span className="text-white font-semibold text-sm">
-                  {formatTimeSlot(
-                    draft.selectedSlot.start,
-                    draft.selectedSlot.end
-                  )}
-                </span>
-                <span className="text-zinc-400 text-xs ml-1.5">
-                  ({duration}hr{duration > 1 ? "s" : ""})
-                </span>
+              <div className="flex items-center gap-3">
+                <div>
+                  <span className="text-xs text-violet-400">
+                    Your booking:{" "}
+                  </span>
+                  <span className="text-white font-semibold text-sm">
+                    {formatTimeSlot(
+                      draft.selectedSlot.start,
+                      draft.selectedSlot.end
+                    )}
+                  </span>
+                </div>
+                <div className="px-2 py-0.5 rounded bg-violet-500/20 border border-violet-500/30">
+                  <span className="text-violet-300 font-medium text-xs">
+                    {duration} {duration === 1 ? "hour" : "hours"}
+                  </span>
+                </div>
               </div>
               <span className="text-violet-400 font-bold">
                 ₹{(draft.ratePerHour * duration).toLocaleString("en-IN")}

@@ -271,11 +271,11 @@ export default function ConfirmStep() {
           } bg-zinc-900/80 backdrop-blur`}
         >
           <div className="flex items-center gap-1 mb-2">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
+            {[1, 2, 3, 4, 5, 6, 7].map((step) => (
               <div
                 key={step}
                 className={`h-1.5 flex-1 rounded-full transition-colors ${
-                  step <= 8
+                  step <= 7
                     ? draft.isEditMode
                       ? "bg-blue-500"
                       : "bg-violet-500"
@@ -284,7 +284,7 @@ export default function ConfirmStep() {
               />
             ))}
           </div>
-          <p className="text-center text-xs text-zinc-500">Step 8 of 8</p>
+          <p className="text-center text-xs text-zinc-500">Step 7 of 7</p>
         </footer>
       </div>
     );
@@ -364,11 +364,11 @@ export default function ConfirmStep() {
           } bg-zinc-900/80 backdrop-blur`}
         >
           <div className="flex items-center gap-1 mb-2">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
+            {[1, 2, 3, 4, 5, 6, 7].map((step) => (
               <div
                 key={step}
                 className={`h-1.5 flex-1 rounded-full transition-colors ${
-                  step <= 8
+                  step <= 7
                     ? draft.isEditMode
                       ? "bg-blue-500"
                       : "bg-violet-500"
@@ -377,7 +377,7 @@ export default function ConfirmStep() {
               />
             ))}
           </div>
-          <p className="text-center text-xs text-zinc-500">Step 8 of 8</p>
+          <p className="text-center text-xs text-zinc-500">Step 7 of 7</p>
         </footer>
       </div>
     );
@@ -546,11 +546,11 @@ export default function ConfirmStep() {
       >
         {/* Progress bar */}
         <div className="flex items-center gap-1 mb-2">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
+          {[1, 2, 3, 4, 5, 6, 7].map((step) => (
             <div
               key={step}
               className={`h-1.5 flex-1 rounded-full transition-colors ${
-                step <= 8
+                step <= 7
                   ? draft.isEditMode
                     ? "bg-blue-500"
                     : "bg-violet-500"
@@ -560,7 +560,7 @@ export default function ConfirmStep() {
           ))}
         </div>
         <p className="text-center text-xs text-zinc-500 mb-3">
-          Step 8 of 8 - Complete!
+          Step 7 of 7 - Complete!
         </p>
 
         {/* Action Buttons */}

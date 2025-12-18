@@ -69,7 +69,7 @@ export default function StudiosPage() {
         "Adapts to your needs. Primarily recommended for karaoke rehearsal groups.",
       capacity: {
         live: "4-5 musicians",
-        karaoke: "Up to 12 participants",
+        karaoke: "Up to 10 participants",
       },
       features: [
         '46" TV screen for karaoke',

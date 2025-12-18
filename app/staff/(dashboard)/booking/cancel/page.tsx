@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
-import { getSession } from '@/lib/supabaseAuth';
+import { useState, useCallback } from "react";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { getSession } from "@/lib/supabaseAuth";
 import {
   ArrowLeft,
   Phone,
@@ -17,7 +17,7 @@ import {
   CheckCircle2,
   XCircle,
   Check,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface Booking {
   id: string;
@@ -28,7 +28,7 @@ interface Booking {
   date: string;
   start_time: string;
   end_time: string;
-  status: 'confirmed' | 'cancelled' | 'completed' | 'no_show';
+  status: "confirmed" | "cancelled" | "completed" | "no_show";
   rate_per_hour: number;
   total_amount: number;
   created_at: string;
@@ -38,16 +38,16 @@ interface Booking {
 }
 
 const statusConfig = {
-  confirmed: { color: 'green', icon: CheckCircle2, label: 'Confirmed' },
-  cancelled: { color: 'red', icon: XCircle, label: 'Cancelled' },
-  completed: { color: 'violet', icon: CheckCircle2, label: 'Completed' },
-  no_show: { color: 'zinc', icon: XCircle, label: 'No Show' },
+  confirmed: { color: "green", icon: CheckCircle2, label: "Confirmed" },
+  cancelled: { color: "red", icon: XCircle, label: "Cancelled" },
+  completed: { color: "violet", icon: CheckCircle2, label: "Completed" },
+  no_show: { color: "zinc", icon: XCircle, label: "No Show" },
 };
 
 export default function StaffCancelBookingPage() {
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [bookings, setBookings] = useState<Booking[] | null>(null);
   const [searched, setSearched] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -59,44 +59,47 @@ export default function StaffCancelBookingPage() {
     try {
       const session = await getSession();
       if (session?.access_token) {
-        localStorage.setItem('staffAccessToken', session.access_token);
+        localStorage.setItem("staffAccessToken", session.access_token);
         return session.access_token;
       }
-      return localStorage.getItem('staffAccessToken');
+      return localStorage.getItem("staffAccessToken");
     } catch {
-      return localStorage.getItem('staffAccessToken');
+      return localStorage.getItem("staffAccessToken");
     }
   }, []);
 
   const fetchBookings = async () => {
-    if (phone.replace(/\D/g, '').length !== 10) {
-      setError('Please enter a valid 10-digit phone number');
+    if (phone.replace(/\D/g, "").length !== 10) {
+      setError("Please enter a valid 10-digit phone number");
       return;
     }
 
     setIsLoading(true);
-    setError('');
+    setError("");
     setSearched(true);
 
     try {
       const token = await getAccessToken();
-      const response = await fetch(`/api/staff/bookings?phone=${encodeURIComponent(phone.trim())}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(
+        `/api/staff/bookings?phone=${encodeURIComponent(phone.trim())}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch bookings');
+        throw new Error(data.error || "Failed to fetch bookings");
       }
 
       // Filter only confirmed bookings that can be cancelled
-      const cancellableBookings = (data.bookings || []).filter((b: Booking) => 
-        b.status === 'confirmed'
+      const cancellableBookings = (data.bookings || []).filter(
+        (b: Booking) => b.status === "confirmed"
       );
-      
+
       setBookings(cancellableBookings);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch bookings');
+      setError(err instanceof Error ? err.message : "Failed to fetch bookings");
       setBookings(null);
     } finally {
       setIsLoading(false);
@@ -111,65 +114,67 @@ export default function StaffCancelBookingPage() {
   const handleSelectBooking = (booking: Booking) => {
     setSelectedBooking(booking);
     setCancelled(false);
-    setError('');
+    setError("");
   };
 
   const confirmCancellation = async () => {
     if (!selectedBooking) return;
 
     setIsCancelling(true);
-    setError('');
+    setError("");
 
     try {
       const token = await getAccessToken();
-      const response = await fetch('/api/staff/bookings', {
-        method: 'PUT',
+      const response = await fetch("/api/staff/bookings", {
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           id: selectedBooking.id,
-          status: 'cancelled',
+          status: "cancelled",
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to cancel booking');
+        throw new Error(data.error || "Failed to cancel booking");
       }
 
       setCancelled(true);
       // Update local state
-      setBookings(prev => prev?.filter(b => b.id !== selectedBooking.id) || null);
+      setBookings(
+        (prev) => prev?.filter((b) => b.id !== selectedBooking.id) || null
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to cancel booking');
+      setError(err instanceof Error ? err.message : "Failed to cancel booking");
     } finally {
       setIsCancelling(false);
     }
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-IN', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
+    return new Date(dateStr).toLocaleDateString("en-IN", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
     });
   };
 
   const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
+    const [hours, minutes] = time.split(":").map(Number);
+    const period = hours >= 12 ? "PM" : "AM";
     const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-    return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
+    return `${displayHour}:${minutes.toString().padStart(2, "0")} ${period}`;
   };
 
   const resetFlow = () => {
     setSelectedBooking(null);
     setCancelled(false);
-    setError('');
+    setError("");
   };
 
   return (
@@ -182,7 +187,9 @@ export default function StaffCancelBookingPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">Cancel Booking</h1>
-            <p className="text-zinc-400 text-sm">Cancel a booking you created</p>
+            <p className="text-zinc-400 text-sm">
+              Cancel a booking you created
+            </p>
           </div>
         </div>
         <Link
@@ -214,7 +221,7 @@ export default function StaffCancelBookingPage() {
               {cancelled ? (
                 // Success State
                 <div className="text-center py-4">
-                  <motion.div 
+                  <motion.div
                     className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -222,13 +229,17 @@ export default function StaffCancelBookingPage() {
                   >
                     <Check className="w-8 h-8 text-green-400" />
                   </motion.div>
-                  <h3 className="text-xl font-bold text-white mb-2">Booking Cancelled</h3>
-                  <p className="text-zinc-400 text-sm mb-6">The booking has been successfully cancelled.</p>
-                  
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    Booking Cancelled
+                  </h3>
+                  <p className="text-zinc-400 text-sm mb-6">
+                    The booking has been successfully cancelled.
+                  </p>
+
                   <div className="flex gap-3 justify-center">
                     <motion.button
                       onClick={resetFlow}
-                      className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-semibold py-3 px-6 rounded-xl hover:opacity-90 transition-opacity"
+                      className="btn-primary py-3 px-6"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
@@ -244,8 +255,12 @@ export default function StaffCancelBookingPage() {
                       <XCircle className="w-6 h-6 text-red-400" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-white">Confirm Cancellation</h3>
-                      <p className="text-zinc-400 text-sm">This action cannot be undone</p>
+                      <h3 className="text-xl font-bold text-white">
+                        Confirm Cancellation
+                      </h3>
+                      <p className="text-zinc-400 text-sm">
+                        This action cannot be undone
+                      </p>
                     </div>
                   </div>
 
@@ -253,33 +268,49 @@ export default function StaffCancelBookingPage() {
                     <div className="space-y-3 text-sm">
                       <div className="flex justify-between">
                         <span className="text-zinc-400">Customer</span>
-                        <span className="text-white font-medium">{selectedBooking.name || 'N/A'}</span>
+                        <span className="text-white font-medium">
+                          {selectedBooking.name || "N/A"}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-zinc-400">Phone</span>
-                        <span className="text-white">{selectedBooking.phone_number}</span>
+                        <span className="text-white">
+                          {selectedBooking.phone_number}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-zinc-400">Session</span>
-                        <span className="text-white font-medium">{selectedBooking.session_type}</span>
+                        <span className="text-white font-medium">
+                          {selectedBooking.session_type}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-zinc-400">Studio</span>
-                        <span className="text-white">{selectedBooking.studio}</span>
+                        <span className="text-white">
+                          {selectedBooking.studio}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-zinc-400">Date</span>
-                        <span className="text-white">{formatDate(selectedBooking.date)}</span>
+                        <span className="text-white">
+                          {formatDate(selectedBooking.date)}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-zinc-400">Time</span>
                         <span className="text-white">
-                          {formatTime(selectedBooking.start_time)} - {formatTime(selectedBooking.end_time)}
+                          {formatTime(selectedBooking.start_time)} -{" "}
+                          {formatTime(selectedBooking.end_time)}
                         </span>
                       </div>
                       <div className="flex justify-between pt-3 border-t border-white/10">
                         <span className="text-zinc-400">Total Amount</span>
-                        <span className="text-white font-bold">₹{selectedBooking.total_amount?.toLocaleString('en-IN') || 0}</span>
+                        <span className="text-white font-bold">
+                          ₹
+                          {selectedBooking.total_amount?.toLocaleString(
+                            "en-IN"
+                          ) || 0}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -316,7 +347,7 @@ export default function StaffCancelBookingPage() {
                           Cancelling...
                         </>
                       ) : (
-                        'Confirm Cancellation'
+                        "Confirm Cancellation"
                       )}
                     </motion.button>
                   </div>
@@ -328,28 +359,33 @@ export default function StaffCancelBookingPage() {
       </AnimatePresence>
 
       {/* Phone Search */}
-      <motion.div 
+      <motion.div
         className="glass rounded-2xl p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <p className="text-zinc-400 text-sm mb-4">Enter customer&apos;s phone number to find bookings you&apos;ve created</p>
+        <p className="text-zinc-400 text-sm mb-4">
+          Enter customer&apos;s phone number to find bookings you&apos;ve
+          created
+        </p>
         <form onSubmit={handleSubmit} className="flex gap-3">
           <div className="relative flex-1">
             <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
             <input
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+              onChange={(e) =>
+                setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
+              }
               placeholder="Enter 10-digit phone number"
-              className="w-full py-3 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+              className="w-full py-3 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
               maxLength={10}
             />
           </div>
           <motion.button
             type="submit"
             disabled={isLoading || phone.length !== 10}
-            className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-semibold px-6 py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="btn-primary px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
@@ -366,7 +402,7 @@ export default function StaffCancelBookingPage() {
       {/* Error */}
       <AnimatePresence>
         {error && !selectedBooking && (
-          <motion.div 
+          <motion.div
             className="p-4 rounded-xl bg-red-500/10 border border-red-500/20"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -382,14 +418,14 @@ export default function StaffCancelBookingPage() {
 
       {/* Results */}
       {searched && bookings && bookings.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          <h3 className="text-lg font-medium text-white mb-4">Select a booking to cancel</h3>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <h3 className="text-lg font-medium text-white mb-4">
+            Select a booking to cancel
+          </h3>
           <div className="space-y-4">
             {bookings.map((booking, index) => {
-              const config = statusConfig[booking.status] || statusConfig.confirmed;
+              const config =
+                statusConfig[booking.status] || statusConfig.confirmed;
               const StatusIcon = config.icon;
 
               return (
@@ -403,38 +439,55 @@ export default function StaffCancelBookingPage() {
                 >
                   {/* Status Badge */}
                   <div className="flex items-center justify-between mb-3">
-                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full bg-${config.color}-500/20`}>
-                      <StatusIcon className={`w-3.5 h-3.5 text-${config.color}-400`} />
-                      <span className={`text-xs font-medium text-${config.color}-400`}>{config.label}</span>
+                    <div
+                      className={`flex items-center gap-2 px-3 py-1 rounded-full bg-${config.color}-500/20`}
+                    >
+                      <StatusIcon
+                        className={`w-3.5 h-3.5 text-${config.color}-400`}
+                      />
+                      <span
+                        className={`text-xs font-medium text-${config.color}-400`}
+                      >
+                        {config.label}
+                      </span>
                     </div>
-                    <span className="text-xs text-zinc-500">ID: {booking.id.slice(0, 8)}</span>
+                    <span className="text-xs text-zinc-500">
+                      ID: {booking.id.slice(0, 8)}
+                    </span>
                   </div>
 
                   {/* Customer Info */}
                   <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/10">
-                    <span className="text-white font-medium">{booking.name || 'N/A'}</span>
+                    <span className="text-white font-medium">
+                      {booking.name || "N/A"}
+                    </span>
                     <span className="text-zinc-500">•</span>
-                    <span className="text-zinc-400 text-sm">{booking.phone_number}</span>
+                    <span className="text-zinc-400 text-sm">
+                      {booking.phone_number}
+                    </span>
                   </div>
 
                   {/* Booking Details */}
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div className="flex items-center gap-2">
-                      <Mic className="w-4 h-4 text-teal-400" />
+                      <Mic className="w-4 h-4 text-violet-400" />
                       <span className="text-white">{booking.session_type}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-teal-400" />
+                      <Building2 className="w-4 h-4 text-violet-400" />
                       <span className="text-zinc-300">{booking.studio}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-teal-400" />
-                      <span className="text-zinc-300">{formatDate(booking.date)}</span>
+                      <Calendar className="w-4 h-4 text-violet-400" />
+                      <span className="text-zinc-300">
+                        {formatDate(booking.date)}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-teal-400" />
+                      <Clock className="w-4 h-4 text-violet-400" />
                       <span className="text-zinc-300">
-                        {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
+                        {formatTime(booking.start_time)} -{" "}
+                        {formatTime(booking.end_time)}
                       </span>
                     </div>
                   </div>
@@ -442,7 +495,9 @@ export default function StaffCancelBookingPage() {
                   {/* Total */}
                   <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
                     <span className="text-zinc-400 text-sm">Total Amount</span>
-                    <span className="text-white font-bold">₹{booking.total_amount?.toLocaleString('en-IN') || 0}</span>
+                    <span className="text-white font-bold">
+                      ₹{booking.total_amount?.toLocaleString("en-IN") || 0}
+                    </span>
                   </div>
                 </motion.div>
               );
@@ -453,14 +508,18 @@ export default function StaffCancelBookingPage() {
 
       {/* No Bookings Found */}
       {searched && bookings && bookings.length === 0 && (
-        <motion.div 
+        <motion.div
           className="glass rounded-2xl p-8 text-center"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
           <Calendar className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-          <h3 className="text-lg font-medium text-white mb-1">No Cancellable Bookings Found</h3>
-          <p className="text-zinc-400 text-sm">No confirmed bookings that you created found for this phone number.</p>
+          <h3 className="text-lg font-medium text-white mb-1">
+            No Cancellable Bookings Found
+          </h3>
+          <p className="text-zinc-400 text-sm">
+            No confirmed bookings that you created found for this phone number.
+          </p>
         </motion.div>
       )}
     </div>

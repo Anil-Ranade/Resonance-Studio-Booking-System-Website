@@ -300,7 +300,7 @@ export default function HomePage() {
     {
       name: "Studio B",
       size: "Medium",
-      capacity: "Up to 12 people",
+      capacity: "Up to 10 people",
       price: "From ₹250/hr",
       color: "bg-yellow-700",
       id: "studio-b",

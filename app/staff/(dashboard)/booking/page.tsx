@@ -1,69 +1,69 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { CalendarPlus, Edit, XCircle, Eye, Building2 } from 'lucide-react';
-import Link from 'next/link';
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { CalendarPlus, Edit, XCircle, Eye, Building2 } from "lucide-react";
+import Link from "next/link";
 
 const menuOptions = [
   {
-    id: 'new',
-    title: 'New Booking',
-    description: 'Create a new studio booking',
+    id: "new",
+    title: "New Booking",
+    description: "Create a new studio booking",
     icon: CalendarPlus,
-    href: '/staff/booking/new',
-    color: 'teal',
+    href: "/staff/booking/new",
+    color: "violet",
   },
   {
-    id: 'change',
-    title: 'Change Existing Booking',
-    description: 'Modify an existing booking',
+    id: "change",
+    title: "Change Existing Booking",
+    description: "Modify an existing booking",
     icon: Edit,
-    href: '/staff/booking/edit',
-    color: 'blue',
+    href: "/staff/booking/edit",
+    color: "blue",
   },
   {
-    id: 'cancel',
-    title: 'Cancel Existing Booking',
-    description: 'Cancel a scheduled booking',
+    id: "cancel",
+    title: "Cancel Existing Booking",
+    description: "Cancel a scheduled booking",
     icon: XCircle,
-    href: '/staff/booking/cancel',
-    color: 'red',
+    href: "/staff/booking/cancel",
+    color: "red",
   },
   {
-    id: 'view',
-    title: 'View My Bookings',
-    description: 'See all your scheduled sessions',
+    id: "view",
+    title: "View My Bookings",
+    description: "See all your scheduled sessions",
     icon: Eye,
-    href: '/staff/bookings',
-    color: 'emerald',
+    href: "/staff/bookings",
+    color: "emerald",
   },
 ];
 
 const colorClasses = {
-  teal: {
-    bg: 'bg-teal-600 hover:bg-teal-500',
-    border: 'border-teal-500/30',
-    icon: 'text-teal-400',
-    glow: 'hover:shadow-teal-500/20',
+  violet: {
+    bg: "bg-violet-600 hover:bg-violet-500",
+    border: "border-violet-500/30",
+    icon: "text-violet-400",
+    glow: "hover:shadow-violet-500/20",
   },
   blue: {
-    bg: 'bg-blue-600 hover:bg-blue-500',
-    border: 'border-blue-500/30',
-    icon: 'text-blue-400',
-    glow: 'hover:shadow-blue-500/20',
+    bg: "bg-blue-600 hover:bg-blue-500",
+    border: "border-blue-500/30",
+    icon: "text-blue-400",
+    glow: "hover:shadow-blue-500/20",
   },
   red: {
-    bg: 'bg-red-600 hover:bg-red-500',
-    border: 'border-red-500/30',
-    icon: 'text-red-400',
-    glow: 'hover:shadow-red-500/20',
+    bg: "bg-red-600 hover:bg-red-500",
+    border: "border-red-500/30",
+    icon: "text-red-400",
+    glow: "hover:shadow-red-500/20",
   },
   emerald: {
-    bg: 'bg-emerald-600 hover:bg-emerald-500',
-    border: 'border-emerald-500/30',
-    icon: 'text-emerald-400',
-    glow: 'hover:shadow-emerald-500/20',
+    bg: "bg-emerald-600 hover:bg-emerald-500",
+    border: "border-emerald-500/30",
+    icon: "text-emerald-400",
+    glow: "hover:shadow-emerald-500/20",
   },
 };
 
@@ -80,10 +80,12 @@ export default function StaffBookingMenu() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <Building2 className="w-7 h-7 text-teal-400" />
+            <Building2 className="w-7 h-7 text-violet-400" />
             Booking Management
           </h1>
-          <p className="text-zinc-400 mt-1">Create and manage studio bookings</p>
+          <p className="text-zinc-400 mt-1">
+            Create and manage studio bookings
+          </p>
         </div>
         <Link
           href="/staff/bookings"
@@ -101,9 +103,10 @@ export default function StaffBookingMenu() {
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
         {menuOptions.map((option, index) => {
-          const colors = colorClasses[option.color as keyof typeof colorClasses];
+          const colors =
+            colorClasses[option.color as keyof typeof colorClasses];
           const Icon = option.icon;
-          
+
           return (
             <motion.button
               key={option.id}
@@ -133,7 +136,8 @@ export default function StaffBookingMenu() {
         className="glass rounded-xl p-4 text-center"
       >
         <p className="text-zinc-400 text-sm">
-          You can create new bookings and edit/cancel bookings that you&apos;ve created.
+          You can create new bookings and edit/cancel bookings that you&apos;ve
+          created.
         </p>
       </motion.div>
     </div>

@@ -106,7 +106,7 @@ export default function ReviewStep() {
           ? hasChanges
             ? "Confirm the updated details below"
             : "No changes detected"
-          : "Please confirm the details below"
+          : ""
       }
       showNext={true}
       nextLabel={draft.isEditMode ? "Confirm Update" : "Confirm Booking"}
@@ -163,39 +163,6 @@ export default function ReviewStep() {
                 </span>
                 <span className="text-zinc-400 text-xs">
                   ({draft.duration}hr{draft.duration > 1 ? "s" : ""})
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Contact Info */}
-        <div
-          className={`p-2.5 rounded-xl bg-zinc-800/50 border ${
-            draft.isEditMode ? "border-blue-700/30" : "border-zinc-700"
-          }`}
-        >
-          <h3 className="text-xs font-medium text-zinc-400 mb-1.5">
-            Contact Information
-          </h3>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-zinc-400 text-xs">Phone:</span>
-              <span className="text-white font-medium text-xs">
-                {formatPhone(draft.phone)}
-              </span>
-            </div>
-            {draft.name && (
-              <div className="flex items-center gap-2">
-                <span className="text-zinc-400 text-xs">Name:</span>
-                <span className="text-white text-xs">{draft.name}</span>
-              </div>
-            )}
-            {draft.email && (
-              <div className="flex items-center gap-2">
-                <span className="text-zinc-400 text-xs">Email:</span>
-                <span className="text-white text-xs truncate">
-                  {draft.email}
                 </span>
               </div>
             )}

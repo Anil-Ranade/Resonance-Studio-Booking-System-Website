@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowRight, Loader2, Edit3 } from "lucide-react";
 import { useBooking } from "../contexts/BookingContext";
 
 interface StepLayoutProps {
-  title: string;
+  title: ReactNode;
   subtitle?: string;
   children: ReactNode;
   showBack?: boolean;
@@ -155,7 +155,7 @@ export default function StepLayout({
           </p>
 
           <div className="flex items-center gap-3">
-            {showBack && stepIndex > 0 && (
+            {showBack && (stepIndex > 0 || onBack) && (
               <button
                 onClick={handleBack}
                 className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-zinc-800 text-white font-medium hover:bg-zinc-700 transition-colors"
