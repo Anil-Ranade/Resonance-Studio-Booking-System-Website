@@ -4,13 +4,13 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Mic, 
-  Music, 
-  Radio, 
-  Video, 
-  Calendar, 
-  ArrowRight, 
+import {
+  Mic,
+  Music,
+  Radio,
+  Video,
+  Calendar,
+  ArrowRight,
   Headphones,
   Award,
   Clock,
@@ -29,9 +29,9 @@ import {
   Building2,
   Check,
   Shield,
-  RefreshCw
+  RefreshCw,
 } from "lucide-react";
-import { useDevicePerformance } from '@/lib/useDevicePerformance';
+import { useDevicePerformance } from "@/lib/useDevicePerformance";
 
 // Helper function to safely parse JSON responses
 async function safeJsonParse(response: Response) {
@@ -39,8 +39,8 @@ async function safeJsonParse(response: Response) {
   try {
     return JSON.parse(text);
   } catch {
-    console.error('Failed to parse response as JSON:', text.substring(0, 200));
-    throw new Error('Server returned an invalid response. Please try again.');
+    console.error("Failed to parse response as JSON:", text.substring(0, 200));
+    throw new Error("Server returned an invalid response. Please try again.");
   }
 }
 
@@ -52,40 +52,40 @@ interface Booking {
   date: string;
   start_time: string;
   end_time: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
+  status: "pending" | "confirmed" | "cancelled" | "completed" | "no_show";
   total_amount: number;
   phone_number: string;
   name?: string;
 }
 
-type ActionMode = 'change' | 'cancel' | 'view' | null;
+type ActionMode = "change" | "cancel" | "view" | null;
 
 // Optimized animation variants - shorter durations for better performance
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.3, ease: "easeOut" }
+  transition: { duration: 0.3, ease: "easeOut" },
 };
 
 const fadeInLeft = {
   initial: { opacity: 0, x: -20 },
   animate: { opacity: 1, x: 0 },
-  transition: { duration: 0.3, ease: "easeOut" }
+  transition: { duration: 0.3, ease: "easeOut" },
 };
 
 const fadeInRight = {
   initial: { opacity: 0, x: 20 },
   animate: { opacity: 1, x: 0 },
-  transition: { duration: 0.3, ease: "easeOut" }
+  transition: { duration: 0.3, ease: "easeOut" },
 };
 
 const staggerContainer = {
   animate: {
     transition: {
       staggerChildren: 0.05,
-      delayChildren: 0.05
-    }
-  }
+      delayChildren: 0.05,
+    },
+  },
 };
 
 // Simplified floating animation for better mobile performance
@@ -94,62 +94,66 @@ const floatingAnimation = {
   transition: {
     duration: 4,
     repeat: Infinity,
-    ease: "easeInOut" as const
-  }
+    ease: "easeInOut" as const,
+  },
 };
 
 export default function HomePage() {
   const router = useRouter();
-  
+
   // Modal state for Change/Cancel/View flows
   const [actionMode, setActionMode] = useState<ActionMode>(null);
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [step, setStep] = useState<'phone' | 'select' | 'view' | 'cancel-confirm' | 'success'>('phone');
-  
+  const [step, setStep] = useState<
+    "phone" | "select" | "view" | "cancel-confirm" | "success"
+  >("phone");
+
   // Loading state for cancel
   const [isCancelling, setIsCancelling] = useState(false);
 
   const resetModal = () => {
     setActionMode(null);
-    setPhoneNumber('');
-    setError('');
+    setPhoneNumber("");
+    setError("");
     setBookings([]);
     setSelectedBooking(null);
-    setStep('phone');
+    setStep("phone");
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
   const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
+    const [hours, minutes] = time.split(":").map(Number);
+    const period = hours >= 12 ? "PM" : "AM";
     const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-    return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
+    return `${displayHour}:${minutes.toString().padStart(2, "0")} ${period}`;
   };
 
   const handleFetchBookings = async () => {
-    const normalized = phoneNumber.replace(/\D/g, '');
+    const normalized = phoneNumber.replace(/\D/g, "");
     if (normalized.length !== 10) {
-      setError('Please enter a valid 10-digit phone number');
+      setError("Please enter a valid 10-digit phone number");
       return;
     }
 
     setIsLoading(true);
-    setError('');
+    setError("");
 
     try {
-      const response = await fetch(`/api/bookings/upcoming?phone=${normalized}`);
+      const response = await fetch(
+        `/api/bookings/upcoming?phone=${normalized}`
+      );
       const data = await safeJsonParse(response);
 
       if (data.error) {
@@ -157,14 +161,14 @@ export default function HomePage() {
       }
 
       setBookings(data.bookings || []);
-      
+
       if ((data.bookings || []).length === 0) {
-        setError('No upcoming bookings found for this phone number');
+        setError("No upcoming bookings found for this phone number");
       } else {
-        setStep('select');
+        setStep("select");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch bookings');
+      setError(err instanceof Error ? err.message : "Failed to fetch bookings");
     } finally {
       setIsLoading(false);
     }
@@ -172,12 +176,12 @@ export default function HomePage() {
 
   const handleSelectBooking = (booking: Booking) => {
     setSelectedBooking(booking);
-    
-    if (actionMode === 'view') {
-      setStep('view');
-    } else if (actionMode === 'cancel') {
-      setStep('cancel-confirm');
-    } else if (actionMode === 'change') {
+
+    if (actionMode === "view") {
+      setStep("view");
+    } else if (actionMode === "cancel") {
+      setStep("cancel-confirm");
+    } else if (actionMode === "change") {
       // Navigate to booking page with edit mode and pre-filled data
       const bookingData = {
         editMode: true,
@@ -192,45 +196,45 @@ export default function HomePage() {
         name: booking.name,
         total_amount: booking.total_amount,
       };
-      sessionStorage.setItem('editBookingData', JSON.stringify(bookingData));
-      router.push('/booking');
+      sessionStorage.setItem("editBookingData", JSON.stringify(bookingData));
+      router.push("/booking");
     }
   };
 
   // Cancel booking directly without OTP
   const handleConfirmCancel = async () => {
     if (!selectedBooking) {
-      setError('No booking selected');
+      setError("No booking selected");
       return;
     }
 
     setIsCancelling(true);
-    setError('');
+    setError("");
 
     try {
-      const response = await fetch('/api/bookings/cancel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/bookings/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bookingId: selectedBooking.id,
           phone: phoneNumber,
-          reason: 'Cancelled by user',
+          reason: "Cancelled by user",
         }),
       });
 
       const data = await safeJsonParse(response);
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to cancel booking');
+        throw new Error(data.error || "Failed to cancel booking");
       }
 
-      setStep('success');
-      
+      setStep("success");
+
       setTimeout(() => {
         resetModal();
       }, 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to cancel booking');
+      setError(err instanceof Error ? err.message : "Failed to cancel booking");
     } finally {
       setIsCancelling(false);
     }
@@ -240,7 +244,8 @@ export default function HomePage() {
     {
       icon: <Guitar className="w-7 h-7" />,
       title: "Rehearsal Studios",
-      description: "Three professional studios for bands, musicians & karaoke sessions",
+      description:
+        "Three professional studios for bands, musicians & karaoke sessions",
       color: "from-violet-500 to-purple-600",
       shadowColor: "shadow-violet-500/25",
     },
@@ -254,14 +259,16 @@ export default function HomePage() {
     {
       icon: <Video className="w-7 h-7" />,
       title: "Video Recording",
-      description: "True 4K quality video with professional editing at ₹800/song",
+      description:
+        "True 4K quality video with professional editing at ₹800/song",
       color: "from-red-500 to-orange-500",
       shadowColor: "shadow-red-500/25",
     },
     {
       icon: <MonitorPlay className="w-7 h-7" />,
       title: "Green Screen",
-      description: "Professional chroma key setup for music videos at ₹1,200/song",
+      description:
+        "Professional chroma key setup for music videos at ₹1,200/song",
       color: "from-emerald-500 to-teal-500",
       shadowColor: "shadow-emerald-500/25",
     },
@@ -282,16 +289,53 @@ export default function HomePage() {
   ];
 
   const studios = [
-    { name: "Studio A", size: "Large", capacity: "Up to 30 people", price: "From ₹350/hr", color: "bg-blue-500", id: "studio-a" },
-    { name: "Studio B", size: "Medium", capacity: "Up to 12 people", price: "From ₹250/hr", color: "bg-yellow-700", id: "studio-b" },
-    { name: "Studio C", size: "Compact", capacity: "Up to 5 people", price: "From ₹200/hr", color: "bg-emerald-500", id: "studio-c" },
+    {
+      name: "Studio A",
+      size: "Large",
+      capacity: "Up to 30 people",
+      price: "From ₹350/hr",
+      color: "bg-blue-500",
+      id: "studio-a",
+    },
+    {
+      name: "Studio B",
+      size: "Medium",
+      capacity: "Up to 12 people",
+      price: "From ₹250/hr",
+      color: "bg-yellow-700",
+      id: "studio-b",
+    },
+    {
+      name: "Studio C",
+      size: "Compact",
+      capacity: "Up to 5 people",
+      price: "From ₹200/hr",
+      color: "bg-emerald-500",
+      id: "studio-c",
+    },
   ];
 
   const stats = [
-    { value: "10+", label: "Years Experience", icon: <Award className="w-5 h-5" /> },
-    { value: "3", label: "Professional Studios", icon: <Headphones className="w-5 h-5" /> },
-    { value: "1,000+", label: "Happy Customers", icon: <Users className="w-5 h-5" /> },
-    { value: "08:00-22:00", label: "Daily Hours", icon: <Clock className="w-5 h-5" /> },
+    {
+      value: "10+",
+      label: "Years Experience",
+      icon: <Award className="w-5 h-5" />,
+    },
+    {
+      value: "3",
+      label: "Professional Studios",
+      icon: <Headphones className="w-5 h-5" />,
+    },
+    {
+      value: "1,000+",
+      label: "Happy Customers",
+      icon: <Users className="w-5 h-5" />,
+    },
+    {
+      value: "8 AM - 10 PM",
+      label: "Daily Hours",
+      icon: <Clock className="w-5 h-5" />,
+    },
   ];
 
   // Get device performance info to optimize animations
@@ -303,29 +347,29 @@ export default function HomePage() {
       <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden">
         {/* Animated Background */}
         <div className="absolute inset-0 bg-grid opacity-20" />
-        
+
         {/* Floating Orbs - Only show on desktop or when not reducing animations */}
         {!shouldReduceAnimations && (
           <>
-            <motion.div 
+            <motion.div
               className="absolute top-20 left-10 w-72 h-72 bg-violet-600/30 rounded-full blur-[100px] will-change-transform"
-              animate={{ 
+              animate={{
                 scale: [1, 1.2, 1],
-                opacity: [0.3, 0.4, 0.3]
+                opacity: [0.3, 0.4, 0.3],
               }}
               transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
             />
-            <motion.div 
+            <motion.div
               className="absolute bottom-20 right-10 w-96 h-96 bg-purple-600/25 rounded-full blur-[120px] will-change-transform"
-              animate={{ 
+              animate={{
                 scale: [1.1, 1, 1.1],
-                opacity: [0.3, 0.2, 0.3]
+                opacity: [0.3, 0.2, 0.3],
               }}
               transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
             />
           </>
         )}
-        
+
         {/* Static orbs for mobile/reduced motion */}
         {shouldReduceAnimations && (
           <>
@@ -333,50 +377,56 @@ export default function HomePage() {
             <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-600/15 rounded-full blur-[120px]" />
           </>
         )}
-        
+
         {/* Central gradient - static on mobile */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-violet-600/10 to-purple-600/10 rounded-full blur-[150px]" />
 
         {/* Floating Music Notes - only on desktop */}
         {!isMobile && !shouldReduceAnimations && (
           <>
-            <motion.div 
+            <motion.div
               className="absolute top-1/4 right-[15%] text-violet-500/20"
               animate={floatingAnimation}
             >
               <Music className="w-16 h-16" />
             </motion.div>
-            <motion.div 
+            <motion.div
               className="absolute bottom-1/3 left-[10%] text-purple-500/20"
-              animate={{ ...floatingAnimation, transition: { ...floatingAnimation.transition, delay: 1 } }}
+              animate={{
+                ...floatingAnimation,
+                transition: { ...floatingAnimation.transition, delay: 1 },
+              }}
             >
               <Headphones className="w-20 h-20" />
             </motion.div>
-            <motion.div 
+            <motion.div
               className="absolute top-1/3 left-[20%] text-violet-500/15"
-              animate={{ ...floatingAnimation, transition: { ...floatingAnimation.transition, delay: 0.5 } }}
+              animate={{
+                ...floatingAnimation,
+                transition: { ...floatingAnimation.transition, delay: 0.5 },
+              }}
             >
               <Mic className="w-12 h-12" />
             </motion.div>
           </>
         )}
-        
-        <motion.div 
+
+        <motion.div
           className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center"
           initial="initial"
           animate="animate"
           variants={staggerContainer}
         >
           {/* Main Heading */}
-          <motion.h1 
+          <motion.h1
             className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight"
             variants={fadeInUp}
           >
             <span className="text-white">Where Music</span>
             <br />
-            <motion.span 
+            <motion.span
               className="gradient-text inline-block"
-              animate={{ 
+              animate={{
                 backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
               }}
               transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
@@ -387,12 +437,16 @@ export default function HomePage() {
           </motion.h1>
 
           {/* Subheading */}
-          <motion.p 
+          <motion.p
             className="text-lg sm:text-xl text-zinc-400 max-w-3xl mx-auto mb-8 leading-relaxed"
             variants={fadeInUp}
           >
-            Three State-of-the-Art Studios dedicated to Premium Karaoke and Live Rehearsal Sessions, Band Practices and Professional Recording Services. <br className="hidden sm:block" />
-            <span className="text-violet-400">Your creative space awaits here.</span>
+            Three State-of-the-Art Studios dedicated to Premium Karaoke and Live
+            Rehearsal Sessions, Band Practices and Professional Recording
+            Services. <br className="hidden sm:block" />
+            <span className="text-violet-400">
+              Your creative space awaits here.
+            </span>
           </motion.p>
 
           {/* Quick links for studios and booking system */}
@@ -401,29 +455,33 @@ export default function HomePage() {
             variants={fadeInUp}
           >
             <Link href="/studios">
-              <motion.div 
+              <motion.div
                 className="group flex items-center justify-center sm:justify-between gap-3 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.02] hover:border-violet-500/30 hover:bg-white/[0.05] transition-all duration-300"
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
               >
                 <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-violet-400 flex-shrink-0" />
-                <span className="text-white text-sm sm:text-base md:text-lg leading-snug text-center sm:text-left flex-1">Click here to know about our various studios and services</span>
+                <span className="text-white text-sm sm:text-base md:text-lg leading-snug text-center sm:text-left flex-1">
+                  Click here to know about our various studios and services
+                </span>
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-violet-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
               </motion.div>
             </Link>
             <Link href="/booking">
-              <motion.div 
+              <motion.div
                 className="group flex items-center justify-center sm:justify-between gap-3 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.02] hover:border-emerald-500/30 hover:bg-white/[0.05] transition-all duration-300"
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
               >
                 <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 flex-shrink-0" />
-                <span className="text-white text-sm sm:text-base md:text-lg leading-snug text-center sm:text-left flex-1">For Online Booking System ( New / Change / Cancel / View ) click here</span>
+                <span className="text-white text-sm sm:text-base md:text-lg leading-snug text-center sm:text-left flex-1">
+                  For Online Booking System ( New / Change / Cancel / View )
+                  click here
+                </span>
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
               </motion.div>
             </Link>
           </motion.div>
-
         </motion.div>
       </section>
 
@@ -431,13 +489,13 @@ export default function HomePage() {
       <section className="py-24 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-violet-950/10 to-transparent" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <motion.div 
+          <motion.div
             className="text-center mb-16"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <motion.span 
+            <motion.span
               className="inline-block px-4 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-sm font-medium mb-4"
               whileInView={{ scale: [0.9, 1] }}
               viewport={{ once: true }}
@@ -448,11 +506,12 @@ export default function HomePage() {
               Three Unique Studios
             </h2>
             <p className="text-zinc-400 max-w-2xl mx-auto">
-              Each studio is acoustically treated and equipped with professional gear for rehearsals, recording, and karaoke
+              Each studio is acoustically treated and equipped with professional
+              gear for rehearsals, recording, and karaoke
             </p>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             className="grid grid-cols-1 md:grid-cols-3 gap-6"
             initial="initial"
             whileInView="animate"
@@ -468,17 +527,25 @@ export default function HomePage() {
                 >
                   {/* Glow effect on hover */}
                   <div className="absolute inset-0 bg-gradient-to-br from-violet-600/0 to-purple-600/0 group-hover:from-violet-600/5 group-hover:to-purple-600/5 transition-all duration-500" />
-                  
-                  <div className={`w-3 h-3 ${studio.color} rounded-full mb-4`} />
-                  <h3 className="text-2xl font-bold text-white mb-1">{studio.name}</h3>
-                  <p className="text-violet-400 text-sm font-medium mb-4">{studio.size}</p>
+
+                  <div
+                    className={`w-3 h-3 ${studio.color} rounded-full mb-4`}
+                  />
+                  <h3 className="text-2xl font-bold text-white mb-1">
+                    {studio.name}
+                  </h3>
+                  <p className="text-violet-400 text-sm font-medium mb-4">
+                    {studio.size}
+                  </p>
                   <div className="space-y-2 mb-6">
                     <p className="text-zinc-400 text-sm flex items-center gap-2">
                       <Users className="w-4 h-4" /> {studio.capacity}
                     </p>
-                    <p className="text-amber-400 font-semibold">{studio.price}</p>
+                    <p className="text-amber-400 font-semibold">
+                      {studio.price}
+                    </p>
                   </div>
-                  <motion.span 
+                  <motion.span
                     className="inline-flex items-center gap-2 text-sm text-violet-400 hover:text-violet-300 transition-colors"
                     whileHover={{ x: 5 }}
                   >
@@ -494,26 +561,25 @@ export default function HomePage() {
       {/* Services Section */}
       <section className="py-24 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
+          <motion.div
             className="text-center mb-16"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <motion.span 
-              className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium mb-4"
-            >
+            <motion.span className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium mb-4">
               What We Offer
             </motion.span>
             <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
               Complete Audio-Video Services
             </h2>
             <p className="text-zinc-400 max-w-2xl mx-auto">
-              From rehearsals to professional recordings, we have everything you need under one roof
+              From rehearsals to professional recordings, we have everything you
+              need under one roof
             </p>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
             initial="initial"
             whileInView="animate"
@@ -525,21 +591,29 @@ export default function HomePage() {
                 key={index}
                 className="group relative bg-gradient-to-br from-white/[0.05] to-transparent backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300"
                 variants={fadeInUp}
-                whileHover={{ y: -5, scale: 1.02, transition: { duration: 0.2 } }}
+                whileHover={{
+                  y: -5,
+                  scale: 1.02,
+                  transition: { duration: 0.2 },
+                }}
               >
-                <motion.div 
+                <motion.div
                   className={`w-14 h-14 rounded-xl bg-gradient-to-br ${service.color} flex items-center justify-center text-white mb-5 shadow-lg ${service.shadowColor}`}
                   whileHover={{ scale: 1.1, rotate: 5 }}
                 >
                   {service.icon}
                 </motion.div>
-                <h3 className="text-xl font-bold text-white mb-2">{service.title}</h3>
-                <p className="text-zinc-400 text-sm leading-relaxed">{service.description}</p>
+                <h3 className="text-xl font-bold text-white mb-2">
+                  {service.title}
+                </h3>
+                <p className="text-zinc-400 text-sm leading-relaxed">
+                  {service.description}
+                </p>
               </motion.div>
             ))}
           </motion.div>
 
-          <motion.div 
+          <motion.div
             className="text-center mt-12"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
@@ -560,7 +634,7 @@ export default function HomePage() {
       {/* Stats Section */}
       <section className="py-20 border-y border-white/5 bg-gradient-to-r from-violet-950/20 via-purple-950/20 to-violet-950/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
+          <motion.div
             className="grid grid-cols-2 md:grid-cols-4 gap-8"
             initial="initial"
             whileInView="animate"
@@ -568,18 +642,18 @@ export default function HomePage() {
             variants={staggerContainer}
           >
             {stats.map((stat, index) => (
-              <motion.div 
-                key={index} 
+              <motion.div
+                key={index}
                 className="text-center"
                 variants={fadeInUp}
               >
-                <motion.div 
+                <motion.div
                   className="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-400 mx-auto mb-4"
                   whileHover={{ scale: 1.1, rotate: 10 }}
                 >
                   {stat.icon}
                 </motion.div>
-                <motion.div 
+                <motion.div
                   className="text-3xl sm:text-4xl font-bold text-white mb-1"
                   initial={{ opacity: 0, scale: 0.5 }}
                   whileInView={{ opacity: 1, scale: 1 }}
@@ -598,7 +672,7 @@ export default function HomePage() {
       {/* CTA Section */}
       <section className="py-24">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
+          <motion.div
             className="relative rounded-[2rem] overflow-hidden"
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -608,21 +682,21 @@ export default function HomePage() {
             {/* Background gradient */}
             <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-purple-600 to-violet-700" />
             <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
-            
+
             {/* Floating elements */}
-            <motion.div 
+            <motion.div
               className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full blur-xl"
               animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
               transition={{ duration: 4, repeat: Infinity }}
             />
-            <motion.div 
+            <motion.div
               className="absolute bottom-10 right-10 w-32 h-32 bg-white/10 rounded-full blur-xl"
               animate={{ scale: [1.2, 1, 1.2], opacity: [0.5, 0.3, 0.5] }}
               transition={{ duration: 5, repeat: Infinity }}
             />
-            
+
             <div className="relative z-10 p-10 sm:p-16 text-center">
-              <motion.h2 
+              <motion.h2
                 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-6"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -631,14 +705,15 @@ export default function HomePage() {
               >
                 Ready to Make Some Noise?
               </motion.h2>
-              <motion.p 
+              <motion.p
                 className="text-white/80 text-lg max-w-2xl mx-auto mb-10"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
               >
-                Book your session today. No advance payment required – just show up and create!
+                Book your session today. No advance payment required – just show
+                up and create!
               </motion.p>
               <motion.div
                 className="flex flex-col sm:flex-row items-center justify-center gap-4"
@@ -707,30 +782,46 @@ export default function HomePage() {
               </button>
 
               {/* Phone Input Step */}
-              {step === 'phone' && (
+              {step === "phone" && (
                 <>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      actionMode === 'change' ? 'bg-blue-500/20' : 
-                      actionMode === 'cancel' ? 'bg-red-500/20' : 'bg-emerald-500/20'
-                    }`}>
-                      {actionMode === 'change' && <Edit3 className="w-6 h-6 text-blue-400" />}
-                      {actionMode === 'cancel' && <X className="w-6 h-6 text-red-400" />}
-                      {actionMode === 'view' && <Eye className="w-6 h-6 text-emerald-400" />}
+                    <div
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                        actionMode === "change"
+                          ? "bg-blue-500/20"
+                          : actionMode === "cancel"
+                          ? "bg-red-500/20"
+                          : "bg-emerald-500/20"
+                      }`}
+                    >
+                      {actionMode === "change" && (
+                        <Edit3 className="w-6 h-6 text-blue-400" />
+                      )}
+                      {actionMode === "cancel" && (
+                        <X className="w-6 h-6 text-red-400" />
+                      )}
+                      {actionMode === "view" && (
+                        <Eye className="w-6 h-6 text-emerald-400" />
+                      )}
                     </div>
                     <div>
                       <h3 className="text-xl font-bold text-white">
-                        {actionMode === 'change' && 'Change Booking'}
-                        {actionMode === 'cancel' && 'Cancel Booking'}
-                        {actionMode === 'view' && 'View Booking'}
+                        {actionMode === "change" && "Change Booking"}
+                        {actionMode === "cancel" && "Cancel Booking"}
+                        {actionMode === "view" && "View Booking"}
                       </h3>
-                      <p className="text-zinc-400 text-sm">Enter your phone number to find your bookings</p>
+                      <p className="text-zinc-400 text-sm">
+                        Enter your phone number to find your bookings
+                      </p>
                     </div>
                   </div>
 
                   <div className="space-y-4">
                     <div>
-                      <label htmlFor="phone" className="block text-sm font-medium text-zinc-400 mb-2.5">
+                      <label
+                        htmlFor="phone"
+                        className="block text-sm font-medium text-zinc-400 mb-2.5"
+                      >
                         Phone Number
                       </label>
                       <div className="relative">
@@ -740,11 +831,13 @@ export default function HomePage() {
                           id="phone"
                           value={phoneNumber}
                           onChange={(e) => {
-                            const value = e.target.value.replace(/\D/g, '');
+                            const value = e.target.value.replace(/\D/g, "");
                             setPhoneNumber(value);
-                            setError('');
+                            setError("");
                           }}
-                          onKeyDown={(e) => e.key === 'Enter' && handleFetchBookings()}
+                          onKeyDown={(e) =>
+                            e.key === "Enter" && handleFetchBookings()
+                          }
                           placeholder="Enter 10-digit number"
                           className="w-full py-3.5 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
                           maxLength={10}
@@ -764,10 +857,16 @@ export default function HomePage() {
                     <motion.button
                       type="button"
                       onClick={handleFetchBookings}
-                      disabled={isLoading || phoneNumber.replace(/\D/g, '').length !== 10}
+                      disabled={
+                        isLoading ||
+                        phoneNumber.replace(/\D/g, "").length !== 10
+                      }
                       className={`w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
-                        actionMode === 'change' ? 'bg-blue-500 hover:bg-blue-600' :
-                        actionMode === 'cancel' ? 'bg-red-500 hover:bg-red-600' : 'bg-emerald-500 hover:bg-emerald-600'
+                        actionMode === "change"
+                          ? "bg-blue-500 hover:bg-blue-600"
+                          : actionMode === "cancel"
+                          ? "bg-red-500 hover:bg-red-600"
+                          : "bg-emerald-500 hover:bg-emerald-600"
                       } text-white disabled:opacity-50 disabled:cursor-not-allowed`}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -789,24 +888,39 @@ export default function HomePage() {
               )}
 
               {/* Booking Selection Step */}
-              {step === 'select' && (
+              {step === "select" && (
                 <>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      actionMode === 'change' ? 'bg-blue-500/20' : 
-                      actionMode === 'cancel' ? 'bg-red-500/20' : 'bg-emerald-500/20'
-                    }`}>
-                      <Calendar className={`w-6 h-6 ${
-                        actionMode === 'change' ? 'text-blue-400' : 
-                        actionMode === 'cancel' ? 'text-red-400' : 'text-emerald-400'
-                      }`} />
+                    <div
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                        actionMode === "change"
+                          ? "bg-blue-500/20"
+                          : actionMode === "cancel"
+                          ? "bg-red-500/20"
+                          : "bg-emerald-500/20"
+                      }`}
+                    >
+                      <Calendar
+                        className={`w-6 h-6 ${
+                          actionMode === "change"
+                            ? "text-blue-400"
+                            : actionMode === "cancel"
+                            ? "text-red-400"
+                            : "text-emerald-400"
+                        }`}
+                      />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-white">Select Booking</h3>
+                      <h3 className="text-xl font-bold text-white">
+                        Select Booking
+                      </h3>
                       <p className="text-zinc-400 text-sm">
-                        {actionMode === 'change' && 'Choose the booking you want to modify'}
-                        {actionMode === 'cancel' && 'Choose the booking you want to cancel'}
-                        {actionMode === 'view' && 'Choose the booking you want to view'}
+                        {actionMode === "change" &&
+                          "Choose the booking you want to modify"}
+                        {actionMode === "cancel" &&
+                          "Choose the booking you want to cancel"}
+                        {actionMode === "view" &&
+                          "Choose the booking you want to view"}
                       </p>
                     </div>
                   </div>
@@ -819,9 +933,12 @@ export default function HomePage() {
                         onClick={() => handleSelectBooking(booking)}
                         className={`w-full p-4 rounded-xl border text-left transition-all ${
                           selectedBooking?.id === booking.id
-                            ? actionMode === 'change' ? 'bg-blue-500/20 border-blue-500' :
-                              actionMode === 'cancel' ? 'bg-red-500/20 border-red-500' : 'bg-emerald-500/20 border-emerald-500'
-                            : 'bg-white/5 border-white/10 hover:border-white/20'
+                            ? actionMode === "change"
+                              ? "bg-blue-500/20 border-blue-500"
+                              : actionMode === "cancel"
+                              ? "bg-red-500/20 border-red-500"
+                              : "bg-emerald-500/20 border-emerald-500"
+                            : "bg-white/5 border-white/10 hover:border-white/20"
                         }`}
                         whileTap={{ scale: 0.99 }}
                       >
@@ -829,7 +946,9 @@ export default function HomePage() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               <Mic className="w-4 h-4 text-violet-400" />
-                              <span className="text-white font-medium">{booking.session_type}</span>
+                              <span className="text-white font-medium">
+                                {booking.session_type}
+                              </span>
                             </div>
                             <div className="grid grid-cols-2 gap-2 text-sm">
                               <div className="flex items-center gap-2 text-zinc-400">
@@ -842,16 +961,22 @@ export default function HomePage() {
                               </div>
                               <div className="flex items-center gap-2 text-zinc-400 col-span-2">
                                 <Clock className="w-4 h-4" />
-                                {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
+                                {formatTime(booking.start_time)} -{" "}
+                                {formatTime(booking.end_time)}
                               </div>
                             </div>
                           </div>
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                            selectedBooking?.id === booking.id
-                              ? actionMode === 'change' ? 'bg-blue-500 border-blue-500' :
-                                actionMode === 'cancel' ? 'bg-red-500 border-red-500' : 'bg-emerald-500 border-emerald-500'
-                              : 'border-zinc-500'
-                          }`}>
+                          <div
+                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                              selectedBooking?.id === booking.id
+                                ? actionMode === "change"
+                                  ? "bg-blue-500 border-blue-500"
+                                  : actionMode === "cancel"
+                                  ? "bg-red-500 border-red-500"
+                                  : "bg-emerald-500 border-emerald-500"
+                                : "border-zinc-500"
+                            }`}
+                          >
                             {selectedBooking?.id === booking.id && (
                               <Check className="w-3 h-3 text-white" />
                             )}
@@ -862,7 +987,11 @@ export default function HomePage() {
                   </div>
 
                   <button
-                    onClick={() => { setStep('phone'); setSelectedBooking(null); setError(''); }}
+                    onClick={() => {
+                      setStep("phone");
+                      setSelectedBooking(null);
+                      setError("");
+                    }}
                     className="w-full text-center text-zinc-500 hover:text-zinc-300 text-sm font-medium transition-colors"
                   >
                     ← Back to phone number
@@ -871,15 +1000,19 @@ export default function HomePage() {
               )}
 
               {/* View Booking Details Step */}
-              {step === 'view' && selectedBooking && (
+              {step === "view" && selectedBooking && (
                 <>
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
                       <Eye className="w-6 h-6 text-emerald-400" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-white">Booking Details</h3>
-                      <p className="text-zinc-400 text-sm">ID: {selectedBooking.id.slice(0, 8)}</p>
+                      <h3 className="text-xl font-bold text-white">
+                        Booking Details
+                      </h3>
+                      <p className="text-zinc-400 text-sm">
+                        ID: {selectedBooking.id.slice(0, 8)}
+                      </p>
                     </div>
                   </div>
 
@@ -889,7 +1022,9 @@ export default function HomePage() {
                         <Mic className="w-5 h-5 text-zinc-500" />
                         <span className="text-zinc-400">Session Type</span>
                       </div>
-                      <span className="text-white font-medium">{selectedBooking.session_type}</span>
+                      <span className="text-white font-medium">
+                        {selectedBooking.session_type}
+                      </span>
                     </div>
                     {selectedBooking.session_details && (
                       <div className="flex justify-between items-center py-3 border-b border-white/10">
@@ -897,7 +1032,9 @@ export default function HomePage() {
                           <Users className="w-5 h-5 text-zinc-500" />
                           <span className="text-zinc-400">Details</span>
                         </div>
-                        <span className="text-white font-medium">{selectedBooking.session_details}</span>
+                        <span className="text-white font-medium">
+                          {selectedBooking.session_details}
+                        </span>
                       </div>
                     )}
                     <div className="flex justify-between items-center py-3 border-b border-white/10">
@@ -905,14 +1042,18 @@ export default function HomePage() {
                         <Building2 className="w-5 h-5 text-zinc-500" />
                         <span className="text-zinc-400">Studio</span>
                       </div>
-                      <span className="text-white font-medium">{selectedBooking.studio}</span>
+                      <span className="text-white font-medium">
+                        {selectedBooking.studio}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center py-3 border-b border-white/10">
                       <div className="flex items-center gap-3">
                         <Calendar className="w-5 h-5 text-zinc-500" />
                         <span className="text-zinc-400">Date</span>
                       </div>
-                      <span className="text-white font-medium">{formatDate(selectedBooking.date)}</span>
+                      <span className="text-white font-medium">
+                        {formatDate(selectedBooking.date)}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center py-3 border-b border-white/10">
                       <div className="flex items-center gap-3">
@@ -920,7 +1061,8 @@ export default function HomePage() {
                         <span className="text-zinc-400">Time</span>
                       </div>
                       <span className="text-white font-medium">
-                        {formatTime(selectedBooking.start_time)} - {formatTime(selectedBooking.end_time)}
+                        {formatTime(selectedBooking.start_time)} -{" "}
+                        {formatTime(selectedBooking.end_time)}
                       </span>
                     </div>
                     {selectedBooking.total_amount && (
@@ -929,7 +1071,8 @@ export default function HomePage() {
                           <span className="text-zinc-400">Total Amount</span>
                         </div>
                         <span className="text-emerald-400 font-bold text-lg">
-                          ₹{selectedBooking.total_amount.toLocaleString('en-IN')}
+                          ₹
+                          {selectedBooking.total_amount.toLocaleString("en-IN")}
                         </span>
                       </div>
                     )}
@@ -937,7 +1080,10 @@ export default function HomePage() {
 
                   <div className="flex gap-3">
                     <button
-                      onClick={() => { setStep('select'); setSelectedBooking(null); }}
+                      onClick={() => {
+                        setStep("select");
+                        setSelectedBooking(null);
+                      }}
                       className="flex-1 py-3 rounded-xl border border-white/10 text-zinc-400 font-medium hover:bg-white/5 transition-colors"
                     >
                       ← Back
@@ -953,15 +1099,19 @@ export default function HomePage() {
               )}
 
               {/* Cancel Confirmation Step */}
-              {step === 'cancel-confirm' && selectedBooking && (
+              {step === "cancel-confirm" && selectedBooking && (
                 <>
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center">
                       <X className="w-6 h-6 text-red-400" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-white">Confirm Cancellation</h3>
-                      <p className="text-zinc-400 text-sm">This action requires verification</p>
+                      <h3 className="text-xl font-bold text-white">
+                        Confirm Cancellation
+                      </h3>
+                      <p className="text-zinc-400 text-sm">
+                        This action requires verification
+                      </p>
                     </div>
                   </div>
 
@@ -969,7 +1119,9 @@ export default function HomePage() {
                   <div className="bg-white/5 rounded-xl p-4 mb-6">
                     <div className="flex items-center gap-3 mb-3">
                       <Mic className="w-5 h-5 text-violet-400" />
-                      <span className="text-white font-medium">{selectedBooking.session_type}</span>
+                      <span className="text-white font-medium">
+                        {selectedBooking.session_type}
+                      </span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="flex items-center gap-2 text-zinc-400">
@@ -982,13 +1134,15 @@ export default function HomePage() {
                       </div>
                       <div className="flex items-center gap-2 text-zinc-400 col-span-2">
                         <Clock className="w-4 h-4" />
-                        {formatTime(selectedBooking.start_time)} - {formatTime(selectedBooking.end_time)}
+                        {formatTime(selectedBooking.start_time)} -{" "}
+                        {formatTime(selectedBooking.end_time)}
                       </div>
                     </div>
                   </div>
 
                   <p className="text-zinc-400 text-sm mb-6 text-center">
-                    Are you sure you want to cancel this booking? This action cannot be undone.
+                    Are you sure you want to cancel this booking? This action
+                    cannot be undone.
                   </p>
 
                   {error && (
@@ -1000,7 +1154,11 @@ export default function HomePage() {
 
                   <div className="flex gap-3">
                     <button
-                      onClick={() => { setStep('select'); setSelectedBooking(null); setError(''); }}
+                      onClick={() => {
+                        setStep("select");
+                        setSelectedBooking(null);
+                        setError("");
+                      }}
                       className="flex-1 py-3 rounded-xl border border-white/10 text-zinc-400 font-medium hover:bg-white/5 transition-colors"
                     >
                       Keep Booking
@@ -1026,19 +1184,25 @@ export default function HomePage() {
               )}
 
               {/* Success Step */}
-              {step === 'success' && (
+              {step === "success" && (
                 <div className="text-center py-4">
                   <motion.div
                     className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ type: 'spring', damping: 15 }}
+                    transition={{ type: "spring", damping: 15 }}
                   >
                     <CheckCircle2 className="w-8 h-8 text-green-400" />
                   </motion.div>
-                  <h3 className="text-xl font-bold text-white mb-2">Booking Cancelled</h3>
-                  <p className="text-zinc-400">Your booking has been successfully cancelled.</p>
-                  <p className="text-zinc-500 text-sm mt-2">A cancellation email has been sent to your email address.</p>
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    Booking Cancelled
+                  </h3>
+                  <p className="text-zinc-400">
+                    Your booking has been successfully cancelled.
+                  </p>
+                  <p className="text-zinc-500 text-sm mt-2">
+                    A cancellation email has been sent to your email address.
+                  </p>
                 </div>
               )}
             </motion.div>
