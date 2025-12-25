@@ -99,6 +99,15 @@ The following headers are enforced via `next.config.ts`:
 - **Past booking protection** - Past bookings auto-marked as completed
 - **Google Sheets audit logging** - All booking actions logged for accountability
 - **Admin/Staff attribution** - Bookings created by team are clearly marked
+- **WhatsApp reminder tracking** - All reminders logged in audit_logs table
+- **Booking restore control** - Only cancelled/no-show bookings can be restored
+
+### 8. Invoice Generation Security
+
+- **Client-side generation** - Invoices generated in browser, no server-side PDF generation
+- **No sensitive data exposure** - Minimal customer info, no payment details stored
+- **Print-only functionality** - No download or storage of invoice files
+- **Browser security** - Uses browser's native print capabilities
 
 ## Reporting a Vulnerability
 
@@ -160,6 +169,10 @@ Current status (as of December 2025): **0 vulnerabilities**
 - Integrated **Google Sheets** for secure booking audit logs
 - Added **duplicate booking prevention** across all booking APIs
 - Implemented **admin/staff booking creation** with proper attribution
+- Added **WhatsApp reminder API** with admin authentication and audit logging
+- Implemented **invoice printing** with client-side generation (no server storage)
+- Added **booking restore/delete** functionality with proper authorization
+- Added **24-hour time window** restriction for WhatsApp reminders
 
 ## Contact
 
