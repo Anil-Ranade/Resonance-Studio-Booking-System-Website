@@ -603,14 +603,13 @@ Text Colors:
 
 ### Email Notification Types
 
-| Email Type                     | Purpose                                     |
-| ------------------------------ | ------------------------------------------- |
-| **OTP Verification**           | 6-digit code for login verification         |
-| **Booking Confirmation**       | Confirmation of new booking with details    |
-| **Admin Booking Confirmation** | Confirmation for bookings created by team   |
-| **Booking Update**             | Notification when booking is modified       |
-| **Booking Cancellation**       | Confirmation of cancelled booking           |
-| **24h Booking Reminder**       | Reminder email sent 24 hours before session |
+| Email Type                     | Purpose                                   |
+| ------------------------------ | ----------------------------------------- |
+| **OTP Verification**           | 6-digit code for login verification       |
+| **Booking Confirmation**       | Confirmation of new booking with details  |
+| **Admin Booking Confirmation** | Confirmation for bookings created by team |
+| **Booking Update**             | Notification when booking is modified     |
+| **Booking Cancellation**       | Confirmation of cancelled booking         |
 
 ---
 
@@ -627,7 +626,6 @@ Text Colors:
 | `availability_slots` | Blocked time slots per studio                                      |
 | `booking_settings`   | System configuration (min/max hours, buffer, etc.)                 |
 | `login_otps`         | OTP verification records (bcrypt hashed)                           |
-| `reminders`          | Scheduled booking reminders                                        |
 | `rate_cards`         | Pricing per studio, session type, and sub-option                   |
 | `audit_logs`         | Admin action tracking for accountability                           |
 | `trusted_devices`    | Verified device fingerprints                                       |
@@ -714,14 +712,6 @@ Text Colors:
 | `POST`   | `/api/admin/staff` | Create new staff member |
 | `PUT`    | `/api/admin/staff` | Update staff member     |
 | `DELETE` | `/api/admin/staff` | Deactivate staff member |
-
-### CRON Jobs
-
-| Method | Endpoint                   | Description                              |
-| ------ | -------------------------- | ---------------------------------------- |
-| `GET`  | `/api/cron/send-reminders` | Process and send pending reminder emails |
-
-> **Note**: The CRON endpoint should be called periodically (e.g., every 15 minutes) by an external scheduler. Protect it with `CRON_SECRET` environment variable.
 
 ---
 
