@@ -172,6 +172,28 @@ const isBookingTimePassed = (date: string, endTime: string): boolean => {
   return now > bookingDate;
 };
 
+// Helper function to check if booking is within 24 hours before start time
+// Returns true if: current time is within 24 hours before booking start AND event hasn't passed
+const isWithin24HoursBeforeBooking = (date: string, startTime: string, endTime: string): boolean => {
+  const now = new Date();
+  
+  // Check if event has already passed
+  if (isBookingTimePassed(date, endTime)) {
+    return false;
+  }
+  
+  // Calculate booking start datetime
+  const bookingStartDate = new Date(date);
+  const [startHours, startMinutes] = startTime.split(":").map(Number);
+  bookingStartDate.setHours(startHours, startMinutes, 0, 0);
+  
+  // Calculate 24 hours before booking start
+  const twentyFourHoursBefore = new Date(bookingStartDate.getTime() - 24 * 60 * 60 * 1000);
+  
+  // Return true if current time is between 24 hours before and booking start
+  return now >= twentyFourHoursBefore && now <= bookingStartDate;
+};
+
 // Get effective status - if time has passed and booking is confirmed, treat as completed
 const getEffectiveStatus = (booking: Booking): Booking["status"] => {
   if (
@@ -617,9 +639,7 @@ export default function BookingsManagementPage() {
 
     const effectiveStatus = getEffectiveStatus(booking);
     const matchesStatus =
-      statusFilter === "all" ||
-      booking.status === statusFilter ||
-      (statusFilter === "completed" && effectiveStatus === "completed");
+      statusFilter === "all" || effectiveStatus === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -803,10 +823,10 @@ export default function BookingsManagementPage() {
                         );
                       })()}
                     </td>
-                    {/* Reminder Column */}
+                    {/* Reminder Column - Only available within 24 hours before booking */}
                     <td className="p-4 text-center">
                       {booking.status === "confirmed" &&
-                      !isBookingTimePassed(booking.date, booking.end_time) ? (
+                      isWithin24HoursBeforeBooking(booking.date, booking.start_time, booking.end_time) ? (
                         <button
                           onClick={async (e) => {
                             e.stopPropagation();
@@ -1067,10 +1087,11 @@ See you soon!`;
                   </div>
                 )}
 
-                {/* WhatsApp Reminder Button - Only show for confirmed upcoming bookings */}
+                {/* WhatsApp Reminder Button - Only show for confirmed bookings within 24 hours before start */}
                 {selectedBooking.status === "confirmed" &&
-                  !isBookingTimePassed(
+                  isWithin24HoursBeforeBooking(
                     selectedBooking.date,
+                    selectedBooking.start_time,
                     selectedBooking.end_time
                   ) && (
                     <div className="pt-4 border-t border-white/10">

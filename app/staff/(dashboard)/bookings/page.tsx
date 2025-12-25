@@ -607,9 +607,7 @@ export default function StaffBookingsPage() {
 
     const effectiveStatus = getEffectiveStatus(booking);
     const matchesStatus =
-      statusFilter === "all" ||
-      booking.status === statusFilter ||
-      (statusFilter === "completed" && effectiveStatus === "completed");
+      statusFilter === "all" || effectiveStatus === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
