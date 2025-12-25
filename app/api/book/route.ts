@@ -330,38 +330,6 @@ export async function POST(request: Request) {
       console.log("[Book API] Email notifications disabled - Resend credentials not configured or no user email");
     }
 
-    // Insert reminders (immediate confirmation, 24h before, 1h before)
-    const bookingDateTime = new Date(`${date}T${start_time}:00`);
-    const reminders = [
-      {
-        booking_id: booking.id,
-        scheduled_at: new Date().toISOString(),
-        type: "confirmation",
-        status: "sent",
-      },
-      {
-        booking_id: booking.id,
-        scheduled_at: new Date(bookingDateTime.getTime() - 24 * 60 * 60 * 1000).toISOString(),
-        type: "24h_reminder",
-        status: "pending",
-      },
-      {
-        booking_id: booking.id,
-        scheduled_at: new Date(bookingDateTime.getTime() - 1 * 60 * 60 * 1000).toISOString(),
-        type: "1h_reminder",
-        status: "pending",
-      },
-    ];
-
-    const { error: reminderError } = await supabaseServer
-      .from("reminders")
-      .insert(reminders);
-
-    if (reminderError) {
-      // Log error but don't fail the booking
-      console.error("[Book API] Failed to insert reminders:", reminderError);
-    }
-
     // Log booking to Google Sheet
     try {
       await logNewBooking({
@@ -648,39 +616,6 @@ export async function PUT(request: Request) {
       } catch (emailError) {
         console.error("[Book API PUT] Failed to send email update notification:", emailError);
       }
-    }
-
-    // Update reminders - cancel old ones and create new ones
-    try {
-      // Cancel existing pending reminders
-      await supabaseServer
-        .from("reminders")
-        .update({ status: "cancelled" })
-        .eq("booking_id", original_booking_id)
-        .eq("status", "pending");
-
-      // Create new reminders based on updated date/time
-      const bookingDateTime = new Date(`${date}T${start_time}:00`);
-      const reminders = [
-        {
-          booking_id: original_booking_id,
-          scheduled_at: new Date(bookingDateTime.getTime() - 24 * 60 * 60 * 1000).toISOString(),
-          type: "24h_reminder",
-          status: "pending",
-        },
-        {
-          booking_id: original_booking_id,
-          scheduled_at: new Date(bookingDateTime.getTime() - 1 * 60 * 60 * 1000).toISOString(),
-          type: "1h_reminder",
-          status: "pending",
-        },
-      ];
-
-      await supabaseServer
-        .from("reminders")
-        .insert(reminders);
-    } catch (reminderError) {
-      console.error("[Book API PUT] Failed to update reminders:", reminderError);
     }
 
     // Log booking update to Google Sheet

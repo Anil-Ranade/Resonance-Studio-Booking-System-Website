@@ -92,21 +92,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Cancel any pending reminders for this booking
-    try {
-      const { error: reminderError } = await supabaseServer
-        .from("reminders")
-        .update({ status: "cancelled" })
-        .eq("booking_id", bookingId)
-        .eq("status", "pending");
-
-      if (reminderError) {
-        console.error("[Cancel Silent] Failed to cancel reminders:", reminderError);
-      }
-    } catch (reminderError) {
-      console.error("[Cancel Silent] Error cancelling reminders:", reminderError);
-    }
-
     console.log(`[Cancel Silent] Booking ${bookingId} cancelled for modification`);
 
     return NextResponse.json({

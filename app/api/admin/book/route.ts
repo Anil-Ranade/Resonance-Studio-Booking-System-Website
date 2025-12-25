@@ -286,37 +286,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Insert reminders
-    const bookingDateTime = new Date(`${date}T${start_time}:00`);
-    const reminders = [
-      {
-        booking_id: booking.id,
-        scheduled_at: new Date().toISOString(),
-        type: "confirmation",
-        status: "sent",
-      },
-      {
-        booking_id: booking.id,
-        scheduled_at: new Date(bookingDateTime.getTime() - 24 * 60 * 60 * 1000).toISOString(),
-        type: "24h_reminder",
-        status: "pending",
-      },
-      {
-        booking_id: booking.id,
-        scheduled_at: new Date(bookingDateTime.getTime() - 1 * 60 * 60 * 1000).toISOString(),
-        type: "1h_reminder",
-        status: "pending",
-      },
-    ];
-
-    const { error: reminderError } = await supabaseServer
-      .from("reminders")
-      .insert(reminders);
-
-    if (reminderError) {
-      console.error("[Admin Book API] Failed to insert reminders:", reminderError);
-    }
-
     // Log booking to Google Sheet
     try {
       await logNewBooking({

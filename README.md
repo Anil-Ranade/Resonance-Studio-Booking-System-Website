@@ -90,7 +90,9 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Dashboard statistics (total bookings, revenue, today's bookings)
 - Booking management (view, cancel, mark no_show, mark completed)
 - **Admin booking creation** - Create bookings on behalf of customers
-- **WhatsApp integration** - Send messages to customers with pre-filled booking details
+- **WhatsApp reminder messages** - Send reminders within 24 hours of booking time
+- **Invoice printing** - Generate and print professional booking invoices
+- **Booking restore/delete** - Restore cancelled bookings or permanently delete
 - **Staff management** - Create and manage staff members
 - Availability slot management (block/unblock)
 - Bulk availability operations
@@ -103,6 +105,8 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Staff dashboard with booking statistics
 - Staff booking management with WhatsApp integration
 - Staff booking creation capability
+- **Invoice printing** - Generate invoices for bookings
+- **Booking deletion** - Remove cancelled/no-show bookings
 - Limited permissions compared to admin
 
 ### 💰 Rate Card
@@ -130,6 +134,16 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Photo gallery
 - About page
 - Rate card display
+- **Display page** - Public schedule view for studio monitors
+
+### 🔍 SEO & Performance
+
+- Dynamic sitemap generation (`/sitemap.xml`)
+- **JSON-LD structured data** - LocalBusiness and FAQPage schemas
+- Open Graph and Twitter card meta tags
+- Geo-location meta tags for local SEO
+- Optimized robots.txt configuration
+- Performance-optimized animations with reduced motion support
 
 ## 🛠 Tech Stack
 

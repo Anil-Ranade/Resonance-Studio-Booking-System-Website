@@ -37,23 +37,9 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
--- Reminder type
-DO $$ BEGIN
-    CREATE TYPE reminder_type AS ENUM ('confirmation', '24h_reminder', '1h_reminder');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
--- Reminder status type
-DO $$ BEGIN
-    CREATE TYPE reminder_status AS ENUM ('pending', 'sent', 'failed', 'cancelled');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
 -- Audit action type
 DO $$ BEGIN
-    CREATE TYPE audit_action AS ENUM ('create', 'update', 'delete', 'confirm', 'cancel', 'block', 'unblock', 'login', 'logout');
+    CREATE TYPE audit_action AS ENUM ('create', 'update', 'delete', 'confirm', 'cancel', 'block', 'unblock', 'login', 'logout', 'whatsapp_reminder_sent');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
@@ -145,6 +131,8 @@ CREATE TABLE IF NOT EXISTS bookings (
     google_event_id VARCHAR(255),
     email_sent BOOLEAN DEFAULT FALSE,
     sms_sent BOOLEAN DEFAULT FALSE,
+    whatsapp_reminder_sent_at TIMESTAMPTZ DEFAULT NULL,
+    created_by_staff_id UUID REFERENCES admin_users(id) ON DELETE SET NULL,
     cancelled_at TIMESTAMPTZ,
     cancelled_by VARCHAR(50),
     cancellation_reason TEXT,
@@ -167,6 +155,7 @@ CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
 CREATE INDEX IF NOT EXISTS idx_bookings_studio_date ON bookings(studio, date);
 CREATE INDEX IF NOT EXISTS idx_bookings_date_status ON bookings(date, status);
 CREATE INDEX IF NOT EXISTS idx_bookings_created_at ON bookings(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_bookings_created_by_staff ON bookings(created_by_staff_id);
 
 -- =====================================================
 -- TABLE: availability_slots
@@ -266,32 +255,6 @@ CREATE INDEX IF NOT EXISTS idx_trusted_devices_phone ON trusted_devices(phone);
 CREATE INDEX IF NOT EXISTS idx_trusted_devices_fingerprint ON trusted_devices(device_fingerprint);
 CREATE INDEX IF NOT EXISTS idx_trusted_devices_phone_fingerprint ON trusted_devices(phone, device_fingerprint);
 CREATE INDEX IF NOT EXISTS idx_trusted_devices_is_active ON trusted_devices(is_active);
-
--- =====================================================
--- TABLE: reminders
--- Description: Scheduled booking reminders
--- (confirmation, 24h before, 1h before)
--- =====================================================
-CREATE TABLE IF NOT EXISTS reminders (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
-    type VARCHAR(50) NOT NULL DEFAULT 'confirmation',
-    status VARCHAR(20) DEFAULT 'pending',
-    scheduled_at TIMESTAMPTZ NOT NULL,
-    sent_at TIMESTAMPTZ,
-    error_message TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Constraints
-    CONSTRAINT chk_reminder_type CHECK (type IN ('confirmation', '24h_reminder', '1h_reminder')),
-    CONSTRAINT chk_reminder_status CHECK (status IN ('pending', 'sent', 'failed', 'cancelled'))
-);
-
--- Create indexes on reminders
-CREATE INDEX IF NOT EXISTS idx_reminders_booking_id ON reminders(booking_id);
-CREATE INDEX IF NOT EXISTS idx_reminders_status ON reminders(status);
-CREATE INDEX IF NOT EXISTS idx_reminders_scheduled_at ON reminders(scheduled_at);
-CREATE INDEX IF NOT EXISTS idx_reminders_pending ON reminders(status, scheduled_at) WHERE status = 'pending';
 
 -- =====================================================
 -- TABLE: rate_cards
@@ -407,13 +370,6 @@ CREATE TRIGGER update_rate_cards_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- Trigger for contact_submissions
-DROP TRIGGER IF EXISTS update_contact_submissions_updated_at ON contact_submissions;
-CREATE TRIGGER update_contact_submissions_updated_at
-    BEFORE UPDATE ON contact_submissions
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
 -- =====================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- =====================================================
@@ -427,10 +383,8 @@ ALTER TABLE availability_slots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE booking_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE login_otps ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trusted_devices ENABLE ROW LEVEL SECURITY;
-ALTER TABLE reminders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rate_cards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE contact_submissions ENABLE ROW LEVEL SECURITY;
 
 -- Studios Policies (Public read, Admin write)
 DROP POLICY IF EXISTS "Studios are viewable by everyone" ON studios;
@@ -506,11 +460,6 @@ DROP POLICY IF EXISTS "Trusted devices managed by service role" ON trusted_devic
 CREATE POLICY "Trusted devices managed by service role" ON trusted_devices
     FOR ALL USING (auth.role() = 'service_role');
 
--- Reminders Policies (Service role only)
-DROP POLICY IF EXISTS "Reminders managed by service role" ON reminders;
-CREATE POLICY "Reminders managed by service role" ON reminders
-    FOR ALL USING (auth.role() = 'service_role');
-
 -- Rate Cards Policies
 DROP POLICY IF EXISTS "Rate cards are viewable by everyone" ON rate_cards;
 CREATE POLICY "Rate cards are viewable by everyone" ON rate_cards
@@ -532,23 +481,6 @@ CREATE POLICY "Audit logs viewable by admins" ON audit_logs
 DROP POLICY IF EXISTS "Audit logs insertable by service role" ON audit_logs;
 CREATE POLICY "Audit logs insertable by service role" ON audit_logs
     FOR INSERT WITH CHECK (auth.role() = 'service_role');
-
--- Contact Submissions Policies
-DROP POLICY IF EXISTS "Contact submissions insertable by everyone" ON contact_submissions;
-CREATE POLICY "Contact submissions insertable by everyone" ON contact_submissions
-    FOR INSERT WITH CHECK (true);
-
-DROP POLICY IF EXISTS "Contact submissions viewable by admins" ON contact_submissions;
-CREATE POLICY "Contact submissions viewable by admins" ON contact_submissions
-    FOR SELECT USING (
-        auth.uid() IN (SELECT id FROM admin_users WHERE is_active = true)
-    );
-
-DROP POLICY IF EXISTS "Contact submissions updatable by admins" ON contact_submissions;
-CREATE POLICY "Contact submissions updatable by admins" ON contact_submissions
-    FOR UPDATE USING (
-        auth.uid() IN (SELECT id FROM admin_users WHERE is_active = true)
-    );
 
 -- =====================================================
 -- SAMPLE DATA (Optional - for development/testing)
