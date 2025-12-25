@@ -30,6 +30,7 @@ import {
   Mail,
   FileText,
   MessageCircle,
+  Printer,
 } from "lucide-react";
 import { getSession } from "@/lib/supabaseAuth";
 import {
@@ -682,6 +683,240 @@ export default function BookingsManagementPage() {
     });
   };
 
+  // Print Invoice Function
+  const handlePrintInvoice = (booking: Booking) => {
+    const duration = (() => {
+      const [startH, startM] = booking.start_time.split(":").map(Number);
+      const [endH, endM] = booking.end_time.split(":").map(Number);
+      const startMinutes = startH * 60 + startM;
+      const endMinutes = endH * 60 + endM;
+      const diff = endMinutes - startMinutes;
+      const hours = Math.floor(diff / 60);
+      const mins = diff % 60;
+      return hours > 0 ? `${hours}h ${mins > 0 ? mins + 'm' : ''}` : `${mins}m`;
+    })();
+
+    const invoiceHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Invoice - ${booking.id.slice(0, 8).toUpperCase()}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 40px;
+            max-width: 600px;
+            margin: 0 auto;
+            color: #1a1a1a;
+            line-height: 1.6;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 2px solid #8b5cf6;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+          }
+          .logo {
+            font-size: 28px;
+            font-weight: 700;
+            color: #8b5cf6;
+            margin-bottom: 5px;
+          }
+          .tagline {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+          }
+          .invoice-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+          }
+          .invoice-id {
+            font-size: 14px;
+            color: #666;
+          }
+          .section {
+            margin-bottom: 25px;
+          }
+          .section-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            margin-bottom: 10px;
+            font-weight: 600;
+          }
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+          }
+          .info-item {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            border-radius: 8px;
+          }
+          .info-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #888;
+            margin-bottom: 4px;
+          }
+          .info-value {
+            font-size: 15px;
+            font-weight: 500;
+          }
+          .full-width { grid-column: 1 / -1; }
+          .divider {
+            border-top: 1px dashed #ddd;
+            margin: 25px 0;
+          }
+          .total-section {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+          }
+          .total-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+          }
+          .total-amount {
+            font-size: 32px;
+            font-weight: 700;
+            margin-top: 5px;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #888;
+          }
+          .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+          }
+          .status-confirmed { background: #d1fae5; color: #059669; }
+          .status-completed { background: #dbeafe; color: #2563eb; }
+          .status-cancelled { background: #fee2e2; color: #dc2626; }
+          .status-no_show { background: #f3f4f6; color: #6b7280; }
+          @media print {
+            body { padding: 20px; }
+            .total-section { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .status-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="logo">Resonance Studio</div>
+          <div class="tagline">Music & Recording Studio</div>
+        </div>
+        
+        <div class="section">
+          <div class="invoice-title">Booking Invoice</div>
+          <div class="invoice-id">Invoice #${booking.id.slice(0, 8).toUpperCase()} &bull; ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Customer Details</div>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Name</div>
+              <div class="info-value">${booking.name || 'N/A'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Phone</div>
+              <div class="info-value">${booking.phone_number}</div>
+            </div>
+            ${booking.email ? `
+            <div class="info-item full-width">
+              <div class="info-label">Email</div>
+              <div class="info-value">${booking.email}</div>
+            </div>
+            ` : ''}
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Session Details</div>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Studio</div>
+              <div class="info-value">${booking.studio}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Session Type</div>
+              <div class="info-value">${booking.session_type || 'N/A'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Date</div>
+              <div class="info-value">${formatDate(booking.date)}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Time</div>
+              <div class="info-value">${formatTime(booking.start_time)} - ${formatTime(booking.end_time)}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Duration</div>
+              <div class="info-value">${duration}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Status</div>
+              <div class="info-value">
+                <span class="status-badge status-${getEffectiveStatus(booking)}">
+                  ${getEffectiveStatus(booking).replace('_', ' ')}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        ${booking.notes ? `
+        <div class="section">
+          <div class="section-title">Notes</div>
+          <div class="info-item full-width">
+            <div class="info-value">${booking.notes}</div>
+          </div>
+        </div>
+        ` : ''}
+
+        <div class="divider"></div>
+
+        <div class="total-section">
+          <div class="total-label">Total Amount</div>
+          <div class="total-amount">₹${booking.total_amount?.toLocaleString('en-IN') || '0'}</div>
+        </div>
+
+        <div class="footer">
+          <p>Thank you for choosing Resonance Studio!</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(invoiceHTML);
+      printWindow.document.close();
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -761,6 +996,9 @@ export default function BookingsManagementPage() {
                   </th>
                   <th className="text-center p-4 text-sm font-medium text-zinc-400">
                     Reminder
+                  </th>
+                  <th className="text-center p-4 text-sm font-medium text-zinc-400">
+                    Invoice
                   </th>
                   <th className="text-right p-4 text-sm font-medium text-zinc-400">
                     Actions
@@ -935,6 +1173,15 @@ See you soon!`;
                       ) : (
                         <span className="text-zinc-600 text-sm">—</span>
                       )}
+                    </td>
+                    <td className="p-4 text-center">
+                      <button
+                        onClick={() => handlePrintInvoice(booking)}
+                        className="p-2 text-zinc-400 hover:text-violet-400 hover:bg-violet-500/10 rounded-lg transition-colors"
+                        title="Print Invoice"
+                      >
+                        <Printer className="w-4 h-4" />
+                      </button>
                     </td>
                     <td className="p-4 text-right">
                       <button

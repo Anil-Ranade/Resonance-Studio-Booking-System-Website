@@ -5,6 +5,7 @@ import Navigation from "./components/Navigation";
 import Footer from "./components/Footer";
 import MainContent from "./components/MainContent";
 import ClearCache from "./components/ClearCache";
+import { LocalBusinessStructuredData } from "./components/StructuredData";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -127,6 +128,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <LocalBusinessStructuredData />
+      </head>
       <body
         className={`${poppins.variable} ${geistMono.variable} antialiased bg-noise font-sans flex flex-col min-h-screen`}
         style={{ fontFamily: 'var(--font-poppins), sans-serif' }}
