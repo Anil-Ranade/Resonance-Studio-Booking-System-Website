@@ -353,12 +353,6 @@ export async function DELETE(request: NextRequest) {
     }
   }
 
-  // Delete associated reminders first
-  await supabase
-    .from("reminders")
-    .delete()
-    .eq("booking_id", id);
-
   // Delete the booking
   const { error } = await supabase
     .from("bookings")

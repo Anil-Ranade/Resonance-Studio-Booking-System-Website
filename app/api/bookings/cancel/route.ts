@@ -111,24 +111,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Cancel any pending reminders for this booking
-    try {
-      const { error: reminderError } = await supabaseServer
-        .from("reminders")
-        .update({ status: "cancelled" })
-        .eq("booking_id", bookingId)
-        .eq("status", "pending");
-
-      if (reminderError) {
-        console.error("[Cancel Booking] Failed to cancel reminders:", reminderError);
-      } else {
-        console.log(`[Cancel Booking] Pending reminders for booking ${bookingId} cancelled`);
-      }
-    } catch (reminderError) {
-      // Log error but don't fail the cancellation
-      console.error("[Cancel Booking] Error cancelling reminders:", reminderError);
-    }
-
     // Send cancellation email
     const hasResendConfig = 
       process.env.RESEND_API_KEY &&
