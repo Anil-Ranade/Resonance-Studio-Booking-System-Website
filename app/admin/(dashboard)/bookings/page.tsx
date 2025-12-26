@@ -175,22 +175,28 @@ const isBookingTimePassed = (date: string, endTime: string): boolean => {
 
 // Helper function to check if booking is within 24 hours before start time
 // Returns true if: current time is within 24 hours before booking start AND event hasn't passed
-const isWithin24HoursBeforeBooking = (date: string, startTime: string, endTime: string): boolean => {
+const isWithin24HoursBeforeBooking = (
+  date: string,
+  startTime: string,
+  endTime: string
+): boolean => {
   const now = new Date();
-  
+
   // Check if event has already passed
   if (isBookingTimePassed(date, endTime)) {
     return false;
   }
-  
+
   // Calculate booking start datetime
   const bookingStartDate = new Date(date);
   const [startHours, startMinutes] = startTime.split(":").map(Number);
   bookingStartDate.setHours(startHours, startMinutes, 0, 0);
-  
+
   // Calculate 24 hours before booking start
-  const twentyFourHoursBefore = new Date(bookingStartDate.getTime() - 24 * 60 * 60 * 1000);
-  
+  const twentyFourHoursBefore = new Date(
+    bookingStartDate.getTime() - 24 * 60 * 60 * 1000
+  );
+
   // Return true if current time is between 24 hours before and booking start
   return now >= twentyFourHoursBefore && now <= bookingStartDate;
 };
@@ -693,7 +699,7 @@ export default function BookingsManagementPage() {
       const diff = endMinutes - startMinutes;
       const hours = Math.floor(diff / 60);
       const mins = diff % 60;
-      return hours > 0 ? `${hours}h ${mins > 0 ? mins + 'm' : ''}` : `${mins}m`;
+      return hours > 0 ? `${hours}h ${mins > 0 ? mins + "m" : ""}` : `${mins}m`;
     })();
 
     const invoiceHTML = `
@@ -827,7 +833,13 @@ export default function BookingsManagementPage() {
         
         <div class="section">
           <div class="invoice-title">Booking Invoice</div>
-          <div class="invoice-id">Invoice #${booking.id.slice(0, 8).toUpperCase()} &bull; ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+          <div class="invoice-id">Invoice #${booking.id
+            .slice(0, 8)
+            .toUpperCase()} &bull; ${new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })}</div>
         </div>
 
         <div class="section">
@@ -835,18 +847,22 @@ export default function BookingsManagementPage() {
           <div class="info-grid">
             <div class="info-item">
               <div class="info-label">Name</div>
-              <div class="info-value">${booking.name || 'N/A'}</div>
+              <div class="info-value">${booking.name || "N/A"}</div>
             </div>
             <div class="info-item">
               <div class="info-label">Phone</div>
               <div class="info-value">${booking.phone_number}</div>
             </div>
-            ${booking.email ? `
+            ${
+              booking.email
+                ? `
             <div class="info-item full-width">
               <div class="info-label">Email</div>
               <div class="info-value">${booking.email}</div>
             </div>
-            ` : ''}
+            `
+                : ""
+            }
           </div>
         </div>
 
@@ -859,7 +875,7 @@ export default function BookingsManagementPage() {
             </div>
             <div class="info-item">
               <div class="info-label">Session Type</div>
-              <div class="info-value">${booking.session_type || 'N/A'}</div>
+              <div class="info-value">${booking.session_type || "N/A"}</div>
             </div>
             <div class="info-item">
               <div class="info-label">Date</div>
@@ -867,7 +883,9 @@ export default function BookingsManagementPage() {
             </div>
             <div class="info-item">
               <div class="info-label">Time</div>
-              <div class="info-value">${formatTime(booking.start_time)} - ${formatTime(booking.end_time)}</div>
+              <div class="info-value">${formatTime(
+                booking.start_time
+              )} - ${formatTime(booking.end_time)}</div>
             </div>
             <div class="info-item">
               <div class="info-label">Duration</div>
@@ -876,28 +894,36 @@ export default function BookingsManagementPage() {
             <div class="info-item">
               <div class="info-label">Status</div>
               <div class="info-value">
-                <span class="status-badge status-${getEffectiveStatus(booking)}">
-                  ${getEffectiveStatus(booking).replace('_', ' ')}
+                <span class="status-badge status-${getEffectiveStatus(
+                  booking
+                )}">
+                  ${getEffectiveStatus(booking).replace("_", " ")}
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        ${booking.notes ? `
+        ${
+          booking.notes
+            ? `
         <div class="section">
           <div class="section-title">Notes</div>
           <div class="info-item full-width">
             <div class="info-value">${booking.notes}</div>
           </div>
         </div>
-        ` : ''}
+        `
+            : ""
+        }
 
         <div class="divider"></div>
 
         <div class="total-section">
           <div class="total-label">Total Amount</div>
-          <div class="total-amount">₹${booking.total_amount?.toLocaleString('en-IN') || '0'}</div>
+          <div class="total-amount">₹${
+            booking.total_amount?.toLocaleString("en-IN") || "0"
+          }</div>
         </div>
 
         <div class="footer">
@@ -907,7 +933,7 @@ export default function BookingsManagementPage() {
       </html>
     `;
 
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open("", "_blank");
     if (printWindow) {
       printWindow.document.write(invoiceHTML);
       printWindow.document.close();
@@ -995,9 +1021,6 @@ export default function BookingsManagementPage() {
                     Status
                   </th>
                   <th className="text-center p-4 text-sm font-medium text-zinc-400">
-                    Reminder
-                  </th>
-                  <th className="text-center p-4 text-sm font-medium text-zinc-400">
                     Invoice
                   </th>
                   <th className="text-right p-4 text-sm font-medium text-zinc-400">
@@ -1060,119 +1083,6 @@ export default function BookingsManagementPage() {
                           </span>
                         );
                       })()}
-                    </td>
-                    {/* Reminder Column - Only available within 24 hours before booking */}
-                    <td className="p-4 text-center">
-                      {booking.status === "confirmed" &&
-                      isWithin24HoursBeforeBooking(booking.date, booking.start_time, booking.end_time) ? (
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            const sendReminder = async () => {
-                              const phone = booking.phone_number.replace(
-                                /[^0-9]/g,
-                                ""
-                              );
-                              const formattedDate = formatDate(booking.date);
-                              const formattedStartTime = formatTime(
-                                booking.start_time
-                              );
-                              const formattedEndTime = formatTime(
-                                booking.end_time
-                              );
-
-                              const message = `*Reminder from Resonance Studio, Sinhgad Road Branch*
-
-Hi ${booking.name || "there"},
-
-This is a reminder for your upcoming booking at our studio.
-
-Date: ${formattedDate}
-Time: ${formattedStartTime} – ${formattedEndTime}
-*${booking.session_type || "Session"}${
-                                booking.session_details
-                                  ? ` with ${booking.session_details}`
-                                  : ""
-                              }*
-*${booking.studio}*
-
-Enjoy your session!
-See you soon!`;
-
-                              const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(
-                                message
-                              )}`;
-                              window.open(whatsappUrl, "_blank");
-
-                              // Mark reminder as sent in database
-                              try {
-                                const token = await getAccessToken();
-                                const response = await fetch(
-                                  "/api/admin/whatsapp-reminder",
-                                  {
-                                    method: "POST",
-                                    headers: {
-                                      "Content-Type": "application/json",
-                                      Authorization: `Bearer ${token}`,
-                                    },
-                                    body: JSON.stringify({
-                                      booking_id: booking.id,
-                                    }),
-                                  }
-                                );
-
-                                if (response.ok) {
-                                  const data = await response.json();
-                                  // Update local state
-                                  setBookings((prev) =>
-                                    prev.map((b) =>
-                                      b.id === booking.id
-                                        ? {
-                                            ...b,
-                                            whatsapp_reminder_sent_at:
-                                              data.whatsapp_reminder_sent_at,
-                                          }
-                                        : b
-                                    )
-                                  );
-                                }
-                              } catch (error) {
-                                console.error(
-                                  "Failed to mark reminder as sent:",
-                                  error
-                                );
-                              }
-                            };
-
-                            if (booking.whatsapp_reminder_sent_at) {
-                              if (
-                                confirm(
-                                  "You have already sent a reminder for this booking. Do you want to send it again?"
-                                )
-                              ) {
-                                await sendReminder();
-                              }
-                            } else {
-                              await sendReminder();
-                            }
-                          }}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                            booking.whatsapp_reminder_sent_at
-                              ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
-                              : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
-                          }`}
-                          title={
-                            booking.whatsapp_reminder_sent_at
-                              ? "Reminder sent - Click to send again"
-                              : "Send WhatsApp Reminder"
-                          }
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                          {booking.whatsapp_reminder_sent_at ? "Sent" : "Send"}
-                        </button>
-                      ) : (
-                        <span className="text-zinc-600 text-sm">—</span>
-                      )}
                     </td>
                     <td className="p-4 text-center">
                       <button
