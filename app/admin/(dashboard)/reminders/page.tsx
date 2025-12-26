@@ -45,6 +45,15 @@ const isBookingTimePassed = (date: string, endTime: string): boolean => {
   return now > bookingDate;
 };
 
+// Helper function to check if the event has started (current time >= start time)
+const hasEventStarted = (date: string, startTime: string): boolean => {
+  const now = new Date();
+  const bookingStartDate = new Date(date);
+  const [startHours, startMinutes] = startTime.split(":").map(Number);
+  bookingStartDate.setHours(startHours, startMinutes, 0, 0);
+  return now >= bookingStartDate;
+};
+
 // Helper function to check if booking is within 24 hours before start time
 const isWithin24HoursBeforeBooking = (
   date: string,
@@ -484,16 +493,23 @@ See you soon!`;
 
                     {/* Action */}
                     <div className="flex flex-col items-end justify-center gap-2">
-                      {/* Confirmation Button */}
+                      {/* Confirmation Button - disabled when event has started */}
                       <button
                         onClick={() => sendConfirmation(booking)}
-                        className="flex items-center gap-2 px-4 py-2 bg-violet-500/20 hover:bg-violet-500/30 text-violet-400 rounded-lg transition-colors text-sm font-medium"
+                        disabled={hasEventStarted(booking.date, booking.start_time)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                          hasEventStarted(booking.date, booking.start_time)
+                            ? "bg-zinc-500/20 text-zinc-500 cursor-not-allowed"
+                            : "bg-violet-500/20 hover:bg-violet-500/30 text-violet-400"
+                        }`}
                       >
                         <BadgeCheck className="w-4 h-4" />
-                        Send Confirmation
+                        {hasEventStarted(booking.date, booking.start_time)
+                          ? "Event Started"
+                          : "Send Confirmation"}
                       </button>
 
-                      {/* Reminder Button */}
+                      {/* Reminder Button - only within 24 hours before start */}
                       {booking.whatsapp_reminder_sent_at ? (
                         <>
                           <span className="flex items-center gap-2 text-emerald-400 text-xs">
