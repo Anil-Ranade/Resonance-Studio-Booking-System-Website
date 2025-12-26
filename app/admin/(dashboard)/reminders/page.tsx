@@ -13,6 +13,7 @@ import {
   CheckCircle,
   RefreshCw,
   Send,
+  BadgeCheck,
 } from "lucide-react";
 import { getSession } from "@/lib/supabaseAuth";
 
@@ -140,6 +141,34 @@ export default function WhatsAppRemindersPage() {
       month: "short",
       day: "numeric",
     });
+  };
+
+  const sendConfirmation = (booking: Booking) => {
+    const phone = booking.phone_number.replace(/[^0-9]/g, "");
+    const formattedDate = formatDate(booking.date);
+    const formattedStartTime = formatTime(booking.start_time);
+    const formattedEndTime = formatTime(booking.end_time);
+
+    const message = `*Booking Confirmed - Resonance Studio, Sinhgad Road Branch*
+
+Hi ${booking.name || "there"},
+
+Your booking at our studio has been confirmed.
+
+Date: ${formattedDate}
+Time: ${formattedStartTime} – ${formattedEndTime}
+*${booking.session_type || "Session"}${
+      booking.session_details ? ` with ${booking.session_details}` : ""
+    }*
+*${booking.studio}*
+
+Enjoy your session!
+See you soon!`;
+
+    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(
+      message
+    )}`;
+    window.open(whatsappUrl, "_blank");
   };
 
   const sendReminder = async (booking: Booking) => {
@@ -455,10 +484,20 @@ See you soon!`;
 
                     {/* Action */}
                     <div className="flex flex-col items-end justify-center gap-2">
+                      {/* Confirmation Button */}
+                      <button
+                        onClick={() => sendConfirmation(booking)}
+                        className="flex items-center gap-2 px-4 py-2 bg-violet-500/20 hover:bg-violet-500/30 text-violet-400 rounded-lg transition-colors text-sm font-medium"
+                      >
+                        <BadgeCheck className="w-4 h-4" />
+                        Send Confirmation
+                      </button>
+
+                      {/* Reminder Button */}
                       {booking.whatsapp_reminder_sent_at ? (
                         <>
-                          <span className="flex items-center gap-2 text-emerald-400 text-sm">
-                            <CheckCircle className="w-4 h-4" />
+                          <span className="flex items-center gap-2 text-emerald-400 text-xs">
+                            <CheckCircle className="w-3 h-3" />
                             Reminder Sent
                           </span>
                           <button
@@ -472,7 +511,7 @@ See you soon!`;
                       ) : (
                         <button
                           onClick={() => handleSendReminder(booking)}
-                          className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors font-medium"
+                          className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors font-medium text-sm"
                         >
                           <MessageCircle className="w-4 h-4" />
                           Send Reminder
