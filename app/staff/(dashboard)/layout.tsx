@@ -178,7 +178,7 @@ export default function StaffDashboardLayout({
                 <p className="text-white font-medium truncate">
                   {staff?.name || 'Staff'}
                 </p>
-                <p className="text-zinc-500 text-sm truncate">{staff?.email}</p>
+                <p className="text-zinc-400 text-sm truncate">{staff?.email}</p>
               </div>
             </div>
           </div>

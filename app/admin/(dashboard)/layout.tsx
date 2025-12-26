@@ -184,7 +184,7 @@ export default function DashboardLayout({
                 <p className="text-white font-medium truncate">
                   {admin?.name || "Admin"}
                 </p>
-                <p className="text-zinc-500 text-sm truncate">{admin?.email}</p>
+                <p className="text-zinc-400 text-sm truncate">{admin?.email}</p>
               </div>
             </div>
           </div>

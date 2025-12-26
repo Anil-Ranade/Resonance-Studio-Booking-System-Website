@@ -507,7 +507,7 @@ export default function StaffDashboard() {
         ) : todayBookings.length === 0 ? (
           <div className="text-center py-8">
             <Calendar className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
-            <p className="text-zinc-500 text-sm">No bookings for today</p>
+            <p className="text-zinc-400 text-sm">No bookings for today</p>
           </div>
         ) : (
           <div>
@@ -519,7 +519,7 @@ export default function StaffDashboard() {
                     <Building2 className="w-4 h-4" />
                     By Studio
                   </h3>
-                  <p className="text-xs text-zinc-600 mt-0.5">Grouped by studio</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">Grouped by studio</p>
                 </div>
                 <div className="relative">
                   <select
@@ -553,7 +553,7 @@ export default function StaffDashboard() {
                           <span className="text-zinc-300">
                             {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
                           </span>
-                          <span className="text-zinc-500 text-xs truncate ml-2 max-w-[100px]">
+                          <span className="text-zinc-400 text-xs truncate ml-2 max-w-[100px]">
                             {booking.name || 'N/A'}
                           </span>
                         </div>
@@ -563,7 +563,7 @@ export default function StaffDashboard() {
                 ))}
                 {Object.entries(bookingsByStudio).filter(([studio]) => selectedStudio === 'all' || studio === selectedStudio).length === 0 && (
                   <div className="text-center py-4">
-                    <p className="text-zinc-500 text-sm">No bookings for this studio</p>
+                    <p className="text-zinc-400 text-sm">No bookings for this studio</p>
                   </div>
                 )}
               </div>
@@ -613,7 +613,7 @@ export default function StaffDashboard() {
           ) : sortedRecentBookings.length === 0 ? (
             <div className="text-center py-8">
               <Calendar className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
-              <p className="text-zinc-500 text-sm">No bookings found</p>
+              <p className="text-zinc-400 text-sm">No bookings found</p>
             </div>
           ) : (
             sortedRecentBookings.map((booking) => (
@@ -711,7 +711,7 @@ export default function StaffDashboard() {
               <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
                 <Clock className="w-5 h-5 text-teal-400" />
                 <div>
-                  <p className="text-xs text-zinc-500">Time</p>
+                  <p className="text-xs text-zinc-400">Time</p>
                   <p className="text-white font-medium">
                     {formatTime(selectedBooking.start_time)} - {formatTime(selectedBooking.end_time)}
                   </p>
@@ -722,7 +722,7 @@ export default function StaffDashboard() {
               <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
                 <User className="w-5 h-5 text-emerald-400" />
                 <div>
-                  <p className="text-xs text-zinc-500">Customer</p>
+                  <p className="text-xs text-zinc-400">Customer</p>
                   <p className="text-white font-medium">{selectedBooking.name || 'N/A'}</p>
                 </div>
               </div>
@@ -731,7 +731,7 @@ export default function StaffDashboard() {
               <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
                 <Phone className="w-5 h-5 text-blue-400" />
                 <div>
-                  <p className="text-xs text-zinc-500">Phone</p>
+                  <p className="text-xs text-zinc-400">Phone</p>
                   <p className="text-white font-medium">{selectedBooking.phone_number || 'N/A'}</p>
                 </div>
               </div>
@@ -740,7 +740,7 @@ export default function StaffDashboard() {
               <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
                 <FileText className="w-5 h-5 text-amber-400" />
                 <div>
-                  <p className="text-xs text-zinc-500">Session Type</p>
+                  <p className="text-xs text-zinc-400">Session Type</p>
                   <p className="text-white font-medium">{selectedBooking.session_type || 'N/A'}</p>
                 </div>
               </div>
@@ -750,7 +750,7 @@ export default function StaffDashboard() {
                 <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
                   <IndianRupee className="w-5 h-5 text-green-400" />
                   <div>
-                    <p className="text-xs text-zinc-500">Amount</p>
+                    <p className="text-xs text-zinc-400">Amount</p>
                     <p className="text-white font-medium">₹{selectedBooking.total_amount.toLocaleString('en-IN')}</p>
                   </div>
                 </div>

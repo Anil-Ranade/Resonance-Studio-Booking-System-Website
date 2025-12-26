@@ -749,7 +749,7 @@ export default function StaffBookingsPage() {
                         <p className="text-white font-medium">
                           {booking.name || "N/A"}
                         </p>
-                        <p className="text-zinc-500 text-sm">
+                        <p className="text-zinc-400 text-sm">
                           {booking.phone_number}
                         </p>
                       </div>
@@ -757,7 +757,7 @@ export default function StaffBookingsPage() {
                     <td className="p-4">
                       <div>
                         <p className="text-white">{booking.studio}</p>
-                        <p className="text-zinc-500 text-sm">
+                        <p className="text-zinc-400 text-sm">
                           {booking.session_type}
                         </p>
                       </div>
@@ -765,7 +765,7 @@ export default function StaffBookingsPage() {
                     <td className="p-4">
                       <div>
                         <p className="text-white">{formatDate(booking.date)}</p>
-                        <p className="text-zinc-500 text-sm">
+                        <p className="text-zinc-400 text-sm">
                           {formatTime(booking.start_time)} -{" "}
                           {formatTime(booking.end_time)}
                         </p>
