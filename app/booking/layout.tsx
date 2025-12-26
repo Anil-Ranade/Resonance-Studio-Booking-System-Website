@@ -1,25 +1,30 @@
-'use client';
+import type { Metadata } from "next";
+import BookingClientWrapper from "./BookingClientWrapper";
+
+export const metadata: Metadata = {
+  title: "Book Online",
+  description:
+    "Book your studio session online at Resonance Jam Room. Easy booking for jam room, karaoke, recording, and podcast sessions. No advance payment required.",
+  alternates: {
+    canonical: "/booking",
+  },
+  openGraph: {
+    title: "Book Online - Resonance Jam Room",
+    description:
+      "Book your studio session online. Choose from jam room, karaoke, recording, and podcast sessions. Instant booking confirmation.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Book Online - Resonance Jam Room",
+    description:
+      "Book your studio session online. Choose from jam room, karaoke, recording, and podcast sessions.",
+  },
+};
 
 export default function BookingLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <>
-      {/* Hide the main navigation on the booking page */}
-      <style jsx global>{`
-        nav.main-nav {
-          display: none !important;
-        }
-        main {
-          padding-top: 0 !important;
-        }
-        footer.main-footer {
-          display: none !important;
-        }
-      `}</style>
-      {children}
-    </>
-  );
+  return <BookingClientWrapper>{children}</BookingClientWrapper>;
 }

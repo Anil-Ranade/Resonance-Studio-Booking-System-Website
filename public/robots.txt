@@ -3,27 +3,9 @@
 # https://resonancejamroom.in
 # *************************************
 
-# Allow all crawlers
+# Default rules for all crawlers
 User-agent: *
 Allow: /
-
-# Allow Google to index all content
-User-agent: Googlebot
-Allow: /
-
-# Allow Bing to index all content
-User-agent: Bingbot
-Allow: /
-
-# Sitemap location
-Sitemap: https://resonancejamroom.in/sitemap.xml
-
-# Disallow admin and staff areas from indexing
-Disallow: /admin/
-Disallow: /staff/
-Disallow: /api/
-
-# Allow important pages
 Allow: /home
 Allow: /studios
 Allow: /availability
@@ -34,3 +16,20 @@ Allow: /gallery
 Allow: /faq
 Allow: /contact
 Allow: /policies
+
+# Disallow admin, staff, and API areas from indexing
+Disallow: /admin/
+Disallow: /staff/
+Disallow: /api/
+Disallow: /view-bookings
+Disallow: /my-bookings
+Disallow: /edit-booking
+Disallow: /cancel-booking
+Disallow: /confirmation
+Disallow: /review
+
+# Sitemap location
+Sitemap: https://resonancejamroom.in/sitemap.xml
+
+# Crawl delay for respectful crawling
+Crawl-delay: 1

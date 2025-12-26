@@ -85,6 +85,22 @@ export const metadata: Metadata = {
     siteName: "Resonance Jam Room",
     title: "Resonance Jam Room - Professional Recording & Jam Room Studio in Pune",
     description: "Pune's premier professional recording studio and jam room. Book online for music recording, mixing, mastering, podcast production, karaoke sessions, and band rehearsals.",
+    images: [
+      {
+        url: "/android-chrome-512x512.png",
+        width: 512,
+        height: 512,
+        alt: "Resonance Jam Room - Professional Recording Studio in Pune",
+      },
+    ],
+  },
+  
+  // Twitter Card
+  twitter: {
+    card: "summary_large_image",
+    title: "Resonance Jam Room - Professional Recording & Jam Room Studio in Pune",
+    description: "Pune's premier professional recording studio and jam room. Book online for music recording, mixing, mastering, karaoke sessions, and band rehearsals.",
+    images: ["/android-chrome-512x512.png"],
   },
   
   // App & Manifest

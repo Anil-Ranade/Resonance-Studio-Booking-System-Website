@@ -12,6 +12,12 @@ export const metadata: Metadata = {
     description:
       "Reach out to us for studio bookings, inquiries, or support. We're open 8 AM to 10 PM daily.",
   },
+  twitter: {
+    card: "summary",
+    title: "Contact Resonance Jam Room - Dattawadi, Pune",
+    description:
+      "Reach out for studio bookings, inquiries, or support. Open 8 AM to 10 PM daily.",
+  },
 };
 
 export default function ContactLayout({

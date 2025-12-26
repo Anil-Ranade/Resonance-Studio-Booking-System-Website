@@ -12,6 +12,12 @@ export const metadata: Metadata = {
     description:
       "Take a visual tour of our three professional studios and recording facilities in Pune.",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Studio Gallery - Resonance Jam Room",
+    description:
+      "Take a visual tour of our three professional studios and recording facilities in Pune.",
+  },
 };
 
 export default function GalleryLayout({
