@@ -166,9 +166,7 @@ Your booking at our studio has been confirmed.
 
 Date: ${formattedDate}
 Time: ${formattedStartTime} – ${formattedEndTime}
-*${booking.session_type || "Session"}${
-      booking.session_details ? ` with ${booking.session_details}` : ""
-    }*
+*${booking.session_type || "Session"}${booking.session_details && booking.session_details !== booking.session_type ? ` with ${booking.session_details}` : ""}*
 *${booking.studio}*
 
 Enjoy your session!
@@ -194,9 +192,7 @@ This is a reminder for your upcoming booking at our studio.
 
 Date: ${formattedDate}
 Time: ${formattedStartTime} – ${formattedEndTime}
-*${booking.session_type || "Session"}${
-      booking.session_details ? ` with ${booking.session_details}` : ""
-    }*
+*${booking.session_type || "Session"}${booking.session_details && booking.session_details !== booking.session_type ? ` with ${booking.session_details}` : ""}*
 *${booking.studio}*
 
 Enjoy your session!

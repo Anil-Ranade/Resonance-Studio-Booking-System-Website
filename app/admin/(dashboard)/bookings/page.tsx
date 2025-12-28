@@ -1288,11 +1288,7 @@ This is a reminder for your upcoming booking at our studio.
 
 Date: ${formattedDate}
 Time: ${formattedStartTime} – ${formattedEndTime}
-${selectedBooking.session_type || "Session"}${
-                              selectedBooking.session_details
-                                ? ` with ${selectedBooking.session_details}`
-                                : ""
-                            }
+${selectedBooking.session_type || "Session"}${selectedBooking.session_details && selectedBooking.session_details !== selectedBooking.session_type ? ` with ${selectedBooking.session_details}` : ""}
 ${selectedBooking.studio}
 
 Enjoy your session!
