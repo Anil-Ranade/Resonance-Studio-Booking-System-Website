@@ -25,6 +25,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
   - 🥁 Drum Practice
   - 🎸 Band Rehearsal
   - 📻 Recording (Audio/Video/Chroma Key)
+  - 📋 Meetings / Classes (without Sound Operator)
 - Smart studio suggestions based on group size
 - Configurable booking duration limits (min/max hours)
 - Advance booking restrictions (up to 30 days)
