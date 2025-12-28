@@ -16,7 +16,8 @@ export type SessionType =
   | "Live with musicians"
   | "Only Drum Practice"
   | "Band"
-  | "Recording";
+  | "Recording"
+  | "Meetings / Classes";
 export type KaraokeOption = "1_5" | "6_10" | "11_20" | "21_30";
 export type LiveMusicianOption = "1_2" | "3_4" | "5" | "6_8" | "9_12";
 export type BandEquipment = "drum" | "amps" | "guitars" | "keyboard";
@@ -474,6 +475,7 @@ export function BookingProvider({
           if (draft.sessionType === "Live with musicians")
             return draft.liveOption !== "";
           if (draft.sessionType === "Only Drum Practice") return true;
+          if (draft.sessionType === "Meetings / Classes") return true;
           if (draft.sessionType === "Band")
             return draft.bandEquipment.length > 0;
           if (draft.sessionType === "Recording")

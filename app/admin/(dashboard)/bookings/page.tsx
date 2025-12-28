@@ -123,6 +123,12 @@ const SESSION_TYPES: {
     description: "Professional recording",
   },
   {
+    value: "Meetings / Classes",
+    label: "Meetings / Classes",
+    icon: Users,
+    description: "Without Sound Operator",
+  },
+  {
     value: "Walk-in",
     label: "Walk-in",
     icon: Users,
@@ -468,7 +474,8 @@ export default function BookingsManagementPage() {
     // For session types that don't need sub-options, update studio/rate immediately
     if (
       newSessionType === "Only Drum Practice" ||
-      newSessionType === "Walk-in"
+      newSessionType === "Walk-in" ||
+      newSessionType === "Meetings / Classes"
     ) {
       const { studio, rate } = updateStudioAndRate(
         newSessionType,
@@ -481,7 +488,8 @@ export default function BookingsManagementPage() {
       updates.studio = studio;
       updates.rate_per_hour = newSessionType === "Walk-in" ? 400 : rate;
       updates.session_details =
-        newSessionType === "Only Drum Practice" ? "Drum Practice" : "Walk-in";
+        newSessionType === "Only Drum Practice" ? "Drum Practice" :
+        newSessionType === "Meetings / Classes" ? "Meetings / Classes (No Sound Operator)" : "Walk-in";
     }
 
     setBookingFormData((prev) => ({ ...prev, ...updates }));

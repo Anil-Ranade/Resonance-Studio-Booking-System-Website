@@ -130,17 +130,20 @@ export default function RateCardPage() {
     { type: "Band with only Drums", price: "₹400" },
     { type: "Band with Drums & Amps", price: "₹500" },
     { type: "Band Full (Drums, Amps, Guitars, Keyboard)", price: "₹600" },
+    { type: "Meetings / Classes (No Sound Operator)", price: "₹350" },
   ];
 
   const studioBPricing = [
     { type: "Karaoke (1-10 participants)", price: "₹300" },
     { type: "Live (up to 4 musicians)", price: "₹400" },
     { type: "Live (5 musicians)", price: "₹500" },
+    { type: "Meetings / Classes (No Sound Operator)", price: "₹250" },
   ];
 
   const studioCPricing = [
     { type: "Karaoke (1-5 participants)", price: "₹250" },
     { type: "Live (up to 2 musicians)", price: "₹350" },
+    { type: "Meetings / Classes (No Sound Operator)", price: "₹200" },
   ];
 
   // Special packages

@@ -6,7 +6,8 @@ export type SessionType =
   | "Live with musicians"
   | "Only Drum Practice"
   | "Band"
-  | "Recording";
+  | "Recording"
+  | "Meetings / Classes";
 
 // Karaoke participant options
 export type KaraokeOption = "1_5" | "6_10" | "11_20" | "21_30";
@@ -49,6 +50,7 @@ const rateCard = {
       video_recording: 800,
       chroma_key: 1200,
     },
+    meetings_classes: 350, // Without Sound Operator
   },
   "Studio B": {
     karaoke: {
@@ -63,6 +65,7 @@ const rateCard = {
     band: {
       without_drum: 350,
     },
+    meetings_classes: 250, // Without Sound Operator
   },
   "Studio C": {
     karaoke: {
@@ -74,6 +77,7 @@ const rateCard = {
     band: {
       without_drum: 300,
     },
+    meetings_classes: 200, // Without Sound Operator
   },
 };
 
@@ -315,6 +319,21 @@ function getRecordingSuggestion(option: RecordingOption): StudioSuggestion {
   };
 }
 
+// Get studio suggestion for Meetings / Classes (without sound operator)
+function getMeetingsClassesSuggestion(): StudioSuggestion {
+  return {
+    suggested_studio: "Studio C",
+    suggested_rate: rateCard["Studio C"].meetings_classes,
+    allowed_studios: ["Studio C", "Studio B", "Studio A"],
+    explanation: "For meetings/classes without sound operator, Studio C is the most economical. You can upgrade to B or A for more space.",
+    rate_breakdown: {
+      "Studio C": rateCard["Studio C"].meetings_classes,
+      "Studio B": rateCard["Studio B"].meetings_classes,
+      "Studio A": rateCard["Studio A"].meetings_classes,
+    },
+  };
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const sessionType = searchParams.get("sessionType") as SessionType | null;
@@ -329,6 +348,7 @@ export async function GET(request: NextRequest) {
     "Only Drum Practice",
     "Band",
     "Recording",
+    "Meetings / Classes",
   ];
 
   if (!sessionType || !validSessionTypes.includes(sessionType)) {
@@ -400,6 +420,10 @@ export async function GET(request: NextRequest) {
         );
       }
       suggestion = getRecordingSuggestion(subOption as RecordingOption);
+      break;
+
+    case "Meetings / Classes":
+      suggestion = getMeetingsClassesSuggestion();
       break;
 
     default:
