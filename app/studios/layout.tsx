@@ -12,6 +12,12 @@ export const metadata: Metadata = {
     description:
       "State-of-the-art recording facilities with drums, guitars, keyboards, professional sound systems, and video recording equipment.",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Three Professional Studios in Pune - Resonance Jam Room",
+    description:
+      "State-of-the-art recording facilities with drums, guitars, keyboards, and professional sound systems.",
+  },
 };
 
 export default function StudiosLayout({

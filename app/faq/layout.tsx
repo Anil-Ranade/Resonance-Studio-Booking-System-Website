@@ -13,6 +13,12 @@ export const metadata: Metadata = {
     description:
       "Get answers to common questions about studio bookings, equipment, payment, recording services, and facilities.",
   },
+  twitter: {
+    card: "summary",
+    title: "FAQ - Resonance Jam Room",
+    description:
+      "Get answers to common questions about studio bookings, equipment, payment, and recording services.",
+  },
 };
 
 export default function FAQLayout({

@@ -119,6 +119,12 @@ const SESSION_TYPES: {
     description: "Professional recording",
   },
   {
+    value: "Meetings / Classes",
+    label: "Meetings / Classes",
+    icon: Users,
+    description: "Without Sound Operator",
+  },
+  {
     value: "Walk-in",
     label: "Walk-in",
     icon: Users,
@@ -429,9 +435,11 @@ export default function StaffBookingsPage() {
       session_details: "",
     };
 
+    // For session types that don't need sub-options, update studio/rate immediately
     if (
       newSessionType === "Only Drum Practice" ||
-      newSessionType === "Walk-in"
+      newSessionType === "Walk-in" ||
+      newSessionType === "Meetings / Classes"
     ) {
       const { studio, rate } = updateStudioAndRate(
         newSessionType,
@@ -444,7 +452,8 @@ export default function StaffBookingsPage() {
       updates.studio = studio;
       updates.rate_per_hour = newSessionType === "Walk-in" ? 400 : rate;
       updates.session_details =
-        newSessionType === "Only Drum Practice" ? "Drum Practice" : "Walk-in";
+        newSessionType === "Only Drum Practice" ? "Drum Practice" : 
+        newSessionType === "Meetings / Classes" ? "Meetings / Classes (No Sound Operator)" : "Walk-in";
     }
 
     setBookingFormData((prev) => ({ ...prev, ...updates }));
@@ -749,7 +758,7 @@ export default function StaffBookingsPage() {
                         <p className="text-white font-medium">
                           {booking.name || "N/A"}
                         </p>
-                        <p className="text-zinc-500 text-sm">
+                        <p className="text-zinc-400 text-sm">
                           {booking.phone_number}
                         </p>
                       </div>
@@ -757,7 +766,7 @@ export default function StaffBookingsPage() {
                     <td className="p-4">
                       <div>
                         <p className="text-white">{booking.studio}</p>
-                        <p className="text-zinc-500 text-sm">
+                        <p className="text-zinc-400 text-sm">
                           {booking.session_type}
                         </p>
                       </div>
@@ -765,7 +774,7 @@ export default function StaffBookingsPage() {
                     <td className="p-4">
                       <div>
                         <p className="text-white">{formatDate(booking.date)}</p>
-                        <p className="text-zinc-500 text-sm">
+                        <p className="text-zinc-400 text-sm">
                           {formatTime(booking.start_time)} -{" "}
                           {formatTime(booking.end_time)}
                         </p>

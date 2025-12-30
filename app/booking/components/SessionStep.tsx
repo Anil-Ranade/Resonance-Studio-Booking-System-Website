@@ -1,6 +1,6 @@
 "use client";
 
-import { Mic, Music, Drum, Guitar, Radio, RotateCcw } from "lucide-react";
+import { Mic, Music, Drum, Guitar, Radio, RotateCcw, Users } from "lucide-react";
 import { useBooking, SessionType } from "../contexts/BookingContext";
 import StepLayout from "./StepLayout";
 import { getStudioSuggestion, getStudioRate } from "../utils/studioSuggestion";
@@ -35,6 +35,11 @@ const SESSION_TYPES: {
     icon: <Radio className="w-6 h-6" />,
     description: "Professional recording",
   },
+  {
+    name: "Meetings / Classes",
+    icon: <Users className="w-6 h-6" />,
+    description: "Without Sound Operator",
+  },
 ];
 
 export default function SessionStep() {
@@ -54,12 +59,12 @@ export default function SessionStep() {
     });
 
     // Auto-advance after selection
-    // Special Rule: Only Drum Practice skips participants page and goes directly to studio
-    if (sessionType === "Only Drum Practice") {
-      const suggestion = getStudioSuggestion("Only Drum Practice", {});
+    // Special Rule: Only Drum Practice and Meetings/Classes skip participants page and go directly to studio
+    if (sessionType === "Only Drum Practice" || sessionType === "Meetings / Classes") {
+      const suggestion = getStudioSuggestion(sessionType, {});
       const rate = getStudioRate(
         suggestion.recommendedStudio,
-        "Only Drum Practice",
+        sessionType,
         {}
       );
 

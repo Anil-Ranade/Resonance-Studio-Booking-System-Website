@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Music2,
   LayoutDashboard,
@@ -15,8 +15,9 @@ import {
   Menu,
   X,
   ChevronRight,
-} from 'lucide-react';
-import { signOut, getSession } from '@/lib/supabaseAuth';
+  MessageCircle,
+} from "lucide-react";
+import { signOut, getSession } from "@/lib/supabaseAuth";
 
 interface AdminInfo {
   id: string;
@@ -26,11 +27,12 @@ interface AdminInfo {
 }
 
 const navItems = [
-  { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-  { label: 'Availability', href: '/admin/availability', icon: Clock },
-  { label: 'Bookings', href: '/admin/bookings', icon: Calendar },
-  { label: 'Staff', href: '/admin/staff', icon: Users },
-  { label: 'Settings', href: '/admin/settings', icon: Settings },
+  { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+  { label: "Availability", href: "/admin/availability", icon: Clock },
+  { label: "Bookings", href: "/admin/bookings", icon: Calendar },
+  { label: "Reminders", href: "/admin/reminders", icon: MessageCircle },
+  { label: "Staff", href: "/admin/staff", icon: Users },
+  { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
 export default function DashboardLayout({
@@ -47,10 +49,10 @@ export default function DashboardLayout({
   useEffect(() => {
     // Check for admin authentication
     const checkAuth = async () => {
-      const storedAdmin = localStorage.getItem('admin');
+      const storedAdmin = localStorage.getItem("admin");
 
       if (!storedAdmin) {
-        router.push('/admin/login');
+        router.push("/admin/login");
         return;
       }
 
@@ -58,20 +60,20 @@ export default function DashboardLayout({
         // Verify session is still valid
         const session = await getSession();
         if (!session) {
-          localStorage.removeItem('admin');
-          localStorage.removeItem('accessToken');
-          router.push('/admin/login');
+          localStorage.removeItem("admin");
+          localStorage.removeItem("accessToken");
+          router.push("/admin/login");
           return;
         }
-        
+
         // Update token in localStorage with fresh one
-        localStorage.setItem('accessToken', session.access_token);
-        
+        localStorage.setItem("accessToken", session.access_token);
+
         const adminData = JSON.parse(storedAdmin);
         setAdmin(adminData);
         setLoading(false);
       } catch {
-        router.push('/admin/login');
+        router.push("/admin/login");
         return;
       }
     };
@@ -83,11 +85,11 @@ export default function DashboardLayout({
     try {
       await signOut();
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     } finally {
-      localStorage.removeItem('admin');
-      localStorage.removeItem('accessToken');
-      router.push('/admin/login');
+      localStorage.removeItem("admin");
+      localStorage.removeItem("accessToken");
+      router.push("/admin/login");
     }
   };
 
@@ -117,7 +119,7 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside
         className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#0a0a0f] border-r border-white/5 transform transition-transform duration-300 lg:transform-none ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
         <div className="flex flex-col h-full">
@@ -151,19 +153,17 @@ export default function DashboardLayout({
                   onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                     isActive
-                      ? 'bg-violet-500/20 text-violet-400'
-                      : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+                      ? "bg-violet-500/20 text-violet-400"
+                      : "text-zinc-400 hover:bg-white/5 hover:text-white"
                   }`}
                 >
                   <Icon className="w-5 h-5" />
                   <span className="font-medium">{item.label}</span>
-                  {isActive && (
-                    <ChevronRight className="w-4 h-4 ml-auto" />
-                  )}
+                  {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
                 </Link>
               );
             })}
-            
+
             {/* Sign Out Button */}
             <button
               onClick={handleLogout}
@@ -178,13 +178,13 @@ export default function DashboardLayout({
           <div className="p-4 border-t border-white/5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold">
-                {admin?.name?.[0] || admin?.email?.[0] || 'A'}
+                {admin?.name?.[0] || admin?.email?.[0] || "A"}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-white font-medium truncate">
-                  {admin?.name || 'Admin'}
+                  {admin?.name || "Admin"}
                 </p>
-                <p className="text-zinc-500 text-sm truncate">{admin?.email}</p>
+                <p className="text-zinc-400 text-sm truncate">{admin?.email}</p>
               </div>
             </div>
           </div>
@@ -202,10 +202,11 @@ export default function DashboardLayout({
             >
               <Menu className="w-6 h-6" />
             </button>
-            
+
             <div className="hidden lg:block">
               <h1 className="text-lg font-semibold text-white">
-                {navItems.find((item) => item.href === pathname)?.label || 'Dashboard'}
+                {navItems.find((item) => item.href === pathname)?.label ||
+                  "Dashboard"}
               </h1>
             </div>
 

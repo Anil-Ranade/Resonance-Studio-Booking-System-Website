@@ -186,7 +186,7 @@ export async function sendBookingConfirmationEmail(
             <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Session</td>
             <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.session_type}</td>
           </tr>
-          ${booking.session_details ? `
+          ${booking.session_details && booking.session_details !== booking.session_type ? `
           <tr>
             <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Details</td>
             <td style="padding: 8px 0; color: #a1a1aa; font-size: 13px; text-align: right;">${booking.session_details}</td>
@@ -279,7 +279,7 @@ export async function sendAdminBookingConfirmationEmail(
             <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Session</td>
             <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.session_type}</td>
           </tr>
-          ${booking.session_details ? `
+          ${booking.session_details && booking.session_details !== booking.session_type ? `
           <tr>
             <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Details</td>
             <td style="padding: 8px 0; color: #a1a1aa; font-size: 13px; text-align: right;">${booking.session_details}</td>
@@ -366,7 +366,7 @@ export async function sendBookingUpdateEmail(
             <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Session</td>
             <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.session_type}</td>
           </tr>
-          ${booking.session_details ? `
+          ${booking.session_details && booking.session_details !== booking.session_type ? `
           <tr>
             <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Details</td>
             <td style="padding: 8px 0; color: #a1a1aa; font-size: 13px; text-align: right;">${booking.session_details}</td>
@@ -453,7 +453,7 @@ export async function sendBookingReminderEmail(
             <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Session</td>
             <td style="padding: 8px 0; color: #ffffff; font-size: 13px; text-align: right;">${booking.session_type}</td>
           </tr>
-          ${booking.session_details ? `
+          ${booking.session_details && booking.session_details !== booking.session_type ? `
           <tr>
             <td style="padding: 8px 0; color: #71717a; font-size: 13px;">Details</td>
             <td style="padding: 8px 0; color: #a1a1aa; font-size: 13px; text-align: right;">${booking.session_details}</td>

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Poppins, Geist_Mono } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navigation from "./components/Navigation";
 import Footer from "./components/Footer";
@@ -7,8 +7,8 @@ import MainContent from "./components/MainContent";
 import ClearCache from "./components/ClearCache";
 import { LocalBusinessStructuredData } from "./components/StructuredData";
 
-const poppins = Poppins({
-  variable: "--font-poppins",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
   weight: ["400", "500", "600", "700"],
@@ -85,6 +85,22 @@ export const metadata: Metadata = {
     siteName: "Resonance Jam Room",
     title: "Resonance Jam Room - Professional Recording & Jam Room Studio in Pune",
     description: "Pune's premier professional recording studio and jam room. Book online for music recording, mixing, mastering, podcast production, karaoke sessions, and band rehearsals.",
+    images: [
+      {
+        url: "/android-chrome-512x512.png",
+        width: 512,
+        height: 512,
+        alt: "Resonance Jam Room - Professional Recording Studio in Pune",
+      },
+    ],
+  },
+  
+  // Twitter Card
+  twitter: {
+    card: "summary_large_image",
+    title: "Resonance Jam Room - Professional Recording & Jam Room Studio in Pune",
+    description: "Pune's premier professional recording studio and jam room. Book online for music recording, mixing, mastering, karaoke sessions, and band rehearsals.",
+    images: ["/android-chrome-512x512.png"],
   },
   
   // App & Manifest
@@ -132,8 +148,8 @@ export default function RootLayout({
         <LocalBusinessStructuredData />
       </head>
       <body
-        className={`${poppins.variable} ${geistMono.variable} antialiased bg-noise font-sans flex flex-col min-h-screen`}
-        style={{ fontFamily: 'var(--font-poppins), sans-serif' }}
+        className={`${inter.variable} ${geistMono.variable} antialiased bg-noise font-sans flex flex-col min-h-screen`}
+        style={{ fontFamily: 'var(--font-inter), sans-serif' }}
       >
         {/* Clear cache on app open */}
         <ClearCache />

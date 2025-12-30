@@ -188,6 +188,12 @@ export function getStudioSuggestion(
         allowedStudios: ["Studio A"],
         explanation: "Recording sessions are only available in Studio A.",
       };
+    case "Meetings / Classes":
+      return {
+        recommendedStudio: "Studio C",
+        allowedStudios: ["Studio C", "Studio B", "Studio A"],
+        explanation: "For meetings/classes (without sound operator), Studio C is the most economical. You can upgrade to B or A for more space.",
+      };
   }
 
   // Default fallback
@@ -223,6 +229,7 @@ export const STUDIO_RATES: Record<StudioName, Record<string, number>> = {
     recording_audio: 700,
     recording_video: 800,
     recording_chroma: 1200,
+    meetings_classes: 350,
   },
   "Studio B": {
     karaoke_standard: 300,
@@ -230,12 +237,14 @@ export const STUDIO_RATES: Record<StudioName, Record<string, number>> = {
     live_5: 500,
     band_standard: 450,
     band_small: 400,
+    meetings_classes: 250,
   },
   "Studio C": {
     karaoke_standard: 250,
     live_standard: 350,
     band_standard: 350,
     band_small: 300,
+    meetings_classes: 200,
   },
 };
 
@@ -285,6 +294,9 @@ export function getStudioRate(
       if (options.recordingOption === "video_recording")
         return rates.recording_video || 800;
       return rates.recording_audio || 700;
+
+    case "Meetings / Classes":
+      return rates.meetings_classes || 200;
 
     default:
       return 300;

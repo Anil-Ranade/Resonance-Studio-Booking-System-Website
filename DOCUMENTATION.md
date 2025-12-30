@@ -112,6 +112,7 @@ A modern, full-stack studio booking application built for Resonance Studio. This
      - 🥁 **Only Drum Practice** - Solo drum practice
      - 🎸 **Band** - Full band rehearsal with equipment options
      - 📻 **Recording** - Audio/Video/Chroma Key packages
+     - 📋 **Meetings / Classes** - Without Sound Operator
 
 3. **Configure Session Details**
 
@@ -897,13 +898,14 @@ The application enforces the following security headers via `next.config.ts`:
 
 ### Session Type Details
 
-| Session Type            | Max Capacity | Equipment     | Studios |
-| ----------------------- | ------------ | ------------- | ------- |
-| **Karaoke**             | 30 people    | Sound system  | A, B, C |
-| **Live with Musicians** | 12 people    | Full setup    | A, B, C |
-| **Only Drum Practice**  | 1 person     | Drums only    | A       |
-| **Band**                | 6 people     | Configurable  | A, B, C |
-| **Recording**           | 4 people     | Pro equipment | A       |
+| Session Type            | Max Capacity | Equipment         | Studios |
+| ----------------------- | ------------ | ----------------- | ------- |
+| **Karaoke**             | 30 people    | Sound system      | A, B, C |
+| **Live with Musicians** | 12 people    | Full setup        | A, B, C |
+| **Only Drum Practice**  | 1 person     | Drums only        | A       |
+| **Band**                | 6 people     | Configurable      | A, B, C |
+| **Recording**           | 4 people     | Pro equipment     | A       |
+| **Meetings / Classes**  | Flexible     | No Sound Operator | A, B, C |
 
 ### Band Equipment Options
 
@@ -917,6 +919,12 @@ The application enforces the following security headers via `next.config.ts`:
 - Audio Recording (₹700/hr)
 - Video Recording (₹800/hr)
 - Chroma Key (₹1200/hr)
+
+### Meetings / Classes (without Sound Operator)
+
+- Studio C (₹200/hr)
+- Studio B (₹250/hr)
+- Studio A (₹350/hr)
 
 ---
 

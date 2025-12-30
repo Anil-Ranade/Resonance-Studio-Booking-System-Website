@@ -12,6 +12,12 @@ export const metadata: Metadata = {
     description:
       "Understand our cancellation policy, payment terms, and booking guidelines before your session.",
   },
+  twitter: {
+    card: "summary",
+    title: "Booking Policies - Resonance Jam Room",
+    description:
+      "Understand our cancellation policy, payment terms, and booking guidelines.",
+  },
 };
 
 export default function PoliciesLayout({

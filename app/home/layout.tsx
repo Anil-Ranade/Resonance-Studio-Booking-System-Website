@@ -12,6 +12,12 @@ export const metadata: Metadata = {
     description:
       "Three state-of-the-art studios dedicated to premium karaoke, live rehearsal sessions, band practices, and professional recording services.",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Resonance Jam Room - Where Music Comes Alive",
+    description:
+      "Three state-of-the-art studios for karaoke, rehearsals, and professional recording in Pune.",
+  },
 };
 
 export default function HomeLayout({
