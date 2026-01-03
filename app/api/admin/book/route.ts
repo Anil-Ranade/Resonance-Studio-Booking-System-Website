@@ -126,87 +126,121 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for exact duplicate booking (same phone, studio, date, start_time, end_time)
-    const { data: duplicateBookings } = await supabaseServer
-      .from("bookings")
-      .select("id")
-      .eq("phone_number", phone)
-      .eq("studio", studio)
-      .eq("date", date)
-      .eq("start_time", start_time)
-      .eq("end_time", end_time)
-      .in("status", ["confirmed"]);
-
-    if (duplicateBookings && duplicateBookings.length > 0) {
-      return NextResponse.json(
-        { error: "A booking already exists for this exact time slot" },
-        { status: 409 }
-      );
-    }
-
-    // Check for conflicting bookings (admin can see conflicts but we still prevent double booking)
-    const { data: conflictingBookings, error: conflictError } = await supabaseServer
-      .from("bookings")
-      .select("id, start_time, end_time, name, phone_number")
-      .eq("studio", studio)
-      .eq("date", date)
-      .in("status", ["confirmed"])
-      .lt("start_time", end_time)
-      .gt("end_time", start_time);
-
-    if (conflictError) {
-      return NextResponse.json(
-        { error: conflictError.message },
-        { status: 500 }
-      );
-    }
-
-    if (conflictingBookings && conflictingBookings.length > 0 && !skip_validation) {
-      const conflicts = conflictingBookings.map(b => 
-        `${b.start_time}-${b.end_time} (${b.name || b.phone_number})`
-      ).join(", ");
-      return NextResponse.json(
-        { 
-          error: "Time slot conflicts with existing bookings",
-          conflicts: conflictingBookings,
-          message: `Conflicting bookings: ${conflicts}`
-        },
-        { status: 409 }
-      );
-    }
-
     // Calculate total amount if rate_per_hour is provided
     let total_amount: number | null = null;
     if (rate_per_hour) {
       total_amount = Math.round(rate_per_hour * durationHours);
     }
 
-    // Insert booking row with status 'confirmed' (admin bookings are auto-confirmed)
-    const { data: booking, error: insertError } = await supabaseServer
-      .from("bookings")
-      .insert({
-        phone_number: phone,
-        name,
-        email,
-        studio,
-        session_type: session_type || "Walk-in",
-        session_details: session_details || session_type || "Admin booking",
-        date,
-        start_time,
-        end_time,
-        status: "confirmed",
-        total_amount,
-        notes: notes || "Booked by admin",
-      })
-      .select()
-      .single();
+    // Use atomic function to prevent race conditions
+    // Admin can still skip validation if needed, but we check conflicts first and show them
+    if (!skip_validation) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: result, error: rpcError } = await supabaseServer.rpc(
+        "create_booking_atomic",
+        {
+          p_phone_number: phone,
+          p_name: name || null,
+          p_email: email || null,
+          p_studio: studio,
+          p_session_type: session_type || "Walk-in",
+          p_session_details: session_details || session_type || "Admin booking",
+          p_date: date,
+          p_start_time: start_time,
+          p_end_time: end_time,
+          p_total_amount: total_amount,
+          p_notes: notes || "Booked by admin",
+          p_created_by_staff_id: null,
+        }
+      ) as { data: { success: boolean; error?: string; booking_id?: string; booking?: any } | null; error: any };
 
-    if (insertError) {
-      return NextResponse.json(
-        { error: insertError.message },
-        { status: 500 }
-      );
+      if (rpcError) {
+        console.error("[Admin Book API] RPC error:", rpcError);
+        return NextResponse.json(
+          { error: rpcError.message || "Failed to create booking" },
+          { status: 500 }
+        );
+      }
+
+      if (!result || !result.success) {
+        // Check if there are actual conflicts to report
+        const { data: conflictingBookings } = await supabaseServer
+          .from("bookings")
+          .select("id, start_time, end_time, name, phone_number")
+          .eq("studio", studio)
+          .eq("date", date)
+          .in("status", ["confirmed"])
+          .lt("start_time", end_time)
+          .gt("end_time", start_time);
+
+        if (conflictingBookings && conflictingBookings.length > 0) {
+          const conflicts = conflictingBookings.map(b => 
+            `${b.start_time}-${b.end_time} (${b.name || b.phone_number})`
+          ).join(", ");
+          return NextResponse.json(
+            { 
+              error: "Time slot conflicts with existing bookings",
+              conflicts: conflictingBookings,
+              message: `Conflicting bookings: ${conflicts}`
+            },
+            { status: 409 }
+          );
+        }
+
+        return NextResponse.json(
+          { error: result?.error || "Time slot is no longer available" },
+          { status: 409 }
+        );
+      }
+
+      // Get the full booking record
+      const { data: booking, error: fetchError } = await supabaseServer
+        .from("bookings")
+        .select("*")
+        .eq("id", result.booking_id)
+        .single();
+
+      if (fetchError || !booking) {
+        console.error("[Admin Book API] Failed to fetch created booking:", fetchError);
+        return NextResponse.json(
+          { error: "Booking created but failed to retrieve details" },
+          { status: 500 }
+        );
+      }
+
+      // Continue with Google Calendar, email, etc. (booking variable is now defined)
+      var createdBooking = booking;
+    } else {
+      // Skip validation - direct insert (admin override)
+      const { data: booking, error: insertError } = await supabaseServer
+        .from("bookings")
+        .insert({
+          phone_number: phone,
+          name,
+          email,
+          studio,
+          session_type: session_type || "Walk-in",
+          session_details: session_details || session_type || "Admin booking",
+          date,
+          start_time,
+          end_time,
+          status: "confirmed",
+          total_amount,
+          notes: notes || "Booked by admin (validation skipped)",
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        return NextResponse.json(
+          { error: insertError.message },
+          { status: 500 }
+        );
+      }
+      var createdBooking = booking;
     }
+
+    const booking = createdBooking;
 
     // Try to create Google Calendar event if env vars are present
     let googleEventId: string | null = null;

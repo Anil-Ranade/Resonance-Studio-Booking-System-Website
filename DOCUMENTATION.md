@@ -978,6 +978,6 @@ For technical support or questions about the booking system, please contact:
 
 ---
 
-_Last updated: December 2025_
+_Last updated: January 2026_
 
 _Built for Resonance Studio_
