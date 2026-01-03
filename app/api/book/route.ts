@@ -140,58 +140,64 @@ export async function POST(request: Request) {
       );
     }
 
-    // Re-check slot availability: query bookings for same studio+date
-    // where status IN ('confirmed','pending') and overlapping times (with buffer)
-    const bufferMinutes = bookingSettings.bookingBuffer;
-    
-    // Adjust times to account for buffer
-    const adjustedStartMinutes = startMinutes - bufferMinutes;
-    const adjustedEndMinutes = endMinutes + bufferMinutes;
-    const adjustedStartTime = `${Math.floor(Math.max(0, adjustedStartMinutes) / 60).toString().padStart(2, '0')}:${(Math.max(0, adjustedStartMinutes) % 60).toString().padStart(2, '0')}`;
-    const adjustedEndTime = `${Math.floor(Math.min(1439, adjustedEndMinutes) / 60).toString().padStart(2, '0')}:${(Math.min(1439, adjustedEndMinutes) % 60).toString().padStart(2, '0')}`;
-
-    // Check for exact duplicate booking (same phone, studio, date, start_time, end_time)
-    const { data: duplicateBookings } = await supabaseServer
-      .from("bookings")
-      .select("id")
-      .eq("phone_number", phone)
-      .eq("studio", studio)
-      .eq("date", date)
-      .eq("start_time", start_time)
-      .eq("end_time", end_time)
-      .in("status", ["confirmed"]);
-
-    if (duplicateBookings && duplicateBookings.length > 0) {
-      return NextResponse.json(
-        { error: "You already have a booking for this exact time slot" },
-        { status: 409 }
-      );
+    // Calculate total amount if rate_per_hour is provided
+    let total_amount: number | null = null;
+    if (rate_per_hour) {
+      total_amount = Math.round(rate_per_hour * durationHours);
     }
 
-    const { data: conflictingBookings, error: conflictError } = await supabaseServer
-      .from("bookings")
-      .select("id")
-      .eq("studio", studio)
-      .eq("date", date)
-      .in("status", ["confirmed"])
-      .lt("start_time", adjustedEndTime)
-      .gt("end_time", adjustedStartTime);
+    // Use atomic function to prevent race conditions
+    // This function acquires row-level locks before checking for conflicts
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: result, error: rpcError } = await supabaseServer.rpc(
+      "create_booking_atomic",
+      {
+        p_phone_number: phone,
+        p_name: name || null,
+        p_email: email || null,
+        p_studio: studio,
+        p_session_type: session_type,
+        p_session_details: session_details || session_type,
+        p_date: date,
+        p_start_time: start_time,
+        p_end_time: end_time,
+        p_total_amount: total_amount,
+        p_notes: null,
+        p_created_by_staff_id: null,
+      }
+    ) as { data: { success: boolean; error?: string; booking_id?: string; booking?: any } | null; error: any };
 
-    if (conflictError) {
+    if (rpcError) {
+      console.error("[Book API] RPC error:", rpcError);
       return NextResponse.json(
-        { error: conflictError.message },
+        { error: rpcError.message || "Failed to create booking" },
         { status: 500 }
       );
     }
 
-    if (conflictingBookings && conflictingBookings.length > 0) {
+    if (!result || !result.success) {
       return NextResponse.json(
-        { error: "Time slot is no longer available" },
+        { error: result?.error || "Time slot is no longer available" },
         { status: 409 }
       );
     }
 
-    // Check if user exists, if not create them
+    // Get the full booking record
+    const { data: booking, error: fetchError } = await supabaseServer
+      .from("bookings")
+      .select("*")
+      .eq("id", result.booking_id)
+      .single();
+
+    if (fetchError || !booking) {
+      console.error("[Book API] Failed to fetch created booking:", fetchError);
+      return NextResponse.json(
+        { error: "Booking created but failed to retrieve details" },
+        { status: 500 }
+      );
+    }
+
+    // Check if user exists, if not create them (after successful booking)
     const { data: existingUser } = await supabaseServer
       .from("users")
       .select("*")
@@ -199,52 +205,13 @@ export async function POST(request: Request) {
       .single();
 
     if (!existingUser && name && email) {
-      // Create new user
       const { error: createUserError } = await supabaseServer
         .from("users")
         .insert({ phone_number: phone, name, email });
 
       if (createUserError) {
         console.error("Failed to create user:", createUserError.message);
-        // Don't fail the booking, just log the error
       }
-    }
-
-    // Calculate total amount if rate_per_hour is provided
-    let total_amount: number | null = null;
-    if (rate_per_hour) {
-      const startParts = start_time.split(":").map(Number);
-      const endParts = end_time.split(":").map(Number);
-      const startMinutes = startParts[0] * 60 + startParts[1];
-      const endMinutes = endParts[0] * 60 + endParts[1];
-      const durationHours = (endMinutes - startMinutes) / 60;
-      total_amount = Math.round(rate_per_hour * durationHours);
-    }
-
-    // Insert booking row with status 'confirmed'
-    const { data: booking, error: insertError } = await supabaseServer
-      .from("bookings")
-      .insert({
-        phone_number: phone,
-        name,
-        email,
-        studio,
-        session_type,
-        session_details: session_details || session_type,
-        date,
-        start_time,
-        end_time,
-        status: "confirmed",
-        total_amount,
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      return NextResponse.json(
-        { error: insertError.message },
-        { status: 500 }
-      );
     }
 
     // Try to create Google Calendar event if env vars are present
@@ -473,64 +440,56 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Re-check slot availability (excluding the current booking)
-    const bufferMinutes = bookingSettings.bookingBuffer;
-    const adjustedStartMinutes = startMinutes - bufferMinutes;
-    const adjustedEndMinutes = endMinutes + bufferMinutes;
-    const adjustedStartTime = `${Math.floor(Math.max(0, adjustedStartMinutes) / 60).toString().padStart(2, '0')}:${(Math.max(0, adjustedStartMinutes) % 60).toString().padStart(2, '0')}`;
-    const adjustedEndTime = `${Math.floor(Math.min(1439, adjustedEndMinutes) / 60).toString().padStart(2, '0')}:${(Math.min(1439, adjustedEndMinutes) % 60).toString().padStart(2, '0')}`;
-
-    const { data: conflictingBookings, error: conflictError } = await supabaseServer
-      .from("bookings")
-      .select("id")
-      .eq("studio", studio)
-      .eq("date", date)
-      .in("status", ["confirmed"])
-      .neq("id", original_booking_id) // Exclude the current booking
-      .lt("start_time", adjustedEndTime)
-      .gt("end_time", adjustedStartTime);
-
-    if (conflictError) {
-      return NextResponse.json(
-        { error: conflictError.message },
-        { status: 500 }
-      );
-    }
-
-    if (conflictingBookings && conflictingBookings.length > 0) {
-      return NextResponse.json(
-        { error: "Time slot is no longer available" },
-        { status: 409 }
-      );
-    }
-
     // Calculate total amount if rate_per_hour is provided
     let total_amount: number | null = null;
     if (rate_per_hour) {
       total_amount = Math.round(rate_per_hour * durationHours);
     }
 
-    // Update the booking
-    const { data: updatedBooking, error: updateError } = await supabaseServer
+    // Use atomic function to prevent race conditions during update
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: result, error: rpcError } = await supabaseServer.rpc(
+      "update_booking_atomic",
+      {
+        p_booking_id: original_booking_id,
+        p_phone_number: phone,
+        p_name: name || null,
+        p_studio: studio,
+        p_session_type: session_type,
+        p_session_details: session_details || session_type,
+        p_date: date,
+        p_start_time: start_time,
+        p_end_time: end_time,
+        p_total_amount: total_amount,
+      }
+    ) as { data: { success: boolean; error?: string; booking_id?: string; booking?: any } | null; error: any };
+
+    if (rpcError) {
+      console.error("[Book API PUT] RPC error:", rpcError);
+      return NextResponse.json(
+        { error: rpcError.message || "Failed to update booking" },
+        { status: 500 }
+      );
+    }
+
+    if (!result || !result.success) {
+      return NextResponse.json(
+        { error: result?.error || "Time slot is no longer available" },
+        { status: 409 }
+      );
+    }
+
+    // Get the full updated booking record
+    const { data: updatedBooking, error: updateFetchError } = await supabaseServer
       .from("bookings")
-      .update({
-        name,
-        studio,
-        session_type,
-        session_details: session_details || session_type,
-        date,
-        start_time,
-        end_time,
-        total_amount,
-        updated_at: new Date().toISOString(),
-      })
+      .select("*")
       .eq("id", original_booking_id)
-      .select()
       .single();
 
-    if (updateError) {
+    if (updateFetchError || !updatedBooking) {
+      console.error("[Book API PUT] Failed to fetch updated booking:", updateFetchError);
       return NextResponse.json(
-        { error: updateError.message },
+        { error: "Booking updated but failed to retrieve details" },
         { status: 500 }
       );
     }

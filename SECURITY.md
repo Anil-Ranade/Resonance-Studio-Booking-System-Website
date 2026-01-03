@@ -93,6 +93,8 @@ The following headers are enforced via `next.config.ts`:
 
 ### 7. Booking Security
 
+- **Atomic booking with row-level locking** - Uses PostgreSQL `FOR UPDATE` to prevent race conditions when two users try to book the same slot simultaneously
+- **Database-level conflict prevention** - All booking creation and updates use the `create_booking_atomic` and `update_booking_atomic` PostgreSQL functions
 - **Duplicate booking prevention** - Exact same phone, studio, date, start/end time are rejected
 - **Time-based conflict checking** - Prevents overlapping bookings for same studio
 - **Immediate confirmation** - All bookings are confirmed immediately (no pending state)
@@ -158,21 +160,12 @@ Run `npm audit` regularly to check for vulnerabilities in dependencies.
 
 Current status (as of December 2025): **0 vulnerabilities**
 
-## Recent Security Updates (December 2025)
+## Recent Security Updates (January 2026)
 
-- Added **secure booking page access** requiring authentication
-- Implemented **cookie-based session management** with HttpOnly secure cookies
-- Added **auto-login functionality** for trusted devices
-- Enhanced **session security** with automatic token refresh
-- Added **logout endpoint** for proper session cleanup
-- Improved **staff management** with secure password handling
-- Integrated **Google Sheets** for secure booking audit logs
-- Added **duplicate booking prevention** across all booking APIs
-- Implemented **admin/staff booking creation** with proper attribution
-- Added **WhatsApp reminder API** with admin authentication and audit logging
-- Implemented **invoice printing** with client-side generation (no server storage)
-- Added **booking restore/delete** functionality with proper authorization
-- Added **24-hour time window** restriction for WhatsApp reminders
+- Added **atomic booking mechanism** with PostgreSQL row-level locking to prevent race conditions
+- Implemented **`create_booking_atomic`** and **`update_booking_atomic`** database functions
+- Updated all booking APIs (`/api/book`, `/api/admin/book`, `/api/staff/book`) to use atomic operations
+- Preserved admin/staff **skip_validation** override capability for emergency bookings
 
 ## Contact
 
