@@ -27,7 +27,16 @@ BEGIN
     INTO t_bookings
     FROM bookings 
     WHERE phone_number = p_phone_number 
-    AND status = 'completed' 
+    AND (
+        status = 'completed' 
+        OR (
+            status = 'confirmed' 
+            AND (
+                date < CURRENT_DATE 
+                OR (date = CURRENT_DATE AND end_time <= CURRENT_TIME)
+            )
+        )
+    )
     AND is_loyalty_rewarded = FALSE;
     
     IF t_bookings IS NULL OR array_length(t_bookings, 1) IS NULL THEN
