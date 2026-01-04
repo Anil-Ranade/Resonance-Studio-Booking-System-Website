@@ -166,6 +166,7 @@ Current status (as of December 2025): **0 vulnerabilities**
 - Implemented **`create_booking_atomic`** and **`update_booking_atomic`** database functions
 - Updated all booking APIs (`/api/book`, `/api/admin/book`, `/api/staff/book`) to use atomic operations
 - Preserved admin/staff **skip_validation** override capability for emergency bookings
+- Added **`check_rate_limit`** database function infrastructure for future IP-based rate limiting
 
 ## Contact
 

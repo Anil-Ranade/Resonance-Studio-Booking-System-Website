@@ -176,18 +176,18 @@ A modern, full-stack studio booking application built for Resonance Studio. This
     └──────────────┘     └──────────────┘     └──────────────┘
                                │
            ┌───────────────────┼───────────────────┐
-           ▼                   ▼                   ▼
-    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-    │ Availability │    │   Booking    │    │   Settings   │
-    │  Management  │    │   History    │    │  & Config    │
-    └──────────────┘    └──────────────┘    └──────────────┘
-           │                   │                   │
-           ▼                   ▼                   ▼
-    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-    │ Block/Unblock│    │ View/Cancel/ │    │ Min/Max Hours│
-    │ Time Slots   │    │ Confirm      │    │ Buffer Time  │
-    │ Bulk Ops     │    │ Bookings     │    │ Advance Days │
-    └──────────────┘    └──────────────┘    └──────────────┘
+            ▼                   ▼                   ▼                   ▼
+    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+    │ Availability │    │   Booking    │    │   Settings   │    │   Payments   │
+    │  Management  │    │   History    │    │  & Config    │    │ Verification │
+    └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
+           │                   │                   │                   │
+           ▼                   ▼                   ▼                   ▼
+    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+    │ Block/Unblock│    │ View/Cancel/ │    │ Min/Max Hours│    │ Verify       │
+    │ Time Slots   │    │ Confirm      │    │ Buffer Time  │    │ Payments     │
+    │ Bulk Ops     │    │ Bookings     │    │ Advance Days │    │              │
+    └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
 ```
 
 ### Admin Features
@@ -227,6 +227,13 @@ A modern, full-stack studio booking application built for Resonance Studio. This
   - Booking buffer time (minutes)
   - Advance booking days limit
   - Operating hours configuration
+- **Payments** (`/admin/payments`)
+  - View bookings with "Pay Now" discount
+  - Verify payment status (Pending -> Verified)
+
+- **Reminders** (`/admin/reminders`)
+  - View bookings requiring reminders
+  - Send WhatsApp reminders manually
 
 ### Edit Booking Flow
 
@@ -446,10 +453,13 @@ Text Colors:
 │   │   ├── page.tsx            # Admin root (redirects)
 │   │   ├── login/              # Admin login
 │   │   │   └── page.tsx
+│   │   ├── reminders/          # Standalone reminders (WhatsApp)
+│   │   │   └── page.tsx
 │   │   └── (dashboard)/        # Protected admin routes
 │   │       ├── layout.tsx      # Dashboard layout with nav
 │   │       ├── dashboard/      # Overview stats
 │   │       ├── bookings/       # Booking management + WhatsApp
+│   │       ├── payments/       # Payment verification
 │   │       ├── availability/   # Slot management
 │   │       ├── staff/          # Staff management
 │   │       └── settings/       # System settings
@@ -499,8 +509,11 @@ Text Colors:
 │   │       ├── login/          # Staff authentication
 │   │       ├── stats/          # Staff dashboard statistics
 │   │       ├── bookings/       # Staff booking operations
+│   │       ├── bookings/       # Staff booking operations
 │   │       └── book/           # Staff booking creation
 │   │
+│   ├── cashback/           # Cashback/Loyalty endpoints
+│   ├── whatsapp-reminder/  # Reminder management
 │   ├── components/             # Shared components
 │   │   ├── Navigation.tsx      # Main navigation
 │   │   ├── Footer.tsx          # Site footer
@@ -560,6 +573,7 @@ Text Colors:
 - ✅ Interactive multi-step booking wizard
 - ✅ Real-time availability checking
 - ✅ Multiple session types (Karaoke, Band, Recording, etc.)
+- ✅ **Prompt Payment Discount** ("Pay Now & Save")
 - ✅ Smart studio suggestions based on group size
 - ✅ OTP-based email verification
 - ✅ Email booking confirmations
@@ -577,6 +591,8 @@ Text Colors:
 - ✅ Dashboard with booking statistics & revenue
 - ✅ Booking management (confirm, cancel, no_show, view details)
 - ✅ Admin booking creation for walk-in customers
+- ✅ **Payment Verification** - Verify prompt payment bookings
+- ✅ **Admin Reminders** - Standalone page for managing WhatsApp reminders
 - ✅ WhatsApp reminder messages (24-hour time window before booking)
 - ✅ Invoice printing for bookings
 - ✅ Booking restore (uncancel/un-no-show) and delete
@@ -629,7 +645,7 @@ Text Colors:
 | `studios`            | Studio information (name, type, capacity, hourly rates, amenities) |
 | `users`              | Customer information (phone, name, email, verification status)     |
 | `admin_users`        | Admin user accounts (roles: admin, super_admin, staff)             |
-| `bookings`           | All booking records with status tracking                           |
+| `bookings`           | All booking records (status, payment_status, is_prompt_payment)    |
 | `availability_slots` | Blocked time slots per studio                                      |
 | `booking_settings`   | System configuration (min/max hours, buffer, etc.)                 |
 | `login_otps`         | OTP verification records (bcrypt hashed)                           |
@@ -703,6 +719,7 @@ Text Colors:
 | `PUT`    | `/api/admin/settings`     | Update settings       |
 | `POST`   | `/api/admin/book`         | Admin creates booking |
 | `POST`   | `/api/admin/whatsapp-reminder` | Mark reminder sent |
+| `GET`    | `/api/admin/cashback`     | Get loyalty/cashback data |
 
 ### Staff
 

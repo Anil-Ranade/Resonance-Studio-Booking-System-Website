@@ -30,6 +30,8 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Configurable booking duration limits (min/max hours)
 - Advance booking restrictions (up to 30 days)
 - Booking buffer time between sessions
+- **Prompt Payment Discount** - "Pay Now & Save" logic with calculated discounts
+
 
 ### 📱 Secure Authentication
 
@@ -96,9 +98,14 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - **Booking restore/delete** - Restore cancelled bookings or permanently delete
 - **Staff management** - Create and manage staff members
 - Availability slot management (block/unblock)
+- Payment verification management
 - Bulk availability operations
+
 - Configurable booking settings
+- **Payment Verification** - Verify prompt payment bookings (`payments/`)
+- **Admin Reminders** - Standalone page for managing WhatsApp reminders
 - Audit logging for all admin actions
+
 
 ### 👥 Staff Portal
 
@@ -274,11 +281,13 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │
 │   ├── admin/                  # Admin section
 │   │   ├── login/              # Admin login
+│   │   ├── reminders/          # Standalone reminders page
 │   │   └── (dashboard)/        # Protected routes
 │   │       ├── dashboard/      # Overview stats
 │   │       ├── bookings/       # Booking management
 │   │       ├── availability/   # Slot management
 │   │       ├── staff/          # Staff management
+│   │       ├── payments/       # Payment verification
 │   │       └── settings/       # Configuration
 │   │
 │   ├── staff/                  # Staff portal
