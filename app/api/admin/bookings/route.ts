@@ -114,7 +114,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { id, status, notes, studio, date, start_time, end_time, session_type, session_details, name } = body;
+    const { id, status, notes, studio, date, start_time, end_time, session_type, session_details, name, payment_status } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -138,6 +138,7 @@ export async function PUT(request: NextRequest) {
 
     const updates: Record<string, any> = {};
     if (status) updates.status = status;
+    if (payment_status) updates.payment_status = payment_status;
     if (notes !== undefined) updates.notes = notes;
     if (studio !== undefined) updates.studio = studio;
     if (date !== undefined) updates.date = date;

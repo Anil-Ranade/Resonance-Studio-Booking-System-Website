@@ -18,6 +18,7 @@ export type SessionType =
   | "Band"
   | "Recording"
   | "Meetings / Classes";
+export type SoundOperatorOption = "Required" | "Not Required";
 export type KaraokeOption = "1_5" | "6_10" | "11_20" | "21_30";
 export type LiveMusicianOption = "1_2" | "3_4" | "5" | "6_8" | "9_12";
 export type BandEquipment = "drum" | "amps" | "guitars" | "keyboard";
@@ -50,6 +51,7 @@ export interface EditBookingData {
 // Store original booking choices for edit mode
 export interface OriginalBookingChoices {
   sessionType: SessionType | "";
+  soundOperator?: SoundOperatorOption;
   sessionDetails: string;
   studio: StudioName | "";
   date: string;
@@ -67,6 +69,7 @@ export interface BookingDraft {
 
   // Step 2: Session
   sessionType: SessionType | "";
+  soundOperator?: SoundOperatorOption;
 
   // Step 3: Participants
   karaokeOption: KaraokeOption | "";
@@ -89,6 +92,9 @@ export interface BookingDraft {
   // Device
   deviceFingerprint: string;
   deviceTrusted: boolean;
+
+  // Payment
+  isPromptPayment: boolean;
 
   // OTP verified
   otpVerified: boolean;
@@ -140,6 +146,7 @@ const initialDraft: BookingDraft = {
   duration: 1,
   deviceFingerprint: "",
   deviceTrusted: false,
+  isPromptPayment: false,
   otpVerified: false,
   isEditMode: false,
   originalBookingId: "",

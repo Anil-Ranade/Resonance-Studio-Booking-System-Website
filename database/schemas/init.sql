@@ -25,7 +25,7 @@ END $$;
 
 -- Session type
 DO $$ BEGIN
-    CREATE TYPE session_type AS ENUM ('karaoke', 'live', 'drum_practice', 'band', 'recording', 'meetings_classes');
+    CREATE TYPE session_type AS ENUM ('karaoke', 'live', 'drum_practice', 'band', 'recording');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
@@ -37,9 +37,23 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
+-- Reminder type
+DO $$ BEGIN
+    CREATE TYPE reminder_type AS ENUM ('confirmation', '24h_reminder', '1h_reminder');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- Reminder status type
+DO $$ BEGIN
+    CREATE TYPE reminder_status AS ENUM ('pending', 'sent', 'failed', 'cancelled');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
 -- Audit action type
 DO $$ BEGIN
-    CREATE TYPE audit_action AS ENUM ('create', 'update', 'delete', 'confirm', 'cancel', 'block', 'unblock', 'login', 'logout', 'whatsapp_reminder_sent');
+    CREATE TYPE audit_action AS ENUM ('create', 'update', 'delete', 'confirm', 'cancel', 'block', 'unblock', 'login', 'logout');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
@@ -131,8 +145,6 @@ CREATE TABLE IF NOT EXISTS bookings (
     google_event_id VARCHAR(255),
     email_sent BOOLEAN DEFAULT FALSE,
     sms_sent BOOLEAN DEFAULT FALSE,
-    whatsapp_reminder_sent_at TIMESTAMPTZ DEFAULT NULL,
-    created_by_staff_id UUID REFERENCES admin_users(id) ON DELETE SET NULL,
     cancelled_at TIMESTAMPTZ,
     cancelled_by VARCHAR(50),
     cancellation_reason TEXT,
@@ -155,7 +167,6 @@ CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
 CREATE INDEX IF NOT EXISTS idx_bookings_studio_date ON bookings(studio, date);
 CREATE INDEX IF NOT EXISTS idx_bookings_date_status ON bookings(date, status);
 CREATE INDEX IF NOT EXISTS idx_bookings_created_at ON bookings(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_bookings_created_by_staff ON bookings(created_by_staff_id);
 
 -- =====================================================
 -- TABLE: availability_slots
@@ -257,6 +268,32 @@ CREATE INDEX IF NOT EXISTS idx_trusted_devices_phone_fingerprint ON trusted_devi
 CREATE INDEX IF NOT EXISTS idx_trusted_devices_is_active ON trusted_devices(is_active);
 
 -- =====================================================
+-- TABLE: reminders
+-- Description: Scheduled booking reminders
+-- (confirmation, 24h before, 1h before)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS reminders (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL DEFAULT 'confirmation',
+    status VARCHAR(20) DEFAULT 'pending',
+    scheduled_at TIMESTAMPTZ NOT NULL,
+    sent_at TIMESTAMPTZ,
+    error_message TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Constraints
+    CONSTRAINT chk_reminder_type CHECK (type IN ('confirmation', '24h_reminder', '1h_reminder')),
+    CONSTRAINT chk_reminder_status CHECK (status IN ('pending', 'sent', 'failed', 'cancelled'))
+);
+
+-- Create indexes on reminders
+CREATE INDEX IF NOT EXISTS idx_reminders_booking_id ON reminders(booking_id);
+CREATE INDEX IF NOT EXISTS idx_reminders_status ON reminders(status);
+CREATE INDEX IF NOT EXISTS idx_reminders_scheduled_at ON reminders(scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_reminders_pending ON reminders(status, scheduled_at) WHERE status = 'pending';
+
+-- =====================================================
 -- TABLE: rate_cards
 -- Description: Pricing per studio, session type, and 
 -- sub-option
@@ -307,6 +344,34 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_entity_type ON audit_logs(entity_type);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_entity_id ON audit_logs(entity_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
+
+-- =====================================================
+-- TABLE: contact_submissions
+-- Description: Contact form submissions
+-- =====================================================
+CREATE TABLE IF NOT EXISTS contact_submissions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100),
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(15),
+    subject VARCHAR(255),
+    message TEXT NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending',
+    responded_at TIMESTAMPTZ,
+    responded_by UUID REFERENCES admin_users(id) ON DELETE SET NULL,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Constraints
+    CONSTRAINT chk_contact_status CHECK (status IN ('pending', 'responded', 'closed', 'spam'))
+);
+
+-- Create indexes on contact_submissions
+CREATE INDEX IF NOT EXISTS idx_contact_submissions_email ON contact_submissions(email);
+CREATE INDEX IF NOT EXISTS idx_contact_submissions_status ON contact_submissions(status);
+CREATE INDEX IF NOT EXISTS idx_contact_submissions_created_at ON contact_submissions(created_at DESC);
 
 -- =====================================================
 -- UPDATE TRIGGERS
@@ -370,6 +435,13 @@ CREATE TRIGGER update_rate_cards_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+-- Trigger for contact_submissions
+DROP TRIGGER IF EXISTS update_contact_submissions_updated_at ON contact_submissions;
+CREATE TRIGGER update_contact_submissions_updated_at
+    BEFORE UPDATE ON contact_submissions
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
 -- =====================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- =====================================================
@@ -383,8 +455,10 @@ ALTER TABLE availability_slots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE booking_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE login_otps ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trusted_devices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reminders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rate_cards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contact_submissions ENABLE ROW LEVEL SECURITY;
 
 -- Studios Policies (Public read, Admin write)
 DROP POLICY IF EXISTS "Studios are viewable by everyone" ON studios;
@@ -460,6 +534,11 @@ DROP POLICY IF EXISTS "Trusted devices managed by service role" ON trusted_devic
 CREATE POLICY "Trusted devices managed by service role" ON trusted_devices
     FOR ALL USING (auth.role() = 'service_role');
 
+-- Reminders Policies (Service role only)
+DROP POLICY IF EXISTS "Reminders managed by service role" ON reminders;
+CREATE POLICY "Reminders managed by service role" ON reminders
+    FOR ALL USING (auth.role() = 'service_role');
+
 -- Rate Cards Policies
 DROP POLICY IF EXISTS "Rate cards are viewable by everyone" ON rate_cards;
 CREATE POLICY "Rate cards are viewable by everyone" ON rate_cards
@@ -481,6 +560,23 @@ CREATE POLICY "Audit logs viewable by admins" ON audit_logs
 DROP POLICY IF EXISTS "Audit logs insertable by service role" ON audit_logs;
 CREATE POLICY "Audit logs insertable by service role" ON audit_logs
     FOR INSERT WITH CHECK (auth.role() = 'service_role');
+
+-- Contact Submissions Policies
+DROP POLICY IF EXISTS "Contact submissions insertable by everyone" ON contact_submissions;
+CREATE POLICY "Contact submissions insertable by everyone" ON contact_submissions
+    FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Contact submissions viewable by admins" ON contact_submissions;
+CREATE POLICY "Contact submissions viewable by admins" ON contact_submissions
+    FOR SELECT USING (
+        auth.uid() IN (SELECT id FROM admin_users WHERE is_active = true)
+    );
+
+DROP POLICY IF EXISTS "Contact submissions updatable by admins" ON contact_submissions;
+CREATE POLICY "Contact submissions updatable by admins" ON contact_submissions
+    FOR UPDATE USING (
+        auth.uid() IN (SELECT id FROM admin_users WHERE is_active = true)
+    );
 
 -- =====================================================
 -- SAMPLE DATA (Optional - for development/testing)
@@ -512,25 +608,25 @@ INSERT INTO rate_cards (studio, session_type, sub_option, hourly_rate, min_parti
     ('Studio A', 'recording', 'audio', 700, 1, 4),
     ('Studio A', 'recording', 'video', 800, 1, 4),
     ('Studio A', 'recording', 'chroma_key', 1200, 1, 4),
-    ('Studio A', 'meetings_classes', 'standard', 350, 1, 20),
     -- Studio B rates
     ('Studio B', 'karaoke', '1-5 people', 300, 1, 5),
     ('Studio B', 'karaoke', '6-10 people', 300, 6, 10),
     ('Studio B', 'karaoke', '11-12 people', 350, 11, 12),
     ('Studio B', 'live', '1-2 musicians', 400, 1, 2),
     ('Studio B', 'live', '3-4 musicians', 400, 3, 4),
-    ('Studio B', 'live', '5 musicians', 500, 5, 5), -- Updated to match app logic (was 450)
+    ('Studio B', 'live', '5 musicians', 450, 5, 5),
     ('Studio B', 'band', 'drum_only', 350, 1, 6),
     ('Studio B', 'band', 'drum_amps', 400, 1, 6),
     ('Studio B', 'band', 'drum_amps_guitars', 450, 1, 6),
-    ('Studio B', 'meetings_classes', 'standard', 250, 1, 15),
     -- Studio C rates
     ('Studio C', 'karaoke', '1-5 people', 250, 1, 5),
     ('Studio C', 'live', '1-2 musicians', 350, 1, 2),
     ('Studio C', 'band', 'without_drum', 300, 1, 5),
-    ('Studio C', 'meetings_classes', 'standard', 200, 1, 5)
-ON CONFLICT (studio, session_type, sub_option) DO UPDATE
-SET hourly_rate = EXCLUDED.hourly_rate;
+    -- Meetings / Classes rates
+    ('Studio A', 'Meetings / Classes', NULL, 350, 1, 30),
+    ('Studio B', 'Meetings / Classes', NULL, 250, 1, 12),
+    ('Studio C', 'Meetings / Classes', NULL, 200, 1, 5)
+ON CONFLICT (studio, session_type, sub_option) DO NOTHING;
 
 -- =====================================================
 -- HELPFUL VIEWS

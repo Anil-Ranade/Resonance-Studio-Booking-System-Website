@@ -63,6 +63,8 @@ interface Booking {
   notes: string | null;
   created_at: string;
   whatsapp_reminder_sent_at: string | null;
+  is_prompt_payment: boolean;
+  payment_status: "pending" | "verified" | "failed";
 }
 
 interface BookingFormData {
@@ -334,6 +336,55 @@ export default function BookingsManagementPage() {
         }
       } else {
         throw new Error(data.error || "Failed to update booking");
+      }
+    } catch (error: any) {
+      setMessage({ type: "error", text: error.message });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const updatePaymentStatus = async (
+    bookingId: string,
+    newStatus: "verified" | "pending" | "failed"
+  ) => {
+    setUpdating(true);
+    setMessage(null);
+
+    try {
+      const token = await getAccessToken();
+      const response = await fetch("/api/admin/bookings", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id: bookingId, payment_status: newStatus }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setMessage({
+          type: "success",
+          text: `Payment marked as ${newStatus}!`,
+        });
+        // Update local state
+        setBookings((prev) =>
+          prev.map((b) =>
+            b.id === bookingId
+              ? { ...b, payment_status: newStatus }
+              : b
+          )
+        );
+        if (selectedBooking?.id === bookingId) {
+          setSelectedBooking({
+            ...selectedBooking,
+            payment_status: newStatus,
+          });
+        }
+      } else {
+        throw new Error(data.error || "Failed to update payment status");
       }
     } catch (error: any) {
       setMessage({ type: "error", text: error.message });
@@ -1031,6 +1082,7 @@ export default function BookingsManagementPage() {
                   <th className="text-center p-4 text-sm font-medium text-zinc-400">
                     Invoice
                   </th>
+
                   <th className="text-right p-4 text-sm font-medium text-zinc-400">
                     Actions
                   </th>
@@ -1078,6 +1130,7 @@ export default function BookingsManagementPage() {
                           : "N/A"}
                       </p>
                     </td>
+
                     <td className="p-4">
                       {(() => {
                         const effectiveStatus = getEffectiveStatus(booking);
@@ -1233,6 +1286,7 @@ export default function BookingsManagementPage() {
                       {selectedBooking.group_size === 1 ? "person" : "people"}
                     </p>
                   </div>
+
                   <div className="p-4 bg-white/5 rounded-xl">
                     <p className="text-zinc-400 text-sm mb-1">Amount</p>
                     <p className="text-white font-medium">
@@ -1243,6 +1297,31 @@ export default function BookingsManagementPage() {
                         : "N/A"}
                     </p>
                   </div>
+                  {selectedBooking.is_prompt_payment && (
+                     <div className="p-4 bg-white/5 rounded-xl border border-amber-500/20 col-span-2 sm:col-span-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-amber-400/80 text-sm font-medium">Prompt Payment</p>
+                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            selectedBooking.payment_status === 'verified' 
+                            ? 'bg-emerald-500/20 text-emerald-400' 
+                            : 'bg-zinc-500/20 text-zinc-400'
+                         }`}>
+                           {selectedBooking.payment_status || 'Pending'}
+                         </span>
+                      </div>
+                      
+                      {selectedBooking.payment_status !== 'verified' && (
+                        <button
+                          onClick={() => updatePaymentStatus(selectedBooking.id, 'verified')}
+                          disabled={updating}
+                          className="mt-2 w-full py-2 bg-emerald-500 text-white rounded-lg text-xs font-medium hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
+                        >
+                           {updating ? <Loader2 className="w-3 h-3 animate-spin"/> : <CheckCircle className="w-3 h-3" />}
+                           Mark Payment Received
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {selectedBooking.notes && (

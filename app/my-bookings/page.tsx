@@ -33,7 +33,18 @@ import {
   Check,
   Edit3,
   Shield,
+  Gift,
+  Award,
+  TrendingUp,
 } from 'lucide-react';
+
+interface LoyaltyStatus {
+  hours: number;
+  target: number;
+  eligible: boolean;
+  window_start: string | null;
+  window_end: string | null;
+}
 
 interface Booking {
   id: string;
@@ -105,6 +116,8 @@ export default function MyBookingsPage() {
     isLoading: false,
     error: '',
   });
+  const [loyaltyStatus, setLoyaltyStatus] = useState<LoyaltyStatus | null>(null);
+
   const router = useRouter();
 
   // Check authentication status on mount
@@ -117,8 +130,11 @@ export default function MyBookingsPage() {
           setAuthenticatedUser({ phone: status.user.phone, name: status.user.name });
           setPhoneNumber(status.user.phone);
           
-          // Auto-fetch bookings for authenticated user
-          await fetchBookingsForPhone(status.user.phone);
+          // Auto-fetch bookings and loyalty for authenticated user
+          await Promise.all([
+            fetchBookingsForPhone(status.user.phone),
+            fetchLoyaltyStatus(status.user.phone)
+          ]);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -140,6 +156,10 @@ export default function MyBookingsPage() {
     setError('');
     setSearched(true);
 
+    if (phone) {
+        fetchLoyaltyStatus(phone);
+    }
+
     try {
       const response = await fetch(`/api/bookings?phone=${phone}`);
       const data = await safeJsonParse(response);
@@ -156,6 +176,20 @@ export default function MyBookingsPage() {
       setIsLoading(false);
     }
   };
+
+  const fetchLoyaltyStatus = async (phone: string) => {
+    try {
+      const response = await fetch(`/api/loyalty/status?phone=${phone}`);
+      const data = await safeJsonParse(response);
+      if (response.ok) {
+        setLoyaltyStatus(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch loyalty status:', err);
+    }
+  };
+
+
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '');
@@ -439,6 +473,8 @@ export default function MyBookingsPage() {
             </form>
           </motion.div>
         )}
+
+
 
         {/* Error */}
         <AnimatePresence>

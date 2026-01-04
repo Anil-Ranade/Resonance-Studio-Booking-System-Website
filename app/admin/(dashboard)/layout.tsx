@@ -16,6 +16,8 @@ import {
   X,
   ChevronRight,
   MessageCircle,
+  Gift,
+  CreditCard,
 } from "lucide-react";
 import { signOut, getSession } from "@/lib/supabaseAuth";
 
@@ -30,6 +32,8 @@ const navItems = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Availability", href: "/admin/availability", icon: Clock },
   { label: "Bookings", href: "/admin/bookings", icon: Calendar },
+  { label: "Payments", href: "/admin/payments", icon: CreditCard },
+  { label: "Loyalty Program", href: "/admin/loyalty", icon: Gift },
   { label: "Reminders", href: "/admin/reminders", icon: MessageCircle },
   { label: "Staff", href: "/admin/staff", icon: Users },
   { label: "Settings", href: "/admin/settings", icon: Settings },

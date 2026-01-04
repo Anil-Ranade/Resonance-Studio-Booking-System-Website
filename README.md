@@ -226,7 +226,9 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
    Run the SQL schema in your Supabase SQL Editor:
 
    ```bash
-   # database/full_schema.sql - Complete database schema with RLS policies
+   # 1. Run database/schemas/init.sql
+   # 2. Run all files in database/migrations/ in order
+   # 3. Run function definitions from database/functions/
    ```
 
 5. **Run the development server**
@@ -355,8 +357,9 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   └── useDevicePerformance.ts # Device performance hook
 │
 ├── database/
-│   ├── full_schema.sql         # Complete database schema with RLS
-│   └── migrations/             # Database migrations
+│   ├── schemas/                # Base database schema
+│   ├── migrations/             # Sequential database migrations
+│   └── functions/              # Complex database functions
 │
 ├── scripts/
 │   └── get_refresh_token.js    # Google OAuth token helper

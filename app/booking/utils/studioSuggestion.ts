@@ -4,6 +4,7 @@ import {
   LiveMusicianOption,
   BandEquipment,
   StudioName,
+  SoundOperatorOption,
 } from "../contexts/BookingContext";
 
 interface StudioSuggestionResult {
@@ -256,49 +257,70 @@ export function getStudioRate(
     liveOption?: LiveMusicianOption;
     bandEquipment?: BandEquipment[];
     recordingOption?: string;
+    soundOperator?: SoundOperatorOption;
   }
 ): number {
   const rates = STUDIO_RATES[studio];
+  let baseRate = 0;
 
   switch (sessionType) {
     case "Karaoke":
       if (options.karaokeOption === "21_30") {
-        return rates.karaoke_large || rates.karaoke_standard || 400;
+        baseRate = rates.karaoke_large || rates.karaoke_standard || 400;
+      } else {
+        baseRate = rates.karaoke_standard || 300;
       }
-      return rates.karaoke_standard || 300;
+      break;
 
     case "Live with musicians":
       if (options.liveOption === "9_12") {
-        return rates.live_large || rates.live_standard || 600;
+        baseRate = rates.live_large || rates.live_standard || 600;
+      } else if (options.liveOption === "5" && studio === "Studio B") {
+        baseRate = rates.live_5 || rates.live_standard || 500;
+      } else {
+        baseRate = rates.live_standard || 400;
       }
-      if (options.liveOption === "5" && studio === "Studio B") {
-        return rates.live_5 || rates.live_standard || 500;
-      }
-      return rates.live_standard || 400;
+      break;
 
     case "Only Drum Practice":
-      return rates.drum_practice || 350;
+      baseRate = rates.drum_practice || 350;
+      break;
 
     case "Band":
       const equipment = options.bandEquipment || [];
       const hasDrum = equipment.includes("drum");
       // With drums, always use standard rate for Studio A
       if (hasDrum) {
-        return rates.band_standard || 450;
+        baseRate = rates.band_standard || 450;
+      } else {
+        baseRate = rates.band_small || rates.band_standard || 350;
       }
-      return rates.band_small || rates.band_standard || 350;
+      break;
 
     case "Recording":
       if (options.recordingOption === "chroma_key")
-        return rates.recording_chroma || 1200;
-      if (options.recordingOption === "video_recording")
-        return rates.recording_video || 800;
-      return rates.recording_audio || 700;
+        baseRate = rates.recording_chroma || 1200;
+      else if (options.recordingOption === "video_recording")
+        baseRate = rates.recording_video || 800;
+      else
+        baseRate = rates.recording_audio || 700;
+      break;
 
     case "Meetings / Classes":
-      return rates.meetings_classes || 200;
+      baseRate = rates.meetings_classes || 200;
+      // Meetings/Classes already implies no sound operator, or specific pricing
+      break;
 
     default:
-      return 300;
+      baseRate = 300;
   }
+
+  // Apply Sound Operator Discount
+  if (options.soundOperator === "Not Required") {
+    // Discount logic: ₹50 per hour discount
+    // Ensure we don't go below 0 (unlikely but safe)
+    return Math.max(0, baseRate - 50);
+  }
+
+  return baseRate;
 }

@@ -536,8 +536,9 @@ Text Colors:
 │   └── useDevicePerformance.ts # Device performance hook
 │
 ├── database/
-│   ├── full_schema.sql         # Complete database schema with RLS
-│   └── migrations/             # Database migrations
+│   ├── schemas/                # Base database schema
+│   ├── migrations/             # Sequential database migrations
+│   └── functions/              # Complex database functions
 │
 ├── scripts/
 │   └── get_refresh_token.js    # Google OAuth token helper

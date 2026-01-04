@@ -17,6 +17,7 @@ interface BookRequest {
   rate_per_hour?: number;
   is_modification?: boolean;
   original_booking_id?: string; // For updating existing booking
+  is_prompt_payment?: boolean;
 }
 
 interface BookingSettings {
@@ -164,6 +165,7 @@ export async function POST(request: Request) {
         p_total_amount: total_amount,
         p_notes: null,
         p_created_by_staff_id: null,
+        p_is_prompt_payment: body.is_prompt_payment || false,
       }
     ) as { data: { success: boolean; error?: string; booking_id?: string; booking?: any } | null; error: any };
 
@@ -461,6 +463,7 @@ export async function PUT(request: Request) {
         p_start_time: start_time,
         p_end_time: end_time,
         p_total_amount: total_amount,
+        p_is_prompt_payment: body.is_prompt_payment,
       }
     ) as { data: { success: boolean; error?: string; booking_id?: string; booking?: any } | null; error: any };
 

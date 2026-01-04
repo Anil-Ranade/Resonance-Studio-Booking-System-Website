@@ -9,11 +9,12 @@ import {
   CreditCard,
   AlertCircle,
 } from "lucide-react";
+import Image from "next/image";
 import { useBooking } from "../contexts/BookingContext";
 import StepLayout from "./StepLayout";
 
 export default function ReviewStep() {
-  const { draft, nextStep, hasChangesFromOriginal } = useBooking();
+  const { draft, nextStep, hasChangesFromOriginal, updateDraft } = useBooking();
 
   // Check if there are changes in edit mode
   const hasChanges = hasChangesFromOriginal();
@@ -226,8 +227,26 @@ export default function ReviewStep() {
             Payment Summary
           </h3>
           <div className="space-y-1">
+            {/* Base Rate Calculation */}
+            {draft.soundOperator === "Not Required" ? (
+              <>
+                 <div className="flex items-center justify-between">
+                  <span className="text-zinc-400 text-xs">Standard Rate</span>
+                  <span className="text-zinc-400 text-xs line-through">
+                    ₹{(draft.ratePerHour + 50).toLocaleString("en-IN")}/hour
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-green-400 text-xs">No Sound Op Discount</span>
+                  <span className="text-green-400 text-xs">
+                    -₹50/hour
+                  </span>
+                </div>
+              </>
+            ) : null}
+
             <div className="flex items-center justify-between">
-              <span className="text-zinc-400 text-xs">Rate</span>
+              <span className="text-zinc-400 text-xs">Final Rate</span>
               <span className="text-white text-xs">
                 ₹{draft.ratePerHour.toLocaleString("en-IN")}/hour
               </span>
@@ -238,32 +257,106 @@ export default function ReviewStep() {
                 {draft.duration} hour{draft.duration > 1 ? "s" : ""}
               </span>
             </div>
+            
             <div
               className={`border-t ${
                 draft.isEditMode ? "border-blue-500/20" : "border-violet-500/20"
               } my-1`}
             />
+
+            {/* Total Calculation */}
             <div className="flex items-center justify-between">
+               <span className="text-zinc-400 text-xs">Total Amount</span>
+               <span className="text-white text-xs">
+                 ₹{((draft.soundOperator === "Not Required" ? draft.ratePerHour + 50 : draft.ratePerHour) * draft.duration).toLocaleString("en-IN")}
+               </span>
+            </div>
+            
+            {draft.soundOperator === "Not Required" && (
+              <div className="flex items-center justify-between">
+                <span className="text-green-400 text-xs">Total Discount</span>
+                <span className="text-green-400 text-xs">
+                  -₹{(50 * draft.duration).toLocaleString("en-IN")}
+                </span>
+              </div>
+            )}
+
+            {/* Prompt Payment Discount */}
+            {draft.isPromptPayment && (
+              <div className="flex items-center justify-between">
+                <span className="text-amber-400 text-xs">Prompt Payment Discount</span>
+                <span className="text-amber-400 text-xs">
+                  -₹{(20 * draft.duration).toLocaleString("en-IN")}
+                </span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-dashed border-white/10">
               <span className="text-white font-medium text-xs">
-                Total Amount
+                Final Payable
               </span>
               <span
                 className={`text-lg font-bold ${
                   draft.isEditMode ? "text-blue-400" : "text-violet-400"
                 }`}
               >
-                ₹{totalAmount.toLocaleString("en-IN")}
+                ₹{(totalAmount - (draft.isPromptPayment ? 20 * draft.duration : 0)).toLocaleString("en-IN")}
               </span>
             </div>
+
+
           </div>
         </div>
 
+        {/* Prompt Payment Option */}
+        {!draft.isEditMode && (
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <div className="flex items-center h-5">
+                <input
+                  type="checkbox"
+                  checked={draft.isPromptPayment}
+                  onChange={(e) => updateDraft({ isPromptPayment: e.target.checked })}
+                  className="w-4 h-4 rounded border-amber-500/50 bg-amber-900/20 text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
+                />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <CreditCard className="w-4 h-4 text-amber-500" />
+                  <span className="text-sm font-medium text-amber-400">Pay Now & Save</span>
+                </div>
+                <p className="text-xs text-amber-200/80 mb-2">
+                  Get <span className="text-amber-400 font-bold">₹20 off per hour</span> by paying immediately via UPI.
+                </p>
+                
+                {draft.isPromptPayment && (
+                  <div className="mt-3 p-3 bg-black/40 rounded-lg border border-amber-500/20">
+                    <div className="flex gap-2 items-start mb-2 text-red-400">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs font-medium">Important: STRICTLY NON-CANCELLABLE. Rescheduling allowed 24h prior.</p>
+                    </div>
+                    <div className="aspect-square bg-white p-2 rounded-lg w-72 mx-auto mb-2 relative h-72">
+                       <Image
+                        src="/public-qr.jpeg"
+                        alt="UPI QR Code"
+                        fill
+                        className="object-contain p-2"
+                       />
+                    </div>
+                    <p className="text-[10px] text-zinc-400 text-center">Scan to pay securely</p>
+                  </div>
+                )}
+              </div>
+            </label>
+          </div>
+        )}
+
         {/* Note */}
-        <p className="text-xs text-zinc-500 text-center">
-          {draft.isEditMode
-            ? "Your booking will be updated with these new details."
-            : "Payment to be made at the studio."}
-        </p>
+        {draft.isEditMode && (
+          <p className="text-xs text-zinc-500 text-center">
+            Your booking will be updated with these new details.
+          </p>
+        )}
       </div>
     </StepLayout>
   );
