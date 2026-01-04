@@ -34,7 +34,7 @@ const navItems = [
   { label: "Bookings", href: "/admin/bookings", icon: Calendar },
   { label: "Payments", href: "/admin/payments", icon: CreditCard },
   { label: "Loyalty Program", href: "/admin/loyalty", icon: Gift },
-  { label: "Reminders", href: "/admin/reminders", icon: MessageCircle },
+
   { label: "Staff", href: "/admin/staff", icon: Users },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
