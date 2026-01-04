@@ -25,7 +25,7 @@ END $$;
 
 -- Session type
 DO $$ BEGIN
-    CREATE TYPE session_type AS ENUM ('karaoke', 'live', 'drum_practice', 'band', 'recording');
+    CREATE TYPE session_type AS ENUM ('karaoke', 'live', 'drum_practice', 'band', 'recording', 'meetings_classes');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
@@ -512,21 +512,25 @@ INSERT INTO rate_cards (studio, session_type, sub_option, hourly_rate, min_parti
     ('Studio A', 'recording', 'audio', 700, 1, 4),
     ('Studio A', 'recording', 'video', 800, 1, 4),
     ('Studio A', 'recording', 'chroma_key', 1200, 1, 4),
+    ('Studio A', 'meetings_classes', 'standard', 350, 1, 20),
     -- Studio B rates
     ('Studio B', 'karaoke', '1-5 people', 300, 1, 5),
     ('Studio B', 'karaoke', '6-10 people', 300, 6, 10),
     ('Studio B', 'karaoke', '11-12 people', 350, 11, 12),
     ('Studio B', 'live', '1-2 musicians', 400, 1, 2),
     ('Studio B', 'live', '3-4 musicians', 400, 3, 4),
-    ('Studio B', 'live', '5 musicians', 450, 5, 5),
+    ('Studio B', 'live', '5 musicians', 500, 5, 5), -- Updated to match app logic (was 450)
     ('Studio B', 'band', 'drum_only', 350, 1, 6),
     ('Studio B', 'band', 'drum_amps', 400, 1, 6),
     ('Studio B', 'band', 'drum_amps_guitars', 450, 1, 6),
+    ('Studio B', 'meetings_classes', 'standard', 250, 1, 15),
     -- Studio C rates
     ('Studio C', 'karaoke', '1-5 people', 250, 1, 5),
     ('Studio C', 'live', '1-2 musicians', 350, 1, 2),
-    ('Studio C', 'band', 'without_drum', 300, 1, 5)
-ON CONFLICT (studio, session_type, sub_option) DO NOTHING;
+    ('Studio C', 'band', 'without_drum', 300, 1, 5),
+    ('Studio C', 'meetings_classes', 'standard', 200, 1, 5)
+ON CONFLICT (studio, session_type, sub_option) DO UPDATE
+SET hourly_rate = EXCLUDED.hourly_rate;
 
 -- =====================================================
 -- HELPFUL VIEWS
