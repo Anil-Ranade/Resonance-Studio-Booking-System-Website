@@ -531,7 +531,9 @@ export default function ConfirmStep() {
                   {(draft.ratePerHour * draft.duration).toLocaleString("en-IN")}
                 </span>
               </div>
-              <p className="text-xs text-zinc-500 mt-1">Pay at the studio</p>
+              {!draft.isPromptPayment && (
+                <p className="text-xs text-zinc-500 mt-1">Pay at the studio</p>
+              )}
             </div>
           </div>
         </motion.div>
