@@ -242,6 +242,25 @@ export async function POST(request: NextRequest) {
       var booking = insertedBooking;
     }
 
+    // Check if user exists, if not create them (after successful booking)
+    const { data: existingUser } = await supabaseServer
+      .from("users")
+      .select("*")
+      .eq("phone_number", phone)
+      .single();
+
+    if (!existingUser && name && email) {
+      const { error: createUserError } = await supabaseServer
+        .from("users")
+        .insert({ phone_number: phone, name, email });
+
+      if (createUserError) {
+        console.error("[Staff Book API] Failed to create user:", createUserError.message);
+      } else {
+        console.log("[Staff Book API] Created new user for", phone);
+      }
+    }
+
     // Try to create Google Calendar event if env vars are present
     let googleEventId: string | null = null;
     const hasGoogleConfig =
