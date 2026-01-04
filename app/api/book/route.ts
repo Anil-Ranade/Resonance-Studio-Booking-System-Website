@@ -65,9 +65,26 @@ async function getBookingSettings(): Promise<BookingSettings> {
   return defaults;
 }
 
+import { checkRateLimit } from "@/lib/rateLimit";
+import { headers } from "next/headers";
+
 // POST /api/book - Create a new booking
 export async function POST(request: Request) {
   try {
+    // Check Rate Limit (5 requests per hour per IP)
+    const headersList = await headers();
+    const forwardedFor = headersList.get("x-forwarded-for");
+    const ip = forwardedFor ? forwardedFor.split(",")[0] : "unknown";
+    
+    const isAllowed = await checkRateLimit(ip, "booking_create", 5, 3600);
+    
+    if (!isAllowed) {
+      return NextResponse.json(
+        { error: "Too many booking requests. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     const body: BookRequest = await request.json();
     const {
       name,
