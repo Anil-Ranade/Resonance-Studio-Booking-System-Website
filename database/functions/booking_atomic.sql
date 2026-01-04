@@ -40,7 +40,8 @@ CREATE OR REPLACE FUNCTION create_booking_atomic(
     p_session_details TEXT DEFAULT NULL,
     p_total_amount DECIMAL DEFAULT NULL,
     p_notes TEXT DEFAULT NULL,
-    p_created_by_staff_id UUID DEFAULT NULL
+    p_created_by_staff_id UUID DEFAULT NULL,
+    p_is_prompt_payment BOOLEAN DEFAULT FALSE
 )
 RETURNS JSON AS $$
 DECLARE
@@ -104,12 +105,12 @@ BEGIN
         phone_number, name, email, studio, session_type,
         session_details, date, start_time, end_time,
         status, total_amount, notes, created_by_staff_id,
-        confirmed_at
+        is_prompt_payment, confirmed_at
     ) VALUES (
         p_phone_number, p_name, p_email, p_studio, p_session_type,
         COALESCE(p_session_details, p_session_type), p_date, p_start_time, p_end_time,
         'confirmed', p_total_amount, p_notes, p_created_by_staff_id,
-        NOW()
+        p_is_prompt_payment, NOW()
     )
     RETURNING * INTO v_booking_record;
     
@@ -151,7 +152,8 @@ CREATE OR REPLACE FUNCTION update_booking_atomic(
     p_date DATE DEFAULT NULL,
     p_start_time TIME DEFAULT NULL,
     p_end_time TIME DEFAULT NULL,
-    p_total_amount DECIMAL DEFAULT NULL
+    p_total_amount DECIMAL DEFAULT NULL,
+    p_is_prompt_payment BOOLEAN DEFAULT NULL
 )
 RETURNS JSON AS $$
 DECLARE
@@ -243,6 +245,7 @@ BEGIN
         start_time = v_new_start,
         end_time = v_new_end,
         total_amount = COALESCE(p_total_amount, total_amount),
+        is_prompt_payment = COALESCE(p_is_prompt_payment, is_prompt_payment),
         updated_at = NOW()
     WHERE id = p_booking_id
     RETURNING * INTO v_updated_booking;
