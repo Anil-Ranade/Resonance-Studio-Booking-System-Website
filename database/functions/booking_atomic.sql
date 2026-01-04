@@ -12,6 +12,21 @@
 -- Created: January 2026
 -- =====================================================
 
+-- Robust cleanup: Drop ALL existing versions of the functions to avoid ambiguity
+DO $$ 
+DECLARE 
+    r RECORD;
+BEGIN 
+    -- Drop all 'create_booking_atomic' functions
+    FOR r IN 
+        SELECT oid::regprocedure::text as func_signature 
+        FROM pg_proc 
+        WHERE proname = 'create_booking_atomic' 
+    LOOP 
+        EXECUTE 'DROP FUNCTION IF EXISTS ' || r.func_signature || ' CASCADE'; 
+    END LOOP;
+END $$;
+
 -- Function to create booking atomically with locking
 CREATE OR REPLACE FUNCTION create_booking_atomic(
     p_phone_number VARCHAR,
@@ -122,6 +137,9 @@ GRANT EXECUTE ON FUNCTION create_booking_atomic TO service_role;
 -- ATOMIC BOOKING UPDATE FUNCTION
 -- =====================================================
 -- For updating existing bookings while preventing conflicts
+
+-- Drop existing function to prevent ambiguity
+DROP FUNCTION IF EXISTS update_booking_atomic(UUID, VARCHAR, VARCHAR, VARCHAR, VARCHAR, TEXT, DATE, TIME, TIME, DECIMAL);
 
 CREATE OR REPLACE FUNCTION update_booking_atomic(
     p_booking_id UUID,
