@@ -20,6 +20,8 @@ import {
   CreditCard,
   Info,
   Clock,
+  Zap,
+  Coins,
 } from "lucide-react";
 
 const fadeInUp = {
@@ -186,6 +188,50 @@ export default function RateCardPage() {
       price: "₹1,200",
       description:
         "Green Screen - includes recording, editing, mixing & mastering",
+    },
+  ];
+
+  // Schemes
+  const schemes = [
+    {
+      name: "The Rolling Milestone Cashback Program",
+      description:
+        "Designed to reward our most consistent creators, this program offers a high-value incentive for frequent bookings.",
+      benefit: "Earn ₹30 cashback per hour for every booking made.",
+      details: [
+        "Milestone: Accumulate ₹1500 credit (50 hours) to unlock payout via GPay.",
+        "90-Day Window: Reach the 50-hour milestone within 3 months of your first qualifying booking.",
+        "Dynamic Reset: If missed, the counter resets to start from your second booking date.",
+        "Transparent Tracking: Balance and remaining hours shown on booking confirmation.",
+      ],
+      icon: <Coins className="w-8 h-8" />,
+      iconBg: "bg-yellow-500/20 text-yellow-400",
+    },
+    {
+      name: 'Sound Engineering "Flex-Service" Discount',
+      description:
+        "For experienced artists who prefer to handle their own sessions.",
+      benefit: "Instant ₹50 per hour discount on booking rates.",
+      details: [
+        "Select 'Sound Operator Not Required' during booking.",
+        "Replaces previous checkbox system for clarity.",
+        "Invoice explicitly highlights the applied discount.",
+      ],
+      icon: <Sliders className="w-8 h-8" />,
+      iconBg: "bg-blue-500/20 text-blue-400",
+    },
+    {
+      name: "Prompt Payment Incentive",
+      description:
+        "Streamline operations and reward advance planning with our 'Priority Payment' tier.",
+      benefit: "Instant ₹20 per hour discount for payments at booking.",
+      details: [
+        "Choose 'Prompt Payment' to pay via UPI QR scan immediately.",
+        "Non-refundable (No Cancellation) due to significant discount.",
+        "Flexible 24-hour rescheduling policy remains available.",
+      ],
+      icon: <Zap className="w-8 h-8" />,
+      iconBg: "bg-emerald-500/20 text-emerald-400",
     },
   ];
 
@@ -422,6 +468,56 @@ export default function RateCardPage() {
                 <span className="text-2xl font-bold text-amber-400 whitespace-nowrap ml-4">
                   {service.price}
                 </span>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Exclusive Schemes & Offers */}
+        <motion.div
+          className="mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <h2 className="text-2xl font-bold text-white mb-8 text-center">
+            Exclusive Schemes & Offers
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {schemes.map((scheme, index) => (
+              <motion.div
+                key={index}
+                className="glass rounded-2xl p-6"
+                whileHover={{ y: -5 }}
+              >
+                <div
+                  className={`w-14 h-14 rounded-xl ${scheme.iconBg} flex items-center justify-center mb-4`}
+                >
+                  {scheme.icon}
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">
+                  {scheme.name}
+                </h3>
+                <p className="text-zinc-400 text-sm mb-4">
+                  {scheme.description}
+                </p>
+                <div className="mb-4">
+                  <span className="text-amber-400 font-bold block mb-1">
+                    Benefit:
+                  </span>
+                  <p className="text-white text-sm">{scheme.benefit}</p>
+                </div>
+                <ul className="space-y-2">
+                  {scheme.details.map((detail, i) => (
+                    <li
+                      key={i}
+                      className="flex items-start gap-2 text-sm text-zinc-300"
+                    >
+                      <Sparkles className="w-4 h-4 text-violet-400 flex-shrink-0 mt-0.5" />
+                      <span>{detail}</span>
+                    </li>
+                  ))}
+                </ul>
               </motion.div>
             ))}
           </div>
