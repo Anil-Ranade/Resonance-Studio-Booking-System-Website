@@ -286,7 +286,7 @@ export default function EditBookingPage() {
               <Edit3 className="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">Edit Booking</h1>
+              <h1 className="text-2xl font-bold text-white">Modify your upcoming booking</h1>
               <p className="text-zinc-400 text-sm">
                 Modify your existing studio booking
               </p>

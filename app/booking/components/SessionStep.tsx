@@ -114,41 +114,55 @@ export default function SessionStep() {
         </div>
       )}
 
-      <div className="grid gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {SESSION_TYPES.map((session) => {
           const isOriginal = isOriginalChoice(session.name);
+          const isRecording = session.name === "Recording";
 
           return (
             <button
               key={session.name}
-              onClick={() => handleSelect(session.name)}
-              className={`relative flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
-                isOriginal
+              disabled={isRecording}
+              onClick={() => !isRecording && handleSelect(session.name)}
+              className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-all text-center ${
+                isRecording
+                  ? "bg-zinc-900/40 border-zinc-800/50 text-zinc-600 cursor-not-allowed opacity-70"
+                  : isOriginal
                   ? "bg-amber-500/10 border-amber-500/30 text-zinc-300 hover:bg-amber-500/15 hover:border-amber-500/50"
                   : "bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-600"
               }`}
             >
               {/* Original Choice Badge */}
-              {isOriginal && (
-                <span className="absolute -top-2 left-3 px-2 py-0.5 text-xs font-medium bg-amber-500 text-black rounded-full">
-                  Original
+              {isOriginal && !isRecording && (
+                <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full" title="Original Choice" />
+              )}
+
+              {/* Coming Soon Badge */}
+              {isRecording && (
+                <span className="absolute top-2 right-2 px-1.5 py-0.5 text-[9px] font-medium bg-zinc-800 text-zinc-500 border border-zinc-700 rounded-full">
+                  Soon
                 </span>
               )}
 
               <div
                 className={`p-2 rounded-lg ${
-                  isOriginal
+                  isRecording
+                    ? "bg-zinc-800/50 text-zinc-700"
+                    : isOriginal
                     ? "bg-amber-500/20 text-amber-400"
                     : "bg-zinc-700 text-zinc-400"
                 }`}
               >
                 {session.icon}
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-base text-white">
+              <div className="w-full min-w-0">
+                <h3
+                  className={`font-semibold text-sm leading-tight mb-0.5 ${
+                    isRecording ? "text-zinc-600" : "text-white"
+                  }`}
+                >
                   {session.name}
                 </h3>
-                <p className="text-sm text-zinc-400">{session.description}</p>
               </div>
             </button>
           );

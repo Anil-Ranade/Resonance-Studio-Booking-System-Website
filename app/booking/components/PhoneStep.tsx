@@ -308,9 +308,12 @@ export default function PhoneStep() {
   };
 
   const handleBack = () => {
-    // In edit mode, go back to my-bookings page and reset draft
-    resetDraft();
-    router.push("/my-bookings");
+    if (draft.isEditMode) {
+      resetDraft();
+      router.push("/my-bookings");
+    } else {
+      router.push("/booking");
+    }
   };
 
   // Validate: phone must be 10 digits, and for new users name and email are required
@@ -364,21 +367,21 @@ export default function PhoneStep() {
         onNext={handleConfirmUser}
         nextLabel="Continue"
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           {/* User Info Card */}
-          <div className="bg-zinc-800/80 border border-zinc-700 rounded-2xl p-5">
+          <div className="bg-zinc-800/80 border border-zinc-700 rounded-xl p-4">
             {/* User Avatar and Name */}
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-violet-500/20">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-base font-bold shadow-lg shadow-violet-500/20">
                 {(autoLoginUser.name || "U").charAt(0).toUpperCase()}
               </div>
               <div className="flex-1">
-                <p className="text-white font-semibold text-xl">
+                <p className="text-white font-semibold text-base leading-tight">
                   {autoLoginUser.name || "User"}
                 </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <Shield className="w-3.5 h-3.5 text-green-400" />
-                  <span className="text-green-400 text-xs font-medium">
+                <div className="flex items-center gap-1 mt-0.5">
+                  <Shield className="w-3 h-3 text-green-400" />
+                  <span className="text-green-400 text-[10px] font-medium">
                     Trusted device
                   </span>
                 </div>
@@ -386,14 +389,14 @@ export default function PhoneStep() {
             </div>
 
             {/* Contact Details */}
-            <div className="space-y-3 pt-3 border-t border-zinc-700">
+            <div className="space-y-2 pt-2 border-t border-zinc-700">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                  <Phone className="w-4 h-4 text-violet-400" />
+                <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                  <Phone className="w-3.5 h-3.5 text-violet-400" />
                 </div>
                 <div>
-                  <p className="text-zinc-400 text-xs">Phone</p>
-                  <p className="text-white font-medium">
+                  <p className="text-zinc-400 text-[10px] uppercase font-medium">Phone</p>
+                  <p className="text-white text-sm font-medium">
                     +91 {formatPhoneForDisplay(autoLoginUser.phone)}
                   </p>
                 </div>
@@ -401,12 +404,12 @@ export default function PhoneStep() {
 
               {autoLoginUser.email && (
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                    <Mail className="w-4 h-4 text-violet-400" />
+                  <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                    <Mail className="w-3.5 h-3.5 text-violet-400" />
                   </div>
                   <div>
-                    <p className="text-zinc-400 text-xs">Email</p>
-                    <p className="text-white font-medium">
+                    <p className="text-zinc-400 text-[10px] uppercase font-medium">Email</p>
+                    <p className="text-white text-sm font-medium truncate max-w-[200px]">
                       {autoLoginUser.email}
                     </p>
                   </div>
@@ -414,11 +417,9 @@ export default function PhoneStep() {
               )}
 
               {/* Device hint message */}
-              <div className="flex items-center gap-3 mt-2 pt-3 border-t border-zinc-700/50">
-                <div className="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                  <Smartphone className="w-4 h-4 text-amber-400" />
-                </div>
-                <p className="text-amber-400 text-sm font-medium">
+              <div className="flex items-center gap-2 mt-2 pt-2 border-t border-zinc-700/50">
+                <Smartphone className="w-3 h-3 text-amber-400" />
+                <p className="text-amber-400 text-[10px] font-medium">
                   Use this number only for this device
                 </p>
               </div>
@@ -431,25 +432,20 @@ export default function PhoneStep() {
 
   return (
     <StepLayout
-      title={draft.isEditMode ? "Verify your phone" : "Enter your phone number"}
-      subtitle={
-        draft.isEditMode
-          ? "Confirm your phone number to modify this booking"
-          : "We'll use this to send booking confirmations"
-      }
-      showBack={draft.isEditMode}
+      title={draft.isEditMode ? "Verify your phone" : "Enter your WhatsApp mobile number"}
+      showBack={true}
       showNext={true}
-      onBack={draft.isEditMode ? handleBack : undefined}
+      onBack={handleBack}
       onExit={() => router.push('/booking')}
       onNext={handleNext}
       isNextDisabled={!isValid || isCheckingUser}
     >
-      <div className="space-y-3">
+      <div className="space-y-2">
         {/* Edit Mode Banner */}
         {draft.isEditMode && draft.originalChoices && (
-          <div className="p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-2">
-            <RotateCcw className="w-4 h-4 text-violet-400" />
-            <span className="text-xs text-violet-400">
+          <div className="p-2 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center gap-2">
+            <RotateCcw className="w-3.5 h-3.5 text-violet-400" />
+            <span className="text-[10px] text-violet-400">
               Modifying your{" "}
               <span className="font-medium">
                 {draft.originalChoices.sessionType}
@@ -461,7 +457,7 @@ export default function PhoneStep() {
 
         {/* Phone input */}
         <div className="relative">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-zinc-400">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-zinc-400">
             <Phone className="w-4 h-4" />
             <span className="text-white font-medium text-sm">+91</span>
           </div>
@@ -471,10 +467,10 @@ export default function PhoneStep() {
             value={phone}
             onChange={(e) => handlePhoneChange(e.target.value)}
             placeholder="98765 43210"
-            className="w-full bg-zinc-800/50 border-2 border-zinc-600 rounded-xl pl-20 pr-10 py-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all"
+            className="w-full bg-zinc-800/50 border-2 border-zinc-600 rounded-xl pl-[4.5rem] pr-10 py-2.5 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all text-base"
             autoFocus
           />
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
             {isCheckingUser && (
               <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
             )}
@@ -484,33 +480,10 @@ export default function PhoneStep() {
           </div>
         </div>
 
-        {/* User status indicator */}
-        {phoneValid && userChecked && !isCheckingUser && (
-          <div
-            className={`flex items-center gap-2 text-xs rounded-lg px-3 py-2 ${
-              isExistingUser
-                ? "text-green-400 bg-green-500/10"
-                : "text-amber-400 bg-amber-500/10"
-            }`}
-          >
-            {isExistingUser ? (
-              <>
-                <CheckCircle className="w-3.5 h-3.5" />
-                <span>Welcome back! Your details have been auto-filled.</span>
-              </>
-            ) : (
-              <>
-                <User className="w-3.5 h-3.5" />
-                <span>New user - please enter your name and email below.</span>
-              </>
-            )}
-          </div>
-        )}
-
         {/* Name input */}
         {phoneValid && userChecked && (
-          <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">
+          <div className="relative animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
               <User className="w-4 h-4" />
             </div>
             <input
@@ -520,7 +493,7 @@ export default function PhoneStep() {
               placeholder={
                 isExistingUser ? "Your name" : "Your name (required)"
               }
-              className={`w-full bg-zinc-800/50 border-2 rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all ${
+              className={`w-full bg-zinc-800/50 border-2 rounded-xl pl-10 pr-4 py-2.5 text-white text-base placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all ${
                 isExistingUser ? "border-zinc-600" : "border-zinc-600"
               } ${isExistingUser ? "opacity-75" : ""}`}
               readOnly={isExistingUser}
@@ -530,8 +503,8 @@ export default function PhoneStep() {
 
         {/* Email input */}
         {phoneValid && userChecked && (
-          <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">
+          <div className="relative animate-in fade-in slide-in-from-top-2 duration-300 delay-75">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
               <Mail className="w-4 h-4" />
             </div>
             <input
@@ -541,7 +514,7 @@ export default function PhoneStep() {
               placeholder={
                 isExistingUser ? "Your email" : "Your email (required)"
               }
-              className={`w-full bg-zinc-800/50 border-2 rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all ${
+              className={`w-full bg-zinc-800/50 border-2 rounded-xl pl-10 pr-4 py-2.5 text-white text-base placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all ${
                 isExistingUser ? "border-zinc-600" : "border-zinc-600"
               } ${isExistingUser ? "opacity-75" : ""}`}
               readOnly={isExistingUser}
@@ -550,9 +523,8 @@ export default function PhoneStep() {
         )}
 
         {/* Info text */}
-        <p className="text-xs text-zinc-500">
-          By continuing, you agree to receive email notifications from Resonance
-          Studio for booking confirmations.
+        <p className="text-[10px] text-zinc-500 leading-tight px-1">
+          We will use this number for booking confirmations & reminders. Cashback amount will be accumulated against this number only.
         </p>
       </div>
     </StepLayout>

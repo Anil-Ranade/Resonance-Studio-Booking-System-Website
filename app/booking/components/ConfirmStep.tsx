@@ -241,15 +241,7 @@ export default function ConfirmStep() {
             </h1>
             <h2 className="text-sm text-zinc-400">Online Booking System</h2>
           </div>
-          {draft.name && (
-            <h3
-              className={`text-base font-medium text-center mb-3 ${
-                draft.isEditMode ? "text-blue-300" : "text-violet-300"
-              }`}
-            >
-              Welcome, {draft.name}!
-            </h3>
-          )}
+
         </header>
 
         {/* Main content */}
@@ -322,15 +314,7 @@ export default function ConfirmStep() {
             </h1>
             <h2 className="text-sm text-zinc-400">Online Booking System</h2>
           </div>
-          {draft.name && (
-            <h3
-              className={`text-base font-medium text-center mb-3 ${
-                draft.isEditMode ? "text-blue-300" : "text-violet-300"
-              }`}
-            >
-              Welcome, {draft.name}!
-            </h3>
-          )}
+
         </header>
 
         {/* Main content */}
@@ -414,15 +398,7 @@ export default function ConfirmStep() {
           </h1>
           <h2 className="text-sm text-zinc-400">Online Booking System</h2>
         </div>
-        {draft.name && (
-          <h3
-            className={`text-base font-medium text-center mb-2 ${
-              draft.isEditMode ? "text-blue-300" : "text-violet-300"
-            }`}
-          >
-            Welcome, {draft.name}!
-          </h3>
-        )}
+
       </header>
 
       {/* Main content */}

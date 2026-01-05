@@ -242,26 +242,34 @@ export default function ParticipantsStep() {
       case "Karaoke":
         return (
           <div className="space-y-2">
-            {KARAOKE_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => handleKaraokeSelect(option.value)}
-                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${
-                  draft.karaokeOption === option.value
-                    ? "bg-violet-500/20 border-violet-500"
-                    : "bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600"
-                }`}
-              >
-                <div>
-                  <span className={`font-semibold text-base ${
+            {!draft.isEditMode && (
+              <div className="mb-1 p-2 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
+                <p className="text-xs text-zinc-300">
+                  You have selected <span className="font-bold text-white">Karaoke</span>. 
+                  Now select how many participants...
+                </p>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              {KARAOKE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => handleKaraokeSelect(option.value)}
+                  className={`w-full flexflex-col items-start p-3 rounded-lg border transition-all text-left ${
+                    draft.karaokeOption === option.value
+                      ? "bg-violet-500/20 border-violet-500"
+                      : "bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600"
+                  }`}
+                >
+                  <span className={`font-semibold text-sm ${
                     draft.karaokeOption === option.value ? "text-white" : "text-zinc-300"
                   }`}>
                     {option.label}
                   </span>
-                  <p className="text-sm text-zinc-400">{option.description}</p>
-                </div>
-              </button>
-            ))}
+                  <p className="text-[10px] text-zinc-400 mt-0.5">{option.description}</p>
+                </button>
+              ))}
+            </div>
             {renderSoundOperatorSection()}
           </div>
         );
@@ -269,45 +277,45 @@ export default function ParticipantsStep() {
       case "Live with musicians":
         return (
           <div className="space-y-2">
-            {LIVE_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => handleLiveSelect(option.value)}
-                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${
-                  draft.liveOption === option.value
-                    ? "bg-violet-500/20 border-violet-500"
-                    : "bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600"
-                }`}
-              >
-                <div>
-                  <span className={`font-semibold text-base ${
+            <div className="grid grid-cols-2 gap-2">
+              {LIVE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => handleLiveSelect(option.value)}
+                  className={`w-full flex flex-col items-start p-3 rounded-lg border transition-all text-left ${
+                    draft.liveOption === option.value
+                      ? "bg-violet-500/20 border-violet-500"
+                      : "bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600"
+                  }`}
+                >
+                  <span className={`font-semibold text-sm ${
                     draft.liveOption === option.value ? "text-white" : "text-zinc-300"
                   }`}>
                     {option.label}
                   </span>
-                  <p className="text-sm text-zinc-400">{option.description}</p>
-                </div>
-              </button>
-            ))}
+                  <p className="text-[10px] text-zinc-400 mt-0.5">{option.description}</p>
+                </button>
+              ))}
+            </div>
             {renderSoundOperatorSection()}
           </div>
         );
 
       case "Only Drum Practice":
         return (
-          <div className="flex flex-col items-center justify-center py-4 text-center">
-            <div className="p-4 rounded-full bg-violet-500/20 mb-3">
-              <Drum className="w-10 h-10 text-violet-400" />
+          <div className="flex flex-col items-center justify-center py-2 text-center">
+            <div className="p-3 rounded-full bg-violet-500/20 mb-2">
+              <Drum className="w-8 h-8 text-violet-400" />
             </div>
-            <h3 className="text-lg font-semibold text-white mb-1">
+            <h3 className="text-sm font-semibold text-white mb-1">
               Drum Practice Session
             </h3>
-            <p className="text-zinc-400 text-sm max-w-xs">
+            <p className="text-zinc-400 text-xs max-w-xs">
               Drum practice is available exclusively in Studio A with our
               professional drum kit.
             </p>
-            <div className="mt-3 px-4 py-2 bg-zinc-800 rounded-lg">
-              <span className="text-violet-400 font-semibold text-lg">
+            <div className="mt-2 px-3 py-1.5 bg-zinc-800 rounded-lg">
+              <span className="text-violet-400 font-semibold text-sm">
                 ₹350/hour
               </span>
             </div>
@@ -367,21 +375,21 @@ export default function ParticipantsStep() {
               <button
                 key={option.value}
                 onClick={() => handleRecordingSelect(option.value)}
-                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${
+                className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all text-left ${
                   draft.recordingOption === option.value
                     ? "bg-violet-500/20 border-violet-500"
                     : "bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600"
                 }`}
               >
                 <div>
-                  <span className={`font-semibold text-base ${
+                  <span className={`font-semibold text-sm ${
                     draft.recordingOption === option.value ? "text-white" : "text-zinc-300"
                   }`}>
                     {option.label}
                   </span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-violet-400">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-violet-400">
                     {option.price}
                   </span>
                 </div>

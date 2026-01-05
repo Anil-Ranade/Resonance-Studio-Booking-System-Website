@@ -344,7 +344,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen overflow-hidden">
       {/* Hero Section */}
-      <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-[100vh] flex items-start pt-32 sm:pt-40 justify-center overflow-hidden">
         {/* Animated Background */}
         <div className="absolute inset-0 bg-grid opacity-20" />
 
@@ -419,22 +419,18 @@ export default function HomePage() {
         >
           {/* Main Heading */}
           <motion.h1
-            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight"
+            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-2 leading-tight"
             variants={fadeInUp}
           >
-            <span className="text-white">Where Music</span>
-            <br />
-            <motion.span
-              className="gradient-text inline-block"
-              animate={{
-                backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-              }}
-              transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-              style={{ backgroundSize: "200% 200%" }}
-            >
-              Comes Alive
-            </motion.span>
+            <span className="text-white">Resonance Studio</span>
           </motion.h1>
+
+          <motion.h2
+            className="text-2xl sm:text-3xl md:text-4xl font-normal text-white mb-8"
+            variants={fadeInUp}
+          >
+            Sinhgad Road Branch
+          </motion.h2>
 
           {/* Subheading */}
           <motion.p
@@ -454,19 +450,6 @@ export default function HomePage() {
             className="flex flex-col gap-3 sm:gap-4 max-w-3xl mx-auto mb-6 sm:mb-8 px-4 sm:px-0"
             variants={fadeInUp}
           >
-            <Link href="/studios">
-              <motion.div
-                className="group flex items-center justify-center sm:justify-between gap-3 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.02] hover:border-violet-500/30 hover:bg-white/[0.05] transition-all duration-300"
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-              >
-                <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-violet-400 flex-shrink-0" />
-                <span className="text-white text-sm sm:text-base md:text-lg leading-snug text-center sm:text-left flex-1">
-                  Click here to know about our various studios and services
-                </span>
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-violet-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
-              </motion.div>
-            </Link>
             <Link href="/booking">
               <motion.div
                 className="group flex items-center justify-center sm:justify-between gap-3 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.02] hover:border-emerald-500/30 hover:bg-white/[0.05] transition-all duration-300"
@@ -475,13 +458,29 @@ export default function HomePage() {
               >
                 <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 flex-shrink-0" />
                 <span className="text-white text-sm sm:text-base md:text-lg leading-snug text-center sm:text-left flex-1">
-                  For Online Booking System ( New / Change / Cancel / View )
-                  click here
+                  For Online Booking – click here
                 </span>
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
               </motion.div>
             </Link>
+
+            <Link href="/studios">
+              <motion.div
+                className="group flex items-center justify-center sm:justify-between gap-3 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.02] hover:border-violet-500/30 hover:bg-white/[0.05] transition-all duration-300"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-violet-400 flex-shrink-0" />
+                <span className="text-white text-sm sm:text-base md:text-lg leading-snug text-center sm:text-left flex-1">
+                  To know about our studios – click here
+                </span>
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-violet-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+              </motion.div>
+            </Link>
           </motion.div>
+
+          {/* Controlled blank gap */}
+          <div className="h-12 sm:h-20" />
         </motion.div>
       </section>
 
