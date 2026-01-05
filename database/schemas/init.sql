@@ -443,6 +443,37 @@ CREATE TRIGGER update_contact_submissions_updated_at
     EXECUTE FUNCTION update_updated_at_column();
 
 -- =====================================================
+-- SECURE FUNCTIONS (For RLS)
+-- =====================================================
+
+-- Function to check if current user is an admin (Bypasses RLS)
+CREATE OR REPLACE FUNCTION is_admin_secure()
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1
+        FROM admin_users
+        WHERE id = auth.uid()
+        AND is_active = true
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to check if current user is a super_admin (Bypasses RLS)
+CREATE OR REPLACE FUNCTION is_super_admin_secure()
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1
+        FROM admin_users
+        WHERE id = auth.uid()
+        AND role = 'super_admin'
+        AND is_active = true
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- =====================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- =====================================================
 
@@ -484,13 +515,13 @@ CREATE POLICY "Users can be managed by service role" ON users
 DROP POLICY IF EXISTS "Admin users viewable by authenticated admins" ON admin_users;
 CREATE POLICY "Admin users viewable by authenticated admins" ON admin_users
     FOR SELECT USING (
-        auth.uid() IN (SELECT id FROM admin_users WHERE is_active = true)
+        is_admin_secure()
     );
 
 DROP POLICY IF EXISTS "Admin users manageable by super admins" ON admin_users;
 CREATE POLICY "Admin users manageable by super admins" ON admin_users
     FOR ALL USING (
-        auth.uid() IN (SELECT id FROM admin_users WHERE role = 'super_admin' AND is_active = true)
+        is_super_admin_secure()
     );
 
 -- Bookings Policies
@@ -633,6 +664,7 @@ ON CONFLICT (studio, session_type, sub_option) DO NOTHING;
 -- =====================================================
 
 -- View for today's bookings
+DROP VIEW IF EXISTS v_todays_bookings;
 CREATE OR REPLACE VIEW v_todays_bookings AS
 SELECT 
     b.*,
@@ -645,6 +677,7 @@ AND b.status IN ('confirmed', 'pending')
 ORDER BY b.start_time;
 
 -- View for upcoming bookings
+DROP VIEW IF EXISTS v_upcoming_bookings;
 CREATE OR REPLACE VIEW v_upcoming_bookings AS
 SELECT 
     b.*,
@@ -657,6 +690,7 @@ AND b.status IN ('confirmed', 'pending')
 ORDER BY b.date, b.start_time;
 
 -- View for booking statistics
+DROP VIEW IF EXISTS v_booking_stats;
 CREATE OR REPLACE VIEW v_booking_stats AS
 SELECT
     COUNT(*) FILTER (WHERE status = 'confirmed') as confirmed_count,
