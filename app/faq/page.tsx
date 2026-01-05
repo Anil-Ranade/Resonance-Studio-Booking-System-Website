@@ -33,7 +33,7 @@ function generateFaqData(openTime: string, closeTime: string, advanceBookingDays
       items: [
         {
           question: "How do I book a studio?",
-          answer: "You can book online through our website by filling the booking request form, or contact us directly via phone."
+          answer: "You can book directly through our website. Our system shows real-time availability for all studios. Simply select your session type, studio, and time slot to confirm your booking instantly."
         },
         {
           question: "What are your operating hours?",
@@ -45,7 +45,7 @@ function generateFaqData(openTime: string, closeTime: string, advanceBookingDays
         },
         {
           question: "What is your cancellation policy?",
-          answer: "Free cancellation with 24+ hours notice. Less than 24 hours: ₹100 fee. No-show: ₹200 penalty (payable at next booking)."
+          answer: "For standard 'Pay at Studio' bookings: Free cancellation with 24+ hours notice. Less than 24 hours: ₹100 fee. No-show: ₹200 penalty. For 'Pay Now & Save' bookings: Strictly non-cancellable, but can be rescheduled up to 24 hours prior."
         }
       ]
     },
@@ -55,15 +55,15 @@ function generateFaqData(openTime: string, closeTime: string, advanceBookingDays
       items: [
         {
           question: "Which studio should I choose?",
-          answer: "Studio A is best for large bands and karaoke groups (up to 30). Studio B is ideal for medium karaoke groups (up to 12) and small bands. Studio C is perfect for recording, podcasts, and intimate sessions."
+          answer: "Studio A is our largest space (capacity 30), ideal for big bands and recordings. Studio B (capacity 10) is perfect for medium bands and karaoke. Studio C (capacity 5) is cozy and great for duets, small groups, or solo practice."
         },
         {
           question: "Do you provide instruments?",
-          answer: "Yes! Studio A has drums, electric guitars, keyboard, guitar amps, and bass amp. Other studios have basic equipment. Check specific studio details for complete equipment list."
+          answer: "Yes! Studio A is fully equipped with drums, amps, keyboard, and more. Studio B & C have basic equipment suitable for their capacity. Check the specific studio details during booking for a full list."
         },
         {
           question: "Can I bring my own equipment?",
-          answer: "Yes, you are welcome to bring your own instruments and equipment."
+          answer: "Yes, you remain welcome to bring your own instruments and equipment."
         }
       ]
     },
@@ -73,15 +73,15 @@ function generateFaqData(openTime: string, closeTime: string, advanceBookingDays
       items: [
         {
           question: "Do I need to pay in advance?",
-          answer: "No advance payment required. You pay at the studio after your session via cash or UPI."
+          answer: "Advance payment is optional. You can choose 'Pay Now & Save' to get an instant discount (₹20/hr off), or choose 'Pay at Studio' to pay after your session via cash or UPI."
         },
         {
           question: "What is included in the hourly rate?",
-          answer: "The rate includes studio space, sound equipment, sound operator assistance, and listed instruments. Recording services are charged separately."
+          answer: "The rate includes the studio space, equipment, and a Sound Operator to assist you. If you don't need a Sound Operator (e.g. for self-managed practice), you can opt-out for a discount (₹50/hr off)."
         },
         {
           question: "Are there any additional charges?",
-          answer: "Additional services like recording, video production, internet, snacks, etc. are charged separately at actual cost."
+          answer: "Basic amenities like WiFi are free. Additional services (recording, video production) and refreshments (snacks/beverages) are charged separately at actual cost."
         }
       ]
     },

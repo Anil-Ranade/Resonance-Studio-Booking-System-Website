@@ -192,7 +192,7 @@ export default function AboutPage() {
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-2xl font-bold text-white mb-6">Partners & Consultants</h2>
+          <h2 className="text-2xl font-bold text-white mb-6">Consultants</h2>
           <div className="space-y-3">
             {partners.map((partner, index) => (
               <motion.div 
