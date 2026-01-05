@@ -32,8 +32,7 @@ BEGIN
         OR (
             status = 'confirmed' 
             AND (
-                date < CURRENT_DATE 
-                OR (date = CURRENT_DATE AND end_time <= CURRENT_TIME)
+                (date + end_time)::timestamp < (NOW() AT TIME ZONE 'Asia/Kolkata')
             )
         )
     )
@@ -99,7 +98,7 @@ BEGIN
         
         -- If this window is already in the past, it's a failed cycle (since we didn't return above).
         -- So we skip it.
-        IF v_window_end < CURRENT_DATE THEN
+        IF v_window_end < (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE THEN
             CONTINUE;
         END IF; 
         
