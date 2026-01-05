@@ -60,91 +60,21 @@ export async function GET(request: NextRequest) {
   const studio = searchParams.get("studio");
 
   const supabase = supabaseAdmin();
-  const today = new Date().toISOString().split('T')[0];
-
   try {
-    // Helper function to apply filters to a query
-    const applyFilters = (query: any) => {
-      if (startDate) {
-        query = query.gte("date", startDate);
-      }
-      if (endDate) {
-        query = query.lte("date", endDate);
-      }
-      if (studio && studio !== "all") {
-        query = query.eq("studio", studio);
-      }
-      return query;
-    };
-
-    // Get total bookings count (filtered)
-    let totalQuery = supabase
-      .from("bookings")
-      .select("*", { count: "exact", head: true });
-    totalQuery = applyFilters(totalQuery);
-    const { count: totalBookings } = await totalQuery;
-
-    // Get confirmed bookings count (filtered)
-    let confirmedQuery = supabase
-      .from("bookings")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "confirmed");
-    confirmedQuery = applyFilters(confirmedQuery);
-    const { count: confirmedBookings } = await confirmedQuery;
-
-    // Get cancelled bookings count (filtered)
-    let cancelledQuery = supabase
-      .from("bookings")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "cancelled");
-    cancelledQuery = applyFilters(cancelledQuery);
-    const { count: cancelledBookings } = await cancelledQuery;
-
-    // Get completed bookings count (filtered)
-    let completedQuery = supabase
-      .from("bookings")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "completed");
-    completedQuery = applyFilters(completedQuery);
-    const { count: completedBookings } = await completedQuery;
-
-    // Get today's bookings count (always today, but filtered by studio if specified)
-    let todayQuery = supabase
-      .from("bookings")
-      .select("*", { count: "exact", head: true })
-      .eq("date", today)
-      .in("status", ["confirmed"]);
-    if (studio && studio !== "all") {
-      todayQuery = todayQuery.eq("studio", studio);
-    }
-    const { count: todayBookings } = await todayQuery;
-
-    // Get total revenue from confirmed/completed bookings (filtered)
-    let revenueQuery = supabase
-      .from("bookings")
-      .select("total_amount")
-      .in("status", ["confirmed", "completed"]);
-    revenueQuery = applyFilters(revenueQuery);
-    const { data: revenueData } = await revenueQuery;
-
-    const totalRevenue = revenueData?.reduce((sum, b) => sum + (b.total_amount || 0), 0) || 0;
-
-    // Get available slots count for today
-    const { count: availableSlots } = await supabase
-      .from("availability_slots")
-      .select("*", { count: "exact", head: true })
-      .gte("date", today)
-      .eq("is_available", true);
-
-    return NextResponse.json({
-      totalBookings: totalBookings || 0,
-      confirmedBookings: confirmedBookings || 0,
-      cancelledBookings: cancelledBookings || 0,
-      completedBookings: completedBookings || 0,
-      todayBookings: todayBookings || 0,
-      totalRevenue,
-      availableSlots: availableSlots || 0,
+    // Use the RPC function to get all stats in one database call
+    const { data: stats, error: statsError } = await supabase.rpc('get_dashboard_stats', {
+      p_start_date: startDate || null,
+      p_end_date: endDate || null,
+      p_studio: studio === "all" ? null : (studio || null)
     });
+
+    if (statsError) {
+      console.error("Error calling get_dashboard_stats RPC:", statsError);
+      throw statsError;
+    }
+
+    // RPC returns the JSON object directly
+    return NextResponse.json(stats);
   } catch (error) {
     console.error("Error fetching stats:", error);
     return NextResponse.json(
