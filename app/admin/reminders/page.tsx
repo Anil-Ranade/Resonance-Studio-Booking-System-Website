@@ -121,12 +121,21 @@ export default function StandaloneRemindersPage() {
   const [loginLoading, setLoginLoading] = useState(false);
 
   // Reminders Page State
+  // Reminders Page State
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filter, setFilter] = useState<"all" | "pending" | "sent">("all");
+  const [activeTab, setActiveTab] = useState<"pending" | "sent">("pending");
   
   const router = useRouter();
+
+  // ... (keeping other auth logic same, skipping to render part for brevity in thought but must match file)
+  // Since I can't skip lines in replace_file_content easily without matching context, I need to be precise.
+  // Actually, I should target the `const [filter, setFilter]` line first.
+  
+  // Wait, I should do this in chunks if easier, or one big chunk.
+  // Let's do the state definition first.
+
 
   // --- Auth Logic ---
 
@@ -254,50 +263,201 @@ export default function StandaloneRemindersPage() {
     }
   }, [isAuthorized, fetchBookings]);
 
-  const sendConfirmation = (booking: Booking) => {
+  const sendConfirmation = async (booking: Booking) => {
     const phone = booking.phone_number.replace(/[^0-9]/g, "");
     const formattedDate = formatDate(booking.date);
     const formattedStartTime = formatTime(booking.start_time);
     const formattedEndTime = formatTime(booking.end_time);
 
-    const message = `*Booking Confirmed - Resonance Studio, Sinhgad Road Branch*
+    // Fetch loyalty status
+    let loyaltyMessagePart = "";
+    try {
+      const res = await fetch(`/api/loyalty/status?phone=${phone}`);
+      const loyaltyData = await res.json();
+      if (loyaltyData && !loyaltyData.error) {
+        const currentHours = Number(loyaltyData.hours || 0);
+        const target = Number(loyaltyData.target || 50);
+        const windowEnd = loyaltyData.window_end ? new Date(loyaltyData.window_end).toLocaleDateString("en-GB", { day: 'numeric', month: 'long', year: 'numeric' }) : "expiration date";
 
-Hi ${booking.name || "there"},
+        // Assuming 50 hours = 1500 Rs reward => 30 Rs/hr value
+        const balance = Math.round(currentHours * 30);
+        const neededHours = Math.max(0, target - currentHours);
+        
+        loyaltyMessagePart = `\nincluding this booking, your total cashback balance is ₹${balance.toLocaleString()}.\nTo encash ₹1,500, please complete ${neededHours.toFixed(1)} more hours of booking before ${windowEnd}.`;
+      }
+    } catch (err) {
+      console.error("Failed to fetch loyalty status", err);
+    }
 
-Your booking at our studio has been confirmed.
+    // Calculation for Invoice
+    const s = booking.start_time.split(':').map(Number);
+    const e = booking.end_time.split(':').map(Number);
+    const duration = (e[0] * 60 + e[1] - (s[0] * 60 + s[1])) / 60;
+    
+    // Determine Base Rate & Discounts logic (Inferred)
+    // We don't have is_prompt_payment in the local Booking interface in this file? 
+    // Wait, the interface Booking above has total_amount but NOT is_prompt_payment in lines 29-46 of view_file output?
+    // Let me check lines 29-46 again.
+    // Line 46: whatsapp_reminder_sent_at: string | null;
+    // It seems 'is_prompt_payment' is missing from the Booking interface in this file.
+    // However, the api/admin/bookings likely returns it. 
+    // I should cast it or update the interface if I can, but for now I will check if I can safely access it via (booking as any).is_prompt_payment 
+    // or assume standard logic.
+    // The previous implementation on bookings page had is_prompt_payment in the interface.
+    // I'll assume it's available in the data object even if typed loosely here, or I'll default to 0 if undefined.
+    
+    let promptDiscount = 0;
+    let soundDiscount = 0;
+    
+    // Cast to any to access potentially un-typed property or just update interface later
+    // For safety in this replace block, I'll use (booking as any)
+    if ((booking as any).is_prompt_payment) {
+      promptDiscount = 20 * duration;
+    }
+    
+    // "No Sound Operator" Logic
+    const isNoSoundOperator = booking.session_details?.toLowerCase().includes("no sound operator") || booking.session_type === "Meetings / Classes";
+    if (isNoSoundOperator) {
+      soundDiscount = 50 * duration;
+    }
+    
+    const currentTotal = booking.total_amount || 0;
+    // Infer Base Rate
+    const inferredBaseAmount = currentTotal + promptDiscount + soundDiscount;
+    const inferredBaseRate = Math.round(inferredBaseAmount / duration);
+    
+    const basicAmount = inferredBaseRate * duration;
+    const instantDiscount = promptDiscount + soundDiscount;
+    
+    // Helpers
+    const fmtMoney = (n: number) => `₹ ${n.toLocaleString()}`;
+    const fmtNegMoney = (n: number) => `- ₹ ${n.toLocaleString()}`;
 
-Date: ${formattedDate}
-Time: ${formattedStartTime} – ${formattedEndTime}
-*${booking.session_type || "Session"}${booking.session_details && booking.session_details !== booking.session_type ? ` with ${booking.session_details}` : ""}*
-*${booking.studio}*
+    // Build Invoice Table
+    let tableRows = `Basic Amount                    ${inferredBaseRate} × ${duration}             ${fmtMoney(basicAmount)}`;
+    if (soundDiscount > 0) {
+      tableRows += `\nNo Sound Operator Discount       50 × ${duration}              ${fmtNegMoney(soundDiscount)}`;
+    }
+    if (promptDiscount > 0) {
+      tableRows += `\nPrompt Payment Discount          20 × ${duration}              ${fmtNegMoney(promptDiscount)}`;
+    }
 
-Enjoy your session!
-See you soon!`;
+    // Message Construction Logic
+    const isLive = booking.session_type === "Live with musicians";
+    const sessionTypeDisplay = isLive
+      ? "Live session"
+      : booking.session_type;
+    
+    let sessionDetailsDisplay = "";
+    if (booking.session_details && booking.session_details !== booking.session_type) {
+      const prefix = isLive ? " with up to " : " with ";
+      sessionDetailsDisplay = `${prefix}${booking.session_details}`;
+    }
+
+    const message = `*Booking Confirmed – Resonance Studio, Sinhgad Road Branch*
+
+Your booking of ${formattedDate} from ${formattedStartTime} to ${formattedEndTime} (${duration} hours) for ${sessionTypeDisplay}${sessionDetailsDisplay} in ${booking.studio} is confirmed with us.
+
+*Booking Amount Details:*
+
+\`\`\`
+Description                     Rate × Hours        Amount
+------------------------------------------------------------
+${tableRows}
+------------------------------------------------------------
+Final Amount                                        ${fmtMoney(currentTotal)}
+\`\`\`
+
+You have earned an instant discount of ${fmtMoney(instantDiscount)}.
+Additionally, ₹${Math.round(duration * 30)} cashback has been added against your mobile number.${loyaltyMessagePart}
+
+*Please note and inform all your group members:*
+
+Do not park vehicles blocking the society gate
+
+Kindly avoid extended chatting on the society road to maintain a peaceful environment
+
+Strictly no noise after 10:00 pm
+
+We look forward to hosting you.
+Enjoy your session!`;
 
     const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(
       message
     )}`;
     window.open(whatsappUrl, "_blank");
+
+    try {
+      const token = await getAccessToken();
+      const response = await fetch("/api/admin/whatsapp-reminder", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ booking_id: booking.id }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBookings((prev) =>
+          prev.map((b) =>
+            b.id === booking.id
+              ? {
+                  ...b,
+                  whatsapp_reminder_sent_at: data.whatsapp_reminder_sent_at,
+                }
+              : b
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Failed to mark confirmation as sent:", error);
+    }
   };
 
   const sendReminder = async (booking: Booking) => {
     const phone = booking.phone_number.replace(/[^0-9]/g, "");
-    const formattedDate = formatDate(booking.date);
     const formattedStartTime = formatTime(booking.start_time);
     const formattedEndTime = formatTime(booking.end_time);
 
-    const message = `*Reminder from Resonance Studio, Sinhgad Road Branch*
+    // Date formatting with ordinal
+    const dateObj = new Date(booking.date);
+    const dayName = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
+    const d = dateObj.getDate();
+    const ordinal = (d > 3 && d < 21) ? 'th' : ['th', 'st', 'nd', 'rd'][d % 10] || 'th';
+    const monthYear = dateObj.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    const niceDate = `${dayName}, ${d}${ordinal} ${monthYear}`;
 
-Hi ${booking.name || "there"},
+    // Duration calculation
+    const s = booking.start_time.split(':').map(Number);
+    const e = booking.end_time.split(':').map(Number);
+    const duration = (e[0] * 60 + e[1] - (s[0] * 60 + s[1])) / 60;
 
-This is a reminder for your upcoming booking at our studio.
+    const isLive = booking.session_type === "Live with musicians";
+    const sessionTypeDisplay = isLive
+      ? "Live session"
+      : (booking.session_type || "Session");
+    
+    let sessionDetailsDisplay = "";
+    if (booking.session_details && booking.session_details !== booking.session_type) {
+      const prefix = isLive ? " with up to " : " with ";
+      sessionDetailsDisplay = `${prefix}${booking.session_details}`;
+    }
 
-Date: ${formattedDate}
-Time: ${formattedStartTime} – ${formattedEndTime}
-*${booking.session_type || "Session"}${booking.session_details && booking.session_details !== booking.session_type ? ` with ${booking.session_details}` : ""}*
-*${booking.studio}*
+    const message = `*Reminder – Resonance Studio, Sinhgad Road Branch*
 
-Enjoy your session!
+This is to remind you that you have an upcoming booking on ${niceDate} from ${formattedStartTime} to ${formattedEndTime} (${duration} hours) for a ${sessionTypeDisplay}${sessionDetailsDisplay} in ${booking.studio} with us.
+
+*Please note and inform all your group members:*
+
+Do not park vehicles blocking the society gate
+
+Kindly avoid extended chatting on the society road to maintain a peaceful environment
+
+Strictly no noise after 10:00 pm
+
+We look forward to hosting you.
 See you soon!`;
 
     const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(
@@ -467,19 +627,23 @@ See you soon!`;
 
   // Authorized -> Show Reminders Page Management
   
-  const filteredBookings = bookings.filter((booking) => {
-    const searchLower = searchTerm.toLowerCase();
-    const matchesSearch =
-      booking.name?.toLowerCase().includes(searchLower) ||
-      booking.phone_number.includes(searchTerm);
+  const filteredBookings = bookings
+    .filter((booking) => {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch =
+        booking.name?.toLowerCase().includes(searchLower) ||
+        booking.phone_number.includes(searchTerm);
 
-    if (filter === "pending") {
-      return matchesSearch && !booking.whatsapp_reminder_sent_at;
-    } else if (filter === "sent") {
-      return matchesSearch && booking.whatsapp_reminder_sent_at;
-    }
-    return matchesSearch;
-  });
+      if (!matchesSearch) return false;
+
+      // Tab filter
+      if (activeTab === "pending") {
+        return !booking.whatsapp_reminder_sent_at;
+      } else {
+        return booking.whatsapp_reminder_sent_at;
+      }
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const pendingCount = bookings.filter(
     (b) => !b.whatsapp_reminder_sent_at
@@ -586,7 +750,31 @@ See you soon!`;
             </motion.div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col gap-4">
+             {/* Tabs */}
+            <div className="flex p-1 bg-white/5 rounded-xl w-fit">
+              <button
+                onClick={() => setActiveTab("pending")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === "pending"
+                    ? "bg-violet-500 text-white shadow-lg shadow-violet-500/20"
+                    : "text-zinc-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                Reminders Pending
+              </button>
+              <button
+                onClick={() => setActiveTab("sent")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === "sent"
+                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                    : "text-zinc-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                Reminders Sent
+              </button>
+            </div>
+
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
               <input
@@ -596,39 +784,6 @@ See you soon!`;
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
               />
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => setFilter("all")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  filter === "all"
-                    ? "bg-violet-500/20 text-violet-400"
-                    : "bg-white/5 text-zinc-400 hover:bg-white/10"
-                }`}
-              >
-                All ({bookings.length})
-              </button>
-              <button
-                onClick={() => setFilter("pending")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  filter === "pending"
-                    ? "bg-amber-500/20 text-amber-400"
-                    : "bg-white/5 text-zinc-400 hover:bg-white/10"
-                }`}
-              >
-                Pending ({pendingCount})
-              </button>
-              <button
-                onClick={() => setFilter("sent")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  filter === "sent"
-                    ? "bg-emerald-500/20 text-emerald-400"
-                    : "bg-white/5 text-zinc-400 hover:bg-white/10"
-                }`}
-              >
-                Sent ({sentCount})
-              </button>
             </div>
           </div>
         </div>

@@ -1439,18 +1439,43 @@ export default function BookingsManagementPage() {
                               selectedBooking.end_time
                             );
 
-                            const message = `*Reminder from Resonance Studio, Sinhgad Road Branch*
+                            // Date formatting with ordinal
+                            const dateObj = new Date(selectedBooking.date);
+                            const dayName = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
+                            const d = dateObj.getDate();
+                            const ordinal = (d > 3 && d < 21) ? 'th' : ['th', 'st', 'nd', 'rd'][d % 10] || 'th';
+                            const monthYear = dateObj.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+                            const niceDate = `${dayName}, ${d}${ordinal} ${monthYear}`;
 
-Hi ${selectedBooking.name || "there"},
+                            // Duration calculation
+                            const s = selectedBooking.start_time.split(':').map(Number);
+                            const e = selectedBooking.end_time.split(':').map(Number);
+                            const dur = (e[0] * 60 + e[1] - (s[0] * 60 + s[1])) / 60;
 
-This is a reminder for your upcoming booking at our studio.
+                            const isLive = selectedBooking.session_type === "Live with musicians";
+                            const sessionTypeDisplay = isLive
+                              ? "Live session"
+                              : (selectedBooking.session_type || "Session");
+                            
+                            let sessionDetailsDisplay = "";
+                            if (selectedBooking.session_details && selectedBooking.session_details !== selectedBooking.session_type) {
+                              const prefix = isLive ? " with up to " : " with ";
+                              sessionDetailsDisplay = `${prefix}${selectedBooking.session_details}`;
+                            }
 
-Date: ${formattedDate}
-Time: ${formattedStartTime} – ${formattedEndTime}
-${selectedBooking.session_type || "Session"}${selectedBooking.session_details && selectedBooking.session_details !== selectedBooking.session_type ? ` with ${selectedBooking.session_details}` : ""}
-${selectedBooking.studio}
+                            const message = `*Reminder – Resonance Studio, Sinhgad Road Branch*
 
-Enjoy your session!
+This is to remind you that you have an upcoming booking on ${niceDate} from ${formattedStartTime} to ${formattedEndTime} (${dur} hours) for a ${sessionTypeDisplay}${sessionDetailsDisplay} in ${selectedBooking.studio} with us.
+
+*Please note and inform all your group members:*
+
+Do not park vehicles blocking the society gate
+
+Kindly avoid extended chatting on the society road to maintain a peaceful environment
+
+Strictly no noise after 10:00 pm
+
+We look forward to hosting you.
 See you soon!`;
 
                             const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(
@@ -1528,6 +1553,129 @@ See you soon!`;
                       </button>
                     </div>
                   )}
+
+                {/* Send Confirmation */}
+                {selectedBooking.status === "confirmed" && (
+                  <div className="pt-4 border-t border-white/10">
+                    <p className="text-zinc-400 text-sm mb-3">Send Confirmation</p>
+                    <button
+                      onClick={async () => {
+                        const phone = selectedBooking.phone_number.replace(/[^0-9]/g, "");
+                        const formattedDate = formatDate(selectedBooking.date);
+                        const formattedStartTime = formatTime(selectedBooking.start_time);
+                        const formattedEndTime = formatTime(selectedBooking.end_time);
+
+                        // Fetch loyalty status
+                        let loyaltyMessagePart = "";
+                        try {
+                          const res = await fetch(`/api/loyalty/status?phone=${phone}`);
+                          const loyaltyData = await res.json();
+                          if (loyaltyData && !loyaltyData.error) {
+                            const currentHours = Number(loyaltyData.hours || 0);
+                            const target = Number(loyaltyData.target || 50);
+                            const windowEnd = loyaltyData.window_end ? new Date(loyaltyData.window_end).toLocaleDateString("en-GB", { day: 'numeric', month: 'long', year: 'numeric' }) : "expiration date";
+
+                            // Assuming 50 hours = 1500 Rs reward => 30 Rs/hr value
+                            const balance = Math.round(currentHours * 30);
+                            const neededHours = Math.max(0, target - currentHours);
+                            
+                            loyaltyMessagePart = `\nincluding this booking, your total cashback balance is ₹${balance.toLocaleString()}.\nTo encash ₹1,500, please complete ${neededHours.toFixed(1)} more hours of booking before ${windowEnd}.`;
+                          }
+                        } catch (err) {
+                          console.error("Failed to fetch loyalty status", err);
+                        }
+
+                        // Calculation for Invoice
+                        const startParts = selectedBooking.start_time.split(':').map(Number);
+                        const endParts = selectedBooking.end_time.split(':').map(Number);
+                        const duration = (endParts[0] * 60 + endParts[1] - (startParts[0] * 60 + startParts[1])) / 60;
+                        
+                        // Determine Base Rate & Discounts
+                        let promptDiscount = 0;
+                        let soundDiscount = 0;
+                        
+                        // Prompt Payment Discount: 20 Rs/hr
+                        if (selectedBooking.is_prompt_payment) {
+                          promptDiscount = 20 * duration;
+                        }
+                        
+                        // "No Sound Operator" Logic
+                        const isNoSoundOperator = selectedBooking.session_details?.toLowerCase().includes("no sound operator") || selectedBooking.session_type === "Meetings / Classes";
+                        if (isNoSoundOperator) {
+                          soundDiscount = 50 * duration;
+                        }
+                        
+                        const currentTotal = selectedBooking.total_amount || 0;
+                        // Infer Base Rate
+                        const inferredBaseAmount = currentTotal + promptDiscount + soundDiscount;
+                        const inferredBaseRate = Math.round(inferredBaseAmount / duration);
+                        
+                        const basicAmount = inferredBaseRate * duration;
+                        const instantDiscount = promptDiscount + soundDiscount;
+                        
+                        // Helpers
+                        const fmtMoney = (n: number) => `₹ ${n.toLocaleString()}`;
+                        const fmtNegMoney = (n: number) => `- ₹ ${n.toLocaleString()}`;
+
+                        // Build Invoice Table
+                        let tableRows = `Basic Amount                    ${inferredBaseRate} × ${duration}             ${fmtMoney(basicAmount)}`;
+                        if (soundDiscount > 0) {
+                          tableRows += `\nNo Sound Operator Discount       50 × ${duration}              ${fmtNegMoney(soundDiscount)}`;
+                        }
+                        if (promptDiscount > 0) {
+                          tableRows += `\nPrompt Payment Discount          20 × ${duration}              ${fmtNegMoney(promptDiscount)}`;
+                        }
+                        
+                        // Message Construction Logic
+                        const isLive = selectedBooking.session_type === "Live with musicians";
+                        const sessionTypeDisplay = isLive
+                          ? "Live session"
+                          : selectedBooking.session_type;
+                        
+                        let sessionDetailsDisplay = "";
+                        if (selectedBooking.session_details && selectedBooking.session_details !== selectedBooking.session_type) {
+                          const prefix = isLive ? " with up to " : " with ";
+                          sessionDetailsDisplay = `${prefix}${selectedBooking.session_details}`;
+                        }
+
+                        const message = `*Booking Confirmed – Resonance Studio, Sinhgad Road Branch*
+
+Your booking of ${formattedDate} from ${formattedStartTime} to ${formattedEndTime} (${duration} hours) for ${sessionTypeDisplay}${sessionDetailsDisplay} in ${selectedBooking.studio} is confirmed with us.
+
+*Booking Amount Details:*
+
+\`\`\`
+Description                     Rate × Hours        Amount
+------------------------------------------------------------
+${tableRows}
+------------------------------------------------------------
+Final Amount                                        ${fmtMoney(currentTotal)}
+\`\`\`
+
+You have earned an instant discount of ${fmtMoney(instantDiscount)}.
+Additionally, ₹${Math.round(duration * 30)} cashback has been added against your mobile number.${loyaltyMessagePart}
+
+*Please note and inform all your group members:*
+
+Do not park vehicles blocking the society gate
+
+Kindly avoid extended chatting on the society road to maintain a peaceful environment
+
+Strictly no noise after 10:00 pm
+
+We look forward to hosting you.
+Enjoy your session!`;
+
+                        const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                        window.open(whatsappUrl, "_blank");
+                      }}
+                      className="w-full py-3 rounded-xl bg-violet-500/20 text-violet-400 hover:bg-violet-500/30 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Send WhatsApp Confirmation
+                    </button>
+                  </div>
+                )}
 
                 {/* Action Buttons based on status */}
                 <div className="pt-4 border-t border-white/10">

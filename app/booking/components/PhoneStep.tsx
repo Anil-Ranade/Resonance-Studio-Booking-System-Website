@@ -440,6 +440,7 @@ export default function PhoneStep() {
       showBack={draft.isEditMode}
       showNext={true}
       onBack={draft.isEditMode ? handleBack : undefined}
+      onExit={() => router.push('/booking')}
       onNext={handleNext}
       isNextDisabled={!isValid || isCheckingUser}
     >

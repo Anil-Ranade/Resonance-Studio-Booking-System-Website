@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Loader2, Edit3 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Edit3, X } from "lucide-react";
 import { useBooking } from "../contexts/BookingContext";
 
 interface StepLayoutProps {
@@ -14,6 +14,7 @@ interface StepLayoutProps {
   nextLabel?: string;
   onNext?: () => void;
   onBack?: () => void;
+  onExit?: () => void;
   isNextDisabled?: boolean;
   isLoading?: boolean;
   hideFooter?: boolean;
@@ -28,6 +29,7 @@ export default function StepLayout({
   nextLabel = "Next",
   onNext,
   onBack,
+  onExit,
   isNextDisabled = false,
   isLoading = false,
   hideFooter = false,
@@ -69,7 +71,16 @@ export default function StepLayout({
       }`}
     >
       {/* Header */}
-      <header className="flex-shrink-0 px-4 pt-4 pb-2">
+      <header className="flex-shrink-0 px-4 pt-4 pb-2 relative">
+        {onExit && (
+          <button
+            onClick={onExit}
+            className="absolute right-4 top-4 p-2 bg-zinc-800 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors z-20"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+
         {/* Main Headers - shown on ALL pages */}
         <div className="text-center mb-3">
           <h1
