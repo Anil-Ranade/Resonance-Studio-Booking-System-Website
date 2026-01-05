@@ -235,7 +235,7 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [getAccessToken, datePreset, filterStudio, customStartDate, customEndDate, useCustomDates]);
+  }, [getAccessToken, datePreset, filterStudio, customStartDate, customEndDate, useCustomDates, currentUser]);
 
   useEffect(() => {
     fetchDashboardData();
