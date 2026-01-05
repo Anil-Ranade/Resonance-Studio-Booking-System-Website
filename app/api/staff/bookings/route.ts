@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
 import { sendAdminBookingConfirmationEmail } from "@/lib/email";
 import { deleteEvent, createEvent, updateEvent } from "@/lib/googleCalendar";
+import { logBookingUpdate, logBookingCancellation } from "@/lib/googleSheets";
 
 // Verify staff token from Authorization header
 async function verifyStaffToken(request: NextRequest) {
@@ -292,6 +293,44 @@ export async function PUT(request: NextRequest) {
       new_data: updates,
     });
 
+    // Log booking update/cancellation to Google Sheet
+    try {
+      if (status === "cancelled") {
+        await logBookingCancellation({
+          id: id,
+          date: booking.date,
+          studio: booking.studio,
+          session_type: booking.session_type,
+          session_details: booking.session_details,
+          start_time: booking.start_time,
+          end_time: booking.end_time,
+          name: booking.name,
+          phone_number: booking.phone_number,
+          email: undefined,
+          total_amount: booking.total_amount || undefined,
+          cancellation_reason: notes || "Cancelled by staff",
+        });
+      } else {
+         await logBookingUpdate({
+          id: id,
+          date: booking.date,
+          studio: booking.studio,
+          session_type: booking.session_type,
+          session_details: booking.session_details,
+          start_time: booking.start_time,
+          end_time: booking.end_time,
+          name: booking.name,
+          phone_number: booking.phone_number,
+          email: undefined,
+          total_amount: booking.total_amount || undefined,
+          status: booking.status,
+          notes: booking.notes,
+        });
+      }
+    } catch (sheetError) {
+      console.error("[Staff Bookings] Failed to log to Google Sheet:", sheetError);
+    }
+
     return NextResponse.json({ success: true, booking });
   } catch (error) {
     return NextResponse.json(
@@ -357,6 +396,26 @@ export async function DELETE(request: NextRequest) {
       console.error("[Staff Bookings] Failed to delete Google Calendar event:", calendarError);
       // Don't fail the request, just log the error
     }
+  }
+
+  // Log cancellation to Google Sheet BEFORE deleting
+  try {
+     await logBookingCancellation({
+        id: existingBooking.id,
+        date: existingBooking.date,
+        studio: existingBooking.studio,
+        session_type: existingBooking.session_type,
+        session_details: existingBooking.session_details,
+        start_time: existingBooking.start_time,
+        end_time: existingBooking.end_time,
+        name: existingBooking.name,
+        phone_number: existingBooking.phone_number,
+        email: undefined,
+        total_amount: existingBooking.total_amount || undefined,
+        cancellation_reason: "Deleted by staff",
+      });
+  } catch (sheetError) {
+    console.error("[Staff Bookings] Failed to log deletion to Google Sheet:", sheetError);
   }
 
   // Delete the booking

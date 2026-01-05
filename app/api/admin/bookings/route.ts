@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
 import { sendAdminBookingConfirmationEmail } from "@/lib/email";
 import { deleteEvent, createEvent, updateEvent } from "@/lib/googleCalendar";
+import { logBookingUpdate, logBookingCancellation } from "@/lib/googleSheets";
 
 // Verify admin token from Authorization header
 async function verifyAdminToken(request: NextRequest) {
@@ -282,6 +283,53 @@ export async function PUT(request: NextRequest) {
       new_data: updates,
     });
 
+    // Log booking update/cancellation to Google Sheet
+    try {
+      if (status === "cancelled") {
+        await logBookingCancellation({
+          id: id,
+          date: booking.date,
+          studio: booking.studio,
+          session_type: booking.session_type,
+          session_details: booking.session_details,
+          start_time: booking.start_time,
+          end_time: booking.end_time,
+          name: booking.name,
+          phone_number: booking.phone_number,
+          // Fetch email if not strictly available in booking object (it might not be)
+          // valid_email logic could be complex here, so we might want to fetch user again or just let it be empty if not in booking
+          // However, for update, we usually have the email if we just sent it.
+          // Let's rely on what we have or fetch if needed.
+          // Ideally we used `userData.email` above for sending email. 
+          // Re-fetching just to be safe for logging is acceptable but inefficient.
+          // But `logBookingCancellation` takes `email` as optional string.
+          // Note: `userData` is defined in the block above for `status === confirmed`. It might not be available here. 
+          // Let's attempt to use what we know.
+          email: undefined, // We don't have email easily available here unless confirmed. 
+          total_amount: booking.total_amount || undefined,
+          cancellation_reason: notes || "Cancelled by admin",
+        });
+      } else {
+         await logBookingUpdate({
+          id: id,
+          date: booking.date,
+          studio: booking.studio,
+          session_type: booking.session_type,
+          session_details: booking.session_details,
+          start_time: booking.start_time,
+          end_time: booking.end_time,
+          name: booking.name,
+          phone_number: booking.phone_number,
+          email: undefined,
+          total_amount: booking.total_amount || undefined,
+          status: booking.status,
+          notes: booking.notes,
+        });
+      }
+    } catch (sheetError) {
+      console.error("[Admin Bookings] Failed to log to Google Sheet:", sheetError);
+    }
+
     return NextResponse.json({ success: true, booking });
   } catch (error) {
     return NextResponse.json(
@@ -336,6 +384,28 @@ export async function DELETE(request: NextRequest) {
       console.error("[Admin Bookings] Failed to delete Google Calendar event:", calendarError);
       // Don't fail the request, just log the error
     }
+  }
+
+  // Log cancellation to Google Sheet BEFORE deleting (so we have the data)
+  // Deleting a booking is effectively a "hard" cancellation or removal.
+  // We should log it as CANCELLED in the sheet so the slot appears free or accounted for.
+  try {
+     await logBookingCancellation({
+        id: existingBooking.id,
+        date: existingBooking.date,
+        studio: existingBooking.studio,
+        session_type: existingBooking.session_type,
+        session_details: existingBooking.session_details,
+        start_time: existingBooking.start_time,
+        end_time: existingBooking.end_time,
+        name: existingBooking.name,
+        phone_number: existingBooking.phone_number,
+        email: undefined,
+        total_amount: existingBooking.total_amount || undefined,
+        cancellation_reason: "Deleted by admin",
+      });
+  } catch (sheetError) {
+    console.error("[Admin Bookings] Failed to log deletion to Google Sheet:", sheetError);
   }
 
   // Delete the booking
