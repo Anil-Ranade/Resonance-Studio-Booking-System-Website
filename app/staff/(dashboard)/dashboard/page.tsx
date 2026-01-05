@@ -92,7 +92,12 @@ const getDateRange = (preset: DatePreset): { startDate: string; endDate: string 
   }
 };
 
+import InvestorDashboard from './InvestorDashboard';
+
+// ... (other imports)
+
 export default function StaffDashboard() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [stats, setStats] = useState<DashboardStats>({
     totalBookings: 0,
     confirmedBookings: 0,
@@ -102,6 +107,18 @@ export default function StaffDashboard() {
     todayBookings: 0,
     availableSlots: 0,
   });
+  // ... (other state)
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const stored = localStorage.getItem('staff');
+      if (stored) {
+        setCurrentUser(JSON.parse(stored));
+      }
+    };
+    fetchUser();
+  }, []);
+
   const [loading, setLoading] = useState(true);
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
   const [todayBookings, setTodayBookings] = useState<TodayBooking[]>([]);
@@ -134,6 +151,12 @@ export default function StaffDashboard() {
   }, []);
 
   const fetchDashboardData = useCallback(async () => {
+    // Wait for user to be loaded
+    if (!currentUser) return;
+    
+    // Skip if not staff (e.g. investor)
+    if (currentUser.role !== 'staff') return;
+
     setLoading(true);
     try {
       const token = await getAccessToken();
@@ -220,7 +243,7 @@ export default function StaffDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [getAccessToken, datePreset, filterStudio, customStartDate, customEndDate, useCustomDates]);
+  }, [getAccessToken, datePreset, filterStudio, customStartDate, customEndDate, useCustomDates, currentUser]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -329,6 +352,10 @@ export default function StaffDashboard() {
     'Studio B': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
     'Studio C': 'bg-green-500/20 text-green-400 border-green-500/30',
   };
+
+  if (currentUser?.role === 'investor') {
+    return <InvestorDashboard user={currentUser} />;
+  }
 
   return (
     <div className="space-y-6">

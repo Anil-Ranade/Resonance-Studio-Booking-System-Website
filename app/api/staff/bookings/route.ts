@@ -39,7 +39,7 @@ async function verifyStaffToken(request: NextRequest) {
     .select("*")
     .eq("id", user.id)
     .eq("is_active", true)
-    .eq("role", "staff")
+    .in("role", ["staff", "investor"])
     .single();
 
   if (staffError || !staffUser) {
@@ -141,10 +141,13 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
-    // Verify this booking was created by this staff member
-    if (existingBooking.created_by_staff_id !== staff.user.id) {
+    // Verify ownership: Created by this user OR assigned to this investor
+    const isCreator = existingBooking.created_by_staff_id === staff.user.id;
+    const isAssignedInvestor = existingBooking.investor_id === staff.user.id;
+
+    if (!isCreator && !isAssignedInvestor) {
       return NextResponse.json(
-        { error: "You can only modify bookings you have created" },
+        { error: "You can only modify bookings you have created or are assigned to" },
         { status: 403 }
       );
     }
@@ -328,10 +331,13 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Booking not found" }, { status: 404 });
   }
 
-  // Verify this booking was created by this staff member
-  if (existingBooking.created_by_staff_id !== staff.user.id) {
+  // Verify ownership: Created by this user OR assigned to this investor
+  const isCreator = existingBooking.created_by_staff_id === staff.user.id;
+  const isAssignedInvestor = existingBooking.investor_id === staff.user.id;
+
+  if (!isCreator && !isAssignedInvestor) {
     return NextResponse.json(
-      { error: "You can only delete bookings you have created" },
+      { error: "You can only delete bookings you have created or are assigned to" },
       { status: 403 }
     );
   }

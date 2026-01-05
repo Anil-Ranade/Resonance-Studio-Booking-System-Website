@@ -29,14 +29,54 @@ interface AdminInfo {
 }
 
 const navItems = [
-  { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-  { label: "Availability", href: "/admin/availability", icon: Clock },
-  { label: "Bookings", href: "/admin/bookings", icon: Calendar },
-  { label: "Payments", href: "/admin/payments", icon: CreditCard },
-  { label: "Loyalty Program", href: "/admin/loyalty", icon: Gift },
-
-  { label: "Staff", href: "/admin/staff", icon: Users },
-  { label: "Settings", href: "/admin/settings", icon: Settings },
+  { 
+    label: "Dashboard", 
+    href: "/admin/dashboard", 
+    icon: LayoutDashboard,
+    allowedRoles: ['admin', 'super_admin', 'staff', 'investor'] 
+  },
+  { 
+    label: "Availability", 
+    href: "/admin/availability", 
+    icon: Clock,
+    allowedRoles: ['admin', 'super_admin', 'staff']
+  },
+  { 
+    label: "Bookings", 
+    href: "/admin/bookings", 
+    icon: Calendar,
+    allowedRoles: ['admin', 'super_admin', 'staff', 'investor']
+  },
+  { 
+    label: "Payments", 
+    href: "/admin/payments", 
+    icon: CreditCard,
+    allowedRoles: ['admin', 'super_admin']
+  },
+  { 
+    label: "Investors", 
+    href: "/admin/investors", 
+    icon: Users,
+    allowedRoles: ['admin', 'super_admin']
+  },
+  { 
+    label: "Loyalty Program", 
+    href: "/admin/loyalty", 
+    icon: Gift,
+    allowedRoles: ['admin', 'super_admin', 'staff']
+  },
+  { 
+    label: "Staff", 
+    href: "/admin/staff", 
+    icon: Users,
+    allowedRoles: ['admin', 'super_admin']
+  },
+  { 
+    label: "Settings", 
+    href: "/admin/settings", 
+    icon: Settings,
+    allowedRoles: ['admin', 'super_admin', 'staff', 'investor']
+  },
 ];
 
 export default function DashboardLayout({
@@ -148,6 +188,11 @@ export default function DashboardLayout({
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1">
             {navItems.map((item) => {
+              // Check if user role is allowed
+              if (admin?.role && item.allowedRoles && !item.allowedRoles.includes(admin.role)) {
+                return null;
+              }
+
               const isActive = pathname === item.href;
               const Icon = item.icon;
               return (

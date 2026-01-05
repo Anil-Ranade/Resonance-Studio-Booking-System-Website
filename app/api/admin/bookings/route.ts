@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
   const date = searchParams.get("date");
   const startDate = searchParams.get("startDate");
   const endDate = searchParams.get("endDate");
+  const investorId = searchParams.get("investorId");
 
   const supabase = supabaseAdmin();
 
@@ -70,6 +71,10 @@ export async function GET(request: NextRequest) {
     .from("bookings")
     .select("*")
     .order("created_at", { ascending: false });
+
+  if (investorId) {
+    query = query.eq("investor_id", investorId);
+  }
 
   if (status && status !== "all") {
     query = query.eq("status", status);

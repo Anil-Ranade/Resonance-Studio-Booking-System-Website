@@ -92,7 +92,9 @@ const getDateRange = (preset: DatePreset): { startDate: string; endDate: string 
   }
 };
 
+
 export default function AdminDashboard() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [stats, setStats] = useState<DashboardStats>({
     totalBookings: 0,
     confirmedBookings: 0,
@@ -133,7 +135,20 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  // Fetch current user details
+  useEffect(() => {
+    const fetchUser = async () => {
+      const stored = localStorage.getItem('admin');
+      if (stored) {
+        setCurrentUser(JSON.parse(stored));
+      }
+    };
+    fetchUser();
+  }, []);
+
   const fetchDashboardData = useCallback(async () => {
+    if (!currentUser || currentUser.role === 'investor') return; // Skip fetch for investors
+
     setLoading(true);
     try {
       const token = await getAccessToken();
@@ -329,6 +344,7 @@ export default function AdminDashboard() {
     'Studio B': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
     'Studio C': 'bg-green-500/20 text-green-400 border-green-500/30',
   };
+
 
   return (
     <div className="space-y-6">

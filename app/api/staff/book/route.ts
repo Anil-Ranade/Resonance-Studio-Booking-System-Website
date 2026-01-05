@@ -43,11 +43,11 @@ async function verifyStaffToken(request: NextRequest) {
     .select("id, role, is_active, name")
     .eq("id", user.id)
     .eq("is_active", true)
-    .eq("role", "staff")
+    .in("role", ["staff", "investor"])
     .single();
 
   if (staffError || !staffUser) {
-    return { valid: false, error: "Insufficient permissions - staff role required" };
+    return { valid: false, error: "Insufficient permissions - staff or investor role required" };
   }
 
   return { valid: true, user, staffUser };
@@ -150,8 +150,9 @@ export async function POST(request: NextRequest) {
           p_start_time: start_time,
           p_end_time: end_time,
           p_total_amount: total_amount,
-          p_notes: notes || `Booked by staff: ${authResult.staffUser?.name || 'Staff'}`,
+          p_notes: notes || `Booked by ${authResult.staffUser?.role}: ${authResult.staffUser?.name || 'User'}`,
           p_created_by_staff_id: authResult.user!.id,
+          p_investor_id: authResult.staffUser?.role === 'investor' ? authResult.user!.id : null,
         }
       ) as { data: { success: boolean; error?: string; booking_id?: string; booking?: any } | null; error: any };
 
@@ -227,8 +228,9 @@ export async function POST(request: NextRequest) {
           end_time,
           status: "confirmed",
           total_amount,
-          notes: notes || `Booked by staff: ${authResult.staffUser?.name || 'Staff'} (validation skipped)`,
+          notes: notes || `Booked by ${authResult.staffUser?.role}: ${authResult.staffUser?.name || 'User'} (validation skipped)`,
           created_by_staff_id: authResult.user!.id,
+          investor_id: authResult.staffUser?.role === 'investor' ? authResult.user!.id : null,
         })
         .select()
         .single();

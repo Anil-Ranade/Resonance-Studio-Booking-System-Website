@@ -65,6 +65,7 @@ interface Booking {
   whatsapp_reminder_sent_at: string | null;
   is_prompt_payment: boolean;
   payment_status: "pending" | "verified" | "failed";
+  investor_id?: string | null;
 }
 
 interface BookingFormData {
@@ -222,6 +223,7 @@ const getEffectiveStatus = (booking: Booking): Booking["status"] => {
 
 export default function BookingsManagementPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [investors, setInvestors] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -268,6 +270,21 @@ export default function BookingsManagementPage() {
     }
   }, []);
 
+  const fetchInvestors = useCallback(async () => {
+    try {
+      const token = await getAccessToken();
+      const response = await fetch("/api/admin/investors", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setInvestors(data.investors || []);
+      }
+    } catch (error) {
+      console.error("Error fetching investors:", error);
+    }
+  }, [getAccessToken]);
+
   const fetchBookings = useCallback(async () => {
     setLoading(true);
     try {
@@ -289,7 +306,8 @@ export default function BookingsManagementPage() {
 
   useEffect(() => {
     fetchBookings();
-  }, [fetchBookings]);
+    fetchInvestors();
+  }, [fetchBookings, fetchInvestors]);
 
   const updateBookingStatus = async (
     bookingId: string,
@@ -385,6 +403,51 @@ export default function BookingsManagementPage() {
         }
       } else {
         throw new Error(data.error || "Failed to update payment status");
+      }
+    } catch (error: any) {
+      setMessage({ type: "error", text: error.message });
+      setUpdating(false);
+    }
+  };
+
+  const assignInvestor = async (bookingId: string, investorId: string | null) => {
+    setUpdating(true);
+    setMessage(null);
+
+    try {
+      const token = await getAccessToken();
+      const response = await fetch("/api/admin/bookings", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id: bookingId, investor_id: investorId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setMessage({
+          type: "success",
+          text: investorId ? "Investor assigned successfully!" : "Investor assignment removed!",
+        });
+        // Update local state
+        setBookings((prev) =>
+          prev.map((b) =>
+            b.id === bookingId
+              ? { ...b, investor_id: investorId }
+              : b
+          )
+        );
+        if (selectedBooking?.id === bookingId) {
+          setSelectedBooking({
+            ...selectedBooking,
+            investor_id: investorId,
+          });
+        }
+      } else {
+        throw new Error(data.error || "Failed to update investor assignment");
       }
     } catch (error: any) {
       setMessage({ type: "error", text: error.message });
@@ -1296,6 +1359,23 @@ export default function BookingsManagementPage() {
                           )}`
                         : "N/A"}
                     </p>
+                  </div>
+                  
+                  <div className="p-4 bg-white/5 rounded-xl">
+                    <p className="text-zinc-400 text-sm mb-1">Assigned Investor</p>
+                    <select
+                      value={selectedBooking.investor_id || ""}
+                      onChange={(e) => assignInvestor(selectedBooking.id, e.target.value || null)}
+                      className="w-full bg-zinc-900 border border-white/10 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-violet-500 cursor-pointer"
+                      disabled={updating}
+                    >
+                      <option value="">None</option>
+                      {investors.map((investor) => (
+                        <option key={investor.id} value={investor.id} className="bg-zinc-800">
+                          {investor.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   {selectedBooking.is_prompt_payment && (
                      <div className="p-4 bg-white/5 rounded-xl border border-amber-500/20 col-span-2 sm:col-span-1">

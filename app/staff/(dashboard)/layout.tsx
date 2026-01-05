@@ -23,8 +23,18 @@ interface StaffInfo {
 }
 
 const navItems = [
-  { label: 'Dashboard', href: '/staff/dashboard', icon: LayoutDashboard },
-  { label: 'Bookings', href: '/staff/bookings', icon: Calendar },
+  { 
+    label: 'Dashboard', 
+    href: '/staff/dashboard', 
+    icon: LayoutDashboard,
+    allowedRoles: ['staff', 'investor'] 
+  },
+  { 
+    label: 'Bookings', 
+    href: '/staff/bookings', 
+    icon: Calendar,
+    allowedRoles: ['staff'] 
+  },
 ];
 
 export default function StaffDashboardLayout({
@@ -136,6 +146,11 @@ export default function StaffDashboardLayout({
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1">
             {navItems.map((item) => {
+              // Check if user role is allowed
+              if (staff?.role && item.allowedRoles && !item.allowedRoles.includes(staff.role)) {
+                return null;
+              }
+
               const isActive = pathname === item.href;
               const Icon = item.icon;
               return (

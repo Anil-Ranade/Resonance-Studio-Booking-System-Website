@@ -41,7 +41,8 @@ CREATE OR REPLACE FUNCTION create_booking_atomic(
     p_total_amount DECIMAL DEFAULT NULL,
     p_notes TEXT DEFAULT NULL,
     p_created_by_staff_id UUID DEFAULT NULL,
-    p_is_prompt_payment BOOLEAN DEFAULT FALSE
+    p_is_prompt_payment BOOLEAN DEFAULT FALSE,
+    p_investor_id UUID DEFAULT NULL
 )
 RETURNS JSON AS $$
 DECLARE
@@ -105,12 +106,12 @@ BEGIN
         phone_number, name, email, studio, session_type,
         session_details, date, start_time, end_time,
         status, total_amount, notes, created_by_staff_id,
-        is_prompt_payment, confirmed_at
+        is_prompt_payment, investor_id, confirmed_at
     ) VALUES (
         p_phone_number, p_name, p_email, p_studio, p_session_type,
         COALESCE(p_session_details, p_session_type), p_date, p_start_time, p_end_time,
         'confirmed', p_total_amount, p_notes, p_created_by_staff_id,
-        p_is_prompt_payment, NOW()
+        p_is_prompt_payment, p_investor_id, NOW()
     )
     RETURNING * INTO v_booking_record;
     
