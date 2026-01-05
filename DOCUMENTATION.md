@@ -460,6 +460,8 @@ Text Colors:
 │   │       ├── dashboard/      # Overview stats
 │   │       ├── bookings/       # Booking management + WhatsApp
 │   │       ├── payments/       # Payment verification
+│   │       ├── investors/      # Investor management
+│   │       ├── loyalty/        # Loyalty program management
 │   │       ├── availability/   # Slot management
 │   │       ├── staff/          # Staff management
 │   │       └── settings/       # System settings
@@ -492,12 +494,14 @@ Text Colors:
 │   │   │   └── upcoming/       # Upcoming bookings
 │   │   ├── availability/       # Check availability
 │   │   ├── check-user/         # User verification
+│   │   ├── check-loyalty/      # Loyalty status check
 │   │   ├── contact/            # Contact form
 │   │   ├── rates/              # Rate card data
 │   │   ├── settings/           # Public settings
 │   │   ├── studios/            # Studio information
 │   │   ├── display/            # Display endpoints
 │   │   │   └── bookings/
+│   │   ├── loyalty/            # Loyalty program endpoints
 │   │   ├── admin/              # Admin-only endpoints
 │   │   │   ├── login/          # Admin authentication
 │   │   │   ├── stats/          # Dashboard statistics
@@ -575,6 +579,7 @@ Text Colors:
 - ✅ Real-time availability checking
 - ✅ Multiple session types (Karaoke, Band, Recording, etc.)
 - ✅ **Prompt Payment Discount** ("Pay Now & Save")
+- ✅ **Loyalty Program** - Earn points for bookings and redeem them
 - ✅ Smart studio suggestions based on group size
 - ✅ OTP-based email verification
 - ✅ Email booking confirmations
@@ -594,6 +599,8 @@ Text Colors:
 - ✅ Admin booking creation for walk-in customers
 - ✅ **Payment Verification** - Verify prompt payment bookings
 - ✅ **Admin Reminders** - Standalone page for managing WhatsApp reminders
+- ✅ **Investor Management** - Manage investor accounts
+- ✅ **Loyalty Management** - Manage loyalty program settings
 - ✅ WhatsApp reminder messages (24-hour time window before booking)
 - ✅ Invoice printing for bookings
 - ✅ Booking restore (uncancel/un-no-show) and delete
@@ -667,7 +674,16 @@ Text Colors:
 - Row Level Security (RLS) policies
 - Automatic timestamps (created_at, updated_at)
 - Indexed columns for performance
+- Indexed columns for performance
 - Constraint validation (time ranges, statuses)
+
+### Key Database Functions
+
+- **`create_booking_atomic`**: Handles booking creation with row-level locking to prevent race conditions.
+- **`update_booking_atomic`**: Handles booking updates securely.
+- **`get_dashboard_stats`**: Calculates advanced dashboard statistics efficiently on the server side.
+- **`loyalty.sql`**: Manages loyalty points calculation and tier updates.
+- **`check_rate_limit`**: Infrastructure for database-level rate limiting.
 
 ---
 
@@ -710,7 +726,10 @@ Text Colors:
 | `GET`  | `/api/settings`       | Get public booking settings    |
 | `POST` | `/api/contact`        | Submit contact form            |
 | `POST` | `/api/check-user`     | Check if user exists           |
+| `GET`  | `/api/check-loyalty`  | Check loyalty status           |
 | `GET`  | `/api/display/bookings` | Get bookings for display page |
+| `GET`  | `/api/loyalty/status` | Get loyalty points/tier        |
+| `POST` | `/api/loyalty/claim`  | Claim loyalty reward           |
 
 ### Admin
 
@@ -728,6 +747,7 @@ Text Colors:
 | `POST`   | `/api/admin/book`         | Admin creates booking |
 | `POST`   | `/api/admin/whatsapp-reminder` | Mark reminder sent |
 | `GET`    | `/api/admin/cashback`     | Get loyalty/cashback data |
+| `GET`    | `/api/admin/investors`    | Get investor data         |
 
 ### Staff
 

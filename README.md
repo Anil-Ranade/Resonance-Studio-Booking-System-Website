@@ -31,6 +31,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Advance booking restrictions (up to 30 days)
 - Booking buffer time between sessions
 - **Prompt Payment Discount** - "Pay Now & Save" logic with calculated discounts
+- **Loyalty Program** - Earn points for bookings and redeem them for rewards
 
 
 ### 📱 Secure Authentication
@@ -295,6 +296,8 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │       ├── bookings/       # Booking management
 │   │       ├── availability/   # Slot management
 │   │       ├── staff/          # Staff management
+│   │       ├── investors/      # Investor management
+│   │       ├── loyalty/        # Loyalty program management
 │   │       ├── payments/       # Payment verification
 │   │       └── settings/       # Configuration
 │   │
@@ -337,7 +340,9 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │   ├── settings/           # Public settings
 │   │   ├── contact/            # Contact form
 │   │   ├── check-user/         # User verification
-│   │   └── display/            # Display endpoints
+│   │   ├── check-loyalty/      # Loyalty status check
+│   │   ├── display/            # Display endpoints
+│   │   └── loyalty/            # Loyalty program endpoints
 │   │
 │   ├── components/             # Shared components
 │   │   ├── Navigation.tsx      # Main navigation
