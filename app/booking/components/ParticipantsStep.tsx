@@ -7,7 +7,6 @@ import {
   LiveMusicianOption,
   BandEquipment,
   RecordingOption,
-  SoundOperatorOption,
 } from "../contexts/BookingContext";
 import StepLayout from "./StepLayout";
 import { getStudioSuggestion, getStudioRate } from "../utils/studioSuggestion";
@@ -167,75 +166,7 @@ export default function ParticipantsStep() {
     });
   };
 
-  const handleSoundOperatorSelect = (option: SoundOperatorOption) => {
-    // Recalculate rate with the new sound operator option
-    const rate = getStudioRate(draft.studio || "Studio A", draft.sessionType as any, {
-      karaokeOption: draft.karaokeOption || undefined,
-      liveOption: draft.liveOption || undefined,
-      bandEquipment: draft.bandEquipment,
-      recordingOption: draft.recordingOption || undefined,
-      soundOperator: option,
-    });
 
-    updateDraft({
-      soundOperator: option,
-      ratePerHour: rate,
-    });
-
-    // Auto-advance to next step after selection
-    setTimeout(() => nextStep(), 150);
-  };
-
-  const renderSoundOperatorSection = () => {
-    // Don't show if primary option isn't selected yet
-    if (draft.sessionType === "Karaoke" && !draft.karaokeOption) return null;
-    if (draft.sessionType === "Live with musicians" && !draft.liveOption) return null;
-    if (draft.sessionType === "Band" && draft.bandEquipment.length === 0) return null;
-    if (draft.sessionType === "Recording" && !draft.recordingOption) return null;
-    // For Drum Practice, it's always shown as it's the only option there
-
-    return (
-      <div className="mt-4 pt-4 border-t border-zinc-700 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <h3 className="text-sm font-semibold text-white mb-2">
-          Sound Operator Services
-        </h3>
-        
-        <div className="grid grid-cols-2 gap-2">
-          {(["Required", "Not Required"] as SoundOperatorOption[]).map((option) => (
-            <button
-              key={option}
-              onClick={() => handleSoundOperatorSelect(option)}
-              className={`p-3 rounded-lg border text-left transition-all ${
-                draft.soundOperator === option
-                  ? "bg-violet-500/20 border-violet-500"
-                  : "bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600"
-              }`}
-            >
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <span className={`text-sm font-semibold ${
-                    draft.soundOperator === option ? "text-white" : "text-zinc-300"
-                  }`}>
-                    {option}
-                  </span>
-                  {option === "Not Required" && (
-                    <span className="text-[10px] font-bold bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full">
-                      -₹50/hr
-                    </span>
-                  )}
-                </div>
-                <p className="text-[10px] text-zinc-400 leading-tight">
-                  {option === "Required" 
-                    ? "Continuous assistance" 
-                    : "I'll manage audio"}
-                </p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  };
 
   const renderContent = () => {
     switch (draft.sessionType) {
@@ -270,7 +201,7 @@ export default function ParticipantsStep() {
                 </button>
               ))}
             </div>
-            {renderSoundOperatorSection()}
+
           </div>
         );
 
@@ -297,7 +228,7 @@ export default function ParticipantsStep() {
                 </button>
               ))}
             </div>
-            {renderSoundOperatorSection()}
+
           </div>
         );
 
@@ -319,7 +250,7 @@ export default function ParticipantsStep() {
                 ₹350/hour
               </span>
             </div>
-            {renderSoundOperatorSection()}
+
           </div>
         );
 
@@ -362,7 +293,7 @@ export default function ParticipantsStep() {
                     )
                     .join(", ")}
                 </div>
-                {renderSoundOperatorSection()}
+    
               </>
             )}
           </div>
@@ -395,7 +326,7 @@ export default function ParticipantsStep() {
                 </div>
               </button>
             ))}
-            {renderSoundOperatorSection()}
+
           </div>
         );
 
@@ -468,6 +399,9 @@ export default function ParticipantsStep() {
           ? "Available in Studio A only"
           : "This helps us to recommend the best suitable studio for you."
       }
+      showNext={true}
+      onNext={nextStep}
+      isNextDisabled={false}
     >
       {/* Edit Mode Banner */}
       {draft.isEditMode && getOriginalDetails() && (

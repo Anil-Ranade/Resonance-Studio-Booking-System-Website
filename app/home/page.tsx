@@ -344,7 +344,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen overflow-hidden">
       {/* Hero Section */}
-      <section className="relative min-h-[100vh] flex items-start pt-32 sm:pt-40 justify-center overflow-hidden">
+      <section className="relative min-h-[100vh] flex items-start pt-24 sm:pt-32 justify-center overflow-hidden">
         {/* Animated Background */}
         <div className="absolute inset-0 bg-grid opacity-20" />
 
@@ -422,15 +422,11 @@ export default function HomePage() {
             className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-2 leading-tight"
             variants={fadeInUp}
           >
-            <span className="text-white">Resonance Studio</span>
+            <span className="text-white block">Where Music</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-purple-600">
+              Comes Alive
+            </span>
           </motion.h1>
-
-          <motion.h2
-            className="text-2xl sm:text-3xl md:text-4xl font-normal text-white mb-8"
-            variants={fadeInUp}
-          >
-            Sinhgad Road Branch
-          </motion.h2>
 
           {/* Subheading */}
           <motion.p

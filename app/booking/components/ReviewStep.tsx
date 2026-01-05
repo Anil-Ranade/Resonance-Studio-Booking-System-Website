@@ -10,8 +10,9 @@ import {
   AlertCircle,
 } from "lucide-react";
 import Image from "next/image";
-import { useBooking } from "../contexts/BookingContext";
+import { useBooking, SoundOperatorOption } from "../contexts/BookingContext";
 import StepLayout from "./StepLayout";
+import { getStudioRate } from "../utils/studioSuggestion";
 
 export default function ReviewStep() {
   const { draft, nextStep, hasChangesFromOriginal, updateDraft } = useBooking();
@@ -97,6 +98,83 @@ export default function ReviewStep() {
 
   const handleNext = () => {
     nextStep();
+  };
+
+  const handleSoundOperatorSelect = (option: SoundOperatorOption) => {
+    // Recalculate rate with the new sound operator option
+    const rate = getStudioRate(draft.studio || "Studio A", draft.sessionType as any, {
+      karaokeOption: draft.karaokeOption || undefined,
+      liveOption: draft.liveOption || undefined,
+      bandEquipment: draft.bandEquipment,
+      recordingOption: draft.recordingOption || undefined,
+      soundOperator: option,
+    });
+
+    updateDraft({
+      soundOperator: option,
+      ratePerHour: rate,
+    });
+  };
+
+  const renderSoundOperatorSection = () => {
+     // No need to check session type again as we are in Review step, 
+     // but we should ensure it's applicable for the session type if needed.
+     // Effectively all types except 'Meetings / Classes' might use it, OR 
+     // following the previous logic: 
+     // Karaoke, Live, Band, Recording, Drum Practice all had it.
+     // Meetings/Classes did NOT have it in ParticipantsStep logic (it was skipped).
+     
+     // IMPORTANT: The original code showed it for:
+     // - Karaoke (if option selected)
+     // - Live (if option selected)
+     // - Band (if equipment selected)
+     // - Recording (if option selected)
+     // - Drum Practice (always)
+     
+     // It was NOT shown for "Meetings / Classes".
+     if (draft.sessionType === "Meetings / Classes") return null;
+
+     return (
+      <div className="mb-4">
+        <h3 className="text-[10px] uppercase tracking-wider font-semibold text-zinc-400 mb-2">
+          Sound Operator
+        </h3>
+        
+        <div className="grid grid-cols-2 gap-2">
+          {(["Required", "Not Required"] as SoundOperatorOption[]).map((option) => (
+            <button
+              key={option}
+              onClick={() => handleSoundOperatorSelect(option)}
+              className={`p-2.5 rounded-lg border text-left transition-all ${
+                draft.soundOperator === option
+                  ? "bg-violet-500/20 border-violet-500"
+                  : "bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600"
+              }`}
+            >
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs font-semibold ${
+                    draft.soundOperator === option ? "text-white" : "text-zinc-300"
+                  }`}>
+                    {option}
+                  </span>
+                  {option === "Not Required" && (
+                    <span className="text-[9px] font-bold bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full">
+                      -₹50/hr
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] text-zinc-400 leading-tight">
+                  {option === "Required" 
+                    ? "Continuous assistance" 
+                    : "I'll manage audio"}
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -211,6 +289,9 @@ export default function ReviewStep() {
             </div>
           </div>
         </div>
+
+        {/* Sound Operator Section */}
+        {renderSoundOperatorSection()}
 
         {/* Payment Summary */}
         <div
