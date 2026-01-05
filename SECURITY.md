@@ -31,6 +31,12 @@
 - Access tokens verified on every staff API request
 - Staff has limited permissions compared to admin
 
+#### Investor Authentication
+- **Supabase Auth** handles investor email/password authentication
+- Investor status verified against `admin_users` table (role: `investor`)
+- Can only access dashboards and bookings specifically assigned to them
+
+
 #### Secure Booking Page Access
 - **Authentication required** to view, edit, or cancel bookings
 - Session verification on every protected page load

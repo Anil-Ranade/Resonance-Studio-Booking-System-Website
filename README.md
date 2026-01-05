@@ -113,9 +113,17 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Staff dashboard with booking statistics
 - Staff booking management with WhatsApp integration
 - Staff booking creation capability
-- **Invoice printing** - Generate invoices for bookings
-- **Booking deletion** - Remove cancelled/no-show bookings
+- ✅ **Invoice printing** - Generate invoices for bookings
+- ✅ **Booking deletion** - Remove cancelled/no-show bookings
 - Limited permissions compared to admin
+
+### 💼 Investor Portal
+
+- Special role for investors
+- View total revenue and booking stats
+- Manage bookings assigned to the investor
+- Edit/Cancel own bookings
+
 
 ### 💰 Rate Card
 

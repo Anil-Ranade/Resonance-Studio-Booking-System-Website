@@ -472,6 +472,7 @@ Text Colors:
 │   │   └── (dashboard)/        # Protected staff routes
 │   │       ├── layout.tsx      # Staff dashboard layout
 │   │       ├── dashboard/      # Staff overview stats
+│   │       │   └── InvestorDashboard.tsx # Investor view component
 │   │       └── bookings/       # Staff booking management
 │   │
 │   ├── api/                    # API routes
@@ -610,6 +611,13 @@ Text Colors:
 - ✅ Staff booking creation for walk-in customers
 - ✅ Invoice printing for bookings
 - ✅ Booking deletion (cancelled/no-show bookings)
+- ✅ **Investor Portal** - Special view for investors to manage their bookings
+
+### Investor Features
+
+- ✅ Dashboard with revenue tracking
+- ✅ Manage bookings assigned to them (View/Edit/Cancel)
+- ✅ Dedicated view within Staff Portal
 
 ### Technical Features
 
@@ -644,7 +652,7 @@ Text Colors:
 | -------------------- | ------------------------------------------------------------------ |
 | `studios`            | Studio information (name, type, capacity, hourly rates, amenities) |
 | `users`              | Customer information (phone, name, email, verification status)     |
-| `admin_users`        | Admin user accounts (roles: admin, super_admin, staff)             |
+| `admin_users`        | Admin user accounts (roles: admin, super_admin, staff, investor)   |
 | `bookings`           | All booking records (status, payment_status, is_prompt_payment)    |
 | `availability_slots` | Blocked time slots per studio                                      |
 | `booking_settings`   | System configuration (min/max hours, buffer, etc.)                 |
