@@ -503,13 +503,16 @@ export default function TimeStep() {
         {/* Guidance Message */}
         {!draft.isEditMode && (
           <div className="space-y-3 mb-2">
-
-            
             <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
               <AlertCircle className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-blue-300">
-                If available time slots are not suitable, try changing the studio and/or date to find a suitable slot.
-              </p>
+              <div className="text-xs text-blue-300">
+                <p className="font-medium mb-1">How to select your time:</p>
+                <ol className="list-decimal list-inside space-y-0.5 text-blue-300/90">
+                  <li>Select an available time slot</li>
+                  <li>Choose your preferred start time</li>
+                  <li>Choose your preferred end time</li>
+                </ol>
+              </div>
             </div>
           </div>
         )}
@@ -670,7 +673,7 @@ export default function TimeStep() {
           <div className="space-y-1">
             <label className="text-[10px] text-zinc-400 flex items-center gap-1 uppercase tracking-wider font-semibold">
               <Clock className="w-3 h-3" />
-              Available Time Slots
+              Step 1: Select Available Time Slot
             </label>
 
             {continuousSlabs.length === 0 ? (
@@ -708,7 +711,7 @@ export default function TimeStep() {
           <div className="space-y-1">
             <label className="text-[10px] text-zinc-400 flex items-center gap-1 uppercase tracking-wider font-semibold">
               <Clock className="w-3 h-3" />
-              Start Time
+              Step 2: Select Start Time
             </label>
 
             <div className="flex flex-wrap gap-1.5">
@@ -740,7 +743,7 @@ export default function TimeStep() {
           <div className="space-y-1">
             <label className="text-[10px] text-zinc-400 flex items-center gap-1 uppercase tracking-wider font-semibold">
               <Clock className="w-3 h-3" />
-              End Time
+              Step 3: Select End Time
             </label>
 
             <div className="flex flex-wrap gap-1.5">
