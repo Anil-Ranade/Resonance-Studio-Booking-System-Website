@@ -454,7 +454,7 @@ export default function HomePage() {
               >
                 <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 flex-shrink-0" />
                 <span className="text-white text-sm sm:text-base md:text-lg leading-snug text-center sm:text-left flex-1">
-                  For Online Booking – click here
+                  For Online Booking (New/Edit/Cancel/View) – click here
                 </span>
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
               </motion.div>

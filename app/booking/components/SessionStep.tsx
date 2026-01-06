@@ -105,7 +105,7 @@ export default function SessionStep() {
       {draft.isEditMode && draft.originalChoices && (
         <div className="mb-3 p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-2">
           <RotateCcw className="w-4 h-4 text-violet-400" />
-          <span className="text-xs text-violet-400">
+          <span className="text-sm text-violet-400">
             Modifying booking • Original:{" "}
             <span className="font-medium">
               {draft.originalChoices.sessionType}
@@ -139,7 +139,7 @@ export default function SessionStep() {
 
               {/* Coming Soon Badge */}
               {isRecording && (
-                <span className="absolute top-2 right-2 px-1.5 py-0.5 text-[9px] font-medium bg-zinc-800 text-zinc-500 border border-zinc-700 rounded-full">
+                <span className="absolute top-2 right-2 px-2 py-1 text-xs font-medium bg-zinc-800 text-zinc-500 border border-zinc-700 rounded-full">
                   Soon
                 </span>
               )}
@@ -157,7 +157,7 @@ export default function SessionStep() {
               </div>
               <div className="w-full min-w-0">
                 <h3
-                  className={`font-semibold text-sm leading-tight mb-0.5 ${
+                  className={`font-semibold text-lg leading-tight mb-1 ${
                     isRecording ? "text-zinc-600" : "text-white"
                   }`}
                 >

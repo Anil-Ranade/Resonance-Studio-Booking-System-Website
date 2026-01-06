@@ -425,7 +425,7 @@ export default function ConfirmStep() {
             />
           </motion.div>
 
-          <h4 className="text-xl font-bold text-white mb-1">
+          <h4 className="text-2xl font-bold text-white mb-2">
             {draft.isEditMode ? "Booking Updated!" : "Booking Confirmed!"}
           </h4>
           {bookingId && (
@@ -459,8 +459,8 @@ export default function ConfirmStep() {
                 }`}
               />
               <div>
-                <p className="text-xs text-zinc-400">Date</p>
-                <p className="text-white font-medium text-sm">
+                <p className="text-sm text-zinc-400">Date</p>
+                <p className="text-white font-bold text-base">
                   {formatDate(draft.date)}
                 </p>
               </div>
@@ -474,8 +474,8 @@ export default function ConfirmStep() {
                   }`}
                 />
                 <div>
-                  <p className="text-xs text-zinc-400">Time</p>
-                  <p className="text-white font-medium text-sm">
+                  <p className="text-sm text-zinc-400">Time</p>
+                  <p className="text-white font-bold text-base">
                     {formatTime(draft.selectedSlot.start)} -{" "}
                     {formatTime(draft.selectedSlot.end)}
                   </p>
@@ -490,8 +490,8 @@ export default function ConfirmStep() {
                 }`}
               />
               <div>
-                <p className="text-xs text-zinc-400">Studio</p>
-                <p className="text-white font-medium text-sm">{draft.studio}</p>
+                <p className="text-sm text-zinc-400">Studio</p>
+                <p className="text-white font-bold text-base">{draft.studio}</p>
               </div>
             </div>
 
@@ -499,7 +499,7 @@ export default function ConfirmStep() {
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400 text-sm">Total Amount</span>
                 <span
-                  className={`text-xl font-bold ${
+                  className={`text-2xl font-bold ${
                     draft.isEditMode ? "text-blue-400" : "text-violet-400"
                   }`}
                 >
