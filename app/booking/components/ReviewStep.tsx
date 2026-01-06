@@ -143,7 +143,7 @@ export default function ReviewStep() {
           </p>
         </div>
 
-        <h3 className="text-xs uppercase tracking-wider font-bold text-zinc-400 mb-2">
+        <h3 className="text-[10px] uppercase tracking-wider font-semibold text-zinc-400 mb-2">
           Sound Operator
         </h3>
         
@@ -160,7 +160,7 @@ export default function ReviewStep() {
             >
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center justify-between">
-                  <span className={`text-sm font-bold ${
+                  <span className={`text-xs font-semibold ${
                     draft.soundOperator === option ? "text-white" : "text-zinc-300"
                   }`}>
                     {option}
@@ -222,7 +222,7 @@ export default function ReviewStep() {
               draft.isEditMode ? "border-blue-700/30" : "border-zinc-700"
             }`}
           >
-            <h3 className="text-xs uppercase tracking-wider font-bold text-zinc-400 mb-2">
+            <h3 className="text-[10px] uppercase tracking-wider font-semibold text-zinc-400 mb-1">
               Date & Time
             </h3>
             <div className="space-y-1">
@@ -232,7 +232,7 @@ export default function ReviewStep() {
                     draft.isEditMode ? "text-blue-400" : "text-violet-400"
                   }`}
                 />
-                <span className="text-white text-sm truncate">
+                <span className="text-white text-xs truncate">
                   {formatDate(draft.date)}
                 </span>
               </div>
@@ -243,11 +243,11 @@ export default function ReviewStep() {
                       draft.isEditMode ? "text-blue-400" : "text-violet-400"
                     }`}
                   />
-                  <span className="text-white text-sm whitespace-nowrap">
+                  <span className="text-white text-xs whitespace-nowrap">
                     {formatTime(draft.selectedSlot.start)} -{" "}
                     {formatTime(draft.selectedSlot.end)}
                   </span>
-                  <span className="text-zinc-400 text-xs">
+                  <span className="text-zinc-400 text-[10px]">
                     ({draft.duration}hr)
                   </span>
                 </div>
@@ -261,7 +261,7 @@ export default function ReviewStep() {
               draft.isEditMode ? "border-blue-700/30" : "border-zinc-700"
             }`}
           >
-            <h3 className="text-xs uppercase tracking-wider font-bold text-zinc-400 mb-2">
+            <h3 className="text-[10px] uppercase tracking-wider font-semibold text-zinc-400 mb-1">
               Session Details
             </h3>
             <div className="space-y-1">
@@ -271,7 +271,7 @@ export default function ReviewStep() {
                     draft.isEditMode ? "text-blue-400" : "text-violet-400"
                   }`}
                 />
-                <span className="text-white text-sm truncate">{draft.sessionType}</span>
+                <span className="text-white text-xs truncate">{draft.sessionType}</span>
               </div>
               {getSessionDetails() && (
                 <div className="flex items-center gap-1.5">
@@ -291,7 +291,7 @@ export default function ReviewStep() {
                     draft.isEditMode ? "text-blue-400" : "text-violet-400"
                   }`}
                 />
-                <span className="text-white text-sm">{draft.studio}</span>
+                <span className="text-white text-xs">{draft.studio}</span>
               </div>
             </div>
           </div>
@@ -328,8 +328,8 @@ export default function ReviewStep() {
             ) : null}
 
             <div className="flex items-center justify-between">
-              <span className="text-zinc-400 text-xs text-xs uppercase font-bold">rate x duration</span>
-              <span className="text-zinc-300 text-sm">
+              <span className="text-zinc-400 text-xs text-[10px] uppercase font-medium">rate x duration</span>
+              <span className="text-zinc-300 text-xs">
                 ₹{draft.ratePerHour.toLocaleString("en-IN")} x {draft.duration}hr
               </span>
             </div>
@@ -368,11 +368,11 @@ export default function ReviewStep() {
             )}
 
             <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-dashed border-white/10">
-              <span className="text-white font-bold text-sm">
+              <span className="text-white font-medium text-xs">
                 PAYABLE AMOUNT
               </span>
               <span
-                className={`text-2xl font-bold leading-none ${
+                className={`text-lg font-bold leading-none ${
                   draft.isEditMode ? "text-blue-400" : "text-violet-400"
                 }`}
               >

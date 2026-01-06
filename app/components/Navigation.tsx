@@ -61,7 +61,7 @@ export default function Navigation() {
                 <span className="text-lg font-bold text-white leading-none">
                   Resonance Studio
                 </span>
-                <span className="text-[10px] text-zinc-400 font-medium tracking-wide">
+                <span className="text-xs text-zinc-400 font-medium tracking-wide">
                   Sinhgad Road Branch
                 </span>
               </div>

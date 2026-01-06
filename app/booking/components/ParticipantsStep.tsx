@@ -194,12 +194,12 @@ export default function ParticipantsStep() {
                       : "bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600"
                   }`}
                 >
-                  <span className={`font-semibold text-base ${
+                  <span className={`font-semibold text-sm ${
                     draft.karaokeOption === option.value ? "text-white" : "text-zinc-300"
                   }`}>
                     {option.label}
                   </span>
-                  <p className="text-xs text-zinc-400 mt-1">{option.description}</p>
+                  <p className="text-[10px] text-zinc-400 mt-0.5">{option.description}</p>
                 </button>
               ))}
             </div>
@@ -221,12 +221,12 @@ export default function ParticipantsStep() {
                       : "bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600"
                   }`}
                 >
-                  <span className={`font-semibold text-base ${
+                  <span className={`font-semibold text-sm ${
                     draft.liveOption === option.value ? "text-white" : "text-zinc-300"
                   }`}>
                     {option.label}
                   </span>
-                  <p className="text-xs text-zinc-400 mt-1">{option.description}</p>
+                  <p className="text-[10px] text-zinc-400 mt-0.5">{option.description}</p>
                 </button>
               ))}
             </div>
@@ -240,15 +240,15 @@ export default function ParticipantsStep() {
             <div className="p-3 rounded-full bg-violet-500/20 mb-2">
               <Drum className="w-8 h-8 text-violet-400" />
             </div>
-            <h3 className="text-lg font-semibold text-white mb-1">
+            <h3 className="text-sm font-semibold text-white mb-1">
               Drum Practice Session
             </h3>
-            <p className="text-zinc-400 text-sm max-w-xs">
+            <p className="text-zinc-400 text-xs max-w-xs">
               Drum practice is available exclusively in Studio A with our
               professional drum kit.
             </p>
             <div className="mt-2 px-3 py-1.5 bg-zinc-800 rounded-lg">
-              <span className="text-violet-400 font-semibold text-base">
+              <span className="text-violet-400 font-semibold text-sm">
                 ₹350/hour
               </span>
             </div>
@@ -279,7 +279,7 @@ export default function ParticipantsStep() {
                   >
                     {equipment.icon}
                   </div>
-                  <span className="font-medium text-base text-white">
+                  <span className="font-medium text-sm text-white">
                     {equipment.label}
                   </span>
                 </button>
@@ -287,7 +287,7 @@ export default function ParticipantsStep() {
             </div>
             {draft.bandEquipment.length > 0 && (
               <>
-                <div className="mt-2 p-2 bg-zinc-800/50 rounded-lg text-sm text-zinc-400">
+                <div className="mt-2 p-2 bg-zinc-800/50 rounded-lg text-xs text-zinc-400">
                   Selected:{" "}
                   {draft.bandEquipment
                     .map(
@@ -315,14 +315,14 @@ export default function ParticipantsStep() {
                 }`}
               >
                 <div>
-                  <span className={`font-semibold text-base ${
+                  <span className={`font-semibold text-sm ${
                     draft.recordingOption === option.value ? "text-white" : "text-zinc-300"
                   }`}>
                     {option.label}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-violet-400">
+                  <span className="text-xs font-medium text-violet-400">
                     {option.price}
                   </span>
                 </div>

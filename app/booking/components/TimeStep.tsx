@@ -483,8 +483,8 @@ export default function TimeStep() {
         {/* Edit Mode Banner */}
         {draft.isEditMode && draft.originalChoices && (
           <div className="p-2 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center gap-2">
-            <RotateCcw className="w-4 h-4 text-violet-400" />
-            <span className="text-sm text-violet-400">
+            <RotateCcw className="w-3 h-3 text-violet-400" />
+            <span className="text-xs text-violet-400">
               Original:{" "}
               <span className="font-medium">
                 {formatDate(draft.originalChoices.date)}
@@ -515,9 +515,9 @@ export default function TimeStep() {
         )}
 
         {/* Date selector */}
-        <div className="space-y-2">
-          <label className="text-xs text-zinc-400 flex items-center gap-1.5 uppercase tracking-wider font-bold">
-            <Calendar className="w-4 h-4" />
+        <div className="space-y-1">
+          <label className="text-[10px] text-zinc-400 flex items-center gap-1 uppercase tracking-wider font-semibold">
+            <Calendar className="w-3 h-3" />
             Select Date
           </label>
 
@@ -535,8 +535,8 @@ export default function TimeStep() {
               className="flex-1 py-2 px-3 rounded-lg bg-zinc-800 border border-violet-500/50 hover:border-violet-500 transition-all cursor-pointer"
             >
               <div className="flex items-center justify-center gap-2">
-                <Calendar className="w-4 h-4 text-violet-400" />
-                <span className="text-white font-semibold text-lg">
+                <Calendar className="w-3.5 h-3.5 text-violet-400" />
+                <span className="text-white font-medium text-sm">
                   {date ? formatDate(date) : "Select Date"}
                 </span>
               </div>
@@ -565,9 +565,9 @@ export default function TimeStep() {
 
         {/* Studio Selector - Only show if multiple studios are allowed */}
         {draft.allowedStudios.length > 1 && (
-          <div className="space-y-2">
-            <label className="text-xs text-zinc-400 flex items-center gap-1.5 uppercase tracking-wider font-bold">
-              <Building2 className="w-4 h-4" />
+          <div className="space-y-1">
+            <label className="text-[10px] text-zinc-400 flex items-center gap-1 uppercase tracking-wider font-semibold">
+              <Building2 className="w-3 h-3" />
               Studio
             </label>
 
@@ -585,7 +585,7 @@ export default function TimeStep() {
                     key={studio}
                     onClick={() => handleStudioChange(studio)}
                     disabled={hasNoSlots}
-                    className={`px-3 py-2 rounded-lg transition-all text-sm font-medium flex items-center gap-2 ${
+                    className={`px-2.5 py-1.5 rounded-lg transition-all text-xs font-medium flex items-center gap-1.5 ${
                       isSelected
                         ? "bg-violet-500 text-white ring-1 ring-violet-400"
                         : hasNoSlots
@@ -667,9 +667,9 @@ export default function TimeStep() {
 
         {/* Available Time Slabs */}
         {date && !loading && !error && (
-          <div className="space-y-2">
-            <label className="text-xs text-zinc-400 flex items-center gap-1.5 uppercase tracking-wider font-bold">
-              <Clock className="w-4 h-4" />
+          <div className="space-y-1">
+            <label className="text-[10px] text-zinc-400 flex items-center gap-1 uppercase tracking-wider font-semibold">
+              <Clock className="w-3 h-3" />
               Available Time Slots
             </label>
 
@@ -688,7 +688,7 @@ export default function TimeStep() {
                     <button
                       key={index}
                       onClick={() => handleSlabSelect(slab)}
-                      className={`px-3 py-2 rounded-lg transition-all text-sm font-medium ${
+                      className={`px-2.5 py-1.5 rounded-lg transition-all text-xs font-medium ${
                         isSelected
                           ? "bg-violet-500 text-white ring-1 ring-violet-400"
                           : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
@@ -705,9 +705,9 @@ export default function TimeStep() {
 
         {/* Start Time Selection */}
         {selectedSlab && (
-          <div className="space-y-2">
-            <label className="text-xs text-zinc-400 flex items-center gap-1.5 uppercase tracking-wider font-bold">
-              <Clock className="w-4 h-4" />
+          <div className="space-y-1">
+            <label className="text-[10px] text-zinc-400 flex items-center gap-1 uppercase tracking-wider font-semibold">
+              <Clock className="w-3 h-3" />
               Start Time
             </label>
 
@@ -721,7 +721,7 @@ export default function TimeStep() {
                     <button
                       key={timeOption.time}
                       onClick={() => handleStartTimeSelect(timeOption.time)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         isSelected
                           ? "bg-violet-500 text-white ring-1 ring-violet-400"
                           : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
@@ -737,9 +737,9 @@ export default function TimeStep() {
 
         {/* End Time Selection */}
         {startTime && (
-          <div className="space-y-2">
-            <label className="text-xs text-zinc-400 flex items-center gap-1.5 uppercase tracking-wider font-bold">
-              <Clock className="w-4 h-4" />
+          <div className="space-y-1">
+            <label className="text-[10px] text-zinc-400 flex items-center gap-1 uppercase tracking-wider font-semibold">
+              <Clock className="w-3 h-3" />
               End Time
             </label>
 
@@ -758,7 +758,7 @@ export default function TimeStep() {
                           timeOption.duration
                         )
                       }
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         isSelected
                           ? "bg-violet-500 text-white ring-1 ring-violet-400"
                           : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
@@ -778,10 +778,10 @@ export default function TimeStep() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div>
-                  <span className="text-sm text-violet-400">
+                  <span className="text-xs text-violet-400">
                     Your booking:{" "}
                   </span>
-                  <span className="text-white font-bold text-lg">
+                  <span className="text-white font-semibold text-sm">
                     {formatTimeSlot(
                       draft.selectedSlot.start,
                       draft.selectedSlot.end
@@ -794,7 +794,7 @@ export default function TimeStep() {
                   </span>
                 </div>
               </div>
-              <span className="text-violet-400 font-bold text-lg">
+              <span className="text-violet-400 font-bold">
                 ₹{(draft.ratePerHour * duration).toLocaleString("en-IN")}
               </span>
             </div>

@@ -194,7 +194,7 @@ export default function StudioStep() {
                         }`}
                       />
                       <h3
-                        className={`font-bold text-lg leading-tight ${
+                        className={`font-medium text-sm leading-tight ${
                           isAllowed
                             ? isRecommended
                               ? "text-white"
@@ -208,12 +208,12 @@ export default function StudioStep() {
                     
                     {/* Badges inline or close to title */}
                     {isOriginal && isAllowed && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium bg-amber-500 text-black rounded-full leading-none">
+                      <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-medium bg-amber-500 text-black rounded-full leading-none">
                         Original
                       </span>
                     )}
                     {isRecommended && isAllowed && !isOriginal && (
-                      <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold bg-violet-500 text-white rounded-full leading-none shadow-sm">
+                      <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold bg-violet-500 text-white rounded-full leading-none shadow-sm">
                         Recommended
                       </span>
                     )}
@@ -230,7 +230,7 @@ export default function StudioStep() {
                   
                   <div className="flex items-center gap-2 mt-1">
                     <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${
+                      className={`text-[9px] px-1.5 py-0.5 rounded-full ${
                         isAllowed
                           ? "bg-zinc-700 text-zinc-300"
                           : "bg-zinc-800 text-zinc-500"
@@ -244,7 +244,7 @@ export default function StudioStep() {
                 <div className="flex flex-col items-end flex-shrink-0">
                   {isAllowed && (
                     <span
-                      className={`text-lg font-bold whitespace-nowrap ${
+                      className={`text-sm font-semibold whitespace-nowrap ${
                         isOriginal
                           ? "text-amber-400"
                           : isRecommended
