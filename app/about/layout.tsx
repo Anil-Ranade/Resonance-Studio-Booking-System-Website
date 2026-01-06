@@ -12,12 +12,7 @@ export const metadata: Metadata = {
     description:
       "Discover our story, meet our team, and learn about our commitment to providing top-tier audio-video services in Pune.",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "About Resonance Jam Room - 10+ Years of Excellence",
-    description:
-      "Discover our story and commitment to providing top-tier audio-video services in Pune.",
-  },
+
 };
 
 export default function AboutLayout({

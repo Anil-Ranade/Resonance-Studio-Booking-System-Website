@@ -12,12 +12,7 @@ export const metadata: Metadata = {
     description:
       "Affordable rates for jam room, karaoke, recording, mixing, mastering, and video production. No advance payment required.",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "Studio Pricing & Services - Resonance Jam Room",
-    description:
-      "Affordable rates for jam room, karaoke, recording, mixing, mastering, and video production.",
-  },
+
 };
 
 export default function RateCardLayout({

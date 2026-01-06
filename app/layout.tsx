@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import Navigation from "./components/Navigation";
 import Footer from "./components/Footer";
@@ -95,13 +96,6 @@ export const metadata: Metadata = {
     ],
   },
   
-  // Twitter Card
-  twitter: {
-    card: "summary_large_image",
-    title: "Resonance Jam Room - Professional Recording & Jam Room Studio in Pune",
-    description: "Pune's premier professional recording studio and jam room. Book online for music recording, mixing, mastering, karaoke sessions, and band rehearsals.",
-    images: ["/android-chrome-512x512.png"],
-  },
   
   // App & Manifest
   manifest: "/site.webmanifest",
@@ -122,11 +116,10 @@ export const metadata: Metadata = {
     ],
   },
   
-  // Verification (add your IDs here when available)
-  // verification: {
-  //   google: "your-google-verification-code",
-  //   yandex: "your-yandex-verification-code",
-  // },
+  // Verification
+  verification: {
+    google: "sTyU0XH6JQInb8MWLV99jQw5GZLClk2sTGqroo5iU1s",
+  },
   
   // Other
   other: {
@@ -150,6 +143,19 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"/>
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"/>
         <LocalBusinessStructuredData />
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-Z0N0MEPL81"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-Z0N0MEPL81');
+          `}
+        </Script>
       </head>
       <body
         className={`${inter.variable} ${geistMono.variable} antialiased bg-noise font-sans flex flex-col min-h-screen`}

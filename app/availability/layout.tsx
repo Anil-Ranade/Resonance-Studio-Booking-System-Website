@@ -12,12 +12,7 @@ export const metadata: Metadata = {
     description:
       "See available time slots for all three studios and book your session online.",
   },
-  twitter: {
-    card: "summary",
-    title: "Studio Availability - Resonance Jam Room",
-    description:
-      "Check real-time availability for all three studios and book your session online.",
-  },
+
 };
 
 export default function AvailabilityLayout({

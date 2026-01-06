@@ -13,12 +13,7 @@ export const metadata: Metadata = {
     description:
       "Book your studio session online. Choose from jam room, karaoke, recording, and podcast sessions. Instant booking confirmation.",
   },
-  twitter: {
-    card: "summary",
-    title: "Book Online - Resonance Jam Room",
-    description:
-      "Book your studio session online. Choose from jam room, karaoke, recording, and podcast sessions.",
-  },
+
 };
 
 export default function BookingLayout({

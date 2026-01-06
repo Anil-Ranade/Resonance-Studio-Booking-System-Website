@@ -12,12 +12,7 @@ export const metadata: Metadata = {
     description:
       "Start your studio booking. Select session type, studio, date and time. No advance payment required.",
   },
-  twitter: {
-    card: "summary",
-    title: "New Booking - Resonance Jam Room",
-    description:
-      "Create a new studio booking. Select session type, studio, date and time online.",
-  },
+
 };
 
 export default function NewBookingLayout({
