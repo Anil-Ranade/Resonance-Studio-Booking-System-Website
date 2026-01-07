@@ -1,5 +1,11 @@
 import { google } from "googleapis";
 
+// ============================================================
+// GOOGLE CALENDAR INTEGRATION - DISABLED
+// Set to true to re-enable Google Calendar event creation/deletion
+// ============================================================
+const GOOGLE_CALENDAR_ENABLED = false;
+
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET
@@ -44,6 +50,12 @@ export async function createEvent({
   endDateTime,
   studioName,
 }: CreateEventParams): Promise<string> {
+  // Skip if Google Calendar is disabled
+  if (!GOOGLE_CALENDAR_ENABLED) {
+    console.log("[Google Calendar] DISABLED - Skipping event creation");
+    return "disabled";
+  }
+
   try {
     // Use IST timezone to match the booking times displayed to users
     const timeZone = process.env.CALENDAR_TIMEZONE || "Asia/Kolkata";
@@ -79,6 +91,12 @@ export async function createEvent({
 }
 
 export async function deleteEvent(eventId: string): Promise<void> {
+  // Skip if Google Calendar is disabled
+  if (!GOOGLE_CALENDAR_ENABLED) {
+    console.log("[Google Calendar] DISABLED - Skipping event deletion");
+    return;
+  }
+
   try {
     await calendar.events.delete({
       calendarId: process.env.OWNER_CALENDAR_ID,
@@ -106,6 +124,12 @@ export async function updateEvent({
   startDateTime,
   endDateTime,
 }: UpdateEventParams): Promise<void> {
+  // Skip if Google Calendar is disabled
+  if (!GOOGLE_CALENDAR_ENABLED) {
+    console.log("[Google Calendar] DISABLED - Skipping event update");
+    return;
+  }
+
   try {
     const timeZone = process.env.CALENDAR_TIMEZONE || "Asia/Kolkata";
     
