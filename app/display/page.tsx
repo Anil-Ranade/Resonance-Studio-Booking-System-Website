@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Lock, Eye, EyeOff } from "lucide-react";
 
 interface Booking {
   id: string;
@@ -19,7 +19,16 @@ interface Booking {
   notes: string | null;
 }
 
+const DISPLAY_AUTH_KEY = "displayAuthenticated";
+
 export default function DisplayPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
+
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [startHour, setStartHour] = useState(8);
@@ -31,6 +40,57 @@ export default function DisplayPage() {
 
   // Format selected date for API
   const formattedDate = selectedDate.toISOString().split("T")[0];
+
+  // Check for existing authentication on mount
+  useEffect(() => {
+    const checkAuth = () => {
+      try {
+        const authenticated = localStorage.getItem(DISPLAY_AUTH_KEY);
+        if (authenticated === "true") {
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error("Error checking auth:", error);
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+    checkAuth();
+  }, []);
+
+  // Handle password submission
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError("");
+
+    try {
+      const response = await fetch("/api/display/auth", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setAuthError(data.error || "Invalid password");
+        setAuthLoading(false);
+        return;
+      }
+
+      // Store authentication in localStorage (never expires)
+      localStorage.setItem(DISPLAY_AUTH_KEY, "true");
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error("Login error:", error);
+      setAuthError("Failed to authenticate. Please try again.");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
 
   // Navigate to previous day
   const goToPreviousDay = () => {
@@ -60,6 +120,8 @@ export default function DisplayPage() {
 
   // Fetch settings on mount
   useEffect(() => {
+    if (!isAuthenticated) return;
+    
     const fetchSettings = async () => {
       try {
         const response = await fetch("/api/settings");
@@ -81,7 +143,7 @@ export default function DisplayPage() {
       }
     };
     fetchSettings();
-  }, []);
+  }, [isAuthenticated]);
 
   const fetchBookings = async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -102,11 +164,13 @@ export default function DisplayPage() {
   };
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+    
     fetchBookings();
     // Auto-refresh every 10 seconds for real-time updates
     const interval = setInterval(() => fetchBookings(true), 10000);
     return () => clearInterval(interval);
-  }, [formattedDate]);
+  }, [formattedDate, isAuthenticated]);
 
   // Build consolidated booking blocks for each studio
   const studioBlocks = useMemo(() => {
@@ -228,6 +292,102 @@ export default function DisplayPage() {
       hour12: true,
     });
   };
+
+  // Show loading spinner while checking auth
+  if (checkingAuth) {
+    return (
+      <div className="h-screen w-screen bg-[#0a0a0f] flex items-center justify-center">
+        <Loader2 className="w-12 h-12 text-violet-400 animate-spin" />
+      </div>
+    );
+  }
+
+  // Show login form if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="h-screen w-screen bg-[#0a0a0f] flex items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 mb-4 shadow-lg shadow-violet-500/25">
+              <Lock className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-white">Display Access</h1>
+            <p className="text-zinc-400 mt-2">Enter password to view bookings</p>
+          </div>
+
+          {/* Login Form */}
+          <div className="bg-zinc-900/80 backdrop-blur-sm rounded-2xl p-8 border border-zinc-800">
+            <form onSubmit={handleLogin} className="space-y-6">
+              {/* Error Message */}
+              {authError && (
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+                  {authError}
+                </div>
+              )}
+
+              {/* Password Field */}
+              <div>
+                <label htmlFor="display-password" className="block text-sm font-medium text-zinc-300 mb-2.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 pointer-events-none z-10" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="display-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter display password"
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-12 pr-12 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                    required
+                    disabled={authLoading}
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors focus:outline-none"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={authLoading}
+                className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all"
+              >
+                {authLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-5 h-5" />
+                    Access Display
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* Footer */}
+          <p className="text-center text-zinc-500 text-sm mt-6">
+            Protected area. Admin access only.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-screen bg-[#0a0a0f] flex flex-col overflow-hidden">
