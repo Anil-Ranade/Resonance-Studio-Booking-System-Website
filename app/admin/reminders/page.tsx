@@ -283,7 +283,7 @@ export default function StandaloneRemindersPage() {
         const balance = Math.round(currentHours * 30);
         const neededHours = Math.max(0, target - currentHours);
         
-        loyaltyMessagePart = `\nincluding this booking, your total cashback balance is ₹${balance.toLocaleString()}.\nTo encash ₹1,500, please complete ${neededHours.toFixed(1)} more hours of booking before ${windowEnd}.`;
+        loyaltyMessagePart = `\nincluding this booking, your total cashback balance is ₹${balance.toLocaleString()}.\nTo encash ₹2,000, please complete ${neededHours.toFixed(1)} more hours of booking before ${windowEnd}.`;
       }
     } catch (err) {
       console.error("Failed to fetch loyalty status", err);

@@ -197,9 +197,10 @@ export default function RateCardPage() {
       name: "The Rolling Milestone Cashback Program",
       description:
         "Designed to reward our most consistent creators, this program offers a high-value incentive for frequent bookings.",
-      benefit: "Earn ₹30 cashback per hour for every booking made.",
+      benefit: "Earn ₹30 cashback per hour for every booking made. Plus ₹500 welcome bonus for first-time users!",
       details: [
-        "Milestone: Accumulate ₹1500 credit (50 hours) to unlock payout via GPay.",
+        "First-Time Bonus: New users get ₹500 cashback on their first booking.",
+        "Milestone: Accumulate ₹2,000 credit (50 hours) to unlock payout via GPay.",
         "90-Day Window: Reach the 50-hour milestone within 3 months of your first qualifying booking.",
         "Dynamic Reset: If missed, the counter resets to start from your second booking date.",
         "Transparent Tracking: Balance and remaining hours shown on booking confirmation.",

@@ -158,9 +158,9 @@ BEGIN
         FROM jsonb_array_elements_text(v_status->'booking_ids') as elem
     ) INTO v_booking_ids;
     
-    -- Create Reward Record
+    -- Create Reward Record (Updated: ₹2,000 instead of ₹1,500)
     INSERT INTO loyalty_rewards (phone_number, amount, booking_ids)
-    VALUES (p_phone_number, 1500.00, v_booking_ids)
+    VALUES (p_phone_number, 2000.00, v_booking_ids)
     RETURNING id INTO v_reward_id;
     
     -- Mark bookings as rewarded
