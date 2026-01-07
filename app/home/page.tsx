@@ -473,6 +473,20 @@ export default function HomePage() {
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-violet-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
               </motion.div>
             </Link>
+
+            <Link href="/how-to-book">
+              <motion.div
+                className="group flex items-center justify-center sm:justify-between gap-3 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.02] hover:border-amber-500/30 hover:bg-white/[0.05] transition-all duration-300"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <Award className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 flex-shrink-0" />
+                <span className="text-white text-sm sm:text-base md:text-lg leading-snug text-center sm:text-left flex-1">
+                  How to book & exclusive schemes – click here
+                </span>
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+              </motion.div>
+            </Link>
           </motion.div>
 
           {/* Controlled blank gap */}
