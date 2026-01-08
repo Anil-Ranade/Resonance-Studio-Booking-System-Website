@@ -33,11 +33,16 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   // Primary Meta Tags
   title: {
-    default: "Resonance Jam Room - Professional Recording & Jam Room Studio in Pune",
-    template: "%s | Resonance Jam Room",
+    default: "Resonance Studio & Jam Room - Professional Recording Studio in Pune",
+    template: "%s | Resonance Studio",
   },
-  description: "Resonance Jam Room is Pune's premier professional recording studio and jam room. Book online for music recording, mixing, mastering, podcast production, karaoke sessions, and band rehearsals. State-of-the-art equipment at affordable rates.",
+  description: "Resonance Studio (Resonance Jam Room) is Pune's premier professional recording studio and jam room. Book online for music recording, mixing, mastering, podcast production, and band rehearsals.",
   keywords: [
+    "resonance studio",
+    "resonance studio pune",
+    "resonance jamroom",
+    "resonance jam room",
+    "resonance jam room pune",
     "recording studio pune",
     "jam room pune",
     "music studio pune",
@@ -52,10 +57,8 @@ export const metadata: Metadata = {
     "dattawadi recording studio",
     "affordable recording studio",
     "book recording studio online",
-    "resonance studio",
-    "resonance jam room",
   ],
-  authors: [{ name: "Resonance Jam Room", url: "https://resonancejamroom.in" }],
+  authors: [{ name: "Resonance Studio", url: "https://resonancejamroom.in" }],
   creator: "Resonance Jam Room",
   publisher: "Resonance Jam Room",
   
