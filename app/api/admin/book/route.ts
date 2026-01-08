@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { createClient } from "@supabase/supabase-js";
-import { createEvent } from "@/lib/googleCalendar";
+import { createEvent, updateEvent } from "@/lib/googleCalendar";
 import { sendAdminBookingConfirmationEmail } from "@/lib/email";
-import { logNewBooking } from "@/lib/googleSheets";
+import { logNewBooking, logBookingUpdate } from "@/lib/googleSheets";
 
 // Verify admin token from Authorization header
 async function verifyAdminToken(request: NextRequest) {
@@ -367,6 +367,289 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("[Admin Book API] Unexpected error:", error);
+    return NextResponse.json(
+      { error: "Invalid request body" },
+      { status: 400 }
+    );
+  }
+}
+
+// PUT /api/admin/book - Update an existing booking (admin only)
+export async function PUT(request: NextRequest) {
+  // Verify admin authentication
+  const authResult = await verifyAdminToken(request);
+  if (!authResult.valid) {
+    return NextResponse.json({ error: authResult.error }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const {
+      original_booking_id,
+      phone: newPhoneRaw,
+      name,
+      email,
+      studio,
+      session_type,
+      session_details,
+      date,
+      start_time,
+      end_time,
+      rate_per_hour,
+      notes,
+      is_prompt_payment,
+      send_notification = true,
+    } = body;
+
+    if (!original_booking_id) {
+      return NextResponse.json(
+        { error: "Missing required field: original_booking_id" },
+        { status: 400 }
+      );
+    }
+
+    // Normalize phone to digits only
+    const newPhone = newPhoneRaw.replace(/\D/g, "");
+
+    if (newPhone.length !== 10) {
+      return NextResponse.json(
+        { error: "Phone number must be exactly 10 digits" },
+        { status: 400 }
+      );
+    }
+
+    // Validate required fields
+    if (!studio || !date || !start_time || !end_time) {
+      return NextResponse.json(
+        { error: "Missing required fields: studio, date, start_time, end_time" },
+        { status: 400 }
+      );
+    }
+
+    // Calculate booking duration in hours
+    const startParts = start_time.split(":").map(Number);
+    const endParts = end_time.split(":").map(Number);
+    const startMinutes = startParts[0] * 60 + startParts[1];
+    const endMinutes = endParts[0] * 60 + endParts[1];
+    const durationHours = (endMinutes - startMinutes) / 60;
+
+    if (durationHours <= 0) {
+      return NextResponse.json(
+        { error: "End time must be after start time" },
+        { status: 400 }
+      );
+    }
+
+    // Calculate total amount if rate_per_hour is provided
+    let total_amount: number | null = null;
+    if (rate_per_hour) {
+      total_amount = Math.round(rate_per_hour * durationHours);
+    }
+
+    const supabase = supabaseAdmin();
+
+    // Fetch the existing booking to get the OLD phone number (for verification)
+    const { data: existingBooking, error: fetchBoundError } = await supabase
+      .from("bookings")
+      .select("*")
+      .eq("id", original_booking_id)
+      .single();
+
+    if (fetchBoundError || !existingBooking) {
+      return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+    }
+
+    // Use atomic update function
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: result, error: rpcError } = await supabaseServer.rpc(
+      "update_booking_atomic",
+      {
+        p_booking_id: original_booking_id,
+        p_phone_number: existingBooking.phone_number, // Must pass OLD phone to verify ownership inside RPC
+        p_name: name || undefined,
+        p_studio: studio,
+        p_session_type: session_type,
+        p_session_details: session_details,
+        p_date: date,
+        p_start_time: start_time,
+        p_end_time: end_time,
+        p_total_amount: total_amount,
+        p_is_prompt_payment: is_prompt_payment,
+      }
+    ) as { data: { success: boolean; error?: string; booking_id?: string; booking?: any } | null; error: any };
+
+    if (rpcError) {
+      console.error("[Admin Book API] RPC update error:", rpcError);
+      return NextResponse.json(
+        { error: rpcError.message || "Failed to update booking" },
+        { status: 500 }
+      );
+    }
+
+    if (!result || !result.success) {
+      // Check for conflicts to report details
+      if (result?.error === 'Time slot is no longer available') {
+         const { data: conflictingBookings } = await supabaseServer
+          .from("bookings")
+          .select("id, start_time, end_time, name, phone_number")
+          .eq("studio", studio)
+          .eq("date", date)
+          .in("status", ["confirmed"])
+          .neq("id", original_booking_id) // Exclude self
+          .lt("start_time", end_time)
+          .gt("end_time", start_time);
+
+          if (conflictingBookings && conflictingBookings.length > 0) {
+               const conflicts = conflictingBookings.map((b: any) => 
+                 `${b.start_time}-${b.end_time} (${b.name || b.phone_number})`
+               ).join(", ");
+               return NextResponse.json(
+                 { 
+                   error: "Time slot conflicts with existing bookings",
+                   conflicts: conflictingBookings,
+                   message: `Conflicting bookings: ${conflicts}`
+                 },
+                 { status: 409 }
+               );
+          }
+      }
+
+      return NextResponse.json(
+        { error: result?.error || "Failed to update booking" },
+        { status: 409 }
+      );
+    }
+
+    // If phone number changed, update it manually since update_booking_atomic doesn't
+    if (newPhone !== existingBooking.phone_number) {
+        const { error: phoneUpdateError } = await supabase
+            .from("bookings")
+            .update({ phone_number: newPhone })
+            .eq("id", original_booking_id);
+            
+        if (phoneUpdateError) {
+            console.error("[Admin Book API] Failed to update phone number:", phoneUpdateError);
+        } else {
+            // Also check/create user for new phone
+            const { data: newUser } = await supabase
+                .from("users")
+                .select("*")
+                .eq("phone_number", newPhone)
+                .single();
+                
+            if (!newUser && name && email) {
+                 await supabase.from("users").insert({ phone_number: newPhone, name, email });
+            }
+        }
+    }
+
+    const { data: booking, error: refetchError } = await supabase
+      .from("bookings")
+      .select("*")
+      .eq("id", original_booking_id)
+      .single();
+
+    if (refetchError || !booking) {
+         return NextResponse.json({ success: true, message: "Updated but failed to refetch details" });
+    }
+
+    // Update Google Calendar
+    if (existingBooking.google_event_id && process.env.GOOGLE_CLIENT_ID) {
+        try {
+            await updateEvent({
+                eventId: existingBooking.google_event_id,
+                summary: `${studio} - ${session_type || 'Walk-in'} (${name || newPhone}) [Admin]`,
+                description: `Booking ID: ${booking.id}\nPhone: ${newPhone}\nSession Type: ${session_type || 'Walk-in'}\nDetails: ${session_details || 'N/A'}\nNotes: ${notes || 'Updated by admin'}`,
+                startDateTime: `${date}T${start_time}:00`,
+                endDateTime: `${date}T${end_time}:00`
+            });
+             console.log("[Admin Book API] Updated Google Calendar event");
+        } catch (calError) {
+             console.error("[Admin Book API] Failed to update calendar event:", calError);
+        }
+    } else if (!existingBooking.google_event_id && process.env.GOOGLE_CLIENT_ID) {
+        // Create event if it didn't exist
+         try {
+            const googleEventId = await createEvent({
+                summary: `${studio} - ${session_type || 'Walk-in'} (${name || newPhone}) [Admin]`,
+                description: `Booking ID: ${booking.id}\nPhone: ${newPhone}\nSession Type: ${session_type || 'Walk-in'}\nDetails: ${session_details || 'N/A'}\nNotes: ${notes || 'Updated by admin'}`,
+                startDateTime: `${date}T${start_time}:00`,
+                endDateTime: `${date}T${end_time}:00`,
+                studioName: studio
+            });
+            await supabase.from("bookings").update({ google_event_id: googleEventId }).eq("id", booking.id);
+        } catch (calError) {
+             console.error("[Admin Book API] Failed to create missing calendar event:", calError);
+        }
+    }
+
+    // Send email confirmation
+    if (send_notification) {
+      const hasResendConfig =
+        process.env.RESEND_API_KEY &&
+        process.env.RESEND_FROM_EMAIL;
+
+      // Get user email
+      let userEmail = email;
+      if (!userEmail) {
+        const { data: userData } = await supabase
+          .from("users")
+          .select("email")
+          .eq("phone_number", newPhone)
+          .single();
+        userEmail = userData?.email;
+      }
+
+      if (hasResendConfig && userEmail) {
+        try {
+          // You might reuse sendAdminBookingConfirmationEmail or create a sendBookingUpdateEmail
+          // For now reusing confirmation email is fine as it contains all details
+          await sendAdminBookingConfirmationEmail(userEmail, {
+            id: booking.id,
+            name,
+            studio,
+            session_type: session_type || "Walk-in",
+            session_details,
+            date,
+            start_time,
+            end_time,
+            total_amount: total_amount || undefined,
+          });
+        } catch (emailError) {
+           console.error("[Admin Book API] Failed to send update email:", emailError);
+        }
+      }
+    }
+
+    // Log update to Google Sheets
+    try {
+        await logBookingUpdate({
+          id: booking.id,
+          date,
+          studio,
+          session_type: session_type || "Walk-in",
+          session_details,
+          start_time,
+          end_time,
+          name,
+          phone_number: newPhone,
+          email,
+          total_amount: total_amount ?? undefined,
+          status: existingBooking.status,
+          notes: notes || "Updated by admin"
+        });
+    } catch (sheetError) {
+         console.error("[Admin Book API] Failed to log update to sheets:", sheetError);
+    }
+
+    return NextResponse.json({
+      success: true,
+      booking,
+      message: "Booking updated successfully"
+    });
+
+  } catch (error) {
+    console.error("[Admin Book API] Unexpected error in PUT:", error);
     return NextResponse.json(
       { error: "Invalid request body" },
       { status: 400 }
