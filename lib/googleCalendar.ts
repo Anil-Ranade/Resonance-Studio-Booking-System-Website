@@ -1,10 +1,10 @@
 import { google } from "googleapis";
 
 // ============================================================
-// GOOGLE CALENDAR INTEGRATION - DISABLED
-// Set to true to re-enable Google Calendar event creation/deletion
+// GOOGLE CALENDAR INTEGRATION - ENABLED
+// Set to false to disable Google Calendar event creation/deletion
 // ============================================================
-const GOOGLE_CALENDAR_ENABLED = false;
+const GOOGLE_CALENDAR_ENABLED = true;
 
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
