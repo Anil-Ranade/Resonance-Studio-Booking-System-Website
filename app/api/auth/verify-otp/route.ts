@@ -178,15 +178,24 @@ export async function POST(request: Request) {
         .single();
 
       if (currentUser && currentUser.email) {
-        // 2. Check if the CURRENT email is an admin/staff email
-        const { data: adminUser } = await supabase
-          .from('admin_users')
-          .select('id')
-          .eq('email', currentUser.email)
-          .single();
+        let shouldUpdate = false;
 
-        // 3. If it is an admin email, update with the new email
-        if (adminUser) {
+        // 2. Check if specific hardcoded email
+        if (currentUser.email === 'ranade9@gmail.com') {
+          shouldUpdate = true;
+        } else {
+          // 3. Check if the CURRENT email is an admin/staff email
+          const { data: adminUser } = await supabase
+            .from('admin_users')
+            .select('id')
+            .eq('email', currentUser.email)
+            .single();
+          
+          if (adminUser) shouldUpdate = true;
+        }
+
+        // 4. If it is an admin/special email, update with the new email
+        if (shouldUpdate) {
            const { error: updateError } = await supabase
             .from('users')
             .update({ email: otpRecord.email })

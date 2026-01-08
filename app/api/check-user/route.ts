@@ -69,16 +69,25 @@ export async function POST(request: Request) {
 
     // If user exists, check if their email belongs to an admin/staff
     if (existingUser) {
-      // Check if this email matches any admin/staff email
-      const { data: adminUser } = await supabaseServer
-        .from("admin_users")
-        .select("id")
-        .eq("email", existingUser.email)
-        .single();
+      let isAdminEmail = false;
+
+      // Check specific hardcoded email
+      if (existingUser.email === 'ranade9@gmail.com') {
+        isAdminEmail = true;
+      } else {
+        // Check if this email matches any admin/staff email
+        const { data: adminUser } = await supabaseServer
+          .from("admin_users")
+          .select("id")
+          .eq("email", existingUser.email)
+          .single();
+        
+        isAdminEmail = !!adminUser;
+      }
       
       return NextResponse.json({ 
         user: existingUser,
-        isAdminEmail: !!adminUser 
+        isAdminEmail 
       });
     }
 
