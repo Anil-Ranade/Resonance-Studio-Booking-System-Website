@@ -101,7 +101,7 @@ export async function POST(request: Request) {
     // Fetch the latest unexpired OTP for this phone number
     const { data: otpRecord, error: fetchError } = await supabase
       .from('login_otps')
-      .select('id, code_hash, attempts, expires_at')
+      .select('id, code_hash, attempts, expires_at, email')
       .eq('phone', phoneDigits)
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
@@ -166,7 +166,42 @@ export async function POST(request: Request) {
       );
     }
 
-    // OTP is valid - delete the OTP record
+    // OTP is valid
+    
+    // Check if we need to update the user's email (Admin/Staff override case)
+    if (otpRecord.email) {
+      // 1. Get the current user
+      const { data: currentUser } = await supabase
+        .from('users')
+        .select('email')
+        .eq('phone_number', phoneDigits)
+        .single();
+
+      if (currentUser && currentUser.email) {
+        // 2. Check if the CURRENT email is an admin/staff email
+        const { data: adminUser } = await supabase
+          .from('admin_users')
+          .select('id')
+          .eq('email', currentUser.email)
+          .single();
+
+        // 3. If it is an admin email, update with the new email
+        if (adminUser) {
+           const { error: updateError } = await supabase
+            .from('users')
+            .update({ email: otpRecord.email })
+            .eq('phone_number', phoneDigits);
+            
+           if (updateError) {
+             console.error('[Verify OTP] Failed to update user email:', updateError);
+           } else {
+             console.log(`[Verify OTP] Updated user ${phoneDigits} email from ${currentUser.email} to ${otpRecord.email}`);
+           }
+        }
+      }
+    }
+
+    // Delete the OTP record
     await supabase.from('login_otps').delete().eq('id', otpRecord.id);
 
     // Generate access and refresh tokens

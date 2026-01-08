@@ -43,6 +43,7 @@ export default function PhoneStep() {
   const [isCheckingDevice, setIsCheckingDevice] = useState(true);
   const [isCheckingUser, setIsCheckingUser] = useState(false);
   const [isExistingUser, setIsExistingUser] = useState(draft.isExistingUser);
+  const [canOverrideEmail, setCanOverrideEmail] = useState(false);
   const [userChecked, setUserChecked] = useState(false);
 
   // Auto-login state
@@ -78,6 +79,7 @@ export default function PhoneStep() {
             setName(data.user.name || "");
             setEmail(data.user.email || "");
             setIsExistingUser(true);
+            setCanOverrideEmail(!!data.isAdminEmail);
             updateDraft({
               name: data.user.name || "",
               email: data.user.email || "",
@@ -516,8 +518,8 @@ export default function PhoneStep() {
               }
               className={`w-full bg-zinc-800/50 border-2 rounded-xl pl-10 pr-4 py-2.5 text-white text-base placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all ${
                 isExistingUser ? "border-zinc-600" : "border-zinc-600"
-              } ${isExistingUser ? "opacity-75" : ""}`}
-              readOnly={isExistingUser}
+              } ${isExistingUser && !canOverrideEmail ? "opacity-75" : ""}`}
+              readOnly={isExistingUser && !canOverrideEmail}
             />
           </div>
         )}

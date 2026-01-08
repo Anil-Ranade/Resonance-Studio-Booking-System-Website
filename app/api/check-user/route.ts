@@ -67,9 +67,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // If user exists, return the user
+    // If user exists, check if their email belongs to an admin/staff
     if (existingUser) {
-      return NextResponse.json({ user: existingUser });
+      // Check if this email matches any admin/staff email
+      const { data: adminUser } = await supabaseServer
+        .from("admin_users")
+        .select("id")
+        .eq("email", existingUser.email)
+        .single();
+      
+      return NextResponse.json({ 
+        user: existingUser,
+        isAdminEmail: !!adminUser 
+      });
     }
 
     // User does not exist - check if name and email are provided
