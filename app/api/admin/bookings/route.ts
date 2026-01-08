@@ -65,6 +65,7 @@ export async function GET(request: NextRequest) {
   const startDate = searchParams.get("startDate");
   const endDate = searchParams.get("endDate");
   const investorId = searchParams.get("investorId");
+  const phone = searchParams.get("phone");
 
   const supabase = supabaseAdmin();
 
@@ -72,6 +73,10 @@ export async function GET(request: NextRequest) {
     .from("bookings")
     .select("*")
     .order("created_at", { ascending: false });
+
+  if (phone) {
+    query = query.ilike("phone_number", `%${phone}%`);
+  }
 
   if (investorId) {
     query = query.eq("investor_id", investorId);
