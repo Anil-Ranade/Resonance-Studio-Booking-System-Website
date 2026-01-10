@@ -188,7 +188,7 @@ export async function PUT(request: NextRequest) {
         // If status changed to cancelled, delete the calendar event
         if (status === "cancelled" && existingBooking.google_event_id) {
           await deleteEvent(existingBooking.google_event_id);
-          console.log(`[Staff Bookings] Google Calendar event ${existingBooking.google_event_id} deleted due to cancellation`);
+          // Google Calendar event deleted due to cancellation
           
           // Clear the google_event_id from the booking
           await supabase
@@ -214,7 +214,7 @@ export async function PUT(request: NextRequest) {
             .update({ google_event_id: googleEventId })
             .eq("id", id);
           
-          console.log(`[Staff Bookings] New Google Calendar event ${googleEventId} created for reactivated booking`);
+          // Created new Google Calendar event for reactivated booking
         }
         // If booking details were updated (date, time, studio, etc.), update the calendar event
         else if (existingBooking.google_event_id && (date || start_time || end_time || studio || session_type || name)) {
@@ -233,7 +233,7 @@ export async function PUT(request: NextRequest) {
             endDateTime: `${updatedDate}T${updatedEndTime}:00`,
           });
           
-          console.log(`[Staff Bookings] Google Calendar event ${existingBooking.google_event_id} updated`);
+          // Google Calendar event updated
         }
       } catch (calendarError) {
         console.error("[Staff Bookings] Failed to sync Google Calendar:", calendarError);
@@ -269,7 +269,7 @@ export async function PUT(request: NextRequest) {
           });
 
           if (emailResult.success) {
-            console.log("[Staff Bookings] Email confirmation sent successfully:", emailResult.id);
+            // Email confirmation sent successfully
             await supabase
               .from("bookings")
               .update({ email_sent: true })
@@ -391,7 +391,7 @@ export async function DELETE(request: NextRequest) {
   if (hasGoogleConfig && existingBooking.google_event_id) {
     try {
       await deleteEvent(existingBooking.google_event_id);
-      console.log(`[Staff Bookings] Google Calendar event ${existingBooking.google_event_id} deleted for booking deletion`);
+      // Google Calendar event deleted for booking deletion
     } catch (calendarError) {
       console.error("[Staff Bookings] Failed to delete Google Calendar event:", calendarError);
       // Don't fail the request, just log the error

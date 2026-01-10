@@ -299,7 +299,7 @@ export async function POST(request: Request) {
         });
         
         if (emailResult.success) {
-          console.log("[Book API] Email confirmation sent successfully:", emailResult.id);
+          // Email confirmation sent successfully
           // Update booking to mark email as sent
           await supabaseServer
             .from("bookings")
@@ -313,7 +313,7 @@ export async function POST(request: Request) {
         console.error("[Book API] Failed to send email confirmation:", emailError);
       }
     } else {
-      console.log("[Book API] Email notifications disabled - Resend credentials not configured or no user email");
+      // Email notifications disabled - Resend credentials not configured or no user email
     }
 
     // Log booking to Google Sheet
@@ -588,7 +588,7 @@ export async function PUT(request: Request) {
         });
         
         if (emailResult.success) {
-          console.log("[Book API PUT] Email update notification sent successfully:", emailResult.id);
+          // Email update notification sent successfully
         } else {
           console.error("[Book API PUT] Email update notification failed:", emailResult.error);
         }

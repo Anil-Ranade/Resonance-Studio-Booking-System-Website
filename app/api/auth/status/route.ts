@@ -99,7 +99,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
                 expires_at: newExpiresAt.toISOString(),
               });
 
-            console.log(`[Auth Status] Refreshed tokens for ${payload.phone}`);
+            // Tokens refreshed successfully
 
             // Return authenticated with new cookies
             const response = NextResponse.json({

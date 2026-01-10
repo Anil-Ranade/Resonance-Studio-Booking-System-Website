@@ -204,7 +204,7 @@ export async function POST(request: Request) {
            if (updateError) {
              console.error('[Verify OTP] Failed to update user email:', updateError);
            } else {
-             console.log(`[Verify OTP] Updated user ${phoneDigits} email from ${currentUser.email} to ${otpRecord.email}`);
+             // Successfully updated user email
            }
         }
       }
@@ -271,7 +271,7 @@ export async function POST(request: Request) {
           // Don't fail the request, just log the error
         } else {
           deviceTrusted = true;
-          console.log(`[Verify OTP] Device registered as trusted for ${phoneDigits}`);
+          // Device registered as trusted
         }
       } catch (deviceRegError) {
         console.error('[Verify OTP] Device registration error:', deviceRegError);
@@ -279,7 +279,7 @@ export async function POST(request: Request) {
       }
     }
 
-    console.log(`[Verify OTP] OTP verified successfully for ${phoneDigits}`);
+    // OTP verified successfully
 
     // Create response with cookies
     const response = NextResponse.json({

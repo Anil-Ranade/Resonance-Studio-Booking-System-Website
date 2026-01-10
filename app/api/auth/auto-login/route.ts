@@ -65,7 +65,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AutoLogin
       if (payload) {
         const user = await getUserInfo(payload.phone);
         if (user) {
-          console.log(`[Auto Login] Authenticated via access token: ${payload.phone}`);
+          // Successfully authenticated via access token
           return NextResponse.json({
             authenticated: true,
             user: {
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AutoLogin
                 expires_at: newExpiresAt.toISOString(),
               });
 
-            console.log(`[Auto Login] Refreshed tokens for ${payload.phone}`);
+            // Successfully refreshed tokens for user
 
             const response = NextResponse.json({
               authenticated: true,
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AutoLogin
     }
 
     // Look up trusted device by fingerprint
-    console.log(`[Auto Login] Looking up device with fingerprint: ${deviceFingerprint.substring(0, 16)}...`);
+    // Looking up trusted device
     
     const { data: trustedDevices, error: fetchError } = await supabase
       .from('trusted_devices')
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AutoLogin
     }
 
     if (!trustedDevices || trustedDevices.length === 0) {
-      console.log('[Auto Login] Device not found in trusted_devices table');
+      // Device not found in trusted_devices table
       return NextResponse.json({
         authenticated: false,
         message: 'Device is not trusted',
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AutoLogin
     const user = await getUserInfo(trustedDevice.phone);
 
     if (!user) {
-      console.error('[Auto Login] User not found for phone:', trustedDevice.phone);
+      console.error('[Auto Login] User not found for trusted device');
       return NextResponse.json({
         authenticated: false,
         message: 'User not found for trusted device',
@@ -225,7 +225,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AutoLogin
         expires_at: newExpiresAt.toISOString(),
       });
 
-    console.log(`[Auto Login] Auto-authenticated user ${user.phone_number} via trusted device`);
+    // User auto-authenticated via trusted device
 
     const response = NextResponse.json({
       authenticated: true,

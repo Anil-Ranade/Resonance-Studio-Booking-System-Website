@@ -55,7 +55,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       .single();
 
     if (fetchError || !tokenRecord) {
-      console.log('[Refresh] Token not found in database');
+      // Token not found in database
       return NextResponse.json(
         { error: 'Refresh token not found' },
         { status: 401 }
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     if (tokenRecord.revoked_at) {
-      console.log('[Refresh] Token has been revoked');
+      // Token has been revoked
       return NextResponse.json(
         { error: 'Refresh token has been revoked' },
         { status: 401 }
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    console.log(`[Refresh] Tokens refreshed for ${phone}`);
+    // Tokens refreshed successfully
 
     // Create response with new cookies
     const response = NextResponse.json({

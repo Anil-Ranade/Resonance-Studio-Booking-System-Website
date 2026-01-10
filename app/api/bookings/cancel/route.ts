@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
         });
         
         if (emailResult.success) {
-          console.log("[Cancel Booking] Email notification sent successfully:", emailResult.id);
+          // Email notification sent successfully
         } else {
           console.error("[Cancel Booking] Email notification failed:", emailResult.error);
         }
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`[Cancel Booking] Booking ${bookingId} cancelled successfully`);
+    // Booking cancelled successfully
 
     // Log cancellation to Google Sheet
     try {

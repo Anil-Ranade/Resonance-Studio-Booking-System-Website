@@ -257,7 +257,7 @@ export async function POST(request: NextRequest) {
       if (createUserError) {
         console.error("[Admin Book API] Failed to create user:", createUserError.message);
       } else {
-        console.log("[Admin Book API] Created new user for", phone);
+        // Created new user for booking
       }
     }
 
@@ -325,7 +325,7 @@ export async function POST(request: NextRequest) {
           });
 
           if (emailResult.success) {
-            console.log("[Admin Book API] Email confirmation sent successfully:", emailResult.id);
+            // Email confirmation sent successfully
             await supabaseServer
               .from("bookings")
               .update({ email_sent: true })

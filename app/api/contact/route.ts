@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     }
     
     // TODO: Implement email sending or store in Supabase
-    console.log("Contact form submission:", { firstName, lastName, email, subject, message });
+    // Note: Contact form data intentionally not logged to avoid PII exposure
     
     return NextResponse.json({ 
       success: true, 

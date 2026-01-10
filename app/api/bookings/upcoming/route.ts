@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
         if (bookingWithEmail) {
           phoneToSearch = bookingWithEmail.phone_number;
         } else {
-          console.log(`[Upcoming Bookings API] No user or booking found for email: ${email}`);
+          // No user or booking found for the provided email
           return NextResponse.json({ bookings: [] });
         }
       } else {
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log(`[Upcoming Bookings API] Found ${allBookings?.length || 0} bookings for phone: ${phoneToSearch}`);
+    // Bookings query completed
 
     // Filter for upcoming bookings client-side for more reliable filtering
     const upcomingBookings = (allBookings || []).filter(booking => {

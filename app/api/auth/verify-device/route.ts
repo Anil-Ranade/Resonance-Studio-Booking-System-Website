@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
       .update({ last_used_at: new Date().toISOString() })
       .eq('id', trustedDevice.id);
 
-    console.log(`[Verify Device] Device verified for phone ${phoneDigits}`);
+    // Device verified for user
 
     return NextResponse.json({
       trusted: true,
@@ -154,7 +154,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    console.log(`[Verify Device] Device trust removed for phone ${phoneDigits}`);
+    // Device trust removed successfully
 
     return NextResponse.json({
       success: true,

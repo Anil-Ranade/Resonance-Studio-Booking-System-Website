@@ -35,12 +35,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       if (revokeError) {
         console.error('[Logout] Failed to revoke refresh token:', revokeError);
         // Continue anyway - we'll still clear the cookies
-      } else {
-        console.log('[Logout] Refresh token revoked');
       }
     }
 
-    console.log('[Logout] User logged out successfully');
+    // User logged out successfully
 
     // Create response clearing both cookies
     const response = NextResponse.json({

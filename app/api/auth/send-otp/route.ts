@@ -137,8 +137,8 @@ export async function POST(request: Request) {
       process.env.RESEND_FROM_EMAIL;
 
     if (!hasResendConfig) {
-      // Development mode - log OTP to console
-      console.log(`[Send OTP] Development mode - OTP for ${phoneDigits} (${email}): ${otp}`);
+      // Development mode - OTP available via debug_otp in response only
+      // Note: OTP intentionally not logged to console for security
       return NextResponse.json({
         success: true,
         message: 'OTP sent successfully',
@@ -151,7 +151,7 @@ export async function POST(request: Request) {
     const result = await sendOTPEmail(email, otp);
 
     if (result.success) {
-      console.log(`[Send OTP] OTP sent successfully to ${email}`);
+      // OTP sent successfully - intentionally not logging recipient email
       return NextResponse.json({
         success: true,
         message: 'OTP sent successfully to your email address',

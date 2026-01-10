@@ -92,7 +92,7 @@ export async function sendEmail(
       return { success: false, error: error.message };
     }
 
-    console.log('[Email] Message sent successfully to', to, '- ID:', data?.id);
+    // Email sent successfully - ID: ${data?.id}
     return { success: true, id: data?.id || '' };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred while sending email';
