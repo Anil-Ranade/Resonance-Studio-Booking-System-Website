@@ -34,6 +34,7 @@ export default function DisplayPage() {
   const [startHour, setStartHour] = useState(8);
   const [endHour, setEndHour] = useState(22);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [showPhoneNumbers, setShowPhoneNumbers] = useState(true);
 
   // Always show all three studios
   const studios = ["Studio A", "Studio B", "Studio C"];
@@ -425,8 +426,26 @@ export default function DisplayPage() {
           </button>
         </div>
 
-        {/* Current Time */}
-        <div className="absolute right-6">
+        {/* Current Time & Phone Toggle */}
+        <div className="absolute right-6 flex items-center gap-4">
+          {/* Phone Number Visibility Toggle */}
+          <button
+            onClick={() => setShowPhoneNumbers(!showPhoneNumbers)}
+            className={`p-2 rounded-lg transition-all duration-200 flex items-center gap-2 ${
+              showPhoneNumbers
+                ? "bg-violet-600/20 text-violet-400 hover:bg-violet-600/30"
+                : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+            }`}
+            aria-label={showPhoneNumbers ? "Hide phone numbers" : "Show phone numbers"}
+            title={showPhoneNumbers ? "Hide phone numbers" : "Show phone numbers"}
+          >
+            {showPhoneNumbers ? (
+              <Eye className="w-5 h-5" />
+            ) : (
+              <EyeOff className="w-5 h-5" />
+            )}
+            <span className="text-sm font-medium">Phone</span>
+          </button>
           <span className="text-2xl font-bold text-amber-400 tabular-nums">
             {formatDisplayTime()}
           </span>
@@ -531,7 +550,7 @@ export default function DisplayPage() {
                           key={idx}
                           className={`absolute left-1 right-1 ${getStudioColor(
                             studio
-                          )} text-white flex flex-col items-center justify-center px-1 z-10 rounded-md shadow-lg border border-white/30 ${
+                          )} text-white flex flex-col justify-center px-3 z-10 rounded-md shadow-lg border border-white/30 ${
                             isPast ? "opacity-50" : ""
                           }`}
                           style={{
@@ -540,19 +559,25 @@ export default function DisplayPage() {
                             minHeight: "40px",
                           }}
                         >
-                          <span className="text-[11px] font-semibold text-amber-200 text-center leading-none truncate w-full">
-                            {block.booking.session_type || "Session"}
-                          </span>
-                          <span className="text-[10px] font-medium text-white/90 text-center leading-none truncate w-full mt-0.5">
-                            {formatBookingTime(block.booking.start_time)} -{" "}
-                            {formatBookingTime(block.booking.end_time)}
-                          </span>
-                          <span className="text-sm font-bold text-center leading-tight truncate w-full mt-0.5">
-                            {block.booking.name || "Guest"}
-                          </span>
-                          <span className="text-[10px] font-medium opacity-80 text-center leading-none truncate w-full">
-                            {block.booking.phone_number}
-                          </span>
+                          {/* Row 1: Event (left) - Name+Phone (center) - Time (right) */}
+                          <div className="flex items-center justify-between w-full gap-3">
+                            <span className="text-sm font-semibold text-amber-300 leading-none truncate flex-shrink-0 min-w-[80px]">
+                              {block.booking.session_type || "Session"}
+                            </span>
+                            <div className="flex flex-col items-center flex-1 px-2">
+                              <span className="text-xl font-bold leading-tight truncate w-full text-center">
+                                {block.booking.name || "Guest"}
+                              </span>
+                              {showPhoneNumbers && (
+                                <span className="text-sm font-medium opacity-80 leading-none truncate w-full text-center mt-0.5">
+                                  {block.booking.phone_number}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-sm font-semibold text-white/90 leading-none truncate flex-shrink-0 min-w-[130px] text-right">
+                              {formatBookingTime(block.booking.start_time)} - {formatBookingTime(block.booking.end_time)}
+                            </span>
+                          </div>
                         </div>
                       );
                     })}
