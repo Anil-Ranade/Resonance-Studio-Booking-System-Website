@@ -90,9 +90,9 @@ export default function AdminCancelBookingPage() {
       }
 
       // Filter only confirmed bookings that can be cancelled
-      const cancellableBookings = (data.bookings || []).filter((b: Booking) => 
-        b.status === 'confirmed'
-      );
+      const cancellableBookings = (data.bookings || [])
+        .filter((b: Booking) => b.status === 'confirmed')
+        .sort((a: Booking, b: Booking) => new Date(a.date).getTime() - new Date(b.date).getTime());
       
       setBookings(cancellableBookings);
     } catch (err) {
@@ -386,7 +386,42 @@ export default function AdminCancelBookingPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          <h3 className="text-lg font-medium text-white mb-4">Select a booking to cancel</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-white">Select a booking to cancel</h3>
+            
+            {/* Sort Dropdown */}
+            <div className="relative">
+              <select
+                className="appearance-none bg-white/5 border border-white/10 rounded-lg pl-3 pr-8 py-2 text-sm text-zinc-300 focus:outline-none focus:border-violet-500/50 cursor-pointer"
+                onChange={(e) => {
+                  const order = e.target.value;
+                  setBookings(prev => {
+                    if (!prev) return null;
+                    const sorted = [...prev];
+                    if (order === 'date_asc') {
+                      return sorted.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                    } else if (order === 'created_desc') {
+                      return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                    } else if (order === 'created_asc') {
+                      return sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                    }
+                    return sorted;
+                  });
+                }}
+                defaultValue="date_asc"
+              >
+                <option value="date_asc" className="bg-zinc-900">Upcoming First</option>
+                <option value="created_desc" className="bg-zinc-900">Newest Booked</option>
+                <option value="created_asc" className="bg-zinc-900">Oldest Booked</option>
+              </select>
+              <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-4">
             {bookings.map((booking, index) => {
               const config = statusConfig[booking.status] || statusConfig.confirmed;

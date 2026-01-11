@@ -44,6 +44,8 @@ interface LoyaltyStatus {
   eligible: boolean;
   window_start: string | null;
   window_end: string | null;
+  reward_amount?: number;
+  first_booking_bonus?: boolean;
 }
 
 interface Booking {
@@ -144,7 +146,7 @@ export default function MyBookingsPage() {
     };
     
     checkAuth();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchBookingsForPhone = async (phone: string) => {
     if (phone.replace(/\D/g, '').length !== 10) {
@@ -410,68 +412,178 @@ export default function MyBookingsPage() {
 
         {/* Authenticated User Banner */}
         {!isCheckingAuth && isAuthenticated && authenticatedUser && (
-          <motion.div 
-            className="glass-strong rounded-2xl p-4 mb-6 border border-green-500/20"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                <Shield className="w-5 h-5 text-green-400" />
+          <div className="space-y-6 mb-6">
+            <motion.div 
+              className="glass-strong rounded-2xl p-4 border border-green-500/20"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-green-400" />
+                </div>
+                <div>
+                  <p className="text-white font-medium">Welcome back{authenticatedUser.name ? `, ${authenticatedUser.name}` : ''}!</p>
+                  <p className="text-zinc-400 text-sm">Your bookings are loaded automatically</p>
+                </div>
               </div>
-              <div>
-                <p className="text-white font-medium">Welcome back{authenticatedUser.name ? `, ${authenticatedUser.name}` : ''}!</p>
-                <p className="text-zinc-400 text-sm">Your bookings are loaded automatically</p>
-              </div>
-            </div>
-          </motion.div>
+            </motion.div>
+
+            {/* Loyalty Progress */}
+            {loyaltyStatus && (
+              <motion.div 
+                className="glass-strong rounded-2xl p-6 relative overflow-hidden"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                {/* Background Glow */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Award className="w-5 h-5 text-amber-400" />
+                      <h3 className="text-lg font-bold text-white">Loyalty Status</h3>
+                    </div>
+                    {loyaltyStatus.eligible && (
+                      <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold border border-amber-500/20 animate-pulse">
+                        Reward Available!
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="mb-2 flex justify-between text-sm">
+                    <span className="text-zinc-400">Progress</span>
+                    <span className="text-white font-medium">
+                      {loyaltyStatus.hours} / {loyaltyStatus.target} hours
+                    </span>
+                  </div>
+
+                  <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-4">
+                    <motion.div 
+                      className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min((loyaltyStatus.hours / loyaltyStatus.target) * 100, 100)}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                    />
+                  </div>
+
+                  <div className="flex items-start gap-2 text-xs text-zinc-400">
+                    <TrendingUp className="w-3.5 h-3.5 mt-0.5 text-zinc-500" />
+                    <p>
+                      {loyaltyStatus.eligible 
+                        ? `Congratulations! You've unlocked a ₹${(loyaltyStatus.reward_amount || 2000).toLocaleString('en-IN')} discount on your next booking.`
+                        : `Complete ${loyaltyStatus.target - loyaltyStatus.hours} more hours to unlock a ₹${(loyaltyStatus.reward_amount || 2000).toLocaleString('en-IN')} reward.`
+                      }
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </div>
         )}
 
         {/* Phone Search - Only show if not authenticated */}
         {!isCheckingAuth && !isAuthenticated && (
-          <motion.div 
-            className="glass-strong rounded-2xl p-4 mb-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <form onSubmit={handleSubmit}>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex-1 relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                  <input
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={handlePhoneChange}
-                    placeholder="Enter your phone number"
-                    className="w-full py-3 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
-                    maxLength={10}
-                    inputMode="numeric"
-                  />
+          <>
+            <motion.div 
+              className="glass-strong rounded-2xl p-4 mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <form onSubmit={handleSubmit}>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1 relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                    <input
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={handlePhoneChange}
+                      placeholder="Enter your phone number"
+                      className="w-full py-3 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                      maxLength={10}
+                      inputMode="numeric"
+                    />
+                  </div>
+                  <motion.button
+                    type="submit"
+                    disabled={isLoading || phoneNumber.length !== 10}
+                    className="btn-accent py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Searching...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-4 h-4" />
+                        Search
+                      </>
+                    )}
+                  </motion.button>
                 </div>
-                <motion.button
-                  type="submit"
-                  disabled={isLoading || phoneNumber.length !== 10}
-                  className="btn-accent py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Searching...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4" />
-                      Search
-                    </>
-                  )}
-                </motion.button>
-              </div>
-            </form>
-          </motion.div>
+              </form>
+            </motion.div>
+
+            {/* Loyalty Progress for Non-Authenticated Users (shown after search) */}
+            {searched && loyaltyStatus && (
+              <motion.div 
+                className="glass-strong rounded-2xl p-6 mb-6 relative overflow-hidden"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                {/* Background Glow */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Award className="w-5 h-5 text-amber-400" />
+                      <h3 className="text-lg font-bold text-white">Loyalty Status</h3>
+                    </div>
+                    {loyaltyStatus.eligible && (
+                      <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold border border-amber-500/20 animate-pulse">
+                        Reward Available!
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="mb-2 flex justify-between text-sm">
+                    <span className="text-zinc-400">Progress</span>
+                    <span className="text-white font-medium">
+                      {loyaltyStatus.hours} / {loyaltyStatus.target} hours
+                    </span>
+                  </div>
+
+                  <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-4">
+                    <motion.div 
+                      className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min((loyaltyStatus.hours / loyaltyStatus.target) * 100, 100)}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                    />
+                  </div>
+
+                  <div className="flex items-start gap-2 text-xs text-zinc-400">
+                    <TrendingUp className="w-3.5 h-3.5 mt-0.5 text-zinc-500" />
+                    <p>
+                      {loyaltyStatus.eligible 
+                        ? `Congratulations! You've unlocked a ₹${(loyaltyStatus.reward_amount || 2000).toLocaleString('en-IN')} discount on your next booking.`
+                        : `Complete ${loyaltyStatus.target - loyaltyStatus.hours} more hours to unlock a ₹${(loyaltyStatus.reward_amount || 2000).toLocaleString('en-IN')} reward.`
+                      }
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </>
         )}
 
 

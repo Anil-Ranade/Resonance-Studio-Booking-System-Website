@@ -111,7 +111,10 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Upcoming Bookings API] Returning ${upcomingBookings.length} upcoming bookings`);
 
-    return NextResponse.json({ bookings: upcomingBookings });
+    return NextResponse.json({ 
+      bookings: upcomingBookings,
+      phone: phoneToSearch 
+    });
   } catch (error) {
     console.error("[Upcoming Bookings API] Unexpected error:", error);
     return NextResponse.json(

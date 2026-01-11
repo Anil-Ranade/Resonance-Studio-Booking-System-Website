@@ -30,7 +30,19 @@ import {
   Mic,
   Users,
   Shield,
+  Award,
+  TrendingUp,
 } from "lucide-react";
+
+interface LoyaltyStatus {
+  hours: number;
+  target: number;
+  eligible: boolean;
+  window_start: string | null;
+  window_end: string | null;
+  reward_amount?: number;
+  first_booking_bonus?: boolean;
+}
 
 interface Booking {
   id: string;
@@ -64,6 +76,19 @@ export default function ViewBookingsPage() {
   const [authenticatedUser, setAuthenticatedUser] = useState<{ name: string; email: string } | null>(null);
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
+  const [loyaltyStatus, setLoyaltyStatus] = useState<LoyaltyStatus | null>(null);
+
+  const fetchLoyaltyStatus = async (phone: string) => {
+    try {
+      const response = await fetch(`/api/loyalty/status?phone=${phone}`);
+      const data = await safeJsonParse(response);
+      if (response.ok) {
+        setLoyaltyStatus(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch loyalty status:', err);
+    }
+  };
 
   // Check authentication status on mount
   useEffect(() => {
@@ -77,6 +102,10 @@ export default function ViewBookingsPage() {
           
           // Auto-fetch bookings for authenticated user
           await fetchBookingsForEmail(status.user.email);
+          
+          if (status.user.phone) {
+            fetchLoyaltyStatus(status.user.phone);
+          }
         }
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -86,7 +115,7 @@ export default function ViewBookingsPage() {
     };
     
     checkAuth();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Validate email format
   const isValidEmail = (emailStr: string) => {
@@ -113,7 +142,12 @@ export default function ViewBookingsPage() {
 
       setBookings(data.bookings || []);
       setSearched(true);
-    } catch (err) {
+
+      // If phone number is returned from search, fetch loyalty status
+      if (data.phone) {
+        fetchLoyaltyStatus(data.phone);
+      }
+    } catch {
       setError("An error occurred while fetching bookings");
     } finally {
       setLoading(false);
@@ -257,6 +291,58 @@ export default function ViewBookingsPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {((isAuthenticated && loyaltyStatus) || (searched && loyaltyStatus)) && (
+          <motion.div 
+            className="glass-strong rounded-2xl p-6 mb-6 relative overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            {/* Background Glow */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-amber-400" />
+                  <h3 className="text-lg font-bold text-white">Loyalty Status</h3>
+                </div>
+                {loyaltyStatus.eligible && (
+                  <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold border border-amber-500/20 animate-pulse">
+                    Reward Available!
+                  </span>
+                )}
+              </div>
+              
+              <div className="mb-2 flex justify-between text-sm">
+                <span className="text-zinc-400">Progress</span>
+                <span className="text-white font-medium">
+                  {loyaltyStatus.hours} / {loyaltyStatus.target} hours
+                </span>
+              </div>
+
+              <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-4">
+                <motion.div 
+                  className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min((loyaltyStatus.hours / loyaltyStatus.target) * 100, 100)}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                />
+              </div>
+
+              <div className="flex items-start gap-2 text-xs text-zinc-400">
+                <TrendingUp className="w-3.5 h-3.5 mt-0.5 text-zinc-500" />
+                <p>
+                  {loyaltyStatus.eligible 
+                    ? `Congratulations! You've unlocked a ₹${(loyaltyStatus.reward_amount || 2000).toLocaleString('en-IN')} discount on your next booking.`
+                    : `Complete ${loyaltyStatus.target - loyaltyStatus.hours} more hours to unlock a ₹${(loyaltyStatus.reward_amount || 2000).toLocaleString('en-IN')} reward.`
+                  }
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Bookings List */}
         {searched && (
