@@ -91,14 +91,14 @@ function minutesToTime(totalMinutes: number): string {
   return formatTime(hours, minutes);
 }
 
-function splitIntoHourChunks(startTime: string, endTime: string): TimeSlot[] {
+function generateTimeSlots(startTime: string, endTime: string): TimeSlot[] {
   const chunks: TimeSlot[] = [];
   const startMinutes = timeToMinutes(startTime);
   const endMinutes = timeToMinutes(endTime);
 
-  for (let current = startMinutes; current < endMinutes; current += 60) {
-    const chunkEnd = Math.min(current + 60, endMinutes);
-    if (chunkEnd - current === 60) {
+  for (let current = startMinutes; current < endMinutes; current += 30) {
+    const chunkEnd = Math.min(current + 30, endMinutes);
+    if (chunkEnd - current === 30) {
       chunks.push({
         start: minutesToTime(current),
         end: minutesToTime(chunkEnd),
@@ -188,8 +188,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Step 1: Generate all 1-hour slots based on default operating hours
-    const allChunks = splitIntoHourChunks(
+    // Step 1: Generate all 30-minute slots based on default operating hours
+    const allChunks = generateTimeSlots(
       bookingSettings.defaultOpenTime,
       bookingSettings.defaultCloseTime
     );

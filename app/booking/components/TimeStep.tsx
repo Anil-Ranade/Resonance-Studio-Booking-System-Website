@@ -180,6 +180,27 @@ export default function TimeStep() {
     }
   }, [date, fetchSlots, fetchStudioAvailability]);
 
+  // Helper to convert time string (HH:MM) to minutes from midnight
+  const timeToMinutes = (time: string): number => {
+    const [hours, minutes] = time.split(":").map(Number);
+    return hours * 60 + minutes;
+  };
+
+  // Helper to convert minutes from midnight to time string (HH:MM)
+  const minutesToTime = (minutes: number): string => {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+  };
+
+  // Format time for display in 12-hour format
+  const formatTimeDisplay = (time: string) => {
+    const [hours, minutes] = time.split(":").map(Number);
+    const displayHour = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+    const period = hours >= 12 ? "PM" : "AM";
+    return `${displayHour}:${minutes.toString().padStart(2, "0")} ${period}`;
+  };
+
   // Generate continuous slabs from available slots
   const getContinuousSlabs = useCallback((): ContinuousSlab[] => {
     if (slots.length === 0) return [];
@@ -189,55 +210,52 @@ export default function TimeStep() {
 
     const slabs: ContinuousSlab[] = [];
     let currentSlabStart: string | null = null;
-    let currentSlabStartHour = 0;
-    let previousEndHour = -1;
+    let previousEndMinutes = -1;
 
     for (let i = 0; i < slots.length; i++) {
       const slot = slots[i];
-      const [startHour] = slot.start.split(":").map(Number);
-      const [endHour] = slot.end.split(":").map(Number);
+      const startMinutes = timeToMinutes(slot.start);
+      const endMinutes = timeToMinutes(slot.end);
 
       if (slot.available) {
         if (currentSlabStart === null) {
           // Start a new slab
           currentSlabStart = normalizeTime(slot.start);
-          currentSlabStartHour = startHour;
-          previousEndHour = endHour;
-        } else if (startHour === previousEndHour) {
+          previousEndMinutes = endMinutes;
+        } else if (startMinutes === previousEndMinutes) {
           // Continue the slab
-          previousEndHour = endHour;
+          previousEndMinutes = endMinutes;
         } else {
           // End current slab and start a new one
-          const slabEndTime = `${previousEndHour
-            .toString()
-            .padStart(2, "0")}:00`;
-          const duration = previousEndHour - currentSlabStartHour;
+          const slabEndTime = minutesToTime(previousEndMinutes);
+          const currentSlabStartMinutes = timeToMinutes(currentSlabStart);
+          const duration = (previousEndMinutes - currentSlabStartMinutes) / 60;
+          
           slabs.push({
             start: currentSlabStart,
             end: slabEndTime,
-            startHour: currentSlabStartHour,
-            endHour: previousEndHour,
+            startHour: currentSlabStartMinutes / 60, // Keep for backward compat if needed, but duration is better
+            endHour: previousEndMinutes / 60,
             duration,
             label: `${formatTimeDisplay(
               currentSlabStart
             )} - ${formatTimeDisplay(slabEndTime)}`,
           });
           currentSlabStart = normalizeTime(slot.start);
-          currentSlabStartHour = startHour;
-          previousEndHour = endHour;
+          previousEndMinutes = endMinutes;
         }
       } else {
         // Slot not available, close any open slab
         if (currentSlabStart !== null) {
-          const slabEndTime = `${previousEndHour
-            .toString()
-            .padStart(2, "0")}:00`;
-          const duration = previousEndHour - currentSlabStartHour;
+          const slabEndTime = minutesToTime(previousEndMinutes);
+          const currentSlabStartMinutes = timeToMinutes(currentSlabStart);
+          const duration = (previousEndMinutes - currentSlabStartMinutes) / 60;
+
           slabs.push({
             start: currentSlabStart,
             end: slabEndTime,
-            startHour: currentSlabStartHour,
-            endHour: previousEndHour,
+            startHour: currentSlabStartMinutes / 60,
+            endHour: previousEndMinutes / 60,
             duration,
             label: `${formatTimeDisplay(
               currentSlabStart
@@ -250,13 +268,15 @@ export default function TimeStep() {
 
     // Close any remaining open slab
     if (currentSlabStart !== null) {
-      const slabEndTime = `${previousEndHour.toString().padStart(2, "0")}:00`;
-      const duration = previousEndHour - currentSlabStartHour;
+      const slabEndTime = minutesToTime(previousEndMinutes);
+      const currentSlabStartMinutes = timeToMinutes(currentSlabStart);
+      const duration = (previousEndMinutes - currentSlabStartMinutes) / 60;
+      
       slabs.push({
         start: currentSlabStart,
         end: slabEndTime,
-        startHour: currentSlabStartHour,
-        endHour: previousEndHour,
+        startHour: currentSlabStartMinutes / 60,
+        endHour: previousEndMinutes / 60,
         duration,
         label: `${formatTimeDisplay(currentSlabStart)} - ${formatTimeDisplay(
           slabEndTime
@@ -273,38 +293,52 @@ export default function TimeStep() {
     if (!selectedSlab) return [];
 
     const times: { time: string; label: string }[] = [];
+    const slabStartMinutes = timeToMinutes(selectedSlab.start);
+    const slabEndMinutes = timeToMinutes(selectedSlab.end);
+
+    // Increment by 30 minutes
     for (
-      let hour = selectedSlab.startHour;
-      hour < selectedSlab.endHour;
-      hour++
+      let m = slabStartMinutes;
+      m < slabEndMinutes;
+      m += 30
     ) {
-      const timeStr = `${hour.toString().padStart(2, "0")}:00`;
+      const remainingDuration = (slabEndMinutes - m) / 60;
+      if (remainingDuration < minBookingDuration) break;
+
+      const timeStr = minutesToTime(m);
       times.push({
         time: timeStr,
         label: formatTimeDisplay(timeStr),
       });
     }
     return times;
-  }, [selectedSlab]);
+  }, [selectedSlab, minBookingDuration]);
 
   // Get available end times based on selected start time
   const getEndTimes = useCallback(() => {
     if (!selectedSlab || !startTime) return [];
 
-    const [startHour] = startTime.split(":").map(Number);
+    const startMinutes = timeToMinutes(startTime);
+    const slabEndMinutes = timeToMinutes(selectedSlab.end);
+    
     const times: { time: string; label: string; duration: number }[] = [];
 
-    // End time must be at least minBookingDuration hours after start
-    const minEndHour = startHour + minBookingDuration;
-    // End time cannot exceed slab end or maxBookingDuration
-    const maxEndHour = Math.min(
-      selectedSlab.endHour,
-      startHour + maxBookingDuration
+    // Valid end times must be:
+    // 1. At least minBookingDuration after start
+    // 2. At most maxBookingDuration after start
+    // 3. Not after slab end
+    // 4. In 30 min increments
+
+    const minEndMinutes = startMinutes + (minBookingDuration * 60);
+    const maxEndMinutes = Math.min(
+      slabEndMinutes,
+      startMinutes + (maxBookingDuration * 60)
     );
 
-    for (let hour = minEndHour; hour <= maxEndHour; hour++) {
-      const timeStr = `${hour.toString().padStart(2, "0")}:00`;
-      const duration = hour - startHour;
+    for (let m = minEndMinutes; m <= maxEndMinutes; m += 30) {
+      const timeStr = minutesToTime(m);
+      const duration = (m - startMinutes) / 60;
+      
       times.push({
         time: timeStr,
         label: formatTimeDisplay(timeStr),
@@ -313,14 +347,6 @@ export default function TimeStep() {
     }
     return times;
   }, [selectedSlab, startTime, minBookingDuration, maxBookingDuration]);
-
-  // Format time for display in 12-hour format
-  const formatTimeDisplay = (time: string) => {
-    const [hours] = time.split(":").map(Number);
-    const displayHour = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
-    const period = hours >= 12 ? "PM" : "AM";
-    return `${displayHour}:00 ${period}`;
-  };
 
   // Handle date change
   const handleDateChange = (newDate: string) => {
@@ -458,11 +484,12 @@ export default function TimeStep() {
   const endTimes = getEndTimes();
 
   // Calculate duration and price
+  // Calculate duration and price
   const getDuration = () => {
     if (!startTime || !endTime) return 0;
-    const [startHour] = startTime.split(":").map(Number);
-    const [endHour] = endTime.split(":").map(Number);
-    return endHour - startHour;
+    const startMinutes = timeToMinutes(startTime);
+    const endMinutes = timeToMinutes(endTime);
+    return (endMinutes - startMinutes) / 60;
   };
 
   const duration = getDuration();
