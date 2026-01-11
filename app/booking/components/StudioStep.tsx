@@ -122,10 +122,10 @@ export default function StudioStep() {
             </div>
             <div>
               <p className="text-xs font-semibold text-emerald-400 leading-none">
-                Instant discounts available
+                Earn cashback on every booking
               </p>
               <p className="text-[10px] text-emerald-400/80 leading-none mt-0.5">
-                Plus fixed cashback per hour
+                Join our Rolling Milestone program
               </p>
             </div>
           </div>

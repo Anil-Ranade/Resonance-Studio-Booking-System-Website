@@ -316,11 +316,10 @@ export function getStudioRate(
   }
 
   // Apply Sound Operator Discount
-  if (options.soundOperator === "Not Required") {
-    // Discount logic: ₹50 per hour discount
-    // Ensure we don't go below 0 (unlikely but safe)
-    return Math.max(0, baseRate - 50);
-  }
+  // Sound Operator discount disabled
+  // if (options.soundOperator === "Not Required") {
+  //   return Math.max(0, baseRate - 50);
+  // }
 
   return baseRate;
 }

@@ -100,89 +100,9 @@ export default function ReviewStep() {
     nextStep();
   };
 
-  const handleSoundOperatorSelect = (option: SoundOperatorOption) => {
-    // Recalculate rate with the new sound operator option
-    const rate = getStudioRate(draft.studio || "Studio A", draft.sessionType as any, {
-      karaokeOption: draft.karaokeOption || undefined,
-      liveOption: draft.liveOption || undefined,
-      bandEquipment: draft.bandEquipment,
-      recordingOption: draft.recordingOption || undefined,
-      soundOperator: option,
-    });
 
-    updateDraft({
-      soundOperator: option,
-      ratePerHour: rate,
-    });
-  };
 
-  const renderSoundOperatorSection = () => {
-     // No need to check session type again as we are in Review step, 
-     // but we should ensure it's applicable for the session type if needed.
-     // Effectively all types except 'Meetings / Classes' might use it, OR 
-     // following the previous logic: 
-     // Karaoke, Live, Band, Recording, Drum Practice all had it.
-     // Meetings/Classes did NOT have it in ParticipantsStep logic (it was skipped).
-     
-     // IMPORTANT: The original code showed it for:
-     // - Karaoke (if option selected)
-     // - Live (if option selected)
-     // - Band (if equipment selected)
-     // - Recording (if option selected)
-     // - Drum Practice (always)
-     
-     // It was NOT shown for "Meetings / Classes".
-     if (draft.sessionType === "Meetings / Classes") return null;
 
-     return (
-      <div className="mb-4">
-        <div className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-violet-500/10 border border-violet-500/20">
-          <AlertCircle className="w-4 h-4 text-violet-400 flex-shrink-0" />
-          <p className="text-xs text-violet-300">
-            Please select whether you need a Sound Operator for your session.
-          </p>
-        </div>
-
-        <h3 className="text-[10px] uppercase tracking-wider font-semibold text-zinc-400 mb-2">
-          Sound Operator
-        </h3>
-        
-        <div className="grid grid-cols-2 gap-2">
-          {(["Required", "Not Required"] as SoundOperatorOption[]).map((option) => (
-            <button
-              key={option}
-              onClick={() => handleSoundOperatorSelect(option)}
-              className={`p-2.5 rounded-lg border text-left transition-all ${
-                draft.soundOperator === option
-                  ? "bg-violet-500/20 border-violet-500"
-                  : "bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600"
-              }`}
-            >
-              <div className="flex flex-col gap-0.5">
-                <div className="flex items-center justify-between">
-                  <span className={`text-xs font-semibold ${
-                    draft.soundOperator === option ? "text-white" : "text-zinc-300"
-                  }`}>
-                    {option}
-                  </span>
-                  {option === "Not Required" && (
-                    <span className="text-[9px] font-bold bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full">
-                      -₹50/hr
-                    </span>
-                  )}
-                </div>
-                <p className="text-[10px] text-zinc-400 leading-tight">
-                  {option === "Required" 
-                    ? "Continuous assistance" 
-                    : "I'll manage audio"}
-                </p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  };
 
   return (
     <StepLayout
@@ -297,8 +217,7 @@ export default function ReviewStep() {
           </div>
         </div>
 
-        {/* Sound Operator Section */}
-        {renderSoundOperatorSection()}
+
 
         {/* Payment Summary */}
         <div
@@ -309,23 +228,7 @@ export default function ReviewStep() {
           }`}
         >
           <div className="space-y-0.5">
-            {/* Base Rate Calculation */}
-            {draft.soundOperator === "Not Required" ? (
-              <>
-                 <div className="flex items-center justify-between">
-                  <span className="text-zinc-400 text-xs">Standard Rate</span>
-                  <span className="text-zinc-400 text-xs line-through">
-                    ₹{(draft.ratePerHour + 50).toLocaleString("en-IN")}/hr
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-green-400 text-xs">No Sound Op Discount</span>
-                  <span className="text-green-400 text-xs">
-                    -₹50/hr
-                  </span>
-                </div>
-              </>
-            ) : null}
+
 
             <div className="flex items-center justify-between">
               <span className="text-zinc-400 text-xs text-[10px] uppercase font-medium">rate x duration</span>
@@ -348,24 +251,10 @@ export default function ReviewStep() {
                </span>
             </div>
             
-            {draft.soundOperator === "Not Required" && (
-              <div className="flex items-center justify-between">
-                <span className="text-green-400 text-xs">Total Discount</span>
-                <span className="text-green-400 text-xs">
-                  -₹{(50 * draft.duration).toLocaleString("en-IN")}
-                </span>
-              </div>
-            )}
+            {/* Sound Operator discount support removed */}
 
             {/* Prompt Payment Discount */}
-            {draft.isPromptPayment && (
-              <div className="flex items-center justify-between">
-                <span className="text-amber-400 text-xs">Pay Now Discount</span>
-                <span className="text-amber-400 text-xs">
-                  -₹{(20 * draft.duration).toLocaleString("en-IN")}
-                </span>
-              </div>
-            )}
+            {/* Prompt payment discount support removed */}
 
             <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-dashed border-white/10">
               <span className="text-white font-medium text-xs">
@@ -376,51 +265,13 @@ export default function ReviewStep() {
                   draft.isEditMode ? "text-blue-400" : "text-violet-400"
                 }`}
               >
-                ₹{(totalAmount - (draft.isPromptPayment ? 20 * draft.duration : 0)).toLocaleString("en-IN")}
+                ₹{totalAmount.toLocaleString("en-IN")}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Prompt Payment Option */}
-        {!draft.isEditMode && (
-          <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
-            <label className="flex items-start gap-2 cursor-pointer">
-              <div className="flex items-center h-4 mt-0.5">
-                <input
-                  type="checkbox"
-                  checked={draft.isPromptPayment}
-                  onChange={(e) => updateDraft({ isPromptPayment: e.target.checked })}
-                  className="w-3.5 h-3.5 rounded border-amber-500/50 bg-amber-900/20 text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <CreditCard className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="text-xs font-bold text-amber-400">Pay Now & Save ₹{20 * draft.duration}</span>
-                </div>
-                
-                {draft.isPromptPayment && (
-                  <div className="mt-2 p-2 bg-black/40 rounded-lg border border-amber-500/20">
-                    <div className="flex gap-1.5 items-start mb-2 text-red-400">
-                      <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                      <p className="text-[10px] font-medium leading-tight">STRICTLY NON-CANCELLABLE. Rescheduling allowed 24h prior.</p>
-                    </div>
-                    <div className="aspect-square bg-white p-1 rounded-md w-40 mx-auto mb-1 relative h-40">
-                       <Image
-                        src="/public-qr.jpeg"
-                        alt="UPI QR Code"
-                        fill
-                        className="object-contain p-1"
-                       />
-                    </div>
-                    <p className="text-[9px] text-zinc-400 text-center">Scan to pay securely</p>
-                  </div>
-                )}
-              </div>
-            </label>
-          </div>
-        )}
+        {/* Prompt Payment Option Removed */}
 
         {/* Note */}
         {draft.isEditMode && (

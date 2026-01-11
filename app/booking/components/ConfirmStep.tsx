@@ -98,13 +98,10 @@ export default function ConfirmStep() {
           labels[draft.recordingOption] || draft.sessionType || "";
       }
 
-      // Append Sound Operator status
-      if (draft.soundOperator) {
-        sessionDetails += ` | Sound Operator: ${draft.soundOperator}`;
-        if (draft.soundOperator === "Not Required") {
-          sessionDetails += " (Discount Applied)";
-        }
-      }
+      // Sound Operator details removed
+      // if (draft.soundOperator) {
+      //   sessionDetails += ` | Sound Operator: ${draft.soundOperator}`;
+      // }
 
       // Select API endpoint based on mode
       const getApiUrl = () => {
@@ -141,9 +138,7 @@ export default function ConfirmStep() {
           date: draft.date,
           start_time: draft.selectedSlot?.start,
           end_time: draft.selectedSlot?.end,
-          rate_per_hour: draft.isPromptPayment
-            ? draft.ratePerHour - 20
-            : draft.ratePerHour,
+          rate_per_hour: draft.ratePerHour,
           is_prompt_payment: draft.isPromptPayment,
           original_booking_id: isModification
             ? draft.originalBookingId

@@ -209,32 +209,7 @@ export default function RateCardPage() {
       icon: <Coins className="w-8 h-8" />,
       iconBg: "bg-yellow-500/20 text-yellow-400",
     },
-    {
-      name: 'Sound Engineering "Flex-Service" Discount',
-      description:
-        "For experienced artists who prefer to handle their own sessions.",
-      benefit: "Instant ₹50 per hour discount on booking rates.",
-      details: [
-        "Select 'Sound Operator Not Required' during booking.",
-        "Replaces previous checkbox system for clarity.",
-        "Invoice explicitly highlights the applied discount.",
-      ],
-      icon: <Sliders className="w-8 h-8" />,
-      iconBg: "bg-blue-500/20 text-blue-400",
-    },
-    {
-      name: "Prompt Payment Incentive",
-      description:
-        "Streamline operations and reward advance planning with our 'Priority Payment' tier.",
-      benefit: "Instant ₹20 per hour discount for payments at booking.",
-      details: [
-        "Choose 'Prompt Payment' to pay via UPI QR scan immediately.",
-        "Non-refundable (No Cancellation) due to significant discount.",
-        "Flexible 24-hour rescheduling policy remains available.",
-      ],
-      icon: <Zap className="w-8 h-8" />,
-      iconBg: "bg-emerald-500/20 text-emerald-400",
-    },
+
   ];
 
   // Important notes

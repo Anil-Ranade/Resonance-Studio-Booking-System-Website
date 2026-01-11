@@ -113,9 +113,8 @@ export default function HowToBookPage() {
       description: "Check all your selections",
       details: [
         "See complete summary: session type, studio, date, time, participants",
-        "View itemized pricing with all discounts applied",
-        "Option to select 'Sound Operator Not Required' for ₹50/hr discount",
-        "Choose payment mode: Pay Later (at studio) or Prompt Payment (₹20/hr off)",
+        "View itemized pricing",
+        "Confirm your booking details",
       ],
       icon: <Eye className="w-6 h-6" />,
       color: "amber",
@@ -586,83 +585,7 @@ export default function HowToBookPage() {
               </ul>
             </motion.div>
 
-            {/* Flex-Service Discount */}
-            <motion.div
-              className="glass rounded-2xl p-6 border border-blue-500/20"
-              whileHover={{ y: -5 }}
-            >
-              <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 mb-4">
-                <Headphones className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">
-                Flex-Service Discount
-              </h3>
-              <p className="text-zinc-400 text-sm mb-4">
-                For experienced artists handling their own sessions
-              </p>
-              <div className="bg-blue-500/10 rounded-xl p-3 mb-4">
-                <p className="text-blue-400 font-semibold text-sm">
-                  Instant ₹50/hour discount!
-                </p>
-              </div>
-              <ul className="space-y-2 text-sm text-zinc-300">
-                <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-                  Select "Sound Operator Not Required"
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-                  Discount applied automatically
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-                  Clearly shown on invoice
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-                  Perfect for self-sufficient musicians
-                </li>
-              </ul>
-            </motion.div>
 
-            {/* Prompt Payment Incentive */}
-            <motion.div
-              className="glass rounded-2xl p-6 border border-emerald-500/20"
-              whileHover={{ y: -5 }}
-            >
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">
-                <RefreshCw className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">
-                Prompt Payment Incentive
-              </h3>
-              <p className="text-zinc-400 text-sm mb-4">
-                Reward for advance planning and payment
-              </p>
-              <div className="bg-emerald-500/10 rounded-xl p-3 mb-4">
-                <p className="text-emerald-400 font-semibold text-sm">
-                  Instant ₹20/hour discount!
-                </p>
-              </div>
-              <ul className="space-y-2 text-sm text-zinc-300">
-                <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                  Choose "Prompt Payment" option
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                  Pay via UPI QR at booking
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                  Non-refundable (no cancellation)
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                  24-hour rescheduling available
-                </li>
-              </ul>
-            </motion.div>
           </div>
 
           <motion.div
