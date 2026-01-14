@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronLeft, ChevronRight, Calendar, Clock, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Calendar, Clock, Loader2, CalendarDays } from "lucide-react";
 
 interface BookingSlot {
   start_time: string;
@@ -23,6 +23,7 @@ export default function AvailabilityPage() {
   const [startHour, setStartHour] = useState(8);
   const [endHour, setEndHour] = useState(22);
   const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const studios = ["Studio A", "Studio B", "Studio C"];
 
@@ -240,19 +241,6 @@ export default function AvailabilityPage() {
     });
   };
 
-  // Handle date input change
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newDate = new Date(e.target.value);
-    if (!isNaN(newDate.getTime())) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const maxDate = getMaxDate();
-      if (newDate >= today && newDate <= maxDate) {
-        setSelectedDate(newDate);
-      }
-    }
-  };
-
   return (
     <div className="h-screen w-screen bg-[#0a0a0f] flex flex-col overflow-hidden">
       {/* Header */}
@@ -270,19 +258,6 @@ export default function AvailabilityPage() {
 
         {/* Date Navigation */}
         <div className="flex items-center gap-1 md:gap-2">
-          {/* Date picker - hidden on mobile */}
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg">
-            <Calendar className="w-4 h-4 text-zinc-400" />
-            <input
-              type="date"
-              value={selectedDate.toISOString().split("T")[0]}
-              onChange={handleDateChange}
-              min={new Date().toISOString().split("T")[0]}
-              max={getMaxDate().toISOString().split("T")[0]}
-              className="bg-transparent text-white text-sm outline-none cursor-pointer"
-            />
-          </div>
-
           <button
             onClick={goToPreviousDay}
             disabled={!canGoPrevious()}
@@ -292,18 +267,71 @@ export default function AvailabilityPage() {
             <ChevronLeft className="w-5 h-5" />
           </button>
 
-          {/* Date Display - Mobile */}
-          <div className="flex flex-col items-center min-w-[100px] md:min-w-[280px]">
-            <span className="hidden md:block text-lg font-semibold text-white">
-              {formatDisplayDate()}
-            </span>
-            <span className="md:hidden text-sm font-semibold text-white">
-              {formatDisplayDateShort()}
-            </span>
-            {isToday && (
-              <span className="text-[10px] md:text-xs text-amber-400 font-medium">
-                Today
+          {/* Date Display with Calendar Picker */}
+          <div className="relative">
+            {/* Clickable Date Display */}
+            <button
+              onClick={() => setShowDatePicker(!showDatePicker)}
+              className="flex flex-col items-center min-w-[100px] md:min-w-[280px] hover:bg-zinc-800/50 px-2 md:px-4 py-1 rounded-lg transition-colors group"
+            >
+              <span className="hidden md:flex items-center gap-2 text-lg font-semibold text-white group-hover:text-violet-300 transition-colors">
+                {formatDisplayDate()}
+                <CalendarDays className="w-5 h-5 text-zinc-400 group-hover:text-violet-400 transition-colors" />
               </span>
+              <span className="md:hidden flex items-center gap-1.5 text-sm font-semibold text-white group-hover:text-violet-300 transition-colors">
+                {formatDisplayDateShort()}
+                <CalendarDays className="w-4 h-4 text-zinc-400 group-hover:text-violet-400 transition-colors" />
+              </span>
+              {isToday && (
+                <span className="text-[10px] md:text-xs text-amber-400 font-medium">
+                  Today
+                </span>
+              )}
+            </button>
+
+            {/* Date Picker Dropdown */}
+            {showDatePicker && (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-4 min-w-[260px]">
+                <div className="flex flex-col gap-3">
+                  <label className="text-sm text-zinc-400 font-medium">Select a date</label>
+                  <input
+                    type="date"
+                    value={selectedDate.toISOString().split("T")[0]}
+                    min={new Date().toISOString().split("T")[0]}
+                    max={getMaxDate().toISOString().split("T")[0]}
+                    onChange={(e) => {
+                      const newDate = new Date(e.target.value);
+                      if (!isNaN(newDate.getTime())) {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const maxDate = getMaxDate();
+                        if (newDate >= today && newDate <= maxDate) {
+                          setSelectedDate(newDate);
+                          setShowDatePicker(false);
+                        }
+                      }
+                    }}
+                    className="w-full bg-zinc-800 border border-zinc-600 rounded-lg px-4 py-3 text-white text-base outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent cursor-pointer"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedDate(new Date());
+                        setShowDatePicker(false);
+                      }}
+                      className="flex-1 px-3 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      Today
+                    </button>
+                    <button
+                      onClick={() => setShowDatePicker(false)}
+                      className="flex-1 px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 

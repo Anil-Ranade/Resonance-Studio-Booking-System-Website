@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Loader2, ChevronLeft, ChevronRight, Lock, Eye, EyeOff, X, Clock, User, Phone, Music, Calendar, IndianRupee, FileText, Users } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Lock, Eye, EyeOff, X, Clock, User, Phone, Music, Calendar, IndianRupee, FileText, Users, CalendarDays } from "lucide-react";
 
 interface Booking {
   id: string;
@@ -42,6 +42,7 @@ export default function DisplayPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showPhoneNumbers, setShowPhoneNumbers] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Always show all three studios
   const studios = ["Studio A", "Studio B", "Studio C"];
@@ -445,20 +446,66 @@ export default function DisplayPage() {
             <ChevronLeft className="w-5 h-5 md:w-8 md:h-8" />
           </button>
 
-          {/* Date Display - Responsive */}
-          <div className="flex flex-col items-center min-w-[120px] md:min-w-[400px]">
-            {/* Desktop date */}
-            <span className="hidden md:block text-2xl lg:text-3xl font-bold text-white">
-              {formatDisplayDate()}
-            </span>
-            {/* Mobile date */}
-            <span className="md:hidden text-base font-bold text-white">
-              {formatDisplayDateShort()}
-            </span>
-            {isToday && (
-              <span className="text-xs md:text-sm text-amber-400 font-medium mt-0.5 md:mt-1">
-                Today
+          {/* Date Display with Calendar Picker - Responsive */}
+          <div className="flex flex-col items-center min-w-[120px] md:min-w-[400px] relative">
+            {/* Clickable Date Display */}
+            <button
+              onClick={() => setShowDatePicker(!showDatePicker)}
+              className="flex flex-col items-center hover:bg-zinc-800/50 px-3 py-1 rounded-lg transition-colors group"
+            >
+              {/* Desktop date */}
+              <span className="hidden md:flex items-center gap-2 text-2xl lg:text-3xl font-bold text-white group-hover:text-violet-300 transition-colors">
+                {formatDisplayDate()}
+                <CalendarDays className="w-6 h-6 text-zinc-400 group-hover:text-violet-400 transition-colors" />
               </span>
+              {/* Mobile date */}
+              <span className="md:hidden flex items-center gap-1.5 text-base font-bold text-white group-hover:text-violet-300 transition-colors">
+                {formatDisplayDateShort()}
+                <CalendarDays className="w-4 h-4 text-zinc-400 group-hover:text-violet-400 transition-colors" />
+              </span>
+              {isToday && (
+                <span className="text-xs md:text-sm text-amber-400 font-medium mt-0.5 md:mt-1">
+                  Today
+                </span>
+              )}
+            </button>
+
+            {/* Date Picker Dropdown */}
+            {showDatePicker && (
+              <div className="absolute top-full mt-2 z-50 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-4 min-w-[260px]">
+                <div className="flex flex-col gap-3">
+                  <label className="text-sm text-zinc-400 font-medium">Select a date</label>
+                  <input
+                    type="date"
+                    value={selectedDate.toISOString().split("T")[0]}
+                    onChange={(e) => {
+                      const newDate = new Date(e.target.value);
+                      if (!isNaN(newDate.getTime())) {
+                        setSelectedDate(newDate);
+                        setShowDatePicker(false);
+                      }
+                    }}
+                    className="w-full bg-zinc-800 border border-zinc-600 rounded-lg px-4 py-3 text-white text-base outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent cursor-pointer"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedDate(new Date());
+                        setShowDatePicker(false);
+                      }}
+                      className="flex-1 px-3 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      Today
+                    </button>
+                    <button
+                      onClick={() => setShowDatePicker(false)}
+                      className="flex-1 px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 
