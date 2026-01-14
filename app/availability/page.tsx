@@ -1,36 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { ArrowLeft, ChevronLeft, ChevronRight, Calendar, Clock, Loader2 } from "lucide-react";
-
-// Helper function to safely parse JSON responses
-async function safeJsonParse(response: Response) {
-  const text = await response.text();
-  try {
-    return JSON.parse(text);
-  } catch {
-    console.error('Failed to parse response as JSON:', text.substring(0, 200));
-    throw new Error('Server returned an invalid response. Please try again.');
-  }
-}
-
-type SlotStatus = 'available' | 'booked' | 'past' | 'unavailable';
-
-type AvailabilityData = {
-  [date: string]: {
-    [studio: string]: {
-      [time: string]: SlotStatus;
-    };
-  };
-};
-
-interface TimeSlot {
-  start: string;
-  end: string;
-  available?: boolean;
-}
 
 interface BookingSlot {
   start_time: string;
@@ -38,41 +10,24 @@ interface BookingSlot {
   studio: string;
 }
 
-interface AvailabilityResponse {
-  slots: TimeSlot[];
-  settings?: {
-    minBookingDuration: number;
-    maxBookingDuration: number;
-    advanceBookingDays: number;
-  };
+interface BookingBlock {
+  start: number;
+  end: number;
+  studio: string;
 }
 
 export default function AvailabilityPage() {
-  const [startDate, setStartDate] = useState(new Date());
-  const [availability, setAvailability] = useState<AvailabilityData>({});
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [bookings, setBookings] = useState<BookingSlot[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
+  const [startHour, setStartHour] = useState(8);
+  const [endHour, setEndHour] = useState(22);
   const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
-  const [defaultOpenTime, setDefaultOpenTime] = useState('08:00');
-  const [defaultCloseTime, setDefaultCloseTime] = useState('22:00');
 
-  // Fetch booking settings on component mount
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const response = await fetch('/api/settings');
-        if (response.ok) {
-          const data = await response.json();
-          setAdvanceBookingDays(data.advanceBookingDays || 30);
-          setDefaultOpenTime(data.defaultOpenTime || '08:00');
-          setDefaultCloseTime(data.defaultCloseTime || '22:00');
-        }
-      } catch (err) {
-        console.error('Error fetching booking settings:', err);
-      }
-    };
-    fetchSettings();
-  }, []);
+  const studios = ["Studio A", "Studio B", "Studio C"];
+
+  // Format selected date for API
+  const formattedDate = selectedDate.toISOString().split("T")[0];
 
   // Calculate max date based on advance booking days
   const getMaxDate = useCallback(() => {
@@ -81,511 +36,440 @@ export default function AvailabilityPage() {
     return maxDate;
   }, [advanceBookingDays]);
 
-  // Detect mobile screen size
+  // Fetch settings on mount
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch("/api/settings");
+        if (response.ok) {
+          const data = await response.json();
+          const openHour = parseInt(
+            (data.defaultOpenTime || "08:00").split(":")[0],
+            10
+          );
+          const closeHour = parseInt(
+            (data.defaultCloseTime || "22:00").split(":")[0],
+            10
+          );
+          setStartHour(openHour);
+          setEndHour(closeHour);
+          setAdvanceBookingDays(data.advanceBookingDays || 30);
+        }
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+      }
+    };
+    fetchSettings();
   }, []);
 
-  const studios = [
-    { id: "Studio A", name: "Studio A", color: "bg-blue-500", key: "A" },
-    { id: "Studio B", name: "Studio B", color: "bg-yellow-700", key: "B" },
-    { id: "Studio C", name: "Studio C", color: "bg-emerald-500", key: "C" },
-  ];
-
-  // Generate time slots dynamically based on admin settings
-  const generateTimeSlots = useCallback(() => {
-    const slots: { label: string; start: string; end: string }[] = [];
-    const openHour = parseInt(defaultOpenTime.split(':')[0], 10);
-    const closeHour = parseInt(defaultCloseTime.split(':')[0], 10);
-    
-    for (let hour = openHour; hour < closeHour; hour++) {
-      const start = `${hour.toString().padStart(2, '0')}:00`;
-      const end = `${(hour + 1).toString().padStart(2, '0')}:00`;
-      slots.push({ label: `${start} - ${end}`, start, end });
-    }
-    return slots;
-  }, [defaultOpenTime, defaultCloseTime]);
-
-  const timeSlots = generateTimeSlots();
-
-  // Get dates - 1 for mobile, 3 for desktop
-  const getDates = useCallback(() => {
-    const numDays = isMobile ? 1 : 3;
-    const dates = [];
-    for (let i = 0; i < numDays; i++) {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + i);
-      dates.push(date);
-    }
-    return dates;
-  }, [startDate, isMobile]);
-
-  const dates = getDates();
-
-  const formatDateForDisplay = (date: Date) => {
-    return {
-      day: date.getDate(),
-      month: date.toLocaleDateString('en-US', { month: 'short' }),
-    };
-  };
-
-  const formatDateKey = (date: Date) => {
-    return date.toISOString().split('T')[0];
-  };
-
-  const goToPreviousDays = () => {
-    const newDate = new Date(startDate);
-    const daysToMove = isMobile ? 1 : 3;
-    newDate.setDate(startDate.getDate() - daysToMove);
-    // Don't go before today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (newDate >= today) {
-      setStartDate(newDate);
+  // Fetch bookings
+  const fetchBookings = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/display/bookings?date=${formattedDate}`);
+      if (response.ok) {
+        const data = await response.json();
+        setBookings(data.bookings || []);
+      }
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const goToNextDays = () => {
-    const newDate = new Date(startDate);
-    const daysToMove = isMobile ? 1 : 3;
-    newDate.setDate(startDate.getDate() + daysToMove);
-    // Don't go beyond the advance booking limit
-    const maxDate = getMaxDate();
-    if (newDate <= maxDate) {
-      setStartDate(newDate);
-    }
-  };
+  useEffect(() => {
+    fetchBookings();
+  }, [formattedDate]);
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newDate = new Date(e.target.value);
-    if (!isNaN(newDate.getTime())) {
-      // Ensure date is within allowed range
+  // Navigate to previous day
+  const goToPreviousDay = () => {
+    setSelectedDate((prev) => {
+      const newDate = new Date(prev);
+      newDate.setDate(newDate.getDate() - 1);
+      // Don't go before today
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const maxDate = getMaxDate();
-      if (newDate >= today && newDate <= maxDate) {
-        setStartDate(newDate);
+      if (newDate >= today) {
+        return newDate;
       }
-    }
+      return prev;
+    });
   };
 
-  // Helper function to check if a time slot is in the past
-  const isSlotInPast = (date: Date, timeStart: string): boolean => {
-    const now = new Date();
-    const slotDate = new Date(date);
-    
-    // If the date is before today, it's in the past
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    slotDate.setHours(0, 0, 0, 0);
-    
-    if (slotDate < today) {
-      return true;
-    }
-    
-    // If it's today, check the time
-    if (slotDate.getTime() === today.getTime()) {
-      const [hours, minutes] = timeStart.split(':').map(Number);
-      const slotTimeInMinutes = hours * 60 + minutes;
-      const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
-      
-      // Slot is past if its start time has already passed
-      return slotTimeInMinutes <= currentTimeInMinutes;
-    }
-    
-    return false;
-  };
-
-  // Check if a slot is available
-  const getSlotStatus = (date: Date, studioKey: string, timeSlot: { label: string; start: string }): SlotStatus => {
-    const dateKey = formatDateKey(date);
-    
-    // First check if slot is in the past
-    if (isSlotInPast(date, timeSlot.start)) {
-      return 'past';
-    }
-    
-    // Then check availability data
-    const status = availability[dateKey]?.[studioKey]?.[timeSlot.label];
-    if (status) {
-      return status;
-    }
-    
-    return 'unavailable';
-  };
-
-  // Fetch availability from API
-  useEffect(() => {
-    const fetchAvailability = async () => {
-      setLoading(true);
-      try {
-        const currentDates = getDates();
-        const availabilityData: AvailabilityData = {};
-        
-        // Initialize empty data structure
-        currentDates.forEach(date => {
-          const dateKey = formatDateKey(date);
-          availabilityData[dateKey] = {
-            A: {},
-            B: {},
-            C: {},
-          };
-        });
-
-        // Fetch availability and bookings for each studio and date in parallel
-        const fetchPromises: Promise<{ studioId: string; studioKey: string; dateKey: string; slots: TimeSlot[] }>[] = [];
-        const bookingPromises: Promise<{ dateKey: string; bookings: BookingSlot[] }>[] = [];
-        
-        for (const studio of studios) {
-          for (const date of currentDates) {
-            const dateKey = formatDateKey(date);
-            fetchPromises.push(
-              fetch(`/api/availability?studio=${encodeURIComponent(studio.id)}&date=${dateKey}`)
-                .then(async (response) => {
-                  if (response.ok) {
-                    const data: AvailabilityResponse = await safeJsonParse(response);
-                    // Handle both old format (array) and new format (object with slots)
-                    const slots = Array.isArray(data) ? data : (data.slots || []);
-                    return { studioId: studio.id, studioKey: studio.key, dateKey, slots };
-                  }
-                  return { studioId: studio.id, studioKey: studio.key, dateKey, slots: [] };
-                })
-                .catch((err) => {
-                  console.error(`Error fetching availability for ${studio.id} on ${dateKey}:`, err);
-                  return { studioId: studio.id, studioKey: studio.key, dateKey, slots: [] };
-                })
-            );
-          }
-        }
-        
-        // Fetch bookings for each date using display bookings endpoint
-        for (const date of currentDates) {
-          const dateKey = formatDateKey(date);
-          bookingPromises.push(
-            fetch(`/api/display/bookings?date=${dateKey}`)
-              .then(async (response) => {
-                if (response.ok) {
-                  const data = await safeJsonParse(response);
-                  return { dateKey, bookings: data.bookings || [] };
-                }
-                return { dateKey, bookings: [] };
-              })
-              .catch((err) => {
-                console.error(`Error fetching bookings for ${dateKey}:`, err);
-                return { dateKey, bookings: [] };
-              })
-          );
-        }
-        
-        const [availabilityResults, bookingResults] = await Promise.all([
-          Promise.all(fetchPromises),
-          Promise.all(bookingPromises)
-        ]);
-        
-        // Create a map of booked slots
-        const bookedSlotsMap: { [key: string]: boolean } = {};
-        bookingResults.forEach(({ dateKey, bookings }) => {
-          bookings.forEach((booking: BookingSlot) => {
-            // Map studio name to key
-            const studioKey = booking.studio === 'Studio A' ? 'A' : 
-                              booking.studio === 'Studio B' ? 'B' : 
-                              booking.studio === 'Studio C' ? 'C' : '';
-            if (studioKey) {
-              // Mark all time slots that overlap with this booking as booked
-              timeSlots.forEach(slot => {
-                const slotStartMinutes = parseInt(slot.start.split(':')[0]) * 60 + parseInt(slot.start.split(':')[1]);
-                const slotEndMinutes = parseInt(slot.end.split(':')[0]) * 60 + parseInt(slot.end.split(':')[1]);
-                const bookingStartMinutes = parseInt(booking.start_time.split(':')[0]) * 60 + parseInt(booking.start_time.split(':')[1]);
-                const bookingEndMinutes = parseInt(booking.end_time.split(':')[0]) * 60 + parseInt(booking.end_time.split(':')[1]);
-                
-                // Check if slot overlaps with booking
-                if (slotStartMinutes < bookingEndMinutes && slotEndMinutes > bookingStartMinutes) {
-                  bookedSlotsMap[`${dateKey}-${studioKey}-${slot.label}`] = true;
-                }
-              });
-            }
-          });
-        });
-        
-        // Process availability results - the API already considers bookings
-        availabilityResults.forEach(({ studioKey, dateKey, slots }) => {
-          timeSlots.forEach(timeSlot => {
-            const slotKey = `${dateKey}-${studioKey}-${timeSlot.label}`;
-            
-            // First check if this slot is booked from display bookings endpoint
-            if (bookedSlotsMap[slotKey]) {
-              availabilityData[dateKey][studioKey][timeSlot.label] = 'booked';
-            } else {
-              // Check slot status from availability API
-              const matchingSlot = slots.find(
-                (slot: TimeSlot) => slot.start === timeSlot.start && slot.end === timeSlot.end
-              );
-              
-              if (matchingSlot) {
-                // If the slot has an 'available' property, use it
-                // If available is false, it means the slot is booked or unavailable
-                if (matchingSlot.available === false) {
-                  availabilityData[dateKey][studioKey][timeSlot.label] = 'booked';
-                } else {
-                  availabilityData[dateKey][studioKey][timeSlot.label] = 'available';
-                }
-              } else {
-                availabilityData[dateKey][studioKey][timeSlot.label] = 'unavailable';
-              }
-            }
-          });
-        });
-        
-        setAvailability(availabilityData);
-      } catch (error) {
-        console.error('Error fetching availability:', error);
+  // Navigate to next day
+  const goToNextDay = () => {
+    setSelectedDate((prev) => {
+      const newDate = new Date(prev);
+      newDate.setDate(newDate.getDate() + 1);
+      // Don't go beyond advance booking limit
+      if (newDate <= getMaxDate()) {
+        return newDate;
       }
-      setLoading(false);
-    };
+      return prev;
+    });
+  };
 
-    fetchAvailability();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startDate, isMobile]);
-
+  // Check if can navigate
   const canGoPrevious = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const prevDate = new Date(startDate);
-    const daysToMove = isMobile ? 1 : 3;
-    prevDate.setDate(startDate.getDate() - daysToMove);
+    const prevDate = new Date(selectedDate);
+    prevDate.setDate(selectedDate.getDate() - 1);
     return prevDate >= today;
   };
 
   const canGoNext = () => {
-    const maxDate = getMaxDate();
-    const nextDate = new Date(startDate);
-    const daysToMove = isMobile ? 1 : 3;
-    nextDate.setDate(startDate.getDate() + daysToMove);
-    return nextDate <= maxDate;
+    const nextDate = new Date(selectedDate);
+    nextDate.setDate(selectedDate.getDate() + 1);
+    return nextDate <= getMaxDate();
   };
 
-  // Get the max date as ISO string for the date input
-  const getMaxDateString = () => {
-    return getMaxDate().toISOString().split('T')[0];
+  // Check if selected date is today
+  const isToday = useMemo(() => {
+    const today = new Date();
+    const todayString = today.toISOString().split("T")[0];
+    const selectedString = selectedDate.toISOString().split("T")[0];
+    return todayString === selectedString;
+  }, [selectedDate]);
+
+  // Build booking blocks for each studio
+  const studioBlocks = useMemo(() => {
+    const result: Record<string, BookingBlock[]> = {};
+
+    studios.forEach((studio) => {
+      const studioBookings = bookings
+        .filter((b) => b.studio === studio)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+      const blocks: BookingBlock[] = [];
+      let currentBlock: BookingBlock | null = null;
+
+      studioBookings.forEach((b) => {
+        const start = parseInt(b.start_time.split(":")[0], 10);
+        const end = parseInt(b.end_time.split(":")[0], 10);
+
+        if (currentBlock && currentBlock.end === start) {
+          // Merge consecutive bookings
+          currentBlock.end = end;
+        } else {
+          if (currentBlock) blocks.push(currentBlock);
+          currentBlock = { start, end, studio };
+        }
+      });
+
+      if (currentBlock) blocks.push(currentBlock);
+      result[studio] = blocks;
+    });
+
+    return result;
+  }, [bookings, studios]);
+
+  // Time slots based on admin settings
+  const timeSlots = useMemo(() => {
+    return Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
+  }, [startHour, endHour]);
+
+  // Get current time
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    return () => clearInterval(timer);
+  }, []);
+
+  const currentHour = currentTime.getHours();
+  const currentMinutes = currentTime.getMinutes();
+
+  // Calculate current time position
+  const getCurrentTimePosition = () => {
+    const totalMinutes = (currentHour - startHour) * 60 + currentMinutes;
+    const totalDuration = (endHour - startHour) * 60;
+    return (totalMinutes / totalDuration) * 100;
+  };
+
+  const currentTimePosition = getCurrentTimePosition();
+  const showCurrentTimeLine =
+    isToday && currentHour >= startHour && currentHour < endHour;
+
+  // Check if a time slot is in the past
+  const isPastSlot = (hour: number) => {
+    if (!isToday) return false;
+    return hour < currentHour;
+  };
+
+  const getStudioColor = (studio: string) => {
+    if (studio === "Studio A") return "bg-blue-500";
+    if (studio === "Studio B") return "bg-yellow-700";
+    if (studio === "Studio C") return "bg-emerald-500";
+    return "bg-zinc-600";
+  };
+
+  // Format hour to 12-hour format
+  const formatTimeLabel = (hour: number) => {
+    if (hour === 12) return "12 PM";
+    if (hour < 12) return `${hour} AM`;
+    return `${hour - 12} PM`;
+  };
+
+  // Short format for mobile
+  const formatTimeLabelShort = (hour: number) => {
+    if (hour === 12) return "12P";
+    if (hour < 12) return `${hour}A`;
+    return `${hour - 12}P`;
+  };
+
+  // Format date for display
+  const formatDisplayDate = () => {
+    return selectedDate.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  // Short date for mobile
+  const formatDisplayDateShort = () => {
+    return selectedDate.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  // Handle date input change
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = new Date(e.target.value);
+    if (!isNaN(newDate.getTime())) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const maxDate = getMaxDate();
+      if (newDate >= today && newDate <= maxDate) {
+        setSelectedDate(newDate);
+      }
+    }
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] flex flex-col py-2 px-2 md:py-4 md:px-4 overflow-hidden">
-      <div className="max-w-6xl mx-auto w-full flex flex-col h-full overflow-hidden">
-        {/* Compact Header */}
-        <motion.div 
-          className="mb-2 md:mb-3 flex-shrink-0"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+    <div className="h-screen w-screen bg-[#0a0a0f] flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="h-14 md:h-16 flex items-center justify-between bg-zinc-900/50 border-b border-zinc-800 flex-shrink-0 px-3 md:px-6">
+        {/* Back button and title */}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/home"
+            className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 md:w-5 md:h-5" />
+          </Link>
+          <h1 className="text-lg md:text-xl font-bold text-white">Availability</h1>
+        </div>
+
+        {/* Date Navigation */}
+        <div className="flex items-center gap-1 md:gap-2">
+          {/* Date picker - hidden on mobile */}
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg">
+            <Calendar className="w-4 h-4 text-zinc-400" />
+            <input
+              type="date"
+              value={selectedDate.toISOString().split("T")[0]}
+              onChange={handleDateChange}
+              min={new Date().toISOString().split("T")[0]}
+              max={getMaxDate().toISOString().split("T")[0]}
+              className="bg-transparent text-white text-sm outline-none cursor-pointer"
+            />
+          </div>
+
+          <button
+            onClick={goToPreviousDay}
+            disabled={!canGoPrevious()}
+            className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Previous day"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          {/* Date Display - Mobile */}
+          <div className="flex flex-col items-center min-w-[100px] md:min-w-[280px]">
+            <span className="hidden md:block text-lg font-semibold text-white">
+              {formatDisplayDate()}
+            </span>
+            <span className="md:hidden text-sm font-semibold text-white">
+              {formatDisplayDateShort()}
+            </span>
+            {isToday && (
+              <span className="text-[10px] md:text-xs text-amber-400 font-medium">
+                Today
+              </span>
+            )}
+          </div>
+
+          <button
+            onClick={goToNextDay}
+            disabled={!canGoNext()}
+            className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Next day"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Book button */}
+        <Link
+          href="/booking/new"
+          className="hidden md:flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors"
         >
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4">
-            <div className="flex items-center gap-4">
-              <Link 
-                href="/home"
-                className="inline-flex items-center gap-1 text-zinc-400 hover:text-white transition-colors text-sm"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Back</span>
-              </Link>
-              <h1 className="text-xl md:text-2xl font-bold text-white">Studio Availability</h1>
+          <Calendar className="w-4 h-4" />
+          Book Now
+        </Link>
+        <Link
+          href="/booking/new"
+          className="md:hidden p-2 bg-violet-600 hover:bg-violet-500 text-white rounded-lg transition-colors"
+        >
+          <Calendar className="w-5 h-5" />
+        </Link>
+      </div>
+
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-12 h-12 text-violet-400 animate-spin" />
+        </div>
+      ) : (
+        <div className="flex-1 flex flex-col overflow-hidden p-2 md:p-4">
+          {/* Grid Container */}
+          <div className="flex-1 flex flex-col overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900">
+            {/* Column Headers */}
+            <div className="h-10 md:h-12 flex-shrink-0 flex bg-zinc-800 border-b border-zinc-700 rounded-t-xl">
+              <div className="w-[40px] md:w-[80px] flex-shrink-0 px-1 md:px-4 flex items-center justify-center text-xs md:text-base font-bold text-zinc-400 border-r border-zinc-700">
+                <span className="hidden md:inline">TIME</span>
+                <Clock className="w-4 h-4 md:hidden" />
+              </div>
+              {studios.map((studio) => (
+                <div
+                  key={studio}
+                  className={`flex-1 px-1 md:px-4 flex items-center justify-center text-xs md:text-xl font-bold text-white border-r border-zinc-700 last:border-r-0 ${getStudioColor(
+                    studio
+                  )}`}
+                >
+                  <span className="hidden md:inline">{studio}</span>
+                  <span className="md:hidden">{studio.split(" ")[1]}</span>
+                </div>
+              ))}
             </div>
 
-            {/* Date Navigation */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg">
-                <Calendar className="w-3.5 h-3.5 text-zinc-400" />
-                <input
-                  type="date"
-                  value={startDate.toISOString().split('T')[0]}
-                  onChange={handleDateChange}
-                  min={new Date().toISOString().split('T')[0]}
-                  max={getMaxDateString()}
-                  className="bg-transparent text-white text-xs outline-none cursor-pointer"
-                />
+            {/* Grid Body */}
+            <div className="flex-1 flex overflow-hidden relative my-1 md:my-2">
+              {/* Current Time Indicator */}
+              {showCurrentTimeLine && (
+                <div
+                  className="absolute left-0 right-0 z-50 pointer-events-none flex items-center"
+                  style={{
+                    top: `${currentTimePosition}%`,
+                    transform: "translateY(-50%)",
+                  }}
+                >
+                  <div className="w-[40px] md:w-[80px] flex-shrink-0 flex justify-end pr-0.5 md:pr-1">
+                    <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500"></div>
+                  </div>
+                  <div className="flex-1 h-[2px] bg-red-500"></div>
+                </div>
+              )}
+
+              {/* Time Column */}
+              <div className="w-[40px] md:w-[80px] flex-shrink-0 flex flex-col border-r border-zinc-700 relative bg-zinc-900">
+                {timeSlots.map((hour) => (
+                  <div
+                    key={hour}
+                    className="flex-1 relative border-b border-zinc-600 last:border-b-0"
+                  >
+                    <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 text-amber-400 font-semibold text-[10px] md:text-xs whitespace-nowrap bg-zinc-900 px-0.5 md:px-1">
+                      <span className="hidden md:inline">{formatTimeLabel(hour)}</span>
+                      <span className="md:hidden">{formatTimeLabelShort(hour)}</span>
+                    </span>
+                  </div>
+                ))}
+                {/* End time label */}
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 text-amber-400 font-semibold text-[10px] md:text-xs whitespace-nowrap bg-zinc-900 px-0.5 md:px-1 z-10">
+                  <span className="hidden md:inline">{formatTimeLabel(endHour)}</span>
+                  <span className="md:hidden">{formatTimeLabelShort(endHour)}</span>
+                </span>
               </div>
-              <motion.button
-                onClick={goToPreviousDays}
-                disabled={!canGoPrevious()}
-                className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:bg-white/10 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                whileHover={{ scale: canGoPrevious() ? 1.05 : 1 }}
-                whileTap={{ scale: canGoPrevious() ? 0.95 : 1 }}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </motion.button>
-              <motion.button
-                onClick={goToNextDays}
-                disabled={!canGoNext()}
-                className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:bg-white/10 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                whileHover={{ scale: canGoNext() ? 1.05 : 1 }}
-                whileTap={{ scale: canGoNext() ? 0.95 : 1 }}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </motion.button>
+
+              {/* Studios Grid Container */}
+              <div className="flex-1 flex relative">
+                {/* Studio Columns */}
+                {studios.map((studio) => (
+                  <div
+                    key={studio}
+                    className="flex-1 relative border-r border-zinc-700 last:border-r-0"
+                  >
+                    {/* Grid lines for empty slots */}
+                    <div className="absolute inset-0 flex flex-col">
+                      {timeSlots.map((hour) => {
+                        const isPast = isPastSlot(hour);
+                        return (
+                          <div
+                            key={hour}
+                            className={`flex-1 border-b border-zinc-600 last:border-b-0 ${
+                              isPast ? "bg-black/40" : "bg-zinc-900/30"
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {/* Busy blocks - Shows "Busy" instead of booking details */}
+                    {studioBlocks[studio]?.map((block, idx) => {
+                      const topPercent =
+                        ((block.start - startHour) / timeSlots.length) * 100;
+                      const heightPercent =
+                        ((block.end - block.start) / timeSlots.length) * 100;
+                      const isPast = isToday && block.end <= currentHour;
+
+                      return (
+                        <div
+                          key={idx}
+                          className={`absolute left-0.5 right-0.5 md:left-1 md:right-1 ${getStudioColor(
+                            studio
+                          )} text-white flex items-center justify-center z-10 rounded-md shadow-lg border border-white/30 overflow-hidden ${
+                            isPast ? "opacity-50" : ""
+                          }`}
+                          style={{
+                            top: `${topPercent}%`,
+                            height: `${heightPercent}%`,
+                            minHeight: "28px",
+                          }}
+                        >
+                          <span className="text-xs md:text-sm font-bold uppercase tracking-wider">
+                            Busy
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-          
-          {/* Legend - Compact */}
-          <div className="flex flex-wrap items-center gap-3 md:gap-4 mt-2">
+
+          {/* Legend */}
+          <div className="mt-2 md:mt-3 flex flex-wrap items-center justify-center gap-3 md:gap-6">
             {studios.map((studio) => (
-              <div key={studio.id} className="flex items-center gap-1.5">
-                <div className={`w-3 h-3 rounded ${studio.color}`} />
-                <span className="text-zinc-400 text-xs">{studio.key}</span>
+              <div key={studio} className="flex items-center gap-1.5">
+                <div className={`w-3 h-3 rounded ${getStudioColor(studio)}`} />
+                <span className="text-zinc-400 text-xs md:text-sm">{studio}</span>
               </div>
             ))}
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-zinc-700 border border-zinc-600" />
-              <span className="text-zinc-400 text-xs">Open</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-zinc-900 border border-zinc-700" />
-              <span className="text-zinc-400 text-xs">Past</span>
+              <div className="w-3 h-3 rounded bg-zinc-800 border border-zinc-600" />
+              <span className="text-zinc-400 text-xs md:text-sm">Available</span>
             </div>
           </div>
-        </motion.div>
-
-        {/* Availability Table */}
-        <motion.div 
-          className="glass rounded-xl overflow-hidden flex-1 min-h-0 flex flex-col"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          {loading ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
-            </div>
-          ) : (
-          <div className="overflow-auto flex-1">
-            <table className="w-full mb-2">
-              <thead className="sticky top-0 z-10 bg-zinc-900/95 backdrop-blur-sm">
-                {/* Date Headers */}
-                <tr className="border-b border-white/10">
-                  <th className="p-2 md:p-3 text-left" rowSpan={2}>
-                    <div className="flex items-center gap-1 text-zinc-400">
-                      <Clock className="w-3 h-3" />
-                      <span className="font-medium text-xs">TIME</span>
-                    </div>
-                  </th>
-                  {dates.map((date, index) => {
-                    const formatted = formatDateForDisplay(date);
-                    return (
-                      <th 
-                        key={index} 
-                        colSpan={3} 
-                        className={`p-2 text-center ${index < dates.length - 1 ? 'border-r border-white/10' : ''}`}
-                      >
-                        <div className="text-lg md:text-xl font-bold text-white">{formatted.day}</div>
-                        <div className="text-zinc-400 text-xs">{formatted.month}</div>
-                      </th>
-                    );
-                  })}
-                </tr>
-                {/* Studio Headers */}
-                <tr className="border-b border-white/10 bg-white/[0.02]">
-                  {dates.map((_, dateIndex) => (
-                    studios.map((studio, studioIndex) => (
-                      <th 
-                        key={`${dateIndex}-${studio.key}`} 
-                        className={`p-1.5 md:p-2 text-center font-medium text-zinc-300 text-xs ${
-                          studioIndex === 2 && dateIndex < dates.length - 1 ? 'border-r border-white/10' : ''
-                        }`}
-                      >
-                        {studio.key}
-                      </th>
-                    ))
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {timeSlots.map((timeSlot, timeIndex) => (
-                  <tr 
-                    key={timeSlot.label} 
-                    className={`${timeIndex < timeSlots.length - 1 ? 'border-b border-white/5' : ''} hover:bg-white/[0.02] transition-colors`}
-                  >
-                    <td className="p-1.5 md:p-2 text-zinc-400 font-medium whitespace-nowrap text-[10px] md:text-xs">
-                      {timeSlot.start}
-                    </td>
-                    {dates.map((date, dateIndex) => (
-                      studios.map((studio, studioIndex) => {
-                        const slotStatus = getSlotStatus(date, studio.key, timeSlot);
-                        const isAvailable = slotStatus === 'available';
-                        const isBooked = slotStatus === 'booked';
-                        const isPast = slotStatus === 'past';
-                        
-                        return (
-                          <td 
-                            key={`${dateIndex}-${studio.key}-${timeSlot.label}`}
-                            className={`p-0.5 md:p-1 text-center ${
-                              studioIndex === 2 && dateIndex < dates.length - 1 ? 'border-r border-white/10' : ''
-                            }`}
-                          >
-                            <motion.div
-                              className={`w-full h-5 md:h-6 rounded flex items-center justify-center text-[8px] md:text-[10px] font-medium ${
-                                isAvailable 
-                                  ? 'bg-zinc-800/50 border border-zinc-700/50 cursor-pointer hover:bg-zinc-700/50 text-zinc-400' 
-                                  : isBooked
-                                  ? `${studio.color} cursor-not-allowed text-white/80`
-                                  : isPast
-                                  ? 'bg-zinc-900/80 border border-zinc-800/50 cursor-not-allowed text-zinc-600'
-                                  : 'bg-zinc-900/50 border border-zinc-800/30 cursor-not-allowed opacity-50'
-                              } transition-all`}
-                              whileHover={isAvailable ? { scale: 1.05 } : {}}
-                              whileTap={isAvailable ? { scale: 0.95 } : {}}
-                              onClick={() => {
-                                if (isAvailable) {
-                                  window.location.href = `/booking?date=${formatDateKey(date)}&studio=${encodeURIComponent(studio.id)}&time=${encodeURIComponent(timeSlot.start)}`;
-                                }
-                              }}
-                              title={
-                                isAvailable 
-                                  ? `Book ${studio.name} at ${timeSlot.label}` 
-                                  : isBooked 
-                                  ? `${studio.name} - Booked`
-                                  : isPast
-                                  ? `${studio.name} - Past`
-                                  : `${studio.name} - Not available`
-                              }
-                            >
-                              {isPast && '—'}
-                            </motion.div>
-                          </td>
-                        );
-                      })
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          )}
-        </motion.div>
-
-        {/* Footer - Compact */}
-        <motion.div 
-          className="mt-2 flex items-center justify-between gap-2 flex-shrink-0"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-        >
-          <p className="text-zinc-500 text-xs">
-            Click available slots to book
-          </p>
-          <Link href="/booking/new">
-            <motion.button
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-violet-500 hover:bg-violet-600 text-white text-sm font-medium rounded-lg transition-colors"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              Book
-            </motion.button>
-          </Link>
-        </motion.div>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
