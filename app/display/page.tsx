@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Loader2, ChevronLeft, ChevronRight, Lock, Eye, EyeOff } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Lock, Eye, EyeOff, X, Clock, User, Phone, Music, Calendar, IndianRupee, FileText, Users } from "lucide-react";
 
 interface Booking {
   id: string;
@@ -17,6 +17,12 @@ interface Booking {
   status: "pending" | "confirmed";
   total_amount: number | null;
   notes: string | null;
+}
+
+interface BookingBlock {
+  start: number;
+  end: number;
+  booking: Booking;
 }
 
 const DISPLAY_AUTH_KEY = "displayAuthenticated";
@@ -35,6 +41,7 @@ export default function DisplayPage() {
   const [endHour, setEndHour] = useState(22);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showPhoneNumbers, setShowPhoneNumbers] = useState(true);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   // Always show all three studios
   const studios = ["Studio A", "Studio B", "Studio C"];
@@ -175,23 +182,15 @@ export default function DisplayPage() {
 
   // Build consolidated booking blocks for each studio
   const studioBlocks = useMemo(() => {
-    const result: Record<
-      string,
-      Array<{ start: number; end: number; booking: Booking }>
-    > = {};
+    const result: Record<string, BookingBlock[]> = {};
 
     studios.forEach((studio) => {
       const studioBookings = bookings
         .filter((b) => b.studio === studio)
         .sort((a, b) => a.start_time.localeCompare(b.start_time));
 
-      const blocks: Array<{ start: number; end: number; booking: Booking }> =
-        [];
-      let currentBlock: {
-        start: number;
-        end: number;
-        booking: Booking;
-      } | null = null;
+      const blocks: BookingBlock[] = [];
+      let currentBlock: BookingBlock | null = null;
 
       studioBookings.forEach((b) => {
         const start = parseInt(b.start_time.split(":")[0], 10);
@@ -259,11 +258,25 @@ export default function DisplayPage() {
     return "bg-zinc-600";
   };
 
+  const getStudioColorBorder = (studio: string) => {
+    if (studio === "Studio A") return "border-blue-500";
+    if (studio === "Studio B") return "border-yellow-700";
+    if (studio === "Studio C") return "border-emerald-500";
+    return "border-zinc-600";
+  };
+
   // Format hour to 12-hour format
   const formatTimeLabel = (hour: number) => {
     if (hour === 12) return "12 PM";
     if (hour < 12) return `${hour} AM`;
     return `${hour - 12} PM`;
+  };
+
+  // Short format for mobile
+  const formatTimeLabelShort = (hour: number) => {
+    if (hour === 12) return "12P";
+    if (hour < 12) return `${hour}A`;
+    return `${hour - 12}P`;
   };
 
   // Format time string (HH:MM) to 12-hour format
@@ -284,6 +297,15 @@ export default function DisplayPage() {
     });
   };
 
+  // Short date for mobile
+  const formatDisplayDateShort = () => {
+    return selectedDate.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
   // Format time for display (12-hour with seconds)
   const formatDisplayTime = () => {
     return currentTime.toLocaleTimeString("en-US", {
@@ -292,6 +314,25 @@ export default function DisplayPage() {
       second: "2-digit",
       hour12: true,
     });
+  };
+
+  // Short time for mobile
+  const formatDisplayTimeShort = () => {
+    return currentTime.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  // Handle booking click
+  const handleBookingClick = (booking: Booking) => {
+    setSelectedBooking(booking);
+  };
+
+  // Close modal
+  const closeModal = () => {
+    setSelectedBooking(null);
   };
 
   // Show loading spinner while checking auth
@@ -392,25 +433,30 @@ export default function DisplayPage() {
 
   return (
     <div className="h-screen w-screen bg-[#0a0a0f] flex flex-col overflow-hidden">
-      {/* Date Navigation Header */}
-      <div className="h-20 flex items-center justify-center bg-zinc-900/50 border-b border-zinc-800 flex-shrink-0">
-        <div className="flex items-center gap-6">
+      {/* Date Navigation Header - Responsive */}
+      <div className="h-16 md:h-20 flex items-center justify-between md:justify-center bg-zinc-900/50 border-b border-zinc-800 flex-shrink-0 px-2 md:px-4 relative">
+        <div className="flex items-center gap-2 md:gap-6">
           {/* Previous Day Button */}
           <button
             onClick={goToPreviousDay}
-            className="p-3 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white transition-colors duration-200"
+            className="p-2 md:p-3 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white transition-colors duration-200"
             aria-label="Previous day"
           >
-            <ChevronLeft className="w-8 h-8" />
+            <ChevronLeft className="w-5 h-5 md:w-8 md:h-8" />
           </button>
 
-          {/* Date Display */}
-          <div className="flex flex-col items-center min-w-[400px]">
-            <span className="text-3xl font-bold text-white">
+          {/* Date Display - Responsive */}
+          <div className="flex flex-col items-center min-w-[120px] md:min-w-[400px]">
+            {/* Desktop date */}
+            <span className="hidden md:block text-2xl lg:text-3xl font-bold text-white">
               {formatDisplayDate()}
             </span>
+            {/* Mobile date */}
+            <span className="md:hidden text-base font-bold text-white">
+              {formatDisplayDateShort()}
+            </span>
             {isToday && (
-              <span className="text-sm text-amber-400 font-medium mt-1">
+              <span className="text-xs md:text-sm text-amber-400 font-medium mt-0.5 md:mt-1">
                 Today
               </span>
             )}
@@ -419,19 +465,19 @@ export default function DisplayPage() {
           {/* Next Day Button */}
           <button
             onClick={goToNextDay}
-            className="p-3 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white transition-colors duration-200"
+            className="p-2 md:p-3 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white transition-colors duration-200"
             aria-label="Next day"
           >
-            <ChevronRight className="w-8 h-8" />
+            <ChevronRight className="w-5 h-5 md:w-8 md:h-8" />
           </button>
         </div>
 
-        {/* Current Time & Phone Toggle */}
-        <div className="absolute right-6 flex items-center gap-4">
-          {/* Phone Number Visibility Toggle */}
+        {/* Current Time & Phone Toggle - Desktop only for toggle */}
+        <div className="flex items-center gap-2 md:gap-4 md:absolute md:right-6">
+          {/* Phone Number Visibility Toggle - Hidden on mobile */}
           <button
             onClick={() => setShowPhoneNumbers(!showPhoneNumbers)}
-            className={`p-2 rounded-lg transition-all duration-200 flex items-center gap-2 ${
+            className={`hidden md:flex p-2 rounded-lg transition-all duration-200 items-center gap-2 ${
               showPhoneNumbers
                 ? "bg-violet-600/20 text-violet-400 hover:bg-violet-600/30"
                 : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
@@ -446,8 +492,13 @@ export default function DisplayPage() {
             )}
             <span className="text-sm font-medium">Phone</span>
           </button>
-          <span className="text-2xl font-bold text-amber-400 tabular-nums">
+          {/* Desktop time */}
+          <span className="hidden md:block text-xl lg:text-2xl font-bold text-amber-400 tabular-nums">
             {formatDisplayTime()}
+          </span>
+          {/* Mobile time */}
+          <span className="md:hidden text-sm font-bold text-amber-400 tabular-nums">
+            {formatDisplayTimeShort()}
           </span>
         </div>
       </div>
@@ -457,28 +508,31 @@ export default function DisplayPage() {
           <Loader2 className="w-12 h-12 text-violet-400 animate-spin" />
         </div>
       ) : (
-        <div className="flex-1 flex flex-col overflow-hidden p-4">
+        <div className="flex-1 flex flex-col overflow-hidden p-2 md:p-4">
           {/* Table Container - Vertical Layout */}
           <div className="flex-1 flex flex-col overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900">
-            {/* Column Headers */}
-            <div className="h-12 flex-shrink-0 flex bg-zinc-800 border-b border-zinc-700 rounded-t-xl">
-              <div className="w-[80px] flex-shrink-0 px-4 flex items-center justify-center text-base font-bold text-zinc-400 border-r border-zinc-700">
-                TIME
+            {/* Column Headers - Responsive */}
+            <div className="h-10 md:h-12 flex-shrink-0 flex bg-zinc-800 border-b border-zinc-700 rounded-t-xl">
+              <div className="w-[40px] md:w-[80px] flex-shrink-0 px-1 md:px-4 flex items-center justify-center text-xs md:text-base font-bold text-zinc-400 border-r border-zinc-700">
+                <span className="hidden md:inline">TIME</span>
+                <Clock className="w-4 h-4 md:hidden" />
               </div>
               {studios.map((studio) => (
                 <div
                   key={studio}
-                  className={`flex-1 px-4 flex items-center justify-center text-xl font-bold text-white border-r border-zinc-700 last:border-r-0 ${getStudioColor(
+                  className={`flex-1 px-1 md:px-4 flex items-center justify-center text-xs md:text-xl font-bold text-white border-r border-zinc-700 last:border-r-0 ${getStudioColor(
                     studio
                   )}`}
                 >
-                  {studio}
+                  {/* Desktop: Full name, Mobile: Letter only */}
+                  <span className="hidden md:inline">{studio}</span>
+                  <span className="md:hidden">{studio.split(" ")[1]}</span>
                 </div>
               ))}
             </div>
 
             {/* Grid Body - with vertical padding for time labels */}
-            <div className="flex-1 flex overflow-hidden relative my-2">
+            <div className="flex-1 flex overflow-hidden relative my-1 md:my-2">
               {/* Current Time Indicator - Google Calendar Style (spans full width) */}
               {showCurrentTimeLine && (
                 <div
@@ -488,29 +542,32 @@ export default function DisplayPage() {
                     transform: "translateY(-50%)",
                   }}
                 >
-                  <div className="w-[80px] flex-shrink-0 flex justify-end pr-1">
-                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <div className="w-[40px] md:w-[80px] flex-shrink-0 flex justify-end pr-0.5 md:pr-1">
+                    <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500"></div>
                   </div>
                   <div className="flex-1 h-[2px] bg-red-500"></div>
                 </div>
               )}
 
-              {/* Time Column */}
-              <div className="w-[80px] flex-shrink-0 flex flex-col border-r border-zinc-700 relative bg-zinc-900">
-                {timeSlots.map((hour, index) => (
+              {/* Time Column - Responsive */}
+              <div className="w-[40px] md:w-[80px] flex-shrink-0 flex flex-col border-r border-zinc-700 relative bg-zinc-900">
+                {timeSlots.map((hour) => (
                   <div
                     key={hour}
                     className="flex-1 relative border-b border-zinc-600 last:border-b-0"
                   >
                     {/* Time label positioned at the top of each slot */}
-                    <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 text-amber-400 font-semibold text-xs whitespace-nowrap bg-zinc-900 px-1">
-                      {formatTimeLabel(hour)}
+                    <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 text-amber-400 font-semibold text-[10px] md:text-xs whitespace-nowrap bg-zinc-900 px-0.5 md:px-1">
+                      {/* Desktop: Full format, Mobile: Short */}
+                      <span className="hidden md:inline">{formatTimeLabel(hour)}</span>
+                      <span className="md:hidden">{formatTimeLabelShort(hour)}</span>
                     </span>
                   </div>
                 ))}
                 {/* End time label */}
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 text-amber-400 font-semibold text-xs whitespace-nowrap bg-zinc-900 px-1 z-10">
-                  {formatTimeLabel(endHour)}
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 text-amber-400 font-semibold text-[10px] md:text-xs whitespace-nowrap bg-zinc-900 px-0.5 md:px-1 z-10">
+                  <span className="hidden md:inline">{formatTimeLabel(endHour)}</span>
+                  <span className="md:hidden">{formatTimeLabelShort(endHour)}</span>
                 </span>
               </div>
 
@@ -537,7 +594,7 @@ export default function DisplayPage() {
                       })}
                     </div>
 
-                    {/* Booking blocks - Vertical */}
+                    {/* Booking blocks - Vertical, Clickable */}
                     {studioBlocks[studio]?.map((block, idx) => {
                       const topPercent =
                         ((block.start - startHour) / timeSlots.length) * 100;
@@ -546,44 +603,197 @@ export default function DisplayPage() {
                       const isPast = isToday && block.end <= currentHour;
 
                       return (
-                        <div
+                        <button
                           key={idx}
-                          className={`absolute left-1 right-1 ${getStudioColor(
+                          onClick={() => handleBookingClick(block.booking)}
+                          className={`absolute left-0.5 right-0.5 md:left-1 md:right-1 ${getStudioColor(
                             studio
-                          )} text-white flex flex-col justify-center px-3 z-10 rounded-md shadow-lg border border-white/30 ${
+                          )} text-white flex flex-col justify-center items-center px-1 md:px-2 z-10 rounded-md shadow-lg border border-white/30 overflow-hidden cursor-pointer hover:brightness-110 active:scale-[0.98] transition-all ${
                             isPast ? "opacity-50" : ""
                           }`}
                           style={{
                             top: `${topPercent}%`,
                             height: `${heightPercent}%`,
-                            minHeight: "40px",
+                            minHeight: "28px",
                           }}
                         >
-                          {/* Row 1: Event (left) - Name+Phone (center) - Time (right) */}
-                          <div className="flex items-center justify-between w-full gap-3">
-                            <span className="text-sm font-semibold text-amber-300 leading-none truncate flex-shrink-0 min-w-[80px]">
+                          {/* Mobile: Compact view */}
+                          <div className="md:hidden flex flex-col items-center justify-center w-full overflow-hidden">
+                            <span className="text-[10px] font-bold leading-tight truncate w-full text-center">
+                              {block.booking.name?.split(" ")[0] || "Guest"}
+                            </span>
+                          </div>
+
+                          {/* Desktop: Full view */}
+                          <div className="hidden md:flex items-center justify-between w-full gap-2 overflow-hidden">
+                            <span className="text-xs font-semibold text-amber-300 leading-none truncate flex-shrink-0 max-w-[80px]">
                               {block.booking.session_type || "Session"}
                             </span>
-                            <div className="flex flex-col items-center flex-1 px-2">
-                              <span className="text-xl font-bold leading-tight truncate w-full text-center">
+                            <div className="flex flex-col items-center flex-1 min-w-0 overflow-hidden">
+                              <span className="text-base lg:text-lg font-bold leading-tight truncate w-full text-center">
                                 {block.booking.name || "Guest"}
                               </span>
                               {showPhoneNumbers && (
-                                <span className="text-sm font-medium opacity-80 leading-none truncate w-full text-center mt-0.5">
+                                <span className="text-xs font-medium opacity-80 leading-none truncate w-full text-center">
                                   {block.booking.phone_number}
                                 </span>
                               )}
                             </div>
-                            <span className="text-sm font-semibold text-white/90 leading-none truncate flex-shrink-0 min-w-[130px] text-right">
+                            <span className="text-xs font-semibold text-white/90 leading-none truncate flex-shrink-0 max-w-[120px] text-right">
                               {formatBookingTime(block.booking.start_time)} - {formatBookingTime(block.booking.end_time)}
                             </span>
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Booking Details Modal */}
+      {selectedBooking && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={closeModal}
+        >
+          <div 
+            className={`w-full max-w-lg bg-zinc-900 rounded-2xl border-2 ${getStudioColorBorder(selectedBooking.studio)} shadow-2xl overflow-hidden`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className={`${getStudioColor(selectedBooking.studio)} px-4 md:px-6 py-4 flex items-center justify-between`}>
+              <div>
+                <h2 className="text-lg md:text-xl font-bold text-white">{selectedBooking.studio}</h2>
+                <p className="text-sm text-white/80">{formatBookingTime(selectedBooking.start_time)} - {formatBookingTime(selectedBooking.end_time)}</p>
+              </div>
+              <button
+                onClick={closeModal}
+                className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-4 md:p-6 space-y-4">
+              {/* Customer Name */}
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-zinc-800 text-violet-400">
+                  <User className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-zinc-500 uppercase tracking-wide">Customer</p>
+                  <p className="text-lg font-semibold text-white truncate">{selectedBooking.name || "Guest"}</p>
+                </div>
+              </div>
+
+              {/* Phone Number */}
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-zinc-800 text-emerald-400">
+                  <Phone className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-zinc-500 uppercase tracking-wide">Phone</p>
+                  <p className="text-lg font-semibold text-white">{selectedBooking.phone_number}</p>
+                </div>
+              </div>
+
+              {/* Session Type */}
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-zinc-800 text-amber-400">
+                  <Music className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-zinc-500 uppercase tracking-wide">Session Type</p>
+                  <p className="text-lg font-semibold text-white">{selectedBooking.session_type || "Not specified"}</p>
+                  {selectedBooking.session_details && (
+                    <p className="text-sm text-zinc-400 mt-0.5">{selectedBooking.session_details}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Date & Time */}
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-zinc-800 text-blue-400">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-zinc-500 uppercase tracking-wide">Date & Time</p>
+                  <p className="text-lg font-semibold text-white">
+                    {new Date(selectedBooking.date).toLocaleDateString("en-US", {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </p>
+                  <p className="text-sm text-zinc-400">{formatBookingTime(selectedBooking.start_time)} - {formatBookingTime(selectedBooking.end_time)}</p>
+                </div>
+              </div>
+
+              {/* Amount */}
+              {selectedBooking.total_amount && (
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-zinc-800 text-green-400">
+                    <IndianRupee className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-zinc-500 uppercase tracking-wide">Amount</p>
+                    <p className="text-lg font-semibold text-white">₹{selectedBooking.total_amount.toLocaleString()}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Group Size */}
+              {selectedBooking.group_size > 0 && (
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-zinc-800 text-pink-400">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-zinc-500 uppercase tracking-wide">Group Size</p>
+                    <p className="text-lg font-semibold text-white">{selectedBooking.group_size} {selectedBooking.group_size === 1 ? "person" : "people"}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {selectedBooking.notes && (
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-zinc-800 text-orange-400">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-zinc-500 uppercase tracking-wide">Notes</p>
+                    <p className="text-sm text-zinc-300 mt-1">{selectedBooking.notes}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Status Badge */}
+              <div className="pt-2 flex justify-center">
+                <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium ${
+                  selectedBooking.status === "confirmed" 
+                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
+                    : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                }`}>
+                  {selectedBooking.status === "confirmed" ? "Confirmed" : "Pending"}
+                </span>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-4 md:px-6 py-4 bg-zinc-800/50 border-t border-zinc-700">
+              <button
+                onClick={closeModal}
+                className="w-full py-3 px-4 bg-zinc-700 hover:bg-zinc-600 text-white font-medium rounded-xl transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
