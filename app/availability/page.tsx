@@ -345,20 +345,6 @@ export default function AvailabilityPage() {
           </button>
         </div>
 
-        {/* Book button */}
-        <Link
-          href="/booking/new"
-          className="hidden md:flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors"
-        >
-          <Calendar className="w-4 h-4" />
-          Book Now
-        </Link>
-        <Link
-          href="/booking/new"
-          className="md:hidden p-2 bg-violet-600 hover:bg-violet-500 text-white rounded-lg transition-colors"
-        >
-          <Calendar className="w-5 h-5" />
-        </Link>
       </div>
 
       {loading ? (
