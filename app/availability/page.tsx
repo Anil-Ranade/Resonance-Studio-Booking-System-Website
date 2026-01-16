@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import Link from "next/link";
-import { ArrowLeft, ChevronLeft, ChevronRight, Calendar, Clock, Loader2, CalendarDays } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Loader2, CalendarDays } from "lucide-react";
 
 interface BookingSlot {
   start_time: string;
@@ -177,7 +176,7 @@ export default function AvailabilityPage() {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 60000); // Update every minute
+    }, 1000); // Update every second for live clock
     return () => clearInterval(timer);
   }, []);
 
@@ -241,49 +240,59 @@ export default function AvailabilityPage() {
     });
   };
 
+  // Format time for display (12-hour with seconds)
+  const formatDisplayTime = () => {
+    return currentTime.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  };
+
+  // Short time for mobile
+  const formatDisplayTimeShort = () => {
+    return currentTime.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
   return (
     <div className="h-screen w-screen bg-[#0a0a0f] flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="h-14 md:h-16 flex items-center justify-between bg-zinc-900/50 border-b border-zinc-800 flex-shrink-0 px-3 md:px-6">
-        {/* Back button and title */}
-        <div className="flex items-center gap-3">
-          <Link
-            href="/home"
-            className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 md:w-5 md:h-5" />
-          </Link>
-          <h1 className="text-lg md:text-xl font-bold text-white">Availability</h1>
-        </div>
-
-        {/* Date Navigation */}
-        <div className="flex items-center gap-1 md:gap-2">
+      {/* Date Navigation Header - Responsive (like Display Page) */}
+      <div className="h-16 md:h-20 flex items-center justify-between md:justify-center bg-zinc-900/50 border-b border-zinc-800 flex-shrink-0 px-2 md:px-4 relative">
+        <div className="flex items-center gap-2 md:gap-6">
+          {/* Previous Day Button */}
           <button
             onClick={goToPreviousDay}
             disabled={!canGoPrevious()}
-            className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-2 md:p-3 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
             aria-label="Previous day"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-5 h-5 md:w-8 md:h-8" />
           </button>
 
-          {/* Date Display with Calendar Picker */}
-          <div className="relative">
+          {/* Date Display with Calendar Picker - Responsive */}
+          <div className="flex flex-col items-center min-w-[120px] md:min-w-[400px] relative">
             {/* Clickable Date Display */}
             <button
               onClick={() => setShowDatePicker(!showDatePicker)}
-              className="flex flex-col items-center min-w-[100px] md:min-w-[280px] hover:bg-zinc-800/50 px-2 md:px-4 py-1 rounded-lg transition-colors group"
+              className="flex flex-col items-center hover:bg-zinc-800/50 px-3 py-1 rounded-lg transition-colors group"
             >
-              <span className="hidden md:flex items-center gap-2 text-lg font-semibold text-white group-hover:text-violet-300 transition-colors">
+              {/* Desktop date */}
+              <span className="hidden md:flex items-center gap-2 text-2xl lg:text-3xl font-bold text-white group-hover:text-violet-300 transition-colors">
                 {formatDisplayDate()}
-                <CalendarDays className="w-5 h-5 text-zinc-400 group-hover:text-violet-400 transition-colors" />
+                <CalendarDays className="w-6 h-6 text-zinc-400 group-hover:text-violet-400 transition-colors" />
               </span>
-              <span className="md:hidden flex items-center gap-1.5 text-sm font-semibold text-white group-hover:text-violet-300 transition-colors">
+              {/* Mobile date */}
+              <span className="md:hidden flex items-center gap-1.5 text-base font-bold text-white group-hover:text-violet-300 transition-colors">
                 {formatDisplayDateShort()}
                 <CalendarDays className="w-4 h-4 text-zinc-400 group-hover:text-violet-400 transition-colors" />
               </span>
               {isToday && (
-                <span className="text-[10px] md:text-xs text-amber-400 font-medium">
+                <span className="text-xs md:text-sm text-amber-400 font-medium mt-0.5 md:mt-1">
                   Today
                 </span>
               )}
@@ -291,7 +300,7 @@ export default function AvailabilityPage() {
 
             {/* Date Picker Dropdown */}
             {showDatePicker && (
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-4 min-w-[260px]">
+              <div className="absolute top-full mt-2 z-50 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-4 min-w-[260px]">
                 <div className="flex flex-col gap-3">
                   <label className="text-sm text-zinc-400 font-medium">Select a date</label>
                   <input
@@ -335,16 +344,28 @@ export default function AvailabilityPage() {
             )}
           </div>
 
+          {/* Next Day Button */}
           <button
             onClick={goToNextDay}
             disabled={!canGoNext()}
-            className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-2 md:p-3 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
             aria-label="Next day"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-5 h-5 md:w-8 md:h-8" />
           </button>
         </div>
 
+        {/* Current Time Display */}
+        <div className="flex items-center gap-2 md:gap-4 md:absolute md:right-6">
+          {/* Desktop time */}
+          <span className="hidden md:block text-xl lg:text-2xl font-bold text-amber-400 tabular-nums">
+            {formatDisplayTime()}
+          </span>
+          {/* Mobile time */}
+          <span className="md:hidden text-sm font-bold text-amber-400 tabular-nums">
+            {formatDisplayTimeShort()}
+          </span>
+        </div>
       </div>
 
       {loading ? (
@@ -469,19 +490,6 @@ export default function AvailabilityPage() {
             </div>
           </div>
 
-          {/* Legend */}
-          <div className="mt-2 md:mt-3 flex flex-wrap items-center justify-center gap-3 md:gap-6">
-            {studios.map((studio) => (
-              <div key={studio} className="flex items-center gap-1.5">
-                <div className={`w-3 h-3 rounded ${getStudioColor(studio)}`} />
-                <span className="text-zinc-400 text-xs md:text-sm">{studio}</span>
-              </div>
-            ))}
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-zinc-800 border border-zinc-600" />
-              <span className="text-zinc-400 text-xs md:text-sm">Available</span>
-            </div>
-          </div>
         </div>
       )}
     </div>

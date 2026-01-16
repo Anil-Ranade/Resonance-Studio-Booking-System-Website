@@ -7,11 +7,15 @@ import { Music2, Calendar, MapPin, Mail } from "lucide-react";
 export default function Footer() {
   const pathname = usePathname();
 
-  // Hide footer on admin and staff portal routes
-  const isAdminOrStaffRoute = pathname?.startsWith('/admin') || pathname?.startsWith('/staff');
+  // Hide footer on admin, staff, availability, and display routes
+  const shouldHideFooter = 
+    pathname?.startsWith('/admin') || 
+    pathname?.startsWith('/staff') ||
+    pathname === '/availability' ||
+    pathname === '/display';
 
-  // Don't render footer for admin/staff routes
-  if (isAdminOrStaffRoute) {
+  // Don't render footer for these routes
+  if (shouldHideFooter) {
     return null;
   }
 
