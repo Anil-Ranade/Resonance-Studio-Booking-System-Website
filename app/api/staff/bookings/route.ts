@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
 import { sendAdminBookingConfirmationEmail } from "@/lib/email";
 import { deleteEvent, createEvent, updateEvent } from "@/lib/googleCalendar";
-import { logBookingUpdate, logBookingCancellation } from "@/lib/googleSheets";
+import { logBookingUpdate, logBookingCancellation, logOriginalBooking } from "@/lib/googleSheets";
 
 // Verify staff token from Authorization header
 async function verifyStaffToken(request: NextRequest) {
@@ -295,6 +295,25 @@ export async function PUT(request: NextRequest) {
 
     // Log booking update/cancellation to Google Sheet
     try {
+      // First log the original booking state
+      await logOriginalBooking({
+        id: existingBooking.id,
+        date: existingBooking.date,
+        studio: existingBooking.studio,
+        session_type: existingBooking.session_type,
+        session_details: existingBooking.session_details,
+        start_time: existingBooking.start_time,
+        end_time: existingBooking.end_time,
+        name: existingBooking.name,
+        phone_number: existingBooking.phone_number,
+        email: undefined,
+        total_amount: existingBooking.total_amount || undefined,
+        status: existingBooking.status,
+        notes: existingBooking.notes || "Original booking before staff modification",
+        created_at: existingBooking.created_at
+      });
+
+      // Then log the updated/cancelled booking
       if (status === "cancelled") {
         await logBookingCancellation({
           id: id,
@@ -398,8 +417,26 @@ export async function DELETE(request: NextRequest) {
     }
   }
 
-  // Log cancellation to Google Sheet BEFORE deleting
+  // Log booking to Google Sheet BEFORE deleting
+  // First log the original booking state, then log the cancellation
   try {
+     await logOriginalBooking({
+        id: existingBooking.id,
+        date: existingBooking.date,
+        studio: existingBooking.studio,
+        session_type: existingBooking.session_type,
+        session_details: existingBooking.session_details,
+        start_time: existingBooking.start_time,
+        end_time: existingBooking.end_time,
+        name: existingBooking.name,
+        phone_number: existingBooking.phone_number,
+        email: undefined,
+        total_amount: existingBooking.total_amount || undefined,
+        status: existingBooking.status,
+        notes: existingBooking.notes || "Original booking before staff deletion",
+        created_at: existingBooking.created_at
+      });
+
      await logBookingCancellation({
         id: existingBooking.id,
         date: existingBooking.date,

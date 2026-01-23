@@ -33,7 +33,7 @@ const SHEET_HEADERS = [
 
 export interface BookingLogEntry {
   bookingId: string;
-  action: "NEW" | "UPDATED" | "CANCELLED" | "COMPLETED";
+  action: "NEW" | "UPDATED" | "CANCELLED" | "COMPLETED" | "ORIGINAL";
   date: string;
   studio: string;
   sessionType: string;
@@ -46,6 +46,7 @@ export interface BookingLogEntry {
   totalAmount?: number;
   status: string;
   notes?: string;
+  timestamp?: string; // Optional custom timestamp (e.g., for ORIGINAL entries to use created_at)
 }
 
 /**
@@ -98,7 +99,8 @@ export async function appendBookingToSheet(
     // Ensure headers exist
     await ensureSheetHeaders();
 
-    const timestamp = new Date().toISOString();
+    // Use provided timestamp or current time
+    const timestamp = entry.timestamp || new Date().toISOString();
 
     const row = [
       entry.bookingId,
@@ -243,3 +245,42 @@ export async function logBookingCancellation(booking: {
     notes: booking.cancellation_reason || "",
   });
 }
+
+/**
+ * Helper to log the original state of a booking before update/cancellation (for audit)
+ */
+export async function logOriginalBooking(booking: {
+  id: string;
+  date: string;
+  studio: string;
+  session_type: string;
+  session_details?: string;
+  start_time: string;
+  end_time: string;
+  name?: string;
+  phone_number: string;
+  email?: string;
+  total_amount?: number;
+  status: string;
+  notes?: string;
+  created_at?: string; // Original booking creation timestamp
+}): Promise<boolean> {
+  return appendBookingToSheet({
+    bookingId: booking.id,
+    action: "ORIGINAL",
+    date: booking.date,
+    studio: booking.studio,
+    sessionType: booking.session_type,
+    sessionDetails: booking.session_details,
+    startTime: booking.start_time,
+    endTime: booking.end_time,
+    customerName: booking.name,
+    phone: booking.phone_number,
+    email: booking.email,
+    totalAmount: booking.total_amount,
+    status: booking.status,
+    notes: booking.notes || "Original booking before modification",
+    timestamp: booking.created_at, // Use original creation timestamp
+  });
+}
+

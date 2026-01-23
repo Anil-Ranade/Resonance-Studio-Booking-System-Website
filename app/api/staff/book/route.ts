@@ -4,7 +4,7 @@ import { supabaseServer } from "@/lib/supabaseServer";
 import { createClient } from "@supabase/supabase-js";
 import { createEvent, updateEvent } from "@/lib/googleCalendar";
 import { sendAdminBookingConfirmationEmail } from "@/lib/email";
-import { logNewBooking, logBookingUpdate } from "@/lib/googleSheets";
+import { logNewBooking, logBookingUpdate, logOriginalBooking } from "@/lib/googleSheets";
 
 // Verify staff token from Authorization header
 async function verifyStaffToken(request: NextRequest) {
@@ -620,6 +620,25 @@ export async function PUT(request: NextRequest) {
 
     // Log update to Google Sheets
     try {
+      // First log the original booking state
+      await logOriginalBooking({
+        id: existingBooking.id,
+        date: existingBooking.date,
+        studio: existingBooking.studio,
+        session_type: existingBooking.session_type || "Walk-in",
+        session_details: existingBooking.session_details,
+        start_time: existingBooking.start_time,
+        end_time: existingBooking.end_time,
+        name: existingBooking.name,
+        phone_number: existingBooking.phone_number,
+        email: existingBooking.email,
+        total_amount: existingBooking.total_amount ?? undefined,
+        status: existingBooking.status,
+        notes: existingBooking.notes || "Original booking before staff update",
+        created_at: existingBooking.created_at
+      });
+
+      // Then log the updated booking
       await logBookingUpdate({
         id: booking.id,
         date,

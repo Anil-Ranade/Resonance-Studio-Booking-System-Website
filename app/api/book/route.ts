@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { createEvent, deleteEvent, updateEvent } from "@/lib/googleCalendar";
 import { sendBookingConfirmationEmail, sendBookingUpdateEmail } from "@/lib/email";
-import { logNewBooking, logBookingUpdate } from "@/lib/googleSheets";
+import { logNewBooking, logBookingUpdate, logOriginalBooking } from "@/lib/googleSheets";
 
 interface BookRequest {
   phone: string;
@@ -621,6 +621,25 @@ export async function PUT(request: Request) {
 
     // Log booking update to Google Sheet
     try {
+      // First log the original booking state
+      await logOriginalBooking({
+        id: originalBooking.id,
+        date: originalBooking.date,
+        studio: originalBooking.studio,
+        session_type: originalBooking.session_type,
+        session_details: originalBooking.session_details,
+        start_time: originalBooking.start_time,
+        end_time: originalBooking.end_time,
+        name: originalBooking.name,
+        phone_number: originalBooking.phone_number,
+        email: originalBooking.email,
+        total_amount: originalBooking.total_amount ?? undefined,
+        status: originalBooking.status,
+        notes: originalBooking.notes || "Original booking before user update",
+        created_at: originalBooking.created_at
+      });
+
+      // Then log the updated booking
       await logBookingUpdate({
         id: original_booking_id,
         date,

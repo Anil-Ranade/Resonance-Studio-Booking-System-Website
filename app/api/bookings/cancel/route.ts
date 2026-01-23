@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { deleteEvent } from "@/lib/googleCalendar";
 import { sendBookingCancellationEmail } from "@/lib/email";
-import { logBookingCancellation } from "@/lib/googleSheets";
+import { logBookingCancellation, logOriginalBooking } from "@/lib/googleSheets";
 
 // POST /api/bookings/cancel - Cancel a booking (no OTP verification required)
 export async function POST(request: NextRequest) {
@@ -149,6 +149,25 @@ export async function POST(request: NextRequest) {
 
     // Log cancellation to Google Sheet
     try {
+      // First log the original booking state
+      await logOriginalBooking({
+        id: booking.id,
+        date: booking.date,
+        studio: booking.studio,
+        session_type: booking.session_type,
+        session_details: booking.session_details,
+        start_time: booking.start_time,
+        end_time: booking.end_time,
+        name: booking.name,
+        phone_number: booking.phone_number,
+        email: userData?.email,
+        total_amount: booking.total_amount ?? undefined,
+        status: booking.status,
+        notes: booking.notes || "Original booking before user cancellation",
+        created_at: booking.created_at
+      });
+
+      // Then log the cancellation
       await logBookingCancellation({
         id: bookingId,
         date: booking.date,
