@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   Calendar,
@@ -16,7 +16,7 @@ import {
   User,
   MapPin,
   IndianRupee,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface BookingDraft {
   sessionType: string;
@@ -46,20 +46,20 @@ export default function ReviewPage() {
   const [draft, setDraft] = useState<BookingDraft | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [studios, setStudios] = useState<Studio[]>([]);
 
   // Fetch studios for rate information
   useEffect(() => {
     const fetchStudios = async () => {
       try {
-        const response = await fetch('/api/studios');
+        const response = await fetch("/api/studios");
         if (response.ok) {
           const data = await response.json();
           setStudios(data.studios || []);
         }
       } catch (err) {
-        console.error('Failed to fetch studios:', err);
+        console.error("Failed to fetch studios:", err);
       }
     };
     fetchStudios();
@@ -69,17 +69,17 @@ export default function ReviewPage() {
   useEffect(() => {
     const loadDraft = () => {
       try {
-        const savedDraft = localStorage.getItem('bookingDraft');
+        const savedDraft = localStorage.getItem("bookingDraft");
         if (savedDraft) {
           const parsed = JSON.parse(savedDraft);
           setDraft(parsed);
         } else {
           // No draft found, redirect to booking
-          router.push('/booking/new');
+          router.push("/booking/new");
         }
       } catch (err) {
-        console.error('Failed to load draft:', err);
-        router.push('/booking/new');
+        console.error("Failed to load draft:", err);
+        router.push("/booking/new");
       } finally {
         setIsLoading(false);
       }
@@ -89,26 +89,26 @@ export default function ReviewPage() {
   }, [router]);
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-IN', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    const date = new Date(`${dateStr}T00:00:00`);
+    return date.toLocaleDateString("en-IN", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
   const formatTime = (timeStr: string) => {
-    const [hours, minutes] = timeStr.split(':');
+    const [hours, minutes] = timeStr.split(":");
     const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const ampm = hour >= 12 ? "PM" : "AM";
     const displayHour = hour % 12 || 12;
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
   const getStudioRate = useCallback(() => {
     if (!draft) return 0;
-    const studio = studios.find(s => s.id === draft.studioId);
+    const studio = studios.find((s) => s.id === draft.studioId);
     return studio?.hourly_rate || 0;
   }, [draft, studios]);
 
@@ -116,10 +116,10 @@ export default function ReviewPage() {
     if (!draft) return;
 
     setIsSubmitting(true);
-    setError('');
+    setError("");
 
     try {
-      const endpoint = draft.isEditMode ? '/api/admin/book' : '/api/book';
+      const endpoint = draft.isEditMode ? "/api/admin/book" : "/api/book";
       const payload = draft.isEditMode
         ? {
             bookingId: draft.editBookingId,
@@ -148,30 +148,30 @@ export default function ReviewPage() {
           };
 
       const response = await fetch(endpoint, {
-        method: draft.isEditMode ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: draft.isEditMode ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create booking');
+        throw new Error(data.error || "Failed to create booking");
       }
 
       // Clear draft and redirect to confirmation
-      localStorage.removeItem('bookingDraft');
-      localStorage.setItem('lastBooking', JSON.stringify(data.booking || data));
-      router.push('/confirmation');
+      localStorage.removeItem("bookingDraft");
+      localStorage.setItem("lastBooking", JSON.stringify(data.booking || data));
+      router.push("/confirmation");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create booking');
+      setError(err instanceof Error ? err.message : "Failed to create booking");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleBack = () => {
-    router.push('/booking/new');
+    router.push("/booking/new");
   };
 
   if (isLoading) {
@@ -202,7 +202,9 @@ export default function ReviewPage() {
           </button>
           <div>
             <h1 className="text-xl font-bold text-white">Review Booking</h1>
-            <p className="text-sm text-zinc-400">Confirm your booking details</p>
+            <p className="text-sm text-zinc-400">
+              Confirm your booking details
+            </p>
           </div>
         </div>
       </div>
@@ -248,7 +250,9 @@ export default function ReviewPage() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm text-zinc-400">Session Type</p>
-                    <p className="text-white font-medium capitalize">{draft.sessionType}</p>
+                    <p className="text-white font-medium capitalize">
+                      {draft.sessionType}
+                    </p>
                   </div>
                 </div>
 
@@ -259,7 +263,10 @@ export default function ReviewPage() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm text-zinc-400">Participants</p>
-                    <p className="text-white font-medium">{draft.participants} {draft.participants === 1 ? 'person' : 'people'}</p>
+                    <p className="text-white font-medium">
+                      {draft.participants}{" "}
+                      {draft.participants === 1 ? "person" : "people"}
+                    </p>
                   </div>
                 </div>
 
@@ -272,7 +279,9 @@ export default function ReviewPage() {
                     <p className="text-sm text-zinc-400">Studio</p>
                     <p className="text-white font-medium">{draft.studioName}</p>
                     {getStudioRate() > 0 && (
-                      <p className="text-zinc-400 text-sm">₹{getStudioRate().toLocaleString('en-IN')}/hour</p>
+                      <p className="text-zinc-400 text-sm">
+                        ₹{getStudioRate().toLocaleString("en-IN")}/hour
+                      </p>
                     )}
                   </div>
                 </div>
@@ -284,10 +293,14 @@ export default function ReviewPage() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm text-zinc-400">Date & Time</p>
-                    <p className="text-white font-medium">{formatDate(draft.date)}</p>
+                    <p className="text-white font-medium">
+                      {formatDate(draft.date)}
+                    </p>
                     <p className="text-zinc-400 text-sm flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {formatTime(draft.startTime)} - {formatTime(draft.endTime)} ({draft.totalHours} {draft.totalHours === 1 ? 'hour' : 'hours'})
+                      {formatTime(draft.startTime)} -{" "}
+                      {formatTime(draft.endTime)} ({draft.totalHours}{" "}
+                      {draft.totalHours === 1 ? "hour" : "hours"})
                     </p>
                   </div>
                 </div>
@@ -300,12 +313,15 @@ export default function ReviewPage() {
                     <p className="text-sm text-zinc-400">Total Amount</p>
                     <p className="text-2xl font-bold text-white flex items-center">
                       <IndianRupee className="w-5 h-5" />
-                      {draft.totalAmount.toLocaleString('en-IN')}
+                      {draft.totalAmount.toLocaleString("en-IN")}
                     </p>
                   </div>
                   <div className="text-right text-sm text-zinc-400">
-                    <p>{draft.totalHours} {draft.totalHours === 1 ? 'hour' : 'hours'}</p>
-                    <p>@ ₹{getStudioRate().toLocaleString('en-IN')}/hr</p>
+                    <p>
+                      {draft.totalHours}{" "}
+                      {draft.totalHours === 1 ? "hour" : "hours"}
+                    </p>
+                    <p>@ ₹{getStudioRate().toLocaleString("en-IN")}/hr</p>
                   </div>
                 </div>
               </div>
@@ -346,7 +362,7 @@ export default function ReviewPage() {
                 ) : (
                   <>
                     <CheckCircle className="w-5 h-5" />
-                    {draft.isEditMode ? 'Update Booking' : 'Confirm Booking'}
+                    {draft.isEditMode ? "Update Booking" : "Confirm Booking"}
                   </>
                 )}
               </motion.button>
@@ -354,7 +370,8 @@ export default function ReviewPage() {
 
             {/* Info Note */}
             <p className="text-center text-zinc-500 text-sm">
-              By confirming, you agree to our booking terms and cancellation policy.
+              By confirming, you agree to our booking terms and cancellation
+              policy.
             </p>
           </motion.div>
         </AnimatePresence>

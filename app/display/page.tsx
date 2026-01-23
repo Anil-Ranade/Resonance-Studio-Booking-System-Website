@@ -1,7 +1,24 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Loader2, ChevronLeft, ChevronRight, Lock, Eye, EyeOff, X, Clock, User, Phone, Music, Calendar, IndianRupee, FileText, Users, CalendarDays } from "lucide-react";
+import {
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Lock,
+  Eye,
+  EyeOff,
+  X,
+  Clock,
+  User,
+  Phone,
+  Music,
+  Calendar,
+  IndianRupee,
+  FileText,
+  Users,
+  CalendarDays,
+} from "lucide-react";
 
 interface Booking {
   id: string;
@@ -47,8 +64,10 @@ export default function DisplayPage() {
   // Always show all three studios
   const studios = ["Studio A", "Studio B", "Studio C"];
 
+  const toLocalDateString = (date: Date) => date.toLocaleDateString("en-CA"); // YYYY-MM-DD in local time
+
   // Format selected date for API
-  const formattedDate = selectedDate.toISOString().split("T")[0];
+  const formattedDate = toLocalDateString(selectedDate);
 
   // Check for existing authentication on mount
   useEffect(() => {
@@ -122,15 +141,15 @@ export default function DisplayPage() {
   // Check if selected date is today - using string comparison for reliability
   const isToday = useMemo(() => {
     const today = new Date();
-    const todayString = today.toISOString().split("T")[0];
-    const selectedString = selectedDate.toISOString().split("T")[0];
+    const todayString = toLocalDateString(today);
+    const selectedString = toLocalDateString(selectedDate);
     return todayString === selectedString;
   }, [selectedDate]);
 
   // Fetch settings on mount
   useEffect(() => {
     if (!isAuthenticated) return;
-    
+
     const fetchSettings = async () => {
       try {
         const response = await fetch("/api/settings");
@@ -138,11 +157,11 @@ export default function DisplayPage() {
           const data = await response.json();
           const openHour = parseInt(
             (data.defaultOpenTime || "08:00").split(":")[0],
-            10
+            10,
           );
           const closeHour = parseInt(
             (data.defaultCloseTime || "22:00").split(":")[0],
-            10
+            10,
           );
           setStartHour(openHour);
           setEndHour(closeHour);
@@ -159,7 +178,7 @@ export default function DisplayPage() {
 
     try {
       const response = await fetch(
-        `/api/display/bookings?date=${formattedDate}`
+        `/api/display/bookings?date=${formattedDate}`,
       );
       if (response.ok) {
         const data = await response.json();
@@ -174,7 +193,7 @@ export default function DisplayPage() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    
+
     fetchBookings();
     // Auto-refresh every 10 seconds for real-time updates
     const interval = setInterval(() => fetchBookings(true), 10000);
@@ -356,7 +375,9 @@ export default function DisplayPage() {
               <Lock className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-white">Display Access</h1>
-            <p className="text-zinc-400 mt-2">Enter password to view bookings</p>
+            <p className="text-zinc-400 mt-2">
+              Enter password to view bookings
+            </p>
           </div>
 
           {/* Login Form */}
@@ -371,7 +392,10 @@ export default function DisplayPage() {
 
               {/* Password Field */}
               <div>
-                <label htmlFor="display-password" className="block text-sm font-medium text-zinc-300 mb-2.5">
+                <label
+                  htmlFor="display-password"
+                  className="block text-sm font-medium text-zinc-300 mb-2.5"
+                >
                   Password
                 </label>
                 <div className="relative">
@@ -474,10 +498,12 @@ export default function DisplayPage() {
             {showDatePicker && (
               <div className="absolute top-full mt-2 z-50 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-4 min-w-[260px]">
                 <div className="flex flex-col gap-3">
-                  <label className="text-sm text-zinc-400 font-medium">Select a date</label>
+                  <label className="text-sm text-zinc-400 font-medium">
+                    Select a date
+                  </label>
                   <input
                     type="date"
-                    value={selectedDate.toISOString().split("T")[0]}
+                    value={toLocalDateString(selectedDate)}
                     onChange={(e) => {
                       const newDate = new Date(e.target.value);
                       if (!isNaN(newDate.getTime())) {
@@ -529,8 +555,12 @@ export default function DisplayPage() {
                 ? "bg-violet-600/20 text-violet-400 hover:bg-violet-600/30"
                 : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
             }`}
-            aria-label={showPhoneNumbers ? "Hide phone numbers" : "Show phone numbers"}
-            title={showPhoneNumbers ? "Hide phone numbers" : "Show phone numbers"}
+            aria-label={
+              showPhoneNumbers ? "Hide phone numbers" : "Show phone numbers"
+            }
+            title={
+              showPhoneNumbers ? "Hide phone numbers" : "Show phone numbers"
+            }
           >
             {showPhoneNumbers ? (
               <Eye className="w-5 h-5" />
@@ -568,7 +598,7 @@ export default function DisplayPage() {
                 <div
                   key={studio}
                   className={`flex-1 px-1 md:px-4 flex items-center justify-center text-xs md:text-xl font-bold text-white border-r border-zinc-700 last:border-r-0 ${getStudioColor(
-                    studio
+                    studio,
                   )}`}
                 >
                   {/* Desktop: Full name, Mobile: Letter only */}
@@ -606,15 +636,23 @@ export default function DisplayPage() {
                     {/* Time label positioned at the top of each slot */}
                     <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 text-amber-400 font-semibold text-[10px] md:text-xs whitespace-nowrap bg-zinc-900 px-0.5 md:px-1">
                       {/* Desktop: Full format, Mobile: Short */}
-                      <span className="hidden md:inline">{formatTimeLabel(hour)}</span>
-                      <span className="md:hidden">{formatTimeLabelShort(hour)}</span>
+                      <span className="hidden md:inline">
+                        {formatTimeLabel(hour)}
+                      </span>
+                      <span className="md:hidden">
+                        {formatTimeLabelShort(hour)}
+                      </span>
                     </span>
                   </div>
                 ))}
                 {/* End time label */}
                 <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 text-amber-400 font-semibold text-[10px] md:text-xs whitespace-nowrap bg-zinc-900 px-0.5 md:px-1 z-10">
-                  <span className="hidden md:inline">{formatTimeLabel(endHour)}</span>
-                  <span className="md:hidden">{formatTimeLabelShort(endHour)}</span>
+                  <span className="hidden md:inline">
+                    {formatTimeLabel(endHour)}
+                  </span>
+                  <span className="md:hidden">
+                    {formatTimeLabelShort(endHour)}
+                  </span>
                 </span>
               </div>
 
@@ -654,7 +692,7 @@ export default function DisplayPage() {
                           key={idx}
                           onClick={() => handleBookingClick(block.booking)}
                           className={`absolute left-0.5 right-0.5 md:left-1 md:right-1 ${getStudioColor(
-                            studio
+                            studio,
                           )} text-white flex flex-col justify-center items-center px-1 md:px-2 z-10 rounded-md shadow-lg border border-white/30 overflow-hidden cursor-pointer hover:brightness-110 active:scale-[0.98] transition-all ${
                             isPast ? "opacity-50" : ""
                           }`}
@@ -687,7 +725,8 @@ export default function DisplayPage() {
                               )}
                             </div>
                             <span className="text-xs font-semibold text-white/90 leading-none truncate flex-shrink-0 max-w-[120px] text-right">
-                              {formatBookingTime(block.booking.start_time)} - {formatBookingTime(block.booking.end_time)}
+                              {formatBookingTime(block.booking.start_time)} -{" "}
+                              {formatBookingTime(block.booking.end_time)}
                             </span>
                           </div>
                         </button>
@@ -703,19 +742,26 @@ export default function DisplayPage() {
 
       {/* Booking Details Modal */}
       {selectedBooking && (
-        <div 
+        <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
           onClick={closeModal}
         >
-          <div 
+          <div
             className={`w-full max-w-lg bg-zinc-900 rounded-2xl border-2 ${getStudioColorBorder(selectedBooking.studio)} shadow-2xl overflow-hidden`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className={`${getStudioColor(selectedBooking.studio)} px-4 md:px-6 py-4 flex items-center justify-between`}>
+            <div
+              className={`${getStudioColor(selectedBooking.studio)} px-4 md:px-6 py-4 flex items-center justify-between`}
+            >
               <div>
-                <h2 className="text-lg md:text-xl font-bold text-white">{selectedBooking.studio}</h2>
-                <p className="text-sm text-white/80">{formatBookingTime(selectedBooking.start_time)} - {formatBookingTime(selectedBooking.end_time)}</p>
+                <h2 className="text-lg md:text-xl font-bold text-white">
+                  {selectedBooking.studio}
+                </h2>
+                <p className="text-sm text-white/80">
+                  {formatBookingTime(selectedBooking.start_time)} -{" "}
+                  {formatBookingTime(selectedBooking.end_time)}
+                </p>
               </div>
               <button
                 onClick={closeModal}
@@ -734,8 +780,12 @@ export default function DisplayPage() {
                   <User className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-zinc-500 uppercase tracking-wide">Customer</p>
-                  <p className="text-lg font-semibold text-white truncate">{selectedBooking.name || "Guest"}</p>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wide">
+                    Customer
+                  </p>
+                  <p className="text-lg font-semibold text-white truncate">
+                    {selectedBooking.name || "Guest"}
+                  </p>
                 </div>
               </div>
 
@@ -745,8 +795,12 @@ export default function DisplayPage() {
                   <Phone className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-zinc-500 uppercase tracking-wide">Phone</p>
-                  <p className="text-lg font-semibold text-white">{selectedBooking.phone_number}</p>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wide">
+                    Phone
+                  </p>
+                  <p className="text-lg font-semibold text-white">
+                    {selectedBooking.phone_number}
+                  </p>
                 </div>
               </div>
 
@@ -756,10 +810,16 @@ export default function DisplayPage() {
                   <Music className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-zinc-500 uppercase tracking-wide">Session Type</p>
-                  <p className="text-lg font-semibold text-white">{selectedBooking.session_type || "Not specified"}</p>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wide">
+                    Session Type
+                  </p>
+                  <p className="text-lg font-semibold text-white">
+                    {selectedBooking.session_type || "Not specified"}
+                  </p>
                   {selectedBooking.session_details && (
-                    <p className="text-sm text-zinc-400 mt-0.5">{selectedBooking.session_details}</p>
+                    <p className="text-sm text-zinc-400 mt-0.5">
+                      {selectedBooking.session_details}
+                    </p>
                   )}
                 </div>
               </div>
@@ -770,15 +830,23 @@ export default function DisplayPage() {
                   <Calendar className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-zinc-500 uppercase tracking-wide">Date & Time</p>
-                  <p className="text-lg font-semibold text-white">
-                    {new Date(selectedBooking.date).toLocaleDateString("en-US", {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                    })}
+                  <p className="text-xs text-zinc-500 uppercase tracking-wide">
+                    Date & Time
                   </p>
-                  <p className="text-sm text-zinc-400">{formatBookingTime(selectedBooking.start_time)} - {formatBookingTime(selectedBooking.end_time)}</p>
+                  <p className="text-lg font-semibold text-white">
+                    {new Date(selectedBooking.date).toLocaleDateString(
+                      "en-US",
+                      {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                      },
+                    )}
+                  </p>
+                  <p className="text-sm text-zinc-400">
+                    {formatBookingTime(selectedBooking.start_time)} -{" "}
+                    {formatBookingTime(selectedBooking.end_time)}
+                  </p>
                 </div>
               </div>
 
@@ -789,8 +857,12 @@ export default function DisplayPage() {
                     <IndianRupee className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-zinc-500 uppercase tracking-wide">Amount</p>
-                    <p className="text-lg font-semibold text-white">₹{selectedBooking.total_amount.toLocaleString()}</p>
+                    <p className="text-xs text-zinc-500 uppercase tracking-wide">
+                      Amount
+                    </p>
+                    <p className="text-lg font-semibold text-white">
+                      ₹{selectedBooking.total_amount.toLocaleString()}
+                    </p>
                   </div>
                 </div>
               )}
@@ -802,8 +874,13 @@ export default function DisplayPage() {
                     <Users className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-zinc-500 uppercase tracking-wide">Group Size</p>
-                    <p className="text-lg font-semibold text-white">{selectedBooking.group_size} {selectedBooking.group_size === 1 ? "person" : "people"}</p>
+                    <p className="text-xs text-zinc-500 uppercase tracking-wide">
+                      Group Size
+                    </p>
+                    <p className="text-lg font-semibold text-white">
+                      {selectedBooking.group_size}{" "}
+                      {selectedBooking.group_size === 1 ? "person" : "people"}
+                    </p>
                   </div>
                 </div>
               )}
@@ -815,20 +892,28 @@ export default function DisplayPage() {
                     <FileText className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-zinc-500 uppercase tracking-wide">Notes</p>
-                    <p className="text-sm text-zinc-300 mt-1">{selectedBooking.notes}</p>
+                    <p className="text-xs text-zinc-500 uppercase tracking-wide">
+                      Notes
+                    </p>
+                    <p className="text-sm text-zinc-300 mt-1">
+                      {selectedBooking.notes}
+                    </p>
                   </div>
                 </div>
               )}
 
               {/* Status Badge */}
               <div className="pt-2 flex justify-center">
-                <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium ${
-                  selectedBooking.status === "confirmed" 
-                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
-                    : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                }`}>
-                  {selectedBooking.status === "confirmed" ? "Confirmed" : "Pending"}
+                <span
+                  className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium ${
+                    selectedBooking.status === "confirmed"
+                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                      : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                  }`}
+                >
+                  {selectedBooking.status === "confirmed"
+                    ? "Confirmed"
+                    : "Pending"}
                 </span>
               </div>
             </div>
