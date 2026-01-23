@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { createEvent, deleteEvent, updateEvent } from "@/lib/googleCalendar";
-import { sendBookingConfirmationEmail, sendBookingUpdateEmail } from "@/lib/email";
-import { logNewBooking, logBookingUpdate, logOriginalBooking } from "@/lib/googleSheets";
+import {
+  sendBookingConfirmationEmail,
+  sendBookingUpdateEmail,
+} from "@/lib/email";
+import {
+  logNewBooking,
+  logBookingUpdate,
+  logOriginalBooking,
+} from "@/lib/googleSheets";
 
 interface BookRequest {
   phone: string;
@@ -37,29 +44,29 @@ async function getBookingSettings(): Promise<BookingSettings> {
 
   try {
     const { data: settings } = await supabaseServer
-      .from('booking_settings')
-      .select('key, value');
+      .from("booking_settings")
+      .select("key, value");
 
     if (settings) {
       for (const setting of settings) {
         switch (setting.key) {
-          case 'min_booking_duration':
+          case "min_booking_duration":
             defaults.minBookingDuration = Number(setting.value);
             break;
-          case 'max_booking_duration':
+          case "max_booking_duration":
             defaults.maxBookingDuration = Number(setting.value);
             break;
-          case 'booking_buffer':
+          case "booking_buffer":
             defaults.bookingBuffer = Number(setting.value);
             break;
-          case 'advance_booking_days':
+          case "advance_booking_days":
             defaults.advanceBookingDays = Number(setting.value);
             break;
         }
       }
     }
   } catch (error) {
-    console.error('Failed to fetch booking settings:', error);
+    console.error("Failed to fetch booking settings:", error);
   }
 
   return defaults;
@@ -75,13 +82,13 @@ export async function POST(request: Request) {
     const headersList = await headers();
     const forwardedFor = headersList.get("x-forwarded-for");
     const ip = forwardedFor ? forwardedFor.split(",")[0] : "unknown";
-    
+
     const isAllowed = await checkRateLimit(ip, "booking_create", 5, 3600);
-    
+
     if (!isAllowed) {
       return NextResponse.json(
         { error: "Too many booking requests. Please try again later." },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
@@ -106,15 +113,17 @@ export async function POST(request: Request) {
     if (phone.length !== 10) {
       return NextResponse.json(
         { error: "Phone number must be exactly 10 digits" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Validate required fields
     if (!studio || !date || !start_time || !end_time) {
       return NextResponse.json(
-        { error: "Missing required fields: studio, date, start_time, end_time" },
-        { status: 400 }
+        {
+          error: "Missing required fields: studio, date, start_time, end_time",
+        },
+        { status: 400 },
       );
     }
 
@@ -131,16 +140,20 @@ export async function POST(request: Request) {
     // Validate minimum booking duration
     if (durationHours < bookingSettings.minBookingDuration) {
       return NextResponse.json(
-        { error: `Minimum booking duration is ${bookingSettings.minBookingDuration} hour(s)` },
-        { status: 400 }
+        {
+          error: `Minimum booking duration is ${bookingSettings.minBookingDuration} hour(s)`,
+        },
+        { status: 400 },
       );
     }
 
     // Validate maximum booking duration
     if (durationHours > bookingSettings.maxBookingDuration) {
       return NextResponse.json(
-        { error: `Maximum booking duration is ${bookingSettings.maxBookingDuration} hours` },
-        { status: 400 }
+        {
+          error: `Maximum booking duration is ${bookingSettings.maxBookingDuration} hours`,
+        },
+        { status: 400 },
       );
     }
 
@@ -153,18 +166,23 @@ export async function POST(request: Request) {
     // Users cannot book same-day slots
     if (bookingDate.getTime() === today.getTime()) {
       return NextResponse.json(
-        { error: "Same-day bookings are not allowed. Please book for tomorrow or later." },
-        { status: 400 }
+        {
+          error:
+            "Same-day bookings are not allowed. Please book for tomorrow or later.",
+        },
+        { status: 400 },
       );
     }
 
     const maxDate = new Date(today);
     maxDate.setDate(maxDate.getDate() + bookingSettings.advanceBookingDays);
-    
+
     if (bookingDate > maxDate) {
       return NextResponse.json(
-        { error: `Cannot book more than ${bookingSettings.advanceBookingDays} days in advance` },
-        { status: 400 }
+        {
+          error: `Cannot book more than ${bookingSettings.advanceBookingDays} days in advance`,
+        },
+        { status: 400 },
       );
     }
 
@@ -177,7 +195,7 @@ export async function POST(request: Request) {
     // Use atomic function to prevent race conditions
     // This function acquires row-level locks before checking for conflicts
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: result, error: rpcError } = await supabaseServer.rpc(
+    const { data: result, error: rpcError } = (await supabaseServer.rpc(
       "create_booking_atomic",
       {
         p_phone_number: phone,
@@ -193,21 +211,29 @@ export async function POST(request: Request) {
         p_notes: null,
         p_created_by_staff_id: null,
         p_is_prompt_payment: body.is_prompt_payment || false,
-      }
-    ) as { data: { success: boolean; error?: string; booking_id?: string; booking?: any } | null; error: any };
+      },
+    )) as {
+      data: {
+        success: boolean;
+        error?: string;
+        booking_id?: string;
+        booking?: any;
+      } | null;
+      error: any;
+    };
 
     if (rpcError) {
       console.error("[Book API] RPC error:", rpcError);
       return NextResponse.json(
         { error: rpcError.message || "Failed to create booking" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     if (!result || !result.success) {
       return NextResponse.json(
         { error: result?.error || "Time slot is no longer available" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -222,7 +248,7 @@ export async function POST(request: Request) {
       console.error("[Book API] Failed to fetch created booking:", fetchError);
       return NextResponse.json(
         { error: "Booking created but failed to retrieve details" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -259,7 +285,7 @@ export async function POST(request: Request) {
 
         googleEventId = await createEvent({
           summary: `${studio} - ${session_type} (${name || phone})`,
-          description: `Booking ID: ${booking.id}\nPhone: ${phone}\nSession Type: ${session_type}\nDetails: ${session_details || 'N/A'}`,
+          description: `Booking ID: ${booking.id}\nPhone: ${phone}\nSession Type: ${session_type}\nDetails: ${session_details || "N/A"}`,
           startDateTime,
           endDateTime,
           studioName: studio,
@@ -274,14 +300,16 @@ export async function POST(request: Request) {
         booking.google_event_id = googleEventId;
       } catch (calendarError) {
         // Log error but don't fail the booking
-        console.error("[Book API] Failed to create Google Calendar event:", calendarError);
+        console.error(
+          "[Book API] Failed to create Google Calendar event:",
+          calendarError,
+        );
       }
     }
 
     // Send email booking confirmation
-    const hasResendConfig = 
-      process.env.RESEND_API_KEY &&
-      process.env.RESEND_FROM_EMAIL;
+    const hasResendConfig =
+      process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL;
 
     // Get user email if not provided in request
     let userEmail = body.email;
@@ -307,7 +335,7 @@ export async function POST(request: Request) {
           end_time,
           total_amount: total_amount || undefined,
         });
-        
+
         if (emailResult.success) {
           // Email confirmation sent successfully
           // Update booking to mark email as sent
@@ -316,11 +344,17 @@ export async function POST(request: Request) {
             .update({ email_sent: true })
             .eq("id", booking.id);
         } else {
-          console.error("[Book API] Email confirmation failed:", emailResult.error);
+          console.error(
+            "[Book API] Email confirmation failed:",
+            emailResult.error,
+          );
         }
       } catch (emailError) {
         // Log error but don't fail the booking
-        console.error("[Book API] Failed to send email confirmation:", emailError);
+        console.error(
+          "[Book API] Failed to send email confirmation:",
+          emailError,
+        );
       }
     } else {
       // Email notifications disabled - Resend credentials not configured or no user email
@@ -343,7 +377,10 @@ export async function POST(request: Request) {
         status: "confirmed",
       });
     } catch (sheetError) {
-      console.error("[Book API] Failed to log booking to Google Sheet:", sheetError);
+      console.error(
+        "[Book API] Failed to log booking to Google Sheet:",
+        sheetError,
+      );
     }
 
     return NextResponse.json({ success: true, booking });
@@ -351,7 +388,7 @@ export async function POST(request: Request) {
     console.error("[Book API] Unexpected error:", error);
     return NextResponse.json(
       { error: "Invalid request body" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }
@@ -379,7 +416,7 @@ export async function PUT(request: Request) {
     if (!original_booking_id) {
       return NextResponse.json(
         { error: "Original booking ID is required for updates" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -387,15 +424,17 @@ export async function PUT(request: Request) {
     if (phone.length !== 10) {
       return NextResponse.json(
         { error: "Phone number must be exactly 10 digits" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Validate required fields
     if (!studio || !date || !start_time || !end_time) {
       return NextResponse.json(
-        { error: "Missing required fields: studio, date, start_time, end_time" },
-        { status: 400 }
+        {
+          error: "Missing required fields: studio, date, start_time, end_time",
+        },
+        { status: 400 },
       );
     }
 
@@ -410,7 +449,7 @@ export async function PUT(request: Request) {
     if (fetchError || !originalBooking) {
       return NextResponse.json(
         { error: "Booking not found or does not belong to this phone number" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -418,26 +457,29 @@ export async function PUT(request: Request) {
     if (originalBooking.status === "cancelled") {
       return NextResponse.json(
         { error: "Cannot modify a cancelled booking" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (originalBooking.status === "completed") {
       return NextResponse.json(
         { error: "Cannot modify a completed booking" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Check 24-hour modification restriction
-    const bookingStartDateTime = new Date(`${originalBooking.date}T${originalBooking.start_time}:00`);
+    const bookingStartDateTime = new Date(
+      `${originalBooking.date}T${originalBooking.start_time}:00`,
+    );
     const now = new Date();
-    const hoursUntilBooking = (bookingStartDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-    
+    const hoursUntilBooking =
+      (bookingStartDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
     if (hoursUntilBooking < 24) {
       return NextResponse.json(
         { error: "Cannot modify a booking within 24 hours of its start time." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -454,16 +496,20 @@ export async function PUT(request: Request) {
     // Validate minimum booking duration
     if (durationHours < bookingSettings.minBookingDuration) {
       return NextResponse.json(
-        { error: `Minimum booking duration is ${bookingSettings.minBookingDuration} hour(s)` },
-        { status: 400 }
+        {
+          error: `Minimum booking duration is ${bookingSettings.minBookingDuration} hour(s)`,
+        },
+        { status: 400 },
       );
     }
 
     // Validate maximum booking duration
     if (durationHours > bookingSettings.maxBookingDuration) {
       return NextResponse.json(
-        { error: `Maximum booking duration is ${bookingSettings.maxBookingDuration} hours` },
-        { status: 400 }
+        {
+          error: `Maximum booking duration is ${bookingSettings.maxBookingDuration} hours`,
+        },
+        { status: 400 },
       );
     }
 
@@ -471,13 +517,34 @@ export async function PUT(request: Request) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const bookingDate = new Date(date);
+    bookingDate.setHours(0, 0, 0, 0);
     const maxDate = new Date(today);
     maxDate.setDate(maxDate.getDate() + bookingSettings.advanceBookingDays);
-    
+
+    // Prevent past or same-day modifications
+    if (bookingDate < today) {
+      return NextResponse.json(
+        { error: "Cannot modify a booking to a past date." },
+        { status: 400 },
+      );
+    }
+
+    if (bookingDate.getTime() === today.getTime()) {
+      return NextResponse.json(
+        {
+          error:
+            "Same-day bookings are not allowed. Please book for tomorrow or later.",
+        },
+        { status: 400 },
+      );
+    }
+
     if (bookingDate > maxDate) {
       return NextResponse.json(
-        { error: `Cannot book more than ${bookingSettings.advanceBookingDays} days in advance` },
-        { status: 400 }
+        {
+          error: `Cannot book more than ${bookingSettings.advanceBookingDays} days in advance`,
+        },
+        { status: 400 },
       );
     }
 
@@ -489,7 +556,7 @@ export async function PUT(request: Request) {
 
     // Use atomic function to prevent race conditions during update
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: result, error: rpcError } = await supabaseServer.rpc(
+    const { data: result, error: rpcError } = (await supabaseServer.rpc(
       "update_booking_atomic",
       {
         p_booking_id: original_booking_id,
@@ -503,36 +570,48 @@ export async function PUT(request: Request) {
         p_end_time: end_time,
         p_total_amount: total_amount,
         p_is_prompt_payment: body.is_prompt_payment,
-      }
-    ) as { data: { success: boolean; error?: string; booking_id?: string; booking?: any } | null; error: any };
+      },
+    )) as {
+      data: {
+        success: boolean;
+        error?: string;
+        booking_id?: string;
+        booking?: any;
+      } | null;
+      error: any;
+    };
 
     if (rpcError) {
       console.error("[Book API PUT] RPC error:", rpcError);
       return NextResponse.json(
         { error: rpcError.message || "Failed to update booking" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     if (!result || !result.success) {
       return NextResponse.json(
         { error: result?.error || "Time slot is no longer available" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
     // Get the full updated booking record
-    const { data: updatedBooking, error: updateFetchError } = await supabaseServer
-      .from("bookings")
-      .select("*")
-      .eq("id", original_booking_id)
-      .single();
+    const { data: updatedBooking, error: updateFetchError } =
+      await supabaseServer
+        .from("bookings")
+        .select("*")
+        .eq("id", original_booking_id)
+        .single();
 
     if (updateFetchError || !updatedBooking) {
-      console.error("[Book API PUT] Failed to fetch updated booking:", updateFetchError);
+      console.error(
+        "[Book API PUT] Failed to fetch updated booking:",
+        updateFetchError,
+      );
       return NextResponse.json(
         { error: "Booking updated but failed to retrieve details" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -553,7 +632,7 @@ export async function PUT(request: Request) {
           await updateEvent({
             eventId: originalBooking.google_event_id,
             summary: `${studio} - ${session_type} (${name || phone})`,
-            description: `Booking ID: ${original_booking_id}\nPhone: ${phone}\nSession Type: ${session_type}\nDetails: ${session_details || 'N/A'}\n\n[UPDATED]`,
+            description: `Booking ID: ${original_booking_id}\nPhone: ${phone}\nSession Type: ${session_type}\nDetails: ${session_details || "N/A"}\n\n[UPDATED]`,
             startDateTime,
             endDateTime,
           });
@@ -561,7 +640,7 @@ export async function PUT(request: Request) {
           // Create new calendar event if none exists
           const googleEventId = await createEvent({
             summary: `${studio} - ${session_type} (${name || phone})`,
-            description: `Booking ID: ${original_booking_id}\nPhone: ${phone}\nSession Type: ${session_type}\nDetails: ${session_details || 'N/A'}`,
+            description: `Booking ID: ${original_booking_id}\nPhone: ${phone}\nSession Type: ${session_type}\nDetails: ${session_details || "N/A"}`,
             startDateTime,
             endDateTime,
             studioName: studio,
@@ -575,14 +654,16 @@ export async function PUT(request: Request) {
           updatedBooking.google_event_id = googleEventId;
         }
       } catch (calendarError) {
-        console.error("[Book API PUT] Failed to update Google Calendar event:", calendarError);
+        console.error(
+          "[Book API PUT] Failed to update Google Calendar event:",
+          calendarError,
+        );
       }
     }
 
     // Send email notification about the update
-    const hasResendConfig = 
-      process.env.RESEND_API_KEY &&
-      process.env.RESEND_FROM_EMAIL;
+    const hasResendConfig =
+      process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL;
 
     // Get user email if not provided in request
     let userEmail = body.email;
@@ -608,14 +689,20 @@ export async function PUT(request: Request) {
           end_time,
           total_amount: total_amount || undefined,
         });
-        
+
         if (emailResult.success) {
           // Email update notification sent successfully
         } else {
-          console.error("[Book API PUT] Email update notification failed:", emailResult.error);
+          console.error(
+            "[Book API PUT] Email update notification failed:",
+            emailResult.error,
+          );
         }
       } catch (emailError) {
-        console.error("[Book API PUT] Failed to send email update notification:", emailError);
+        console.error(
+          "[Book API PUT] Failed to send email update notification:",
+          emailError,
+        );
       }
     }
 
@@ -636,7 +723,7 @@ export async function PUT(request: Request) {
         total_amount: originalBooking.total_amount ?? undefined,
         status: originalBooking.status,
         notes: originalBooking.notes || "Original booking before user update",
-        created_at: originalBooking.created_at
+        created_at: originalBooking.created_at,
       });
 
       // Then log the updated booking
@@ -655,7 +742,10 @@ export async function PUT(request: Request) {
         status: updatedBooking.status,
       });
     } catch (sheetError) {
-      console.error("[Book API PUT] Failed to log booking update to Google Sheet:", sheetError);
+      console.error(
+        "[Book API PUT] Failed to log booking update to Google Sheet:",
+        sheetError,
+      );
     }
 
     return NextResponse.json({ success: true, booking: updatedBooking });
@@ -663,7 +753,7 @@ export async function PUT(request: Request) {
     console.error("[Book API PUT] Unexpected error:", error);
     return NextResponse.json(
       { error: "Invalid request body" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }

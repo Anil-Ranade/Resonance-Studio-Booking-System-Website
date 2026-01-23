@@ -3,18 +3,22 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
 import { sendAdminBookingConfirmationEmail } from "@/lib/email";
 import { deleteEvent, createEvent, updateEvent } from "@/lib/googleCalendar";
-import { logBookingUpdate, logBookingCancellation, logOriginalBooking } from "@/lib/googleSheets";
+import {
+  logBookingUpdate,
+  logBookingCancellation,
+  logOriginalBooking,
+} from "@/lib/googleSheets";
 
 // Verify admin token from Authorization header
 async function verifyAdminToken(request: NextRequest) {
   const authHeader = request.headers.get("Authorization");
-  
+
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return null;
   }
 
   const token = authHeader.split(" ")[1];
-  
+
   // Create a client with the user's access token to verify it
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -26,8 +30,11 @@ async function verifyAdminToken(request: NextRequest) {
     },
   });
 
-  const { data: { user }, error } = await supabaseAuth.auth.getUser();
-  
+  const {
+    data: { user },
+    error,
+  } = await supabaseAuth.auth.getUser();
+
   if (error || !user) {
     console.error("[Admin Bookings] Auth error:", error?.message);
     return null;
@@ -125,12 +132,24 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { id, status, notes, studio, date, start_time, end_time, session_type, session_details, name, payment_status } = body;
+    const {
+      id,
+      status,
+      notes,
+      studio,
+      date,
+      start_time,
+      end_time,
+      session_type,
+      session_details,
+      name,
+      payment_status,
+    } = body;
 
     if (!id) {
       return NextResponse.json(
         { error: "Missing required field: id" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -148,7 +167,21 @@ export async function PUT(request: NextRequest) {
     }
 
     const updates: Record<string, any> = {};
-    if (status) updates.status = status;
+    if (status) {
+      updates.status = status;
+      if (status === "cancelled") {
+        updates.cancelled_at = new Date().toISOString();
+        updates.cancellation_reason = notes || "Cancelled by admin";
+      } else {
+        if (existingBooking.status === "cancelled") {
+          updates.cancelled_at = null;
+          updates.cancellation_reason = null;
+        }
+        if (status === "confirmed") {
+          updates.confirmed_at = new Date().toISOString();
+        }
+      }
+    }
     if (payment_status) updates.payment_status = payment_status;
     if (notes !== undefined) updates.notes = notes;
     if (studio !== undefined) updates.studio = studio;
@@ -156,9 +189,9 @@ export async function PUT(request: NextRequest) {
     if (start_time !== undefined) updates.start_time = start_time;
     if (end_time !== undefined) updates.end_time = end_time;
     if (session_type !== undefined) updates.session_type = session_type;
-    if (session_details !== undefined) updates.session_details = session_details;
+    if (session_details !== undefined)
+      updates.session_details = session_details;
     if (name !== undefined) updates.name = name;
-    if (status === "cancelled") updates.cancelled_at = new Date().toISOString();
 
     const { data: booking, error } = await supabase
       .from("bookings")
@@ -184,7 +217,7 @@ export async function PUT(request: NextRequest) {
         if (status === "cancelled" && existingBooking.google_event_id) {
           await deleteEvent(existingBooking.google_event_id);
           // Google Calendar event deleted due to cancellation
-          
+
           // Clear the google_event_id from the booking
           await supabase
             .from("bookings")
@@ -192,13 +225,17 @@ export async function PUT(request: NextRequest) {
             .eq("id", id);
         }
         // If booking was previously cancelled and is now confirmed/pending, create a new event
-        else if (existingBooking.status === "cancelled" && (status === "confirmed") && !existingBooking.google_event_id) {
+        else if (
+          existingBooking.status === "cancelled" &&
+          status === "confirmed" &&
+          !existingBooking.google_event_id
+        ) {
           const startDateTime = `${booking.date}T${booking.start_time}:00`;
           const endDateTime = `${booking.date}T${booking.end_time}:00`;
 
           const googleEventId = await createEvent({
-            summary: `${booking.studio} - ${booking.session_type || 'Booking'} (${booking.name || booking.phone_number})`,
-            description: `Booking ID: ${booking.id}\nPhone: ${booking.phone_number}\nSession Type: ${booking.session_type || 'N/A'}\nDetails: ${booking.session_details || 'N/A'}`,
+            summary: `${booking.studio} - ${booking.session_type || "Booking"} (${booking.name || booking.phone_number})`,
+            description: `Booking ID: ${booking.id}\nPhone: ${booking.phone_number}\nSession Type: ${booking.session_type || "N/A"}\nDetails: ${booking.session_details || "N/A"}`,
             startDateTime,
             endDateTime,
             studioName: booking.studio,
@@ -208,30 +245,37 @@ export async function PUT(request: NextRequest) {
             .from("bookings")
             .update({ google_event_id: googleEventId })
             .eq("id", id);
-          
+
           // Created new Google Calendar event for reactivated booking
         }
         // If booking details were updated (date, time, studio, etc.), update the calendar event
-        else if (existingBooking.google_event_id && (date || start_time || end_time || studio || session_type || name)) {
+        else if (
+          existingBooking.google_event_id &&
+          (date || start_time || end_time || studio || session_type || name)
+        ) {
           const updatedDate = date || existingBooking.date;
           const updatedStartTime = start_time || existingBooking.start_time;
           const updatedEndTime = end_time || existingBooking.end_time;
           const updatedStudio = studio || existingBooking.studio;
-          const updatedSessionType = session_type || existingBooking.session_type;
+          const updatedSessionType =
+            session_type || existingBooking.session_type;
           const updatedName = name || existingBooking.name;
 
           await updateEvent({
             eventId: existingBooking.google_event_id,
-            summary: `${updatedStudio} - ${updatedSessionType || 'Booking'} (${updatedName || booking.phone_number})`,
-            description: `Booking ID: ${booking.id}\nPhone: ${booking.phone_number}\nSession Type: ${updatedSessionType || 'N/A'}\nDetails: ${booking.session_details || 'N/A'}`,
+            summary: `${updatedStudio} - ${updatedSessionType || "Booking"} (${updatedName || booking.phone_number})`,
+            description: `Booking ID: ${booking.id}\nPhone: ${booking.phone_number}\nSession Type: ${updatedSessionType || "N/A"}\nDetails: ${booking.session_details || "N/A"}`,
             startDateTime: `${updatedDate}T${updatedStartTime}:00`,
             endDateTime: `${updatedDate}T${updatedEndTime}:00`,
           });
-          
+
           // Google Calendar event updated
         }
       } catch (calendarError) {
-        console.error("[Admin Bookings] Failed to sync Google Calendar:", calendarError);
+        console.error(
+          "[Admin Bookings] Failed to sync Google Calendar:",
+          calendarError,
+        );
         // Don't fail the request, just log the error
       }
     }
@@ -239,8 +283,7 @@ export async function PUT(request: NextRequest) {
     // Send email notification when booking is confirmed
     if (status === "confirmed" && booking) {
       const hasResendConfig =
-        process.env.RESEND_API_KEY &&
-        process.env.RESEND_FROM_EMAIL;
+        process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL;
 
       // Try to get user email
       const { data: userData } = await supabase
@@ -251,17 +294,20 @@ export async function PUT(request: NextRequest) {
 
       if (hasResendConfig && userData?.email) {
         try {
-          const emailResult = await sendAdminBookingConfirmationEmail(userData.email, {
-            id: booking.id,
-            name: booking.name,
-            studio: booking.studio,
-            session_type: booking.session_type,
-            session_details: booking.session_details,
-            date: booking.date,
-            start_time: booking.start_time,
-            end_time: booking.end_time,
-            total_amount: booking.total_amount || undefined,
-          });
+          const emailResult = await sendAdminBookingConfirmationEmail(
+            userData.email,
+            {
+              id: booking.id,
+              name: booking.name,
+              studio: booking.studio,
+              session_type: booking.session_type,
+              session_details: booking.session_details,
+              date: booking.date,
+              start_time: booking.start_time,
+              end_time: booking.end_time,
+              total_amount: booking.total_amount || undefined,
+            },
+          );
 
           if (emailResult.success) {
             // Email confirmation sent successfully
@@ -270,10 +316,16 @@ export async function PUT(request: NextRequest) {
               .update({ email_sent: true })
               .eq("id", id);
           } else {
-            console.error("[Admin Bookings] Email confirmation failed:", emailResult.error);
+            console.error(
+              "[Admin Bookings] Email confirmation failed:",
+              emailResult.error,
+            );
           }
         } catch (emailError) {
-          console.error("[Admin Bookings] Failed to send email confirmation:", emailError);
+          console.error(
+            "[Admin Bookings] Failed to send email confirmation:",
+            emailError,
+          );
         }
       }
     }
@@ -304,8 +356,9 @@ export async function PUT(request: NextRequest) {
         email: undefined,
         total_amount: existingBooking.total_amount || undefined,
         status: existingBooking.status,
-        notes: existingBooking.notes || "Original booking before admin modification",
-        created_at: existingBooking.created_at
+        notes:
+          existingBooking.notes || "Original booking before admin modification",
+        created_at: existingBooking.created_at,
       });
 
       // Then log the updated/cancelled booking
@@ -325,7 +378,7 @@ export async function PUT(request: NextRequest) {
           cancellation_reason: notes || "Cancelled by admin",
         });
       } else {
-         await logBookingUpdate({
+        await logBookingUpdate({
           id: id,
           date: booking.date,
           studio: booking.studio,
@@ -342,14 +395,17 @@ export async function PUT(request: NextRequest) {
         });
       }
     } catch (sheetError) {
-      console.error("[Admin Bookings] Failed to log to Google Sheet:", sheetError);
+      console.error(
+        "[Admin Bookings] Failed to log to Google Sheet:",
+        sheetError,
+      );
     }
 
     return NextResponse.json({ success: true, booking });
   } catch (error) {
     return NextResponse.json(
       { error: "Invalid request body" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }
@@ -367,7 +423,7 @@ export async function DELETE(request: NextRequest) {
   if (!id) {
     return NextResponse.json(
       { error: "Missing required parameter: id" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -396,7 +452,10 @@ export async function DELETE(request: NextRequest) {
       await deleteEvent(existingBooking.google_event_id);
       // Google Calendar event deleted for booking deletion
     } catch (calendarError) {
-      console.error("[Admin Bookings] Failed to delete Google Calendar event:", calendarError);
+      console.error(
+        "[Admin Bookings] Failed to delete Google Calendar event:",
+        calendarError,
+      );
       // Don't fail the request, just log the error
     }
   }
@@ -404,46 +463,46 @@ export async function DELETE(request: NextRequest) {
   // Log booking to Google Sheet BEFORE deleting (so we have the data)
   // First log the original booking state, then log the cancellation
   try {
-     await logOriginalBooking({
-        id: existingBooking.id,
-        date: existingBooking.date,
-        studio: existingBooking.studio,
-        session_type: existingBooking.session_type,
-        session_details: existingBooking.session_details,
-        start_time: existingBooking.start_time,
-        end_time: existingBooking.end_time,
-        name: existingBooking.name,
-        phone_number: existingBooking.phone_number,
-        email: undefined,
-        total_amount: existingBooking.total_amount || undefined,
-        status: existingBooking.status,
-        notes: existingBooking.notes || "Original booking before admin deletion",
-        created_at: existingBooking.created_at
-      });
+    await logOriginalBooking({
+      id: existingBooking.id,
+      date: existingBooking.date,
+      studio: existingBooking.studio,
+      session_type: existingBooking.session_type,
+      session_details: existingBooking.session_details,
+      start_time: existingBooking.start_time,
+      end_time: existingBooking.end_time,
+      name: existingBooking.name,
+      phone_number: existingBooking.phone_number,
+      email: undefined,
+      total_amount: existingBooking.total_amount || undefined,
+      status: existingBooking.status,
+      notes: existingBooking.notes || "Original booking before admin deletion",
+      created_at: existingBooking.created_at,
+    });
 
-     await logBookingCancellation({
-        id: existingBooking.id,
-        date: existingBooking.date,
-        studio: existingBooking.studio,
-        session_type: existingBooking.session_type,
-        session_details: existingBooking.session_details,
-        start_time: existingBooking.start_time,
-        end_time: existingBooking.end_time,
-        name: existingBooking.name,
-        phone_number: existingBooking.phone_number,
-        email: undefined,
-        total_amount: existingBooking.total_amount || undefined,
-        cancellation_reason: "Deleted by admin",
-      });
+    await logBookingCancellation({
+      id: existingBooking.id,
+      date: existingBooking.date,
+      studio: existingBooking.studio,
+      session_type: existingBooking.session_type,
+      session_details: existingBooking.session_details,
+      start_time: existingBooking.start_time,
+      end_time: existingBooking.end_time,
+      name: existingBooking.name,
+      phone_number: existingBooking.phone_number,
+      email: undefined,
+      total_amount: existingBooking.total_amount || undefined,
+      cancellation_reason: "Deleted by admin",
+    });
   } catch (sheetError) {
-    console.error("[Admin Bookings] Failed to log deletion to Google Sheet:", sheetError);
+    console.error(
+      "[Admin Bookings] Failed to log deletion to Google Sheet:",
+      sheetError,
+    );
   }
 
   // Delete the booking
-  const { error } = await supabase
-    .from("bookings")
-    .delete()
-    .eq("id", id);
+  const { error } = await supabase.from("bookings").delete().eq("id", id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
