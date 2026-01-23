@@ -38,10 +38,14 @@ const normalizeTime = (time: string): string => {
 export default function TimeStep() {
   const { draft, updateDraft, nextStep } = useBooking();
 
-  // Get today's date as default
-  const getTodayDate = () => new Date().toISOString().split("T")[0];
+  // Get tomorrow's date as default (same-day bookings not allowed)
+  const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split("T")[0];
+  };
 
-  const [date, setDate] = useState(draft.date || getTodayDate());
+  const [date, setDate] = useState(draft.date || getTomorrowDate());
   const [selectedStudio, setSelectedStudio] = useState<StudioName>(
     draft.studio as StudioName
   );
@@ -77,17 +81,19 @@ export default function TimeStep() {
     fetchSettings();
   }, []);
 
-  // Set today's date in draft on mount if not already set
+  // Set tomorrow's date in draft on mount if not already set (same-day bookings not allowed)
   useEffect(() => {
     if (!draft.date) {
-      const today = getTodayDate();
-      updateDraft({ date: today });
+      const tomorrow = getTomorrowDate();
+      updateDraft({ date: tomorrow });
     }
   }, [draft.date, updateDraft]);
 
-  // Calculate min/max dates
+  // Calculate min/max dates (minimum is tomorrow - same-day bookings not allowed)
   const getMinDate = () => {
-    return new Date().toISOString().split("T")[0];
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split("T")[0];
   };
 
   const getMaxDate = () => {

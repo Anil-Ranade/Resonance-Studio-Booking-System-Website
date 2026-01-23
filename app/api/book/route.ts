@@ -148,6 +148,16 @@ export async function POST(request: Request) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const bookingDate = new Date(date);
+    bookingDate.setHours(0, 0, 0, 0);
+
+    // Users cannot book same-day slots
+    if (bookingDate.getTime() === today.getTime()) {
+      return NextResponse.json(
+        { error: "Same-day bookings are not allowed. Please book for tomorrow or later." },
+        { status: 400 }
+      );
+    }
+
     const maxDate = new Date(today);
     maxDate.setDate(maxDate.getDate() + bookingSettings.advanceBookingDays);
     
@@ -415,6 +425,18 @@ export async function PUT(request: Request) {
     if (originalBooking.status === "completed") {
       return NextResponse.json(
         { error: "Cannot modify a completed booking" },
+        { status: 400 }
+      );
+    }
+
+    // Check 24-hour modification restriction
+    const bookingStartDateTime = new Date(`${originalBooking.date}T${originalBooking.start_time}:00`);
+    const now = new Date();
+    const hoursUntilBooking = (bookingStartDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+    
+    if (hoursUntilBooking < 24) {
+      return NextResponse.json(
+        { error: "Cannot modify a booking within 24 hours of its start time." },
         { status: 400 }
       );
     }

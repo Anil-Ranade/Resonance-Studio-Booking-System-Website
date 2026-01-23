@@ -459,6 +459,19 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
+    // DEBUG: Log booking state before update
+    console.log("[Admin Book API PUT] DEBUG - Before update:", {
+      booking_id: original_booking_id,
+      existing_status: existingBooking.status,
+      existing_date: existingBooking.date,
+      existing_studio: existingBooking.studio,
+      new_date: date,
+      new_studio: studio,
+      new_start_time: start_time,
+      new_end_time: end_time,
+      timestamp: new Date().toISOString(),
+    });
+
     // Use atomic update function
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: result, error: rpcError } = await supabaseServer.rpc(
@@ -477,6 +490,14 @@ export async function PUT(request: NextRequest) {
         p_is_prompt_payment: is_prompt_payment,
       }
     ) as { data: { success: boolean; error?: string; booking_id?: string; booking?: any } | null; error: any };
+
+    // DEBUG: Log RPC result
+    console.log("[Admin Book API PUT] DEBUG - RPC result:", {
+      booking_id: original_booking_id,
+      success: result?.success,
+      error: result?.error || rpcError?.message,
+      timestamp: new Date().toISOString(),
+    });
 
     if (rpcError) {
       console.error("[Admin Book API] RPC update error:", rpcError);
@@ -549,7 +570,20 @@ export async function PUT(request: NextRequest) {
       .eq("id", original_booking_id)
       .single();
 
+    // DEBUG: Log booking state after update
+    console.log("[Admin Book API PUT] DEBUG - After refetch:", {
+      booking_id: original_booking_id,
+      booking_found: !!booking,
+      booking_status: booking?.status,
+      refetch_error: refetchError?.message,
+      timestamp: new Date().toISOString(),
+    });
+
     if (refetchError || !booking) {
+         console.error("[Admin Book API PUT] CRITICAL - Booking not found after update!", {
+           booking_id: original_booking_id,
+           refetch_error: refetchError,
+         });
          return NextResponse.json({ success: true, message: "Updated but failed to refetch details" });
     }
 

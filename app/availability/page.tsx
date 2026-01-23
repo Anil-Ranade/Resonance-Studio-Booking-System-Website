@@ -80,6 +80,9 @@ export default function AvailabilityPage() {
 
   useEffect(() => {
     fetchBookings();
+    // Auto-refresh every 10 seconds for real-time updates
+    const interval = setInterval(() => fetchBookings(), 10000);
+    return () => clearInterval(interval);
   }, [formattedDate]);
 
   // Navigate to previous day
