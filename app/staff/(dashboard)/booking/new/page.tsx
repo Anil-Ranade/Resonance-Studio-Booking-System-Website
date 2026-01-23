@@ -1,8 +1,7 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import {
   BookingProvider,
   useBooking,
 } from "@/app/booking/contexts/BookingContext";
@@ -14,8 +13,13 @@ import TimeStep from "@/app/booking/components/TimeStep";
 import ReviewStep from "@/app/booking/components/ReviewStep";
 import ConfirmStep from "@/app/booking/components/ConfirmStep";
 
-function BookingSteps() {
-  const { currentStep, skipOtp, setStep } = useBooking();
+  const { currentStep, skipOtp, setStep, resetDraft } = useBooking();
+
+  // Ensure draft is reset on mount (new booking always starts fresh)
+  useEffect(() => {
+    resetDraft();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // For admin/staff, skip OTP step - go directly from review to confirm
   const effectiveStep =
