@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import {
   BookingProvider,
   useBooking,
 } from "@/app/booking/contexts/BookingContext";
@@ -13,6 +14,7 @@ import TimeStep from "@/app/booking/components/TimeStep";
 import ReviewStep from "@/app/booking/components/ReviewStep";
 import ConfirmStep from "@/app/booking/components/ConfirmStep";
 
+function BookingSteps() {
   const { currentStep, skipOtp, setStep, resetDraft } = useBooking();
 
   // Ensure draft is reset on mount (new booking always starts fresh)
@@ -54,7 +56,6 @@ import ConfirmStep from "@/app/booking/components/ConfirmStep";
       return <PhoneStep />;
   }
 }
-
 function BookingPageLoading() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-zinc-900 via-zinc-900 to-black">
