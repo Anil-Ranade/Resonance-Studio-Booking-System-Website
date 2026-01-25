@@ -36,16 +36,19 @@ const normalizeTime = (time: string): string => {
 };
 
 export default function TimeStep() {
-  const { draft, updateDraft, nextStep } = useBooking();
+  const { draft, updateDraft, nextStep, mode } = useBooking();
 
-  // Get tomorrow's date as default (same-day bookings not allowed)
-  const getTomorrowDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split("T")[0];
+  // Get default date (tomorrow for customers, today for admin/staff)
+  const getDefaultDate = () => {
+    const today = new Date();
+    if (mode === "customer") {
+      today.setDate(today.getDate() + 1);
+    }
+    // Use local time YYYY-MM-DD
+    return today.toLocaleDateString("en-CA");
   };
 
-  const [date, setDate] = useState(draft.date || getTomorrowDate());
+  const [date, setDate] = useState(draft.date || getDefaultDate());
   const [selectedStudio, setSelectedStudio] = useState<StudioName>(
     draft.studio as StudioName
   );
@@ -81,25 +84,33 @@ export default function TimeStep() {
     fetchSettings();
   }, []);
 
-  // Set tomorrow's date in draft on mount if not already set (same-day bookings not allowed)
+  // Set default date in draft on mount if not already set
   useEffect(() => {
     if (!draft.date) {
-      const tomorrow = getTomorrowDate();
-      updateDraft({ date: tomorrow });
+      const defaultDate = getDefaultDate();
+      updateDraft({ date: defaultDate });
     }
   }, [draft.date, updateDraft]);
 
-  // Calculate min/max dates (minimum is tomorrow - same-day bookings not allowed)
+  // Calculate min/max dates
   const getMinDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split("T")[0];
+    // For customers, minimum is tomorrow (same-day bookings not allowed)
+    if (mode === "customer") {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return tomorrow.toLocaleDateString("en-CA");
+    }
+    
+    // For admin/staff, allow past dates (e.g., up to 1 year ago)
+    const pastDate = new Date();
+    pastDate.setFullYear(pastDate.getFullYear() - 1);
+    return pastDate.toLocaleDateString("en-CA");
   };
 
   const getMaxDate = () => {
     const maxDate = new Date();
     maxDate.setDate(maxDate.getDate() + advanceBookingDays);
-    return maxDate.toISOString().split("T")[0];
+    return maxDate.toLocaleDateString("en-CA");
   };
 
   // Fetch available slots when date or studio changes
