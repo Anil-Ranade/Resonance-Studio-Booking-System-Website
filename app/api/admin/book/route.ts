@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createEvent, updateEvent } from "@/lib/googleCalendar";
 import { sendAdminBookingConfirmationEmail } from "@/lib/email";
 import { logNewBooking, logBookingUpdate, logOriginalBooking } from "@/lib/googleSheets";
+import { isPlaceholderEmail } from "@/lib/bookingUtils";
 
 // Verify admin token from Authorization header
 async function verifyAdminToken(request: NextRequest) {
@@ -248,6 +249,31 @@ export async function POST(request: NextRequest) {
       .select("*")
       .eq("phone_number", phone)
       .single();
+
+    if (existingUser) {
+      // Check if the current email is a placeholder (admin email)
+      const isPlaceholder = await isPlaceholderEmail(existingUser.email);
+      
+      // If it is a placeholder and we have a new valid email, update the user's profile
+      if (isPlaceholder && email && email.trim() !== "") {
+        const isNewEmailPlaceholder = await isPlaceholderEmail(email);
+        
+        if (!isNewEmailPlaceholder) {
+          console.log(`[Admin Book API] Updating user ${phone} email from ${existingUser.email} to ${email}`);
+          const { error: updateUserError } = await supabaseServer
+            .from("users")
+            .update({ 
+               email: email, 
+               name: name || existingUser.name 
+            })
+            .eq("phone_number", phone);
+
+          if (updateUserError) {
+            console.error("[Admin Book API] Failed to update user email:", updateUserError.message);
+          }
+        }
+      }
+    }
 
     if (!existingUser && name && email) {
       const { error: createUserError } = await supabaseServer

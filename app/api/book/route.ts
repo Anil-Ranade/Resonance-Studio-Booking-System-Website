@@ -10,6 +10,7 @@ import {
   logBookingUpdate,
   logOriginalBooking,
 } from "@/lib/googleSheets";
+import { isPlaceholderEmail } from "@/lib/bookingUtils";
 
 interface BookRequest {
   phone: string;
@@ -258,6 +259,31 @@ export async function POST(request: Request) {
       .select("*")
       .eq("phone_number", phone)
       .single();
+
+    if (existingUser) {
+      // Check if the current email is a placeholder (admin email)
+      const isPlaceholder = await isPlaceholderEmail(existingUser.email);
+      
+      // If it is a placeholder and we have a new valid email, update the user's profile
+      if (isPlaceholder && email && email.trim() !== "") {
+        const isNewEmailPlaceholder = await isPlaceholderEmail(email);
+        
+        if (!isNewEmailPlaceholder) {
+          console.log(`[Book API] Updating user ${phone} email from ${existingUser.email} to ${email}`);
+          const { error: updateUserError } = await supabaseServer
+            .from("users")
+            .update({ 
+               email: email, 
+               name: name || existingUser.name 
+            })
+            .eq("phone_number", phone);
+
+          if (updateUserError) {
+            console.error("Failed to update user email:", updateUserError.message);
+          }
+        }
+      }
+    }
 
     if (!existingUser && name && email) {
       const { error: createUserError } = await supabaseServer

@@ -68,7 +68,7 @@ const statusConfig: Record<string, { color: string; icon: typeof CheckCircle2; l
 };
 
 export default function ViewBookingsPage() {
-  const [email, setEmail] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -98,10 +98,10 @@ export default function ViewBookingsPage() {
         if (status.authenticated && status.user && status.user.email) {
           setIsAuthenticated(true);
           setAuthenticatedUser({ name: status.user.name, email: status.user.email });
-          setEmail(status.user.email);
+          setSearchQuery(status.user.email);
           
           // Auto-fetch bookings for authenticated user
-          await fetchBookingsForEmail(status.user.email);
+          await fetchBookings(status.user.email);
           
           if (status.user.phone) {
             fetchLoyaltyStatus(status.user.phone);
@@ -118,13 +118,22 @@ export default function ViewBookingsPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Validate email format
-  const isValidEmail = (emailStr: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr.trim());
+  const isValidEmail = (str: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str.trim());
   };
 
-  const fetchBookingsForEmail = async (emailToFetch: string) => {
-    if (!isValidEmail(emailToFetch)) {
-      setError("Please enter a valid email address");
+  // Validate phone format (10 digits)
+  const isValidPhone = (str: string) => {
+    return /^\d{10}$/.test(str.trim().replace(/\D/g, ""));
+  };
+
+  const fetchBookings = async (query: string) => {
+    const trimmedQuery = query.trim();
+    const isEmail = isValidEmail(trimmedQuery);
+    const isPhone = isValidPhone(trimmedQuery);
+
+    if (!isEmail && !isPhone) {
+      setError("Please enter a valid email address or 10-digit phone number");
       return;
     }
 
@@ -132,7 +141,14 @@ export default function ViewBookingsPage() {
     setError("");
 
     try {
-      const response = await fetch(`/api/bookings/upcoming?email=${encodeURIComponent(emailToFetch.trim())}`);
+      let url = `/api/bookings/upcoming?`;
+      if (isEmail) {
+        url += `email=${encodeURIComponent(trimmedQuery)}`;
+      } else {
+        url += `phone=${encodeURIComponent(trimmedQuery.replace(/\D/g, ""))}`;
+      }
+
+      const response = await fetch(url);
       const data = await safeJsonParse(response);
 
       if (!response.ok) {
@@ -146,6 +162,9 @@ export default function ViewBookingsPage() {
       // If phone number is returned from search, fetch loyalty status
       if (data.phone) {
         fetchLoyaltyStatus(data.phone);
+      } else if (isPhone) {
+        // If we searched by phone, we can use that directly
+        fetchLoyaltyStatus(trimmedQuery.replace(/\D/g, ""));
       }
     } catch {
       setError("An error occurred while fetching bookings");
@@ -158,7 +177,7 @@ export default function ViewBookingsPage() {
     e.preventDefault();
     setBookings([]);
     setSearched(false);
-    await fetchBookingsForEmail(email);
+    await fetchBookings(searchQuery);
   };
 
   const formatDate = (dateString: string) => {
@@ -244,16 +263,16 @@ export default function ViewBookingsPage() {
                 <div className="flex-1 relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                   <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email address"
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Enter email or phone number"
                     className="w-full py-3 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
                   />
                 </div>
                 <motion.button
                   type="submit"
-                  disabled={loading || !isValidEmail(email)}
+                  disabled={loading || (!isValidEmail(searchQuery) && !isValidPhone(searchQuery))}
                   className="btn-accent py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -419,7 +438,7 @@ export default function ViewBookingsPage() {
               >
                 <CalendarX className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
                 <h3 className="text-lg font-medium text-white mb-1">No Upcoming Bookings</h3>
-                <p className="text-zinc-400 text-sm">No upcoming bookings found for this email address.</p>
+                <p className="text-zinc-400 text-sm">No upcoming bookings found for this email or phone number.</p>
                 <Link 
                   href="/booking/new"
                   className="inline-block mt-4 btn-accent py-2 px-6 text-sm"
