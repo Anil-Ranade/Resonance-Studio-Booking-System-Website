@@ -213,6 +213,17 @@ export default function PhoneStep() {
     performAutoLogin();
   }, []); // Run only on mount
 
+  // Sync phone from draft if it comes in late (e.g. from sessionStorage)
+  useEffect(() => {
+    const draftDigits = draft.phone.replace(/\D/g, "");
+    const currentDigits = phone.replace(/\D/g, "");
+    
+    // If draft has phone but local state doesn't (or diff value on load), update it
+    if (draftDigits.length === 10 && currentDigits !== draftDigits) {
+      setPhone(formatPhoneForDisplay(draftDigits));
+    }
+  }, [draft.phone, phone]);
+
   // Verify existing phone number on mount (for page reload scenarios)
   useEffect(() => {
     // If phone is already in draft (from localStorage), verify it
