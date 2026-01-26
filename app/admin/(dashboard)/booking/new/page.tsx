@@ -14,12 +14,20 @@ import TimeStep from "@/app/booking/components/TimeStep";
 import ReviewStep from "@/app/booking/components/ReviewStep";
 import ConfirmStep from "@/app/booking/components/ConfirmStep";
 
+import { useSearchParams } from "next/navigation";
+
+// ... (existing imports)
+
 function BookingSteps() {
   const { currentStep, skipOtp, setStep, resetDraft } = useBooking();
+  const searchParams = useSearchParams();
+  const isEditFlow = searchParams.get("source") === "edit";
 
-  // Ensure draft is reset on mount (new booking always starts fresh)
+  // Ensure draft is reset on mount (new booking always starts fresh), unless we are editing
   useEffect(() => {
-    resetDraft();
+    if (!isEditFlow) {
+      resetDraft();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

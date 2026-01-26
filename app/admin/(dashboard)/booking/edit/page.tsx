@@ -138,7 +138,7 @@ export default function AdminEditBookingPage() {
     sessionStorage.setItem('editBookingData', JSON.stringify(editData));
     
     // Navigate to admin booking flow
-    router.push('/admin/booking/new');
+    router.push('/admin/booking/new?source=edit');
   };
 
   const formatDate = (dateStr: string) => {
