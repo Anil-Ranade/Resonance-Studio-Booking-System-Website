@@ -151,6 +151,7 @@ export async function GET(request: NextRequest) {
   const studio = searchParams.get('studio');
   const date = searchParams.get('date');
   const excludeBookingId = searchParams.get('excludeBookingId'); // For edit mode - exclude this booking from conflict check
+  const allowPastSlots = searchParams.get('allowPastSlots') === 'true'; // For admin/staff to book past time slots
 
   // Validate inputs
   if (!studio || !date) {
@@ -268,7 +269,8 @@ export async function GET(request: NextRequest) {
     // Return all slots with availability status (including past slots marked as unavailable)
     const slotsWithAvailability = allChunks.map((chunk) => {
       const slotStartMinutes = timeToMinutes(chunk.start);
-      const isPastSlot = isToday && slotStartMinutes <= currentTimeInMinutes;
+      // Only mark as past slot if allowPastSlots is false (for regular customers)
+      const isPastSlot = !allowPastSlots && isToday && slotStartMinutes <= currentTimeInMinutes;
       const isAvailable = availableSlotStarts.has(chunk.start) && !isPastSlot;
       
       return {

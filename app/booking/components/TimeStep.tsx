@@ -131,6 +131,10 @@ export default function TimeStep() {
       if (draft.isEditMode && draft.originalBookingId) {
         url += `&excludeBookingId=${draft.originalBookingId}`;
       }
+      // Allow past slots for admin/staff
+      if (mode === "admin" || mode === "staff") {
+        url += `&allowPastSlots=true`;
+      }
 
       const response = await fetch(url);
 
@@ -154,7 +158,7 @@ export default function TimeStep() {
     } finally {
       setLoading(false);
     }
-  }, [date, selectedStudio, draft.isEditMode, draft.originalBookingId]);
+  }, [date, selectedStudio, draft.isEditMode, draft.originalBookingId, mode]);
 
   // Fetch availability summary for all allowed studios when date changes
   const fetchStudioAvailability = useCallback(async () => {
@@ -174,6 +178,10 @@ export default function TimeStep() {
           if (draft.isEditMode && draft.originalBookingId) {
             url += `&excludeBookingId=${draft.originalBookingId}`;
           }
+          // Allow past slots for admin/staff
+          if (mode === "admin" || mode === "staff") {
+            url += `&allowPastSlots=true`;
+          }
           const response = await fetch(url);
           if (response.ok) {
             const data = await response.json();
@@ -188,7 +196,7 @@ export default function TimeStep() {
     } catch (err) {
       console.error("Error fetching studio availability:", err);
     }
-  }, [date, draft.allowedStudios, draft.isEditMode, draft.originalBookingId]);
+  }, [date, draft.allowedStudios, draft.isEditMode, draft.originalBookingId, mode]);
 
   useEffect(() => {
     if (date) {
