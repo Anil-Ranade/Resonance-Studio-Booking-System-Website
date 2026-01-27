@@ -2250,7 +2250,6 @@ Enjoy your session!`;
                           })
                         }
                         className="input"
-                        min={new Date().toISOString().split("T")[0]}
                       />
                     </div>
                     <div>

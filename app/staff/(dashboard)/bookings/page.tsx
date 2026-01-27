@@ -1447,7 +1447,6 @@ export default function StaffBookingsPage() {
                           })
                         }
                         className="input"
-                        min={new Date().toISOString().split("T")[0]}
                       />
                     </div>
                     <div>
