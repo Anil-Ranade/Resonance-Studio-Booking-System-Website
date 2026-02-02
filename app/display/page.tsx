@@ -215,8 +215,10 @@ export default function DisplayPage() {
       let currentBlock: BookingBlock | null = null;
 
       studioBookings.forEach((b) => {
-        const start = parseInt(b.start_time.split(":")[0], 10);
-        const end = parseInt(b.end_time.split(":")[0], 10);
+        const [startHr, startMin] = b.start_time.split(":").map(Number);
+        const [endHr, endMin] = b.end_time.split(":").map(Number);
+        const start = startHr + startMin / 60; // e.g., 9:30 = 9.5
+        const end = endHr + endMin / 60; // e.g., 13:30 = 13.5
 
         if (
           currentBlock &&
