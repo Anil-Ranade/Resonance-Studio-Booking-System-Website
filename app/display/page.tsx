@@ -39,6 +39,8 @@ interface Booking {
 interface BookingBlock {
   start: number;
   end: number;
+  startTime: string; // Actual start time string (HH:MM)
+  endTime: string; // Actual end time string (HH:MM)
   booking: Booking;
 }
 
@@ -223,9 +225,16 @@ export default function DisplayPage() {
         ) {
           // Merge consecutive bookings from same user
           currentBlock.end = end;
+          currentBlock.endTime = b.end_time; // Update to the latest booking's end time
         } else {
           if (currentBlock) blocks.push(currentBlock);
-          currentBlock = { start, end, booking: b };
+          currentBlock = {
+            start,
+            end,
+            startTime: b.start_time,
+            endTime: b.end_time,
+            booking: b,
+          };
         }
       });
 
@@ -725,8 +734,8 @@ export default function DisplayPage() {
                               )}
                             </div>
                             <span className="text-xs font-semibold text-white/90 leading-none truncate flex-shrink-0 max-w-[120px] text-right">
-                              {formatBookingTime(block.booking.start_time)} -{" "}
-                              {formatBookingTime(block.booking.end_time)}
+                              {formatBookingTime(block.startTime)} -{" "}
+                              {formatBookingTime(block.endTime)}
                             </span>
                           </div>
                         </button>
