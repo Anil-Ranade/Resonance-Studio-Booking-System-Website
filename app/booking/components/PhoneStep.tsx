@@ -333,10 +333,12 @@ export default function PhoneStep() {
   const phoneValid = phone.replace(/\D/g, "").length === 10;
   const emailValid =
     email.trim() === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const isAdminOrStaff = mode === "admin" || mode === "staff";
   const isValid =
     phoneValid &&
     userChecked &&
     (isExistingUser ||
+      isAdminOrStaff ||
       (name.trim() !== "" && email.trim() !== "" && emailValid));
 
   // Handle confirming the auto-detected user
@@ -508,8 +510,8 @@ export default function PhoneStep() {
               }
               className={`w-full bg-zinc-800/50 border-2 rounded-xl pl-10 pr-4 py-2.5 text-white text-base placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all ${
                 isExistingUser ? "border-zinc-600" : "border-zinc-600"
-              } ${isExistingUser ? "opacity-75" : ""}`}
-              readOnly={isExistingUser}
+              } ${isExistingUser && !isAdminOrStaff ? "opacity-75" : ""}`}
+              readOnly={isExistingUser && !isAdminOrStaff}
             />
           </div>
         )}
@@ -529,8 +531,8 @@ export default function PhoneStep() {
               }
               className={`w-full bg-zinc-800/50 border-2 rounded-xl pl-10 pr-4 py-2.5 text-white text-base placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all ${
                 isExistingUser ? "border-zinc-600" : "border-zinc-600"
-              } ${isExistingUser && !canOverrideEmail ? "opacity-75" : ""}`}
-              readOnly={isExistingUser && !canOverrideEmail}
+              } ${isExistingUser && !canOverrideEmail && !isAdminOrStaff ? "opacity-75" : ""}`}
+              readOnly={isExistingUser && !canOverrideEmail && !isAdminOrStaff}
             />
           </div>
         )}
