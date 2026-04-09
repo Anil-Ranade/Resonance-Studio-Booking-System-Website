@@ -8,19 +8,24 @@ import { ArrowLeft, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 // All gallery images from assets
 const galleryImages = [
-  // Studio A
+  // Studios folder
   "/studios/studio-a.jpeg",
   "/studios/studio-a-2.jpeg",
   "/studios/studio-a-3.jpeg",
   "/studios/studio-a-4.jpeg",
-  // Studio B
-  "/studios/studio-b.jpeg",
   "/studios/studio-b-2.jpeg",
   "/studios/studio-b-3.jpeg",
   "/studios/studio-b-4.jpeg",
-  // Studio C
   "/studios/studio-c.jpeg",
   "/studios/studio-c-2.jpeg",
+  "/studios/studio-c-3.jpeg",
+  "/studios/common_area.jpeg",
+  "/studios/common_area_2.jpeg",
+  "/studios/logo.jpeg",
+  // Main folder
+  "/studios/main/studio_a.jpeg",
+  "/studios/main/studio_b.jpeg",
+  "/studios/main/studio_c.jpeg",
 ];
 
 // Optimized animation variants
@@ -39,7 +44,7 @@ const staggerContainer = {
 
 export default function GalleryPage() {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
-    null
+    null,
   );
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
 
@@ -123,7 +128,7 @@ export default function GalleryPage() {
             onClick={() =>
               setCurrentCarouselIndex(
                 (prev) =>
-                  (prev - 1 + galleryImages.length) % galleryImages.length
+                  (prev - 1 + galleryImages.length) % galleryImages.length,
               )
             }
             className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all z-10"
@@ -133,7 +138,7 @@ export default function GalleryPage() {
           <button
             onClick={() =>
               setCurrentCarouselIndex(
-                (prev) => (prev + 1) % galleryImages.length
+                (prev) => (prev + 1) % galleryImages.length,
               )
             }
             className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all z-10"
@@ -237,18 +242,17 @@ export default function GalleryPage() {
 
             {/* Image Container */}
             <motion.div
-              className="relative z-10 w-full max-w-5xl mx-4 md:mx-8"
+              className="relative z-10 w-full max-w-5xl mx-4 md:mx-8 flex items-center justify-center"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
             >
-              <div className="aspect-video rounded-2xl overflow-hidden relative">
-                <Image
+              <div className="max-w-full max-h-[85vh] rounded-2xl overflow-hidden">
+                <img
                   src={galleryImages[selectedImageIndex]}
                   alt="Gallery image"
-                  fill
-                  className="object-cover"
+                  className="block max-w-full max-h-[85vh] w-auto h-auto object-contain"
                 />
               </div>
 

@@ -1,17 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  ArrowLeft,
-  Users,
-  Check,
-  Star,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowLeft, Users, Check, Star } from "lucide-react";
 
 // Optimized animation variants with shorter durations
 const fadeInUp = {
@@ -52,12 +44,7 @@ export default function StudiosPage() {
         'Huge 65" TV screen for karaoke',
       ],
       price: "350",
-      images: [
-        "/studios/studio-a.jpeg",
-        "/studios/studio-a-2.jpeg",
-        "/studios/studio-a-3.jpeg",
-        "/studios/studio-a-4.jpeg",
-      ],
+      image: "/studios/main/studio_a.jpeg",
     },
     {
       id: "studio-b",
@@ -78,12 +65,7 @@ export default function StudiosPage() {
         "Comfortable seating area",
       ],
       price: "250",
-      images: [
-        "/studios/studio-b.jpeg",
-        "/studios/studio-b-2.jpeg",
-        "/studios/studio-b-3.jpeg",
-        "/studios/studio-b-4.jpeg",
-      ],
+      image: "/studios/main/studio_b.jpeg",
     },
     {
       id: "studio-c",
@@ -104,45 +86,9 @@ export default function StudiosPage() {
         "Intimate recording space",
       ],
       price: "200",
-      images: ["/studios/studio-c.jpeg", "/studios/studio-c-2.jpeg"],
+      image: "/studios/main/studio_c.jpeg",
     },
   ];
-
-  // State to track current image index for each studio
-  const [currentImageIndex, setCurrentImageIndex] = useState<{
-    [key: string]: number;
-  }>({
-    "studio-a": 0,
-    "studio-b": 0,
-    "studio-c": 0,
-  });
-
-  const nextImage = (studioId: string, totalImages: number) => {
-    setCurrentImageIndex((prev) => ({
-      ...prev,
-      [studioId]: (prev[studioId] + 1) % totalImages,
-    }));
-  };
-
-  const prevImage = (studioId: string, totalImages: number) => {
-    setCurrentImageIndex((prev) => ({
-      ...prev,
-      [studioId]: (prev[studioId] - 1 + totalImages) % totalImages,
-    }));
-  };
-
-  // Auto-scroll effect for all studios
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => ({
-        "studio-a": (prev["studio-a"] + 1) % 4,
-        "studio-b": (prev["studio-b"] + 1) % 4,
-        "studio-c": (prev["studio-c"] + 1) % 2,
-      }));
-    }, 4000); // Change image every 4 seconds
-
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="min-h-screen py-8 px-4">
@@ -188,72 +134,14 @@ export default function StudiosPage() {
               whileHover={{ y: -5, transition: { duration: 0.2 } }}
             >
               <div className="flex flex-col lg:flex-row">
-                {/* Studio Image Carousel */}
+                {/* Studio Image */}
                 <div className="lg:w-2/5 h-64 lg:h-auto min-h-[280px] relative overflow-hidden bg-zinc-900">
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={currentImageIndex[studio.id]}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="absolute inset-0"
-                    >
-                      <Image
-                        src={studio.images[currentImageIndex[studio.id]]}
-                        alt={`${studio.name} - Image ${
-                          currentImageIndex[studio.id] + 1
-                        }`}
-                        fill
-                        className="object-cover"
-                      />
-                    </motion.div>
-                  </AnimatePresence>
-
-                  {/* Navigation Arrows */}
-                  {studio.images.length > 1 && (
-                    <>
-                      <button
-                        onClick={() =>
-                          prevImage(studio.id, studio.images.length)
-                        }
-                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all z-10"
-                        aria-label="Previous image"
-                      >
-                        <ChevronLeft className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() =>
-                          nextImage(studio.id, studio.images.length)
-                        }
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all z-10"
-                        aria-label="Next image"
-                      >
-                        <ChevronRight className="w-5 h-5" />
-                      </button>
-
-                      {/* Dot Indicators */}
-                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-                        {studio.images.map((_, imgIndex) => (
-                          <button
-                            key={imgIndex}
-                            onClick={() =>
-                              setCurrentImageIndex((prev) => ({
-                                ...prev,
-                                [studio.id]: imgIndex,
-                              }))
-                            }
-                            className={`w-2 h-2 rounded-full transition-all ${
-                              currentImageIndex[studio.id] === imgIndex
-                                ? "bg-white w-4"
-                                : "bg-white/50 hover:bg-white/70"
-                            }`}
-                            aria-label={`Go to image ${imgIndex + 1}`}
-                          />
-                        ))}
-                      </div>
-                    </>
-                  )}
+                  <Image
+                    src={studio.image}
+                    alt={studio.name}
+                    fill
+                    className="object-cover"
+                  />
                 </div>
 
                 {/* Studio Info */}
