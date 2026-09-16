@@ -451,7 +451,7 @@ export default function PhoneStep() {
       showBack={true}
       showNext={true}
       onBack={handleBack}
-      onExit={() => router.push('/booking')}
+      onExit={() => router.push(mode === "customer" ? "/booking" : `/${mode}/booking`)}
       onNext={handleNext}
       isNextDisabled={!isValid || isCheckingUser}
     >
