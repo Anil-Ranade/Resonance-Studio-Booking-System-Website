@@ -440,7 +440,7 @@ export async function POST(request: Request) {
         end_time,
         name,
         phone_number: phone,
-        email: userEmail,
+        email: userEmail ?? undefined,
         total_amount: total_amount ?? undefined,
         status: "confirmed",
       });
@@ -798,7 +798,7 @@ export async function PUT(request: Request) {
         end_time,
         name,
         phone_number: phone,
-        email: userEmail,
+        email: userEmail ?? undefined,
         total_amount: total_amount ?? undefined,
         status: updatedBooking.status,
       });
