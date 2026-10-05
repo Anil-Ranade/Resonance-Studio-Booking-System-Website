@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   DISPLAY_COOKIE,
   displayToken,
+  hasDisplaySession,
   rateLimit,
   safeEqual,
 } from "@/lib/apiSecurity";
+
+// GET /api/display/auth - Whether the display session cookie is still valid
+export async function GET(request: NextRequest) {
+  return NextResponse.json({ authenticated: hasDisplaySession(request) });
+}
 
 // POST /api/display/auth - Check the display password and start a display session
 export async function POST(request: NextRequest) {

@@ -44,8 +44,6 @@ interface BookingBlock {
   booking: Booking;
 }
 
-const DISPLAY_AUTH_KEY = "displayAuthenticated";
-
 export default function DisplayPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -71,21 +69,13 @@ export default function DisplayPage() {
   // Format selected date for API
   const formattedDate = toLocalDateString(selectedDate);
 
-  // Check for existing authentication on mount
+  // Check for existing authentication on mount (cookie is httpOnly, so ask the server)
   useEffect(() => {
-    const checkAuth = () => {
-      try {
-        const authenticated = localStorage.getItem(DISPLAY_AUTH_KEY);
-        if (authenticated === "true") {
-          setIsAuthenticated(true);
-        }
-      } catch (error) {
-        console.error("Error checking auth:", error);
-      } finally {
-        setCheckingAuth(false);
-      }
-    };
-    checkAuth();
+    fetch("/api/display/auth")
+      .then((res) => res.json())
+      .then((data) => setIsAuthenticated(!!data.authenticated))
+      .catch((error) => console.error("Error checking auth:", error))
+      .finally(() => setCheckingAuth(false));
   }, []);
 
   // Handle password submission
@@ -111,8 +101,6 @@ export default function DisplayPage() {
         return;
       }
 
-      // Store authentication in localStorage (never expires)
-      localStorage.setItem(DISPLAY_AUTH_KEY, "true");
       setIsAuthenticated(true);
     } catch (error) {
       console.error("Login error:", error);
@@ -184,6 +172,11 @@ export default function DisplayPage() {
       );
       if (response.ok) {
         const data = await response.json();
+        // ponytail: API drops phone_number without a valid session cookie (12h expiry) -> re-login
+        if (data.bookings?.some((b: Booking) => !("phone_number" in b))) {
+          setIsAuthenticated(false);
+          return;
+        }
         setBookings(data.bookings || []);
       }
     } catch (error) {
