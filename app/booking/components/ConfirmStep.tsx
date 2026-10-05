@@ -1,20 +1,23 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   Calendar,
   Clock,
   Building2,
-  Loader2,
   AlertCircle,
   Home,
   CalendarPlus,
   LayoutDashboard,
 } from "lucide-react";
-import { motion } from "framer-motion";
 import { useBooking } from "../contexts/BookingContext";
+import StepLayout from "./StepLayout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Spinner } from "@/components/ui/spinner";
 import { getSession } from "@/lib/supabaseAuth";
 
 export default function ConfirmStep() {
@@ -41,13 +44,19 @@ export default function ConfirmStep() {
     }
   }, [mode]);
 
-  // Create booking on mount
+  // Create booking on mount - once, even if React mounts the effect twice
+  const started = useRef(false);
   useEffect(() => {
+    if (started.current) return;
+    started.current = true;
     createBooking();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const inFlight = useRef(false);
   const createBooking = async () => {
+    if (inFlight.current) return; // "Try again" double-tap
+    inFlight.current = true;
     setIsBooking(true);
     setError("");
 
@@ -57,10 +66,10 @@ export default function ConfirmStep() {
 
       if (draft.sessionType === "Karaoke" && draft.karaokeOption) {
         const labels: Record<string, string> = {
-          "1_5": "1–5 participants",
-          "6_10": "6–10 participants",
-          "11_20": "11–20 participants",
-          "21_30": "21–30 participants",
+          "1_5": "1-5 participants",
+          "6_10": "6-10 participants",
+          "11_20": "11-20 participants",
+          "21_30": "21-30 participants",
         };
         sessionDetails = labels[draft.karaokeOption] || draft.sessionType || "";
       } else if (
@@ -68,11 +77,11 @@ export default function ConfirmStep() {
         draft.liveOption
       ) {
         const labels: Record<string, string> = {
-          "1_2": "1–2 musicians",
-          "3_4": "3–4 musicians",
+          "1_2": "1-2 musicians",
+          "3_4": "3-4 musicians",
           "5": "5 musicians",
-          "6_8": "6–8 musicians",
-          "9_12": "9–12 musicians",
+          "6_8": "6-8 musicians",
+          "9_12": "9-12 musicians",
         };
         sessionDetails = labels[draft.liveOption] || draft.sessionType || "";
       } else if (
@@ -138,7 +147,15 @@ export default function ConfirmStep() {
           date: draft.date,
           start_time: draft.selectedSlot?.start,
           end_time: draft.selectedSlot?.end,
+          // Admin/staff routes use this; the customer route ignores it and
+          // computes the price from `options`
           rate_per_hour: draft.ratePerHour,
+          options: {
+            karaokeOption: draft.karaokeOption || undefined,
+            liveOption: draft.liveOption || undefined,
+            bandEquipment: draft.bandEquipment,
+            recordingOption: draft.recordingOption || undefined,
+          },
           is_prompt_payment: draft.isPromptPayment,
           original_booking_id: isModification
             ? draft.originalBookingId
@@ -171,6 +188,7 @@ export default function ConfirmStep() {
       );
     } finally {
       setIsBooking(false);
+      inFlight.current = false;
     }
   };
 
@@ -215,374 +233,129 @@ export default function ConfirmStep() {
     });
   };
 
+  // Context counts OTP and confirm as one visible step, so pin progress to the last step.
+  const lastStep = 7;
+
   if (isBooking) {
     return (
-      <div
-        className={`h-[100dvh] flex flex-col overflow-hidden ${
-          draft.isEditMode
-            ? "bg-gradient-to-b from-blue-950 via-zinc-900 to-black"
-            : "bg-gradient-to-b from-zinc-900 via-zinc-900 to-black"
-        }`}
+      <StepLayout
+        title={draft.isEditMode ? "Updating your booking..." : "Confirming your booking..."}
+        subtitle="Please wait while we process your request"
+        hideFooter
+        progressStep={lastStep}
       >
-        {/* Header */}
-        <header className="flex-shrink-0 px-4 pt-4 pb-2">
-          <div className="text-center mb-3">
-            <h1
-              className={`text-lg font-bold ${
-                draft.isEditMode ? "text-blue-400" : "text-violet-400"
-              }`}
-            >
-              Resonance – Sinhgad Road
-            </h1>
-            <h2 className="text-sm text-zinc-400">Online Booking System</h2>
-          </div>
-
-        </header>
-
-        {/* Main content */}
-        <main className="flex-1 flex items-center justify-center px-4">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="text-center"
-          >
-            <Loader2
-              className={`w-16 h-16 ${
-                draft.isEditMode ? "text-blue-400" : "text-violet-400"
-              } animate-spin mx-auto mb-4`}
-            />
-            <h4 className="text-xl font-bold text-white mb-2">
-              {draft.isEditMode
-                ? "Updating your booking..."
-                : "Confirming your booking..."}
-            </h4>
-            <p className="text-zinc-400">
-              Please wait while we process your request
-            </p>
-          </motion.div>
-        </main>
-
-        {/* Footer with progress bar */}
-        <footer
-          className={`flex-shrink-0 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t ${
-            draft.isEditMode ? "border-blue-900/50" : "border-zinc-800"
-          } bg-zinc-900/80 backdrop-blur`}
-        >
-          <div className="flex items-center gap-1 mb-2">
-            {[1, 2, 3, 4, 5, 6, 7].map((step) => (
-              <div
-                key={step}
-                className={`h-1.5 flex-1 rounded-full transition-colors ${
-                  step <= 7
-                    ? draft.isEditMode
-                      ? "bg-blue-500"
-                      : "bg-violet-500"
-                    : "bg-zinc-700"
-                }`}
-              />
-            ))}
-          </div>
-          <p className="text-center text-xs text-zinc-500">Step 7 of 7</p>
-        </footer>
-      </div>
+        <div className="flex justify-center py-12">
+          <Spinner className="size-14 text-primary" />
+        </div>
+      </StepLayout>
     );
   }
 
   if (error) {
     return (
-      <div
-        className={`h-[100dvh] flex flex-col overflow-hidden ${
-          draft.isEditMode
-            ? "bg-gradient-to-b from-blue-950 via-zinc-900 to-black"
-            : "bg-gradient-to-b from-zinc-900 via-zinc-900 to-black"
-        }`}
+      <StepLayout
+        title={draft.isEditMode ? "Update failed" : "Booking failed"}
+        progressStep={lastStep}
+        footer={
+          <div className="flex gap-3">
+            <Button variant="secondary" onClick={handleGoHome} className="flex-1 h-11">
+              Go home
+            </Button>
+            <Button onClick={createBooking} className="flex-1 h-11 font-semibold">
+              Try again
+            </Button>
+          </div>
+        }
       >
-        {/* Header */}
-        <header className="flex-shrink-0 px-4 pt-4 pb-2">
-          <div className="text-center mb-3">
-            <h1
-              className={`text-lg font-bold ${
-                draft.isEditMode ? "text-blue-400" : "text-violet-400"
-              }`}
-            >
-              Resonance – Sinhgad Road
-            </h1>
-            <h2 className="text-sm text-zinc-400">Online Booking System</h2>
+        <div className="flex flex-col items-center text-center gap-4 py-8">
+          <div className="p-4 rounded-full bg-destructive/15 text-destructive">
+            <AlertCircle className="w-12 h-12" />
           </div>
-
-        </header>
-
-        {/* Main content */}
-        <main className="flex-1 flex items-center justify-center px-4">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="text-center max-w-sm"
-          >
-            <div className="p-4 rounded-full bg-red-500/20 mx-auto w-fit mb-4">
-              <AlertCircle className="w-12 h-12 text-red-400" />
-            </div>
-            <h4 className="text-xl font-bold text-white mb-2">
-              {draft.isEditMode ? "Update Failed" : "Booking Failed"}
-            </h4>
-            <p className="text-red-400 mb-6">{error}</p>
-            <div className="flex gap-3">
-              <button
-                onClick={handleGoHome}
-                className="flex-1 px-4 py-3 rounded-xl bg-zinc-800 text-white font-medium hover:bg-zinc-700"
-              >
-                Go Home
-              </button>
-              <button
-                onClick={createBooking}
-                className={`flex-1 px-4 py-3 rounded-xl ${
-                  draft.isEditMode
-                    ? "bg-blue-600 hover:bg-blue-500"
-                    : "bg-violet-600 hover:bg-violet-500"
-                } text-white font-medium`}
-              >
-                Try Again
-              </button>
-            </div>
-          </motion.div>
-        </main>
-
-        {/* Footer with progress bar */}
-        <footer
-          className={`flex-shrink-0 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t ${
-            draft.isEditMode ? "border-blue-900/50" : "border-zinc-800"
-          } bg-zinc-900/80 backdrop-blur`}
-        >
-          <div className="flex items-center gap-1 mb-2">
-            {[1, 2, 3, 4, 5, 6, 7].map((step) => (
-              <div
-                key={step}
-                className={`h-1.5 flex-1 rounded-full transition-colors ${
-                  step <= 7
-                    ? draft.isEditMode
-                      ? "bg-blue-500"
-                      : "bg-violet-500"
-                    : "bg-zinc-700"
-                }`}
-              />
-            ))}
-          </div>
-          <p className="text-center text-xs text-zinc-500">Step 7 of 7</p>
-        </footer>
-      </div>
+          <p className="text-destructive max-w-sm">{error}</p>
+        </div>
+      </StepLayout>
     );
   }
 
   return (
-    <div
-      className={`h-[100dvh] flex flex-col overflow-hidden ${
-        draft.isEditMode
-          ? "bg-gradient-to-b from-blue-950 via-zinc-900 to-black"
-          : "bg-gradient-to-b from-zinc-900 via-zinc-900 to-black"
-      }`}
-    >
-      {/* Header */}
-      <header className="flex-shrink-0 px-4 pt-4 pb-2">
-        <div className="text-center mb-3">
-          <h1
-            className={`text-lg font-bold ${
-              draft.isEditMode ? "text-blue-400" : "text-violet-400"
-            }`}
-          >
-            Resonance – Sinhgad Road
-          </h1>
-          <h2 className="text-sm text-zinc-400">Online Booking System</h2>
+    <StepLayout
+      title={draft.isEditMode ? "Booking updated!" : "Booking confirmed!"}
+      progressStep={lastStep}
+      footer={
+        <div className="flex gap-3">
+          <Button variant="secondary" onClick={handleGoHome} className="flex-1 h-11">
+            {mode !== "customer" ? (
+              <>
+                <LayoutDashboard /> Dashboard
+              </>
+            ) : (
+              <>
+                <Home /> Home
+              </>
+            )}
+          </Button>
+          <Button onClick={handleNewBooking} className="flex-1 h-11 font-semibold">
+            <CalendarPlus /> New booking
+          </Button>
         </div>
+      }
+    >
+      <div className="flex flex-col items-center gap-4 pt-2">
+        <div className="p-3 rounded-full bg-emerald-500/15 text-emerald-400">
+          <CheckCircle2 className="w-12 h-12" />
+        </div>
+        {bookingId && (
+          <p className="text-muted-foreground">
+            Booking ID: <span className="text-primary font-semibold tracking-wider">{bookingId}</span>
+          </p>
+        )}
 
-      </header>
-
-      {/* Main content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 overflow-hidden">
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", duration: 0.5 }}
-          className="text-center"
-        >
-          {/* Success Icon */}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring" }}
-            className={`p-3 rounded-full ${
-              draft.isEditMode ? "bg-blue-500/20" : "bg-green-500/20"
-            } mx-auto w-fit mb-3`}
-          >
-            <CheckCircle2
-              className={`w-12 h-12 ${
-                draft.isEditMode ? "text-blue-400" : "text-green-400"
-              }`}
-            />
-          </motion.div>
-
-          <h4 className="text-xl font-bold text-white mb-1">
-            {draft.isEditMode ? "Booking Updated!" : "Booking Confirmed!"}
-          </h4>
-          {bookingId && (
-            <p className="text-zinc-400 mb-4">
-              Booking ID:{" "}
-              <span
-                className={`${
-                  draft.isEditMode ? "text-blue-400" : "text-violet-400"
-                } font-mono`}
-              >
-                {bookingId}
-              </span>
-            </p>
-          )}
-        </motion.div>
-
-        {/* Booking Details Card */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className={`w-full max-w-sm bg-zinc-800/50 border ${
-            draft.isEditMode ? "border-blue-700/50" : "border-zinc-700"
-          } rounded-xl p-4 mt-3`}
-        >
-          <div className="space-y-3">
+        <Card className="w-full max-w-sm">
+          <CardContent className="space-y-3">
             <div className="flex items-center gap-3">
-              <Calendar
-                className={`w-5 h-5 ${
-                  draft.isEditMode ? "text-blue-400" : "text-violet-400"
-                }`}
-              />
+              <Calendar className="size-5 text-primary" />
               <div>
-                <p className="text-xs text-zinc-400">Date</p>
-                <p className="text-white font-medium text-sm">
-                  {formatDate(draft.date)}
-                </p>
+                <p className="text-xs text-muted-foreground">Date</p>
+                <p className="font-medium text-sm">{formatDate(draft.date)}</p>
               </div>
             </div>
-
             {draft.selectedSlot && (
               <div className="flex items-center gap-3">
-                <Clock
-                  className={`w-5 h-5 ${
-                    draft.isEditMode ? "text-blue-400" : "text-violet-400"
-                  }`}
-                />
+                <Clock className="size-5 text-primary" />
                 <div>
-                  <p className="text-xs text-zinc-400">Time</p>
-                  <p className="text-white font-medium text-sm">
-                    {formatTime(draft.selectedSlot.start)} -{" "}
-                    {formatTime(draft.selectedSlot.end)}
+                  <p className="text-xs text-muted-foreground">Time</p>
+                  <p className="font-medium text-sm">
+                    {formatTime(draft.selectedSlot.start)} - {formatTime(draft.selectedSlot.end)}
                   </p>
                 </div>
               </div>
             )}
-
             <div className="flex items-center gap-3">
-              <Building2
-                className={`w-5 h-5 ${
-                  draft.isEditMode ? "text-blue-400" : "text-violet-400"
-                }`}
-              />
+              <Building2 className="size-5 text-primary" />
               <div>
-                <p className="text-xs text-zinc-400">Studio</p>
-                <p className="text-white font-medium text-sm">{draft.studio}</p>
+                <p className="text-xs text-muted-foreground">Studio</p>
+                <p className="font-medium text-sm">{draft.studio}</p>
               </div>
             </div>
-
-            <div className="border-t border-zinc-700 pt-3 mt-3">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400 text-sm">Total Amount</span>
-                <span
-                  className={`text-xl font-bold ${
-                    draft.isEditMode ? "text-blue-400" : "text-violet-400"
-                  }`}
-                >
-                  ₹
-                  {(draft.ratePerHour * draft.duration).toLocaleString("en-IN")}
-                </span>
-              </div>
-              {!draft.isPromptPayment && (
-                <p className="text-xs text-zinc-500 mt-1">Pay at the studio</p>
-              )}
+            <Separator />
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground text-sm">Total amount</span>
+              <span className="text-xl font-bold text-primary">
+                ₹{(draft.ratePerHour * draft.duration).toLocaleString("en-IN")}
+              </span>
             </div>
-          </div>
-        </motion.div>
+            {!draft.isPromptPayment && (
+              <p className="text-xs text-muted-foreground">Pay at the studio</p>
+            )}
+          </CardContent>
+        </Card>
 
-        {/* Email notification */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="text-xs text-zinc-500 mt-3 text-center"
-        >
+        <p className="text-xs text-muted-foreground text-center">
           {draft.isEditMode
             ? "Your booking has been updated. A confirmation email has been sent."
             : "A confirmation email has been sent to your email address"}
-        </motion.p>
-      </main>
-
-      {/* Footer with Action Buttons and progress bar */}
-      <footer
-        className={`flex-shrink-0 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t ${
-          draft.isEditMode ? "border-blue-900/50" : "border-zinc-800"
-        } bg-zinc-900/80 backdrop-blur`}
-      >
-        {/* Progress bar */}
-        <div className="flex items-center gap-1 mb-2">
-          {[1, 2, 3, 4, 5, 6, 7].map((step) => (
-            <div
-              key={step}
-              className={`h-1.5 flex-1 rounded-full transition-colors ${
-                step <= 7
-                  ? draft.isEditMode
-                    ? "bg-blue-500"
-                    : "bg-violet-500"
-                  : "bg-zinc-700"
-              }`}
-            />
-          ))}
-        </div>
-        <p className="text-center text-xs text-zinc-500 mb-3">
-          Step 7 of 7 - Complete!
         </p>
-
-        {/* Action Buttons */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="flex gap-3"
-        >
-          <button
-            onClick={handleGoHome}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-zinc-800 text-white font-medium hover:bg-zinc-700"
-          >
-            {mode !== "customer" ? (
-              <>
-                <LayoutDashboard className="w-4 h-4" />
-                Dashboard
-              </>
-            ) : (
-              <>
-                <Home className="w-4 h-4" />
-                Home
-              </>
-            )}
-          </button>
-          <button
-            onClick={handleNewBooking}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl ${
-              draft.isEditMode
-                ? "bg-blue-600 hover:bg-blue-500"
-                : "bg-violet-600 hover:bg-violet-500"
-            } text-white font-medium`}
-          >
-            <CalendarPlus className="w-4 h-4" />
-            New Booking
-          </button>
-        </motion.div>
-      </footer>
-    </div>
+      </div>
+    </StepLayout>
   );
 }

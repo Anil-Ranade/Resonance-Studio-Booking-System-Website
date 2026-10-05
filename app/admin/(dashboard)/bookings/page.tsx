@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
   Search,
@@ -45,6 +44,7 @@ import type {
   RecordingOption,
   StudioName,
 } from "@/app/booking/contexts/BookingContext";
+import { adminFetch } from "@/lib/adminFetch";
 
 interface Booking {
   id: string;
@@ -829,10 +829,11 @@ export default function BookingsManagementPage() {
       <html>
       <head>
         <title>Invoice - ${booking.id.slice(0, 8).toUpperCase()}</title>
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             padding: 40px;
             max-width: 600px;
             margin: 0 auto;
@@ -841,14 +842,14 @@ export default function BookingsManagementPage() {
           }
           .header {
             text-align: center;
-            border-bottom: 2px solid #8b5cf6;
+            border-bottom: 2px solid #bd8c35;
             padding-bottom: 20px;
             margin-bottom: 30px;
           }
           .logo {
             font-size: 28px;
             font-weight: 700;
-            color: #8b5cf6;
+            color: #bd8c35;
             margin-bottom: 5px;
           }
           .tagline {
@@ -903,8 +904,8 @@ export default function BookingsManagementPage() {
             margin: 25px 0;
           }
           .total-section {
-            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
-            color: white;
+            background: linear-gradient(135deg, #bd8c35 0%, #e0ae4f 100%);
+            color: #192a56;
             padding: 20px;
             border-radius: 10px;
             text-align: center;
@@ -1153,10 +1154,8 @@ export default function BookingsManagementPage() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {filteredBookings.map((booking) => (
-                  <motion.tr
+                  <tr
                     key={booking.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
                     className="hover:bg-white/5 transition-colors"
                   >
                     <td className="p-4">
@@ -1225,7 +1224,7 @@ export default function BookingsManagementPage() {
                         <Eye className="w-4 h-4" />
                       </button>
                     </td>
-                  </motion.tr>
+                  </tr>
                 ))}
               </tbody>
             </table>
@@ -1234,19 +1233,13 @@ export default function BookingsManagementPage() {
       </div>
 
       {/* Booking Detail Modal */}
-      <AnimatePresence>
+      <>
         {selectedBooking && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => setSelectedBooking(null)}
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+            <div
               className="w-full max-w-lg glass rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
@@ -1263,12 +1256,9 @@ export default function BookingsManagementPage() {
               </div>
 
               {/* Message */}
-              <AnimatePresence>
+              <>
                 {message && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
+                  <div
                     className={`mb-4 p-3 rounded-xl flex items-center gap-2 ${
                       message.type === "success"
                         ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
@@ -1281,9 +1271,9 @@ export default function BookingsManagementPage() {
                       <AlertCircle className="w-4 h-4" />
                     )}
                     <span className="text-sm">{message.text}</span>
-                  </motion.div>
+                  </div>
                 )}
-              </AnimatePresence>
+              </>
 
               <div className="space-y-4">
                 <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl">
@@ -1463,7 +1453,7 @@ export default function BookingsManagementPage() {
                               sessionDetailsDisplay = `${prefix}${selectedBooking.session_details}`;
                             }
 
-                            const message = `*Reminder – Resonance Studio, Sinhgad Road Branch*
+                            const message = `*Reminder - Resonance Studio, Sinhgad Road Branch*
 
 This is to remind you that you have an upcoming booking on ${niceDate} from ${formattedStartTime} to ${formattedEndTime} (${dur} hours) for a ${sessionTypeDisplay}${sessionDetailsDisplay} in ${selectedBooking.studio} with us.
 
@@ -1568,7 +1558,7 @@ See you soon!`;
                         // Fetch loyalty status
                         let loyaltyMessagePart = "";
                         try {
-                          const res = await fetch(`/api/loyalty/status?phone=${phone}`);
+                          const res = await adminFetch(`/api/loyalty/status?phone=${phone}`);
                           const loyaltyData = await res.json();
                           if (loyaltyData && !loyaltyData.error) {
                             const currentHours = Number(loyaltyData.hours || 0);
@@ -1638,7 +1628,7 @@ See you soon!`;
                           sessionDetailsDisplay = `${prefix}${selectedBooking.session_details}`;
                         }
 
-                        const message = `*Booking Confirmed – Resonance Studio, Sinhgad Road Branch*
+                        const message = `*Booking Confirmed - Resonance Studio, Sinhgad Road Branch*
 
 Your booking of ${formattedDate} from ${formattedStartTime} to ${formattedEndTime} (${duration} hours) for ${sessionTypeDisplay}${sessionDetailsDisplay} in ${selectedBooking.studio} is confirmed with us.
 
@@ -1887,28 +1877,22 @@ Enjoy your session!`;
                   </div>
                 </div>
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {/* New Booking Modal */}
-      <AnimatePresence>
+      <>
         {showNewBookingModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => {
               setShowNewBookingModal(false);
               resetBookingForm();
             }}
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+            <div
               className="w-full max-w-2xl glass rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
@@ -1938,12 +1922,9 @@ Enjoy your session!`;
               </div>
 
               {/* Message */}
-              <AnimatePresence>
+              <>
                 {message && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
+                  <div
                     className={`mb-4 p-3 rounded-xl flex items-center gap-2 ${
                       message.type === "success"
                         ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
@@ -1956,9 +1937,9 @@ Enjoy your session!`;
                       <AlertCircle className="w-4 h-4" />
                     )}
                     <span className="text-sm">{message.text}</span>
-                  </motion.div>
+                  </div>
                 )}
-              </AnimatePresence>
+              </>
 
               <form onSubmit={handleCreateBooking} className="space-y-5">
                 {/* Customer Information */}
@@ -2381,10 +2362,10 @@ Enjoy your session!`;
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
     </div>
   );
 }

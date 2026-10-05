@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { getAdminUser } from "@/lib/apiSecurity";
 
 // POST /api/admin/login - Verify admin status after Supabase auth
 export async function POST(request: NextRequest) {
   try {
-    const { userId, email } = await request.json();
-
-    if (!userId || !email) {
+    // Identity comes from the Supabase access token, never from the request body
+    const tokenUser = await getAdminUser(request);
+    if (!tokenUser) {
       return NextResponse.json(
-        { error: "Missing userId or email" },
-        { status: 400 }
+        { error: "Unauthorized - Please sign in again" },
+        { status: 401 }
       );
     }
+    const userId = tokenUser.id;
 
     const supabase = supabaseAdmin();
 

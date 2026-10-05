@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { getSessionPhone, publicBooking, rateLimit } from "@/lib/apiSecurity";
 
 // GET /api/bookings?phone=XXXXXXXXXX&upcoming=true - Fetch bookings by phone number
 export async function GET(request: NextRequest) {
   try {
+    const limited = await rateLimit(request, "bookings_lookup", 30, 600);
+    if (limited) return limited;
+
     const { searchParams } = new URL(request.url);
     const phone = searchParams.get("phone");
     const upcomingOnly = searchParams.get("upcoming") === "true";
@@ -37,10 +41,15 @@ export async function GET(request: NextRequest) {
 
     if (bookingsError) {
       return NextResponse.json(
-        { error: bookingsError.message },
+        { error: "Failed to fetch bookings" },
         { status: 500 }
       );
     }
+
+    // Personal fields only for the verified owner of this phone
+    const isOwner = (await getSessionPhone(request)) === normalizedPhone;
+    const shape = (list: typeof bookings) =>
+      (list || []).map((b) => (isOwner ? b : publicBooking(b)));
 
     // If upcoming only, filter to only future bookings
     if (upcomingOnly) {
@@ -57,10 +66,10 @@ export async function GET(request: NextRequest) {
         return false;
       });
 
-      return NextResponse.json({ bookings: upcomingBookings });
+      return NextResponse.json({ bookings: shape(upcomingBookings) });
     }
 
-    return NextResponse.json({ bookings: bookings || [] });
+    return NextResponse.json({ bookings: shape(bookings) });
   } catch (error) {
     return NextResponse.json(
       { error: "Internal server error" },

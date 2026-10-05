@@ -27,7 +27,7 @@ export default function Footer() {
           <div className="col-span-2">
             <Link href="/home" className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                <Music2 className="w-5 h-5 text-white" />
+                <Music2 className="w-5 h-5 text-navy" />
               </div>
               <span className="text-xl font-bold text-white">
                 Resonance <span className="text-violet-400">Studio</span>
@@ -38,7 +38,7 @@ export default function Footer() {
             </p>
             <Link
               href="/booking/new"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-violet-500 hover:to-purple-500 transition-all duration-300 shadow-lg shadow-violet-500/25"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-navy text-sm font-medium rounded-lg hover:from-violet-500 hover:to-purple-500 transition-all duration-300 shadow-lg shadow-violet-500/25"
             >
               <Calendar className="w-4 h-4" />
               Book a Session

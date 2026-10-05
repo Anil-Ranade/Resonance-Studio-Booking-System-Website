@@ -3,6 +3,9 @@
 import { Mic, Music, Drum, Guitar, Radio, RotateCcw, Users } from "lucide-react";
 import { useBooking, SessionType } from "../contexts/BookingContext";
 import StepLayout from "./StepLayout";
+import { Badge } from "@/components/ui/badge";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { optionCard } from "./optionStyles";
 import { getStudioSuggestion, getStudioRate } from "../utils/studioSuggestion";
 
 const SESSION_TYPES: {
@@ -101,73 +104,51 @@ export default function SessionStep() {
           : "Select the type of session you want to book"
       }
     >
-      {/* Edit Mode Banner */}
       {draft.isEditMode && draft.originalChoices && (
-        <div className="mb-3 p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-2">
-          <RotateCcw className="w-4 h-4 text-violet-400" />
-          <span className="text-xs text-violet-400">
-            Modifying booking • Original:{" "}
-            <span className="font-medium">
-              {draft.originalChoices.sessionType}
-            </span>
-          </span>
-        </div>
+        <Badge variant="outline" className="mb-3 border-primary/40 text-primary">
+          <RotateCcw /> Original: {draft.originalChoices.sessionType}
+        </Badge>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
+      <ToggleGroup
+        type="single"
+        value={draft.sessionType || ""}
+        onValueChange={() => {}}
+        className="grid w-full grid-cols-2 gap-2"
+      >
         {SESSION_TYPES.map((session) => {
           const isOriginal = isOriginalChoice(session.name);
           const isRecording = session.name === "Recording";
 
           return (
-            <button
+            <ToggleGroupItem
               key={session.name}
+              value={session.name}
+              onClick={() => handleSelect(session.name)}
               disabled={isRecording}
-              onClick={() => !isRecording && handleSelect(session.name)}
-              className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-all text-center ${
-                isRecording
-                  ? "bg-zinc-900/40 border-zinc-800/50 text-zinc-600 cursor-not-allowed opacity-70"
-                  : isOriginal
-                  ? "bg-amber-500/10 border-amber-500/30 text-zinc-300 hover:bg-amber-500/15 hover:border-amber-500/50"
-                  : "bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-600"
-              }`}
+              className={`${optionCard} relative items-center text-center py-4 gap-2`}
             >
-              {/* Original Choice Badge */}
-              {isOriginal && !isRecording && (
-                <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full" title="Original Choice" />
-              )}
-
-              {/* Coming Soon Badge */}
               {isRecording && (
-                <span className="absolute top-2 right-2 px-1.5 py-0.5 text-[9px] font-medium bg-zinc-800 text-zinc-500 border border-zinc-700 rounded-full">
+                <Badge variant="secondary" className="absolute top-2 right-2 text-[10px]">
                   Soon
-                </span>
+                </Badge>
               )}
-
-              <div
-                className={`p-2 rounded-lg ${
-                  isRecording
-                    ? "bg-zinc-800/50 text-zinc-700"
-                    : isOriginal
-                    ? "bg-amber-500/20 text-amber-400"
-                    : "bg-zinc-700 text-zinc-400"
-                }`}
-              >
+              {isOriginal && !isRecording && (
+                <Badge variant="outline" className="absolute top-2 right-2 text-[10px] border-primary/40 text-primary">
+                  Original
+                </Badge>
+              )}
+              <span className="p-2 rounded-lg bg-primary/10 text-primary [&_svg]:size-6!">
                 {session.icon}
-              </div>
-              <div className="w-full min-w-0">
-                <h3
-                  className={`font-semibold text-sm leading-tight mb-0.5 ${
-                    isRecording ? "text-zinc-600" : "text-white"
-                  }`}
-                >
-                  {session.name}
-                </h3>
-              </div>
-            </button>
+              </span>
+              <span className="font-semibold text-sm leading-tight">{session.name}</span>
+              <span className="text-[11px] text-muted-foreground leading-tight">
+                {session.description}
+              </span>
+            </ToggleGroupItem>
           );
         })}
-      </div>
+      </ToggleGroup>
     </StepLayout>
   );
 }

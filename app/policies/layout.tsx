@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { OG_BASE } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Policies",
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
     canonical: "/policies",
   },
   openGraph: {
+    ...OG_BASE,
     title: "Booking Policies - Resonance Jam Room",
     description:
       "Understand our cancellation policy, payment terms, and booking guidelines before your session.",

@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { CalendarPlus, Edit, XCircle, Eye, Building2 } from "lucide-react";
 import Link from "next/link";
 
@@ -96,10 +95,7 @@ export default function StaffBookingMenu() {
       </div>
 
       {/* Menu Options */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+      <div
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
         {menuOptions.map((option, index) => {
@@ -108,11 +104,8 @@ export default function StaffBookingMenu() {
           const Icon = option.icon;
 
           return (
-            <motion.button
+            <button
               key={option.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
               onClick={() => handleOptionClick(option.href)}
               className={`w-full flex items-center gap-4 p-5 rounded-xl ${colors.bg} text-white font-medium transition-all duration-200 shadow-lg ${colors.glow} hover:shadow-xl`}
             >
@@ -123,23 +116,20 @@ export default function StaffBookingMenu() {
                 <h3 className="text-lg font-semibold">{option.title}</h3>
                 <p className="text-sm text-white/70">{option.description}</p>
               </div>
-            </motion.button>
+            </button>
           );
         })}
-      </motion.div>
+      </div>
 
       {/* Quick Stats Footer */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
+      <div
         className="glass rounded-xl p-4 text-center"
       >
         <p className="text-zinc-400 text-sm">
           You can create new bookings and edit/cancel bookings that you&apos;ve
           created.
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }

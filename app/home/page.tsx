@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Mic,
-  Music,
   Radio,
   Video,
   Calendar,
@@ -31,7 +30,6 @@ import {
   Shield,
   RefreshCw,
 } from "lucide-react";
-import { useDevicePerformance } from "@/lib/useDevicePerformance";
 
 // Helper function to safely parse JSON responses
 async function safeJsonParse(response: Response) {
@@ -61,43 +59,6 @@ interface Booking {
 type ActionMode = "change" | "cancel" | "view" | null;
 
 // Optimized animation variants - shorter durations for better performance
-const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.3, ease: "easeOut" },
-};
-
-const fadeInLeft = {
-  initial: { opacity: 0, x: -20 },
-  animate: { opacity: 1, x: 0 },
-  transition: { duration: 0.3, ease: "easeOut" },
-};
-
-const fadeInRight = {
-  initial: { opacity: 0, x: 20 },
-  animate: { opacity: 1, x: 0 },
-  transition: { duration: 0.3, ease: "easeOut" },
-};
-
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.05,
-      delayChildren: 0.05,
-    },
-  },
-};
-
-// Simplified floating animation for better mobile performance
-const floatingAnimation = {
-  y: [0, -6, 0],
-  transition: {
-    duration: 4,
-    repeat: Infinity,
-    ease: "easeInOut" as const,
-  },
-};
-
 export default function HomePage() {
   const router = useRouter();
 
@@ -114,6 +75,9 @@ export default function HomePage() {
 
   // Loading state for cancel
   const [isCancelling, setIsCancelling] = useState(false);
+
+  // Our spaces: which room the selector is showing
+  const [activeStudio, setActiveStudio] = useState(0);
 
   const resetModal = () => {
     setActionMode(null);
@@ -240,51 +204,65 @@ export default function HomePage() {
     }
   };
 
-  const services = [
+  // Grouped by where the service happens; prices mirror /rate-card.
+  const serviceGroups = [
     {
-      icon: <Guitar className="w-7 h-7" />,
-      title: "Rehearsal Studios",
-      description:
-        "Three professional studios for bands, musicians & karaoke sessions",
-      color: "from-violet-500 to-purple-600",
-      shadowColor: "shadow-violet-500/25",
+      label: "In the studio",
+      items: [
+        {
+          icon: <Guitar className="w-5 h-5" />,
+          title: "Rehearsal rooms",
+          description: "Three treated rooms for bands, solo practice & karaoke",
+          price: "₹200",
+          unit: "/hr onwards",
+          href: "/studios",
+        },
+        {
+          icon: <Mic className="w-5 h-5" />,
+          title: "Audio recording",
+          description: "Recording, editing, mixing & mastering",
+          price: "₹700",
+          unit: "/song",
+          href: "/rate-card",
+        },
+        {
+          icon: <Video className="w-5 h-5" />,
+          title: "Video recording",
+          description: "True 4K video with professional editing",
+          price: "₹800",
+          unit: "/song",
+          href: "/rate-card",
+        },
+        {
+          icon: <MonitorPlay className="w-5 h-5" />,
+          title: "Green screen",
+          description: "Chroma key setup for music videos",
+          price: "₹1,200",
+          unit: "/song",
+          href: "/rate-card",
+        },
+      ],
     },
     {
-      icon: <Mic className="w-7 h-7" />,
-      title: "Audio Recording",
-      description: "Professional recording, mixing & mastering at ₹700/song",
-      color: "from-blue-500 to-cyan-500",
-      shadowColor: "shadow-blue-500/25",
-    },
-    {
-      icon: <Video className="w-7 h-7" />,
-      title: "Video Recording",
-      description:
-        "True 4K quality video with professional editing at ₹800/song",
-      color: "from-red-500 to-orange-500",
-      shadowColor: "shadow-red-500/25",
-    },
-    {
-      icon: <MonitorPlay className="w-7 h-7" />,
-      title: "Green Screen",
-      description:
-        "Professional chroma key setup for music videos at ₹1,200/song",
-      color: "from-emerald-500 to-teal-500",
-      shadowColor: "shadow-emerald-500/25",
-    },
-    {
-      icon: <Radio className="w-7 h-7" />,
-      title: "Live Streaming",
-      description: "Facebook Live & social media streaming setup available",
-      color: "from-purple-500 to-pink-500",
-      shadowColor: "shadow-purple-500/25",
-    },
-    {
-      icon: <Speaker className="w-7 h-7" />,
-      title: "Sound System Rental",
-      description: "Professional PA system for outside shows and events",
-      color: "from-amber-500 to-orange-500",
-      shadowColor: "shadow-amber-500/25",
+      label: "We come to you",
+      items: [
+        {
+          icon: <Radio className="w-5 h-5" />,
+          title: "Live streaming",
+          description: "Multi-camera Facebook Live setup with live sound",
+          price: "₹7,000",
+          unit: "/4 hrs",
+          href: "/rate-card",
+        },
+        {
+          icon: <Speaker className="w-5 h-5" />,
+          title: "Sound system rental",
+          description: "PA, mixer & mics for outside shows and events",
+          price: "On request",
+          unit: "",
+          href: "/contact",
+        },
+      ],
     },
   ];
 
@@ -292,495 +270,413 @@ export default function HomePage() {
     {
       name: "Studio A",
       size: "Large",
-      capacity: "Up to 30 people",
-      price: "From ₹350/hr",
-      color: "bg-blue-500",
+      tagline: "Big live rehearsals & karaoke groups",
+      live: "10-12 musicians",
+      liveMax: 12,
+      karaoke: "Up to 30 people",
+      karaokeMax: 30,
+      price: 350,
+      image: "/studios/main/studio_a.jpeg",
       id: "studio-a",
     },
     {
       name: "Studio B",
       size: "Medium",
-      capacity: "Up to 10 people",
-      price: "From ₹250/hr",
-      color: "bg-yellow-700",
+      tagline: "Versatile space, great for karaoke groups",
+      live: "4-5 musicians",
+      liveMax: 5,
+      karaoke: "Up to 10 people",
+      karaokeMax: 10,
+      price: 250,
+      image: "/studios/main/studio_b.jpeg",
       id: "studio-b",
     },
     {
       name: "Studio C",
       size: "Compact",
-      capacity: "Up to 5 people",
-      price: "From ₹200/hr",
-      color: "bg-emerald-500",
+      tagline: "Audio/video recording & podcasts",
+      live: "Up to 2 musicians",
+      liveMax: 2,
+      karaoke: "Up to 5 people",
+      karaokeMax: 5,
+      price: 200,
+      image: "/studios/main/studio_c.jpeg",
       id: "studio-c",
     },
   ];
 
   const stats = [
-    {
-      value: "10+",
-      label: "Years Experience",
-      icon: <Award className="w-5 h-5" />,
-    },
-    {
-      value: "3",
-      label: "Professional Studios",
-      icon: <Headphones className="w-5 h-5" />,
-    },
-    {
-      value: "1,000+",
-      label: "Happy Customers",
-      icon: <Users className="w-5 h-5" />,
-    },
-    {
-      value: "8 AM - 10 PM",
-      label: "Daily Hours",
-      icon: <Clock className="w-5 h-5" />,
-    },
+    { value: "10+", label: "years running the studio" },
+    { value: "3", label: "acoustically treated rooms" },
+    { value: "1,000+", label: "musicians & groups hosted" },
   ];
 
-  // Get device performance info to optimize animations
-  const { shouldReduceAnimations, isMobile } = useDevicePerformance();
 
   return (
-    <div className="min-h-screen overflow-hidden">
+    // -mt cancels MainContent pt so the hero bg runs under the floating nav
+    <div className="min-h-screen overflow-hidden -mt-16 md:-mt-20">
       {/* Hero Section */}
-      <section className="relative min-h-[100vh] flex items-start pt-24 sm:pt-32 justify-center overflow-hidden">
-        {/* Animated Background */}
-        <div className="absolute inset-0 bg-grid opacity-20" />
+      <section className="relative min-h-[100svh] flex items-center pt-28 pb-16 sm:pt-32 overflow-hidden">
+        <div className="absolute inset-0 bg-grid opacity-10" />
+        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[140px]" />
 
-        {/* Floating Orbs - Only show on desktop or when not reducing animations */}
-        {!shouldReduceAnimations && (
-          <>
-            <motion.div
-              className="absolute top-20 left-10 w-72 h-72 bg-violet-600/30 rounded-full blur-[100px] will-change-transform"
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.3, 0.4, 0.3],
-              }}
-              transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-            />
-            <motion.div
-              className="absolute bottom-20 right-10 w-96 h-96 bg-purple-600/25 rounded-full blur-[120px] will-change-transform"
-              animate={{
-                scale: [1.1, 1, 1.1],
-                opacity: [0.3, 0.2, 0.3],
-              }}
-              transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-            />
-          </>
-        )}
-
-        {/* Static orbs for mobile/reduced motion */}
-        {shouldReduceAnimations && (
-          <>
-            <div className="absolute top-20 left-10 w-72 h-72 bg-violet-600/20 rounded-full blur-[100px]" />
-            <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-600/15 rounded-full blur-[120px]" />
-          </>
-        )}
-
-        {/* Central gradient - static on mobile */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-violet-600/10 to-purple-600/10 rounded-full blur-[150px]" />
-
-        {/* Floating Music Notes - only on desktop */}
-        {!isMobile && !shouldReduceAnimations && (
-          <>
-            <motion.div
-              className="absolute top-1/4 right-[15%] text-violet-500/20"
-              animate={floatingAnimation}
-            >
-              <Music className="w-16 h-16" />
-            </motion.div>
-            <motion.div
-              className="absolute bottom-1/3 left-[10%] text-purple-500/20"
-              animate={{
-                ...floatingAnimation,
-                transition: { ...floatingAnimation.transition, delay: 1 },
-              }}
-            >
-              <Headphones className="w-20 h-20" />
-            </motion.div>
-            <motion.div
-              className="absolute top-1/3 left-[20%] text-violet-500/15"
-              animate={{
-                ...floatingAnimation,
-                transition: { ...floatingAnimation.transition, delay: 0.5 },
-              }}
-            >
-              <Mic className="w-12 h-12" />
-            </motion.div>
-          </>
-        )}
-
-        <motion.div
-          className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center"
-          initial="initial"
-          animate="animate"
-          variants={staggerContainer}
+        <div
+          className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-[1.1fr_1fr] gap-12 lg:gap-16 items-center w-full"
         >
-          {/* Main Heading */}
-          <motion.h1
-            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-2 leading-tight"
-            variants={fadeInUp}
-          >
-            <span className="text-white block">Where Music</span>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-purple-600">
-              Comes Alive
-            </span>
-          </motion.h1>
+          <div className="text-center lg:text-left">
+            <p
+              className="inline-flex items-center gap-2 text-sm font-medium text-violet-300 mb-6"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              Open daily · 8 AM - 10 PM
+            </p>
 
-          {/* Subheading */}
-          <motion.p
-            className="text-lg sm:text-xl text-zinc-400 max-w-3xl mx-auto mb-8 leading-relaxed"
-            variants={fadeInUp}
-          >
-            Three State-of-the-Art Studios dedicated to Premium Karaoke and Live
-            Rehearsal Sessions, Band Practices and Professional Recording
-            Services. <br className="hidden sm:block" />
-            <span className="text-violet-400">
-              Your creative space awaits here.
-            </span>
-          </motion.p>
+            <h1
+              className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] mb-6"
+            >
+              <span className="text-white block">Where Music</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-purple-600">
+                Comes Alive
+              </span>
+            </h1>
 
-          {/* Quick links for studios and booking system */}
-          <motion.div
-            className="flex flex-col gap-3 sm:gap-4 max-w-3xl mx-auto mb-6 sm:mb-8 px-4 sm:px-0"
-            variants={fadeInUp}
-          >
-            <Link href="/booking">
-              <motion.div
-                className="group flex items-center justify-center sm:justify-between gap-3 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.02] hover:border-emerald-500/30 hover:bg-white/[0.05] transition-all duration-300"
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
+            <p
+              className="text-lg text-zinc-400 max-w-xl mx-auto lg:mx-0 mb-10 leading-relaxed"
+            >
+              Three acoustically treated studios for karaoke, live rehearsals,
+              band practice and professional audio &amp; video recording.
+            </p>
+
+            <div
+              className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-6"
+            >
+              <Link
+                href="/booking"
+                className="group inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-violet-600 hover:bg-violet-500 text-navy font-semibold transition-colors"
               >
-                <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 flex-shrink-0" />
-                <span className="text-white text-sm sm:text-base md:text-lg leading-snug text-center sm:text-left flex-1">
-                  For Online Booking (New/Edit/Cancel/View) – click here
-                </span>
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
-              </motion.div>
-            </Link>
-
-            <Link href="/studios">
-              <motion.div
-                className="group flex items-center justify-center sm:justify-between gap-3 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.02] hover:border-violet-500/30 hover:bg-white/[0.05] transition-all duration-300"
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
+                <Calendar className="w-5 h-5" />
+                Book a Session
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                href="/studios"
+                className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl border border-white/15 hover:border-white/30 hover:bg-white/5 text-white font-semibold transition-colors"
               >
-                <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-violet-400 flex-shrink-0" />
-                <span className="text-white text-sm sm:text-base md:text-lg leading-snug text-center sm:text-left flex-1">
-                  To know about our studios – click here
-                </span>
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-violet-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
-              </motion.div>
-            </Link>
+                <Building2 className="w-5 h-5" />
+                Explore Studios
+              </Link>
+            </div>
 
-            <Link href="/how-to-book">
-              <motion.div
-                className="group flex items-center justify-center sm:justify-between gap-3 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.02] hover:border-amber-500/30 hover:bg-white/[0.05] transition-all duration-300"
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
+            <p className="text-sm text-zinc-500">
+              New, edit, cancel or view bookings online ·{" "}
+              <Link
+                href="/how-to-book"
+                className="text-amber-400 hover:text-amber-300 underline underline-offset-4"
               >
-                <Award className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 flex-shrink-0" />
-                <span className="text-white text-sm sm:text-base md:text-lg leading-snug text-center sm:text-left flex-1">
-                  How to book & exclusive schemes – click here
-                </span>
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
-              </motion.div>
-            </Link>
-          </motion.div>
+                How to book &amp; exclusive schemes
+              </Link>
+            </p>
+          </div>
 
-          {/* Controlled blank gap */}
-          <div className="h-12 sm:h-20" />
-        </motion.div>
+          <div className="relative">
+            <div className="relative aspect-square max-w-md sm:max-w-lg lg:max-w-none mx-auto">
+              <Image
+                src="/hero.png"
+                alt="Vintage studio microphone surrounded by sound waves and music notes"
+                fill
+                priority
+                sizes="(min-width: 1024px) 45vw, (min-width: 640px) 512px, 448px"
+                className="object-contain"
+              />
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* Studios Preview Section */}
-      <section className="py-24 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-violet-950/10 to-transparent" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <motion.div
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <motion.span
-              className="inline-block px-4 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-sm font-medium mb-4"
-              whileInView={{ scale: [0.9, 1] }}
-              viewport={{ once: true }}
-            >
-              Our Spaces
-            </motion.span>
-            <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-              Three Unique Studios
-            </h2>
-            <p className="text-zinc-400 max-w-2xl mx-auto">
-              Each studio is acoustically treated and equipped with professional
-              gear for rehearsals, recording, and karaoke
+      {/* Studios Preview Section: room selector */}
+      <section aria-labelledby="spaces-title" className="py-24 lg:py-32 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <header className="mb-12 lg:mb-16 max-w-3xl">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-fuchsia-400 mb-4">
+              Our spaces · {studios.length} rooms
             </p>
-          </motion.div>
+            <h2 id="spaces-title" className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-[1.05]">
+              Three rooms, <span className="text-violet-400">sized for how you play.</span>
+            </h2>
+          </header>
 
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-          >
-            {studios.map((studio, index) => (
-              <Link key={index} href={`/studios#${studio.id}`}>
-                <motion.div
-                  className="group relative bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm border border-white/10 rounded-3xl p-8 overflow-hidden hover:border-violet-500/30 transition-all duration-500 h-full"
-                  variants={fadeInUp}
-                  whileHover={{ y: -8, transition: { duration: 0.3 } }}
+          <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+            {/* Photo: all three stacked, active one fades in */}
+            <div className="lg:col-span-7 lg:order-2 relative aspect-[4/3] rounded-3xl overflow-hidden border border-white/10 bg-zinc-900">
+              {studios.map((s, i) => (
+                <Image
+                  key={s.id}
+                  src={s.image}
+                  alt={i === activeStudio ? `${s.name} at Resonance Studio` : ""}
+                  fill
+                  sizes="(min-width: 1024px) 58vw, 100vw"
+                  className={`object-cover transition-opacity duration-500 motion-reduce:transition-none ${
+                    i === activeStudio ? "opacity-100" : "opacity-0"
+                  }`}
+                />
+              ))}
+              <span className="absolute top-4 left-4 px-3 py-1 rounded-full bg-navy/70 backdrop-blur-sm border border-white/15 text-white text-xs font-medium">
+                {studios[activeStudio].size} room
+              </span>
+            </div>
+
+            {/* Room list */}
+            <div className="lg:col-span-5 lg:order-1">
+              <ul className="border-t border-white/10">
+                {studios.map((s, i) => {
+                  const active = i === activeStudio;
+                  return (
+                    <li key={s.id} className="border-b border-white/10">
+                      <button
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setActiveStudio(i)}
+                        onMouseEnter={() => setActiveStudio(i)}
+                        onFocus={() => setActiveStudio(i)}
+                        className={`w-full flex items-center justify-between gap-4 py-5 pl-4 text-left border-l-2 transition-colors focus-visible:outline-none focus-visible:bg-white/[0.04] ${
+                          active ? "border-violet-400" : "border-transparent hover:border-white/20"
+                        }`}
+                      >
+                        <span>
+                          <span className={`block text-2xl sm:text-3xl font-bold tracking-tight transition-colors ${active ? "text-white" : "text-zinc-500"}`}>
+                            {s.name}
+                          </span>
+                          <span className={`block text-sm transition-colors ${active ? "text-zinc-300" : "text-zinc-500"}`}>
+                            {s.tagline}
+                          </span>
+                        </span>
+                        <span className="text-right shrink-0">
+                          <span className={`block text-xl font-bold tabular-nums ${active ? "text-violet-400" : "text-zinc-500"}`}>
+                            ₹{s.price}
+                          </span>
+                          <span className="text-xs text-zinc-500">from /hr</span>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {/* Active room detail */}
+              <div className="mt-8 space-y-5" aria-live="polite">
+                {[
+                  { label: "Live band", detail: studios[activeStudio].live, value: studios[activeStudio].liveMax, max: 12 },
+                  { label: "Karaoke", detail: studios[activeStudio].karaoke, value: studios[activeStudio].karaokeMax, max: 30 },
+                ].map((m) => {
+                  const lit = Math.max(1, Math.round((m.value / m.max) * 12));
+                  return (
+                    <div key={m.label}>
+                      <div className="flex justify-between text-xs font-medium uppercase tracking-[0.14em] mb-2">
+                        <span className="text-zinc-400">{m.label}</span>
+                        <span className="text-white">{m.detail}</span>
+                      </div>
+                      <div className="flex gap-1" role="img" aria-label={`${m.label}: ${m.detail}`}>
+                        {Array.from({ length: 12 }, (_, i) => (
+                          <span
+                            key={i}
+                            className={`h-2.5 flex-1 rounded-[2px] transition-colors duration-300 ${
+                              i >= lit ? "bg-white/[0.07]" : i >= 10 ? "bg-fuchsia-400" : "bg-violet-400"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+                <Link
+                  href="/booking"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-violet-400 hover:bg-violet-300 text-navy font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-navy"
                 >
-                  {/* Glow effect on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-violet-600/0 to-purple-600/0 group-hover:from-violet-600/5 group-hover:to-purple-600/5 transition-all duration-500" />
-
-                  <div
-                    className={`w-3 h-3 ${studio.color} rounded-full mb-4`}
-                  />
-                  <h3 className="text-2xl font-bold text-white mb-1">
-                    {studio.name}
-                  </h3>
-                  <p className="text-violet-400 text-sm font-medium mb-4">
-                    {studio.size}
-                  </p>
-                  <div className="space-y-2 mb-6">
-                    <p className="text-zinc-400 text-sm flex items-center gap-2">
-                      <Users className="w-4 h-4" /> {studio.capacity}
-                    </p>
-                    <p className="text-amber-400 font-semibold">
-                      {studio.price}
-                    </p>
-                  </div>
-                  <motion.span
-                    className="inline-flex items-center gap-2 text-sm text-violet-400 hover:text-violet-300 transition-colors"
-                    whileHover={{ x: 5 }}
-                  >
-                    View Details <ArrowRight className="w-4 h-4" />
-                  </motion.span>
-                </motion.div>
-              </Link>
-            ))}
-          </motion.div>
+                  <Calendar className="w-5 h-5" />
+                  Book {studios[activeStudio].name}
+                </Link>
+                <Link
+                  href={`/studios#${studios[activeStudio].id}`}
+                  className="group inline-flex items-center gap-1.5 text-sm font-semibold text-violet-400 hover:text-violet-300"
+                >
+                  Room details
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Services Section */}
       <section className="py-24 relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <motion.span className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium mb-4">
-              What We Offer
-            </motion.span>
-            <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-              Complete Audio-Video Services
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-[0.8fr_1.2fr] gap-12 lg:gap-20">
+          <div className="lg:sticky lg:top-32 lg:self-start text-center lg:text-left">
+            <span className="inline-block px-4 py-1.5 rounded-full bg-fuchsia-400/10 border border-fuchsia-400/25 text-fuchsia-300 text-sm font-medium mb-5">
+              What we offer
+            </span>
+            <h2 className="text-4xl sm:text-5xl font-bold text-white leading-[1.1] mb-5">
+              Rehearse, record
+              <span className="block text-violet-400">and go live.</span>
             </h2>
-            <p className="text-zinc-400 max-w-2xl mx-auto">
-              From rehearsals to professional recordings, we have everything you
-              need under one roof
+            <p className="text-zinc-400 max-w-md mx-auto lg:mx-0 mb-8 leading-relaxed">
+              From your first jam to the final music video, everything happens
+              under one roof. Prices below are starting rates.
             </p>
-          </motion.div>
-
-          <motion.div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-          >
-            {services.map((service, index) => (
-              <motion.div
-                key={index}
-                className="group relative bg-gradient-to-br from-white/[0.05] to-transparent backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300"
-                variants={fadeInUp}
-                whileHover={{
-                  y: -5,
-                  scale: 1.02,
-                  transition: { duration: 0.2 },
-                }}
-              >
-                <motion.div
-                  className={`w-14 h-14 rounded-xl bg-gradient-to-br ${service.color} flex items-center justify-center text-white mb-5 shadow-lg ${service.shadowColor}`}
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                >
-                  {service.icon}
-                </motion.div>
-                <h3 className="text-xl font-bold text-white mb-2">
-                  {service.title}
-                </h3>
-                <p className="text-zinc-400 text-sm leading-relaxed">
-                  {service.description}
-                </p>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          <motion.div
-            className="text-center mt-12"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-          >
-            <Link href="/rate-card">
-              <motion.button
-                className="inline-flex items-center gap-2 text-violet-400 hover:text-violet-300 font-medium transition-colors"
-                whileHover={{ x: 5 }}
-              >
-                View Full Pricing <ArrowRight className="w-4 h-4" />
-              </motion.button>
+            <Link
+              href="/rate-card"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-violet-400/40 text-violet-300 hover:bg-violet-400/10 font-semibold transition-colors"
+            >
+              See full rate card <ArrowRight className="w-4 h-4" />
             </Link>
-          </motion.div>
+            {/* Desktop only: on mobile this column stacks above the price list */}
+            <Image
+              src="/whatweoffer.png"
+              alt="Guitar, studio headphones and video camera linked by a sound wave"
+              width={1448}
+              height={1086}
+              sizes="(min-width: 1024px) 480px, 0px"
+              className="hidden lg:block w-full max-w-md mt-10"
+            />
+          </div>
+
+          <div className="space-y-10">
+            {serviceGroups.map((group) => (
+              <div key={group.label}>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 mb-3 px-1">
+                  {group.label}
+                </p>
+                <ul className="rounded-2xl border border-white/10 bg-white/[0.03] divide-y divide-white/10 overflow-hidden">
+                  {group.items.map((item) => (
+                    <li key={item.title}>
+                      <Link
+                        href={item.href}
+                        className="group flex items-center gap-4 sm:gap-5 px-5 sm:px-6 py-5 hover:bg-white/[0.04] focus-visible:bg-white/[0.06] focus-visible:outline-none transition-colors"
+                      >
+                        <span className="shrink-0 w-11 h-11 rounded-full border border-violet-400/30 bg-violet-400/10 text-violet-400 flex items-center justify-center group-hover:bg-violet-400 group-hover:text-navy transition-colors">
+                          {item.icon}
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-white font-semibold text-lg">
+                            {item.title}
+                          </span>
+                          <span className="block text-zinc-400 text-sm">
+                            {item.description}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-right">
+                          <span className="block text-violet-400 font-bold text-xl tabular-nums">
+                            {item.price}
+                          </span>
+                          {item.unit && (
+                            <span className="block text-zinc-500 text-xs">{item.unit}</span>
+                          )}
+                        </span>
+                        <ArrowRight className="hidden sm:block shrink-0 w-4 h-4 text-zinc-600 group-hover:text-violet-400 group-hover:translate-x-1 transition-all" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 border-y border-white/5 bg-gradient-to-r from-violet-950/20 via-purple-950/20 to-violet-950/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            className="grid grid-cols-2 md:grid-cols-4 gap-8"
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-          >
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                className="text-center"
-                variants={fadeInUp}
-              >
-                <motion.div
-                  className="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-400 mx-auto mb-4"
-                  whileHover={{ scale: 1.1, rotate: 10 }}
-                >
-                  {stat.icon}
-                </motion.div>
-                <motion.div
-                  className="text-3xl sm:text-4xl font-bold text-white mb-1"
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1, type: "spring" }}
-                >
-                  {stat.value}
-                </motion.div>
-                <div className="text-zinc-500 text-sm">{stat.label}</div>
-              </motion.div>
-            ))}
-          </motion.div>
+      <section className="py-20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] overflow-hidden">
+            <dl className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-white/10">
+              {stats.map((stat) => (
+                <div key={stat.label} className="px-6 py-8 text-center sm:text-left">
+                  <dt className="sr-only">{stat.label}</dt>
+                  <dd className="text-5xl font-bold text-violet-400 tabular-nums tracking-tight">
+                    {stat.value}
+                  </dd>
+                  <dd className="text-zinc-400 text-sm mt-1">{stat.label}</dd>
+                </div>
+              ))}
+            </dl>
+            <OpenHoursBar />
+          </div>
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* CTA Section: styled as a gig ticket with a tear-off stub */}
       <section className="py-24">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            className="relative rounded-[2rem] overflow-hidden"
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            {/* Background gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-purple-600 to-violet-700" />
-            <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
-
-            {/* Floating elements */}
-            <motion.div
-              className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full blur-xl"
-              animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-              transition={{ duration: 4, repeat: Infinity }}
-            />
-            <motion.div
-              className="absolute bottom-10 right-10 w-32 h-32 bg-white/10 rounded-full blur-xl"
-              animate={{ scale: [1.2, 1, 1.2], opacity: [0.5, 0.3, 0.5] }}
-              transition={{ duration: 5, repeat: Infinity }}
-            />
-
-            <div className="relative z-10 p-10 sm:p-16 text-center">
-              <motion.h2
-                className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-6"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
-              >
-                Ready to Make Some Noise?
-              </motion.h2>
-              <motion.p
-                className="text-white/80 text-lg max-w-2xl mx-auto mb-10"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3 }}
-              >
-                Book your session today. No advance payment required – just show
-                up and create!
-              </motion.p>
-              <motion.div
-                className="flex flex-col sm:flex-row items-center justify-center gap-4"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.4 }}
-              >
-                <Link href="/booking">
-                  <motion.button
-                    className="bg-white text-violet-600 font-bold text-lg px-10 py-4 rounded-xl flex items-center gap-3 shadow-xl hover:shadow-2xl transition-shadow"
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
+          <div className="ticket-notches relative grid md:grid-cols-[1fr_auto] rounded-[2rem] bg-gradient-to-br from-violet-300 via-violet-400 to-violet-500 text-navy">
+            <div className="p-8 sm:p-12">
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-navy/60 mb-4">
+                Admit your band · Open daily 8 AM - 10 PM
+              </p>
+              <h2 className="text-4xl sm:text-5xl font-bold leading-[1.05] mb-5">
+                Ready to make
+                <br />
+                some noise?
+              </h2>
+              <p className="text-navy/75 text-lg max-w-md mb-8">
+                Pick a room and a time slot online. Nothing to pay upfront; settle
+                up after your session.
+              </p>
+              <ul className="flex flex-wrap gap-2 text-sm font-medium">
+                {["No advance payment", "Edit or cancel online", "3 rooms to choose from"].map((item) => (
+                  <li
+                    key={item}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-navy/10 px-3 py-1.5"
                   >
-                    <Calendar className="w-5 h-5" />
-                    Book Now
-                  </motion.button>
-                </Link>
-                <Link href="/contact">
-                  <motion.button
-                    className="bg-white/10 backdrop-blur-sm border border-white/20 text-white font-semibold text-lg px-10 py-4 rounded-xl flex items-center gap-3 hover:bg-white/20 transition-all"
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Contact Us
-                    <ArrowRight className="w-5 h-5" />
-                  </motion.button>
-                </Link>
-              </motion.div>
+                    <Check className="w-4 h-4" /> {item}
+                  </li>
+                ))}
+              </ul>
             </div>
-          </motion.div>
+
+            {/* Perforation: dashed rule; notches are masked out by .ticket-notches */}
+            <div className="relative border-t-2 md:border-t-0 md:border-l-2 border-dashed border-navy/25 p-8 sm:p-12 flex flex-col justify-center gap-4 md:w-80">
+              <Link
+                href="/booking"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-navy px-6 py-4 font-semibold text-white hover:bg-navy/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy transition-colors"
+              >
+                <Calendar className="w-5 h-5" />
+                Book a session
+              </Link>
+              <a
+                href="tel:+919822029235"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-navy/20 px-6 py-3.5 font-semibold hover:border-navy/40 transition-colors"
+              >
+                <Phone className="w-4 h-4" />
+                +91 98220 29235
+              </a>
+              <Link
+                href="/contact"
+                className="text-center text-sm font-medium text-navy/70 underline underline-offset-4 hover:text-navy"
+              >
+                More ways to reach us
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Modal for Change/Cancel/View flows */}
-      <AnimatePresence>
+      <>
         {actionMode && (
-          <motion.div
+          <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
           >
             {/* Backdrop */}
-            <motion.div
+            <div
               className="absolute inset-0 bg-black/70 backdrop-blur-sm"
               onClick={resetModal}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
             />
 
             {/* Modal Content */}
-            <motion.div
+            <div
               className="relative w-full max-w-lg glass-strong rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
             >
               {/* Close Button */}
               <button
@@ -863,7 +759,7 @@ export default function HomePage() {
                       </div>
                     )}
 
-                    <motion.button
+                    <button
                       type="button"
                       onClick={handleFetchBookings}
                       disabled={
@@ -877,8 +773,6 @@ export default function HomePage() {
                           ? "bg-red-500 hover:bg-red-600"
                           : "bg-emerald-500 hover:bg-emerald-600"
                       } text-white disabled:opacity-50 disabled:cursor-not-allowed`}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
                     >
                       {isLoading ? (
                         <>
@@ -891,7 +785,7 @@ export default function HomePage() {
                           <ArrowRight className="w-5 h-5" />
                         </>
                       )}
-                    </motion.button>
+                    </button>
                   </div>
                 </>
               )}
@@ -936,7 +830,7 @@ export default function HomePage() {
 
                   <div className="space-y-3 mb-4 max-h-[50vh] overflow-y-auto">
                     {bookings.map((booking) => (
-                      <motion.button
+                      <button
                         key={booking.id}
                         type="button"
                         onClick={() => handleSelectBooking(booking)}
@@ -949,7 +843,6 @@ export default function HomePage() {
                               : "bg-emerald-500/20 border-emerald-500"
                             : "bg-white/5 border-white/10 hover:border-white/20"
                         }`}
-                        whileTap={{ scale: 0.99 }}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -991,7 +884,7 @@ export default function HomePage() {
                             )}
                           </div>
                         </div>
-                      </motion.button>
+                      </button>
                     ))}
                   </div>
 
@@ -1172,12 +1065,10 @@ export default function HomePage() {
                     >
                       Keep Booking
                     </button>
-                    <motion.button
+                    <button
                       onClick={handleConfirmCancel}
                       disabled={isCancelling}
                       className="flex-1 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
                     >
                       {isCancelling ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
@@ -1187,7 +1078,7 @@ export default function HomePage() {
                           Cancel Booking
                         </>
                       )}
-                    </motion.button>
+                    </button>
                   </div>
                 </>
               )}
@@ -1195,14 +1086,11 @@ export default function HomePage() {
               {/* Success Step */}
               {step === "success" && (
                 <div className="text-center py-4">
-                  <motion.div
+                  <div
                     className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", damping: 15 }}
                   >
                     <CheckCircle2 className="w-8 h-8 text-green-400" />
-                  </motion.div>
+                  </div>
                   <h3 className="text-xl font-bold text-white mb-2">
                     Booking Cancelled
                   </h3>
@@ -1214,10 +1102,85 @@ export default function HomePage() {
                   </p>
                 </div>
               )}
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
     </div>
   );
 }
+
+const OPEN_HOUR = 8;
+const CLOSE_HOUR = 22;
+
+// Today's opening hours as a DAW-style timeline with a playhead at the current IST time.
+function OpenHoursBar() {
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    const tick = () => {
+      const [h, m] = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Asia/Kolkata",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+        .format(new Date())
+        .split(":")
+        .map(Number);
+      setNow(h + m / 60);
+    };
+    tick();
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const open = now !== null && now >= OPEN_HOUR && now < CLOSE_HOUR;
+  const progress = open ? ((now - OPEN_HOUR) / (CLOSE_HOUR - OPEN_HOUR)) * 100 : 0;
+  const ticks = [8, 10, 12, 14, 16, 18, 20, 22];
+  const label = (h: number) => `${h % 12 || 12} ${h < 12 ? "AM" : "PM"}`;
+
+  return (
+    <div className="border-t border-white/10 px-6 py-7">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-5">
+        <p className="text-white font-semibold">Open every day, 8 AM - 10 PM</p>
+        {now !== null && (
+          <p className="inline-flex items-center gap-2 text-sm font-medium">
+            <span
+              className={`w-2 h-2 rounded-full ${open ? "bg-emerald-400" : "bg-fuchsia-400"}`}
+            />
+            <span className={open ? "text-emerald-300" : "text-fuchsia-300"}>
+              {open ? "Open now · closes 10 PM" : "Closed now · opens 8 AM"}
+            </span>
+          </p>
+        )}
+      </div>
+
+      <div className="relative h-3 rounded-full bg-white/10" aria-hidden="true">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-violet-700 to-violet-400"
+          style={{ width: `${progress}%` }}
+        />
+        {open && (
+          <div
+            className="absolute -top-1.5 -bottom-1.5 w-0.5 bg-white rounded-full shadow-[0_0_12px_rgba(252,251,251,0.8)]"
+            style={{ left: `${progress}%` }}
+          />
+        )}
+      </div>
+
+      <div className="relative h-5 mt-2 text-[11px] text-zinc-500 tabular-nums" aria-hidden="true">
+        {ticks.map((h, i) => (
+          <span
+            key={h}
+            className={`absolute whitespace-nowrap -translate-x-1/2 first:translate-x-0 last:-translate-x-full ${i % 2 && i < ticks.length - 1 ? "hidden sm:block" : ""}`}
+            style={{ left: `${((h - OPEN_HOUR) / (CLOSE_HOUR - OPEN_HOUR)) * 100}%` }}
+          >
+            {label(h)}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+

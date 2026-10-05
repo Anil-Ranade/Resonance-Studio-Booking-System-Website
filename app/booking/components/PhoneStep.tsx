@@ -9,13 +9,19 @@ import {
   RotateCcw,
   User,
   Mail,
-  Loader2,
   CheckCircle,
   UserCheck,
   ArrowRight,
 } from "lucide-react";
 import { useBooking } from "../contexts/BookingContext";
 import StepLayout from "./StepLayout";
+import { adminFetch } from "@/lib/adminFetch";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Spinner } from "@/components/ui/spinner";
 import {
   getDeviceFingerprint,
   isPhoneTrustedLocally,
@@ -66,7 +72,8 @@ export default function PhoneStep() {
 
       setIsCheckingUser(true);
       try {
-        const response = await fetch("/api/check-user", {
+        // Staff/admin see full details; customers get a masked email until verified
+        const response = await (mode === "customer" ? fetch : adminFetch)("/api/check-user", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ phone: phoneDigits }),
@@ -100,7 +107,7 @@ export default function PhoneStep() {
         setUserChecked(true);
       }
     },
-    [updateDraft]
+    [updateDraft, mode]
   );
 
   // Auto-login check on mount - check if device is trusted for auto-authentication
@@ -355,16 +362,13 @@ export default function PhoneStep() {
         showNext={false}
         hideFooter={true}
       >
-        <div className="flex flex-col items-center justify-center py-8">
-          <div className="p-4 rounded-full bg-violet-500/20 mb-4">
-            <Smartphone className="w-10 h-10 text-violet-400" />
+        <div className="flex flex-col items-center justify-center gap-4 py-8">
+          <div className="p-4 rounded-full bg-primary/15 text-primary">
+            <Smartphone className="w-10 h-10" />
           </div>
-          <div className="flex items-center gap-2">
-            <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
-            <span className="text-white font-medium">
-              Detecting trusted device...
-            </span>
-          </div>
+          <span className="flex items-center gap-2 font-medium">
+            <Spinner className="size-5 text-primary" /> Detecting trusted device...
+          </span>
         </div>
       </StepLayout>
     );
@@ -382,65 +386,53 @@ export default function PhoneStep() {
         onNext={handleConfirmUser}
         nextLabel="Continue"
       >
-        <div className="flex flex-col gap-3">
-          {/* User Info Card */}
-          <div className="bg-zinc-800/80 border border-zinc-700 rounded-xl p-4">
-            {/* User Avatar and Name */}
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-base font-bold shadow-lg shadow-violet-500/20">
+        <Card>
+          <CardContent className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-base font-bold">
                 {(autoLoginUser.name || "U").charAt(0).toUpperCase()}
               </div>
               <div className="flex-1">
-                <p className="text-white font-semibold text-base leading-tight">
+                <p className="font-semibold text-base leading-tight">
                   {autoLoginUser.name || "User"}
                 </p>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <Shield className="w-3 h-3 text-green-400" />
-                  <span className="text-green-400 text-[10px] font-medium">
-                    Trusted device
-                  </span>
-                </div>
+                <Badge variant="outline" className="mt-1 border-emerald-500/40 text-emerald-400">
+                  <Shield /> Trusted device
+                </Badge>
               </div>
             </div>
 
-            {/* Contact Details */}
-            <div className="space-y-2 pt-2 border-t border-zinc-700">
+            <Separator />
+
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
+                <Phone className="size-3.5" />
+              </div>
+              <div>
+                <p className="text-muted-foreground text-[10px] uppercase font-medium">Phone</p>
+                <p className="text-sm font-medium">+91 {formatPhoneForDisplay(autoLoginUser.phone)}</p>
+              </div>
+            </div>
+
+            {autoLoginUser.email && (
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                  <Phone className="w-3.5 h-3.5 text-violet-400" />
+                <div className="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
+                  <Mail className="size-3.5" />
                 </div>
-                <div>
-                  <p className="text-zinc-400 text-[10px] uppercase font-medium">Phone</p>
-                  <p className="text-white text-sm font-medium">
-                    +91 {formatPhoneForDisplay(autoLoginUser.phone)}
-                  </p>
+                <div className="min-w-0">
+                  <p className="text-muted-foreground text-[10px] uppercase font-medium">Email</p>
+                  <p className="text-sm font-medium truncate">{autoLoginUser.email}</p>
                 </div>
               </div>
+            )}
 
-              {autoLoginUser.email && (
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                    <Mail className="w-3.5 h-3.5 text-violet-400" />
-                  </div>
-                  <div>
-                    <p className="text-zinc-400 text-[10px] uppercase font-medium">Email</p>
-                    <p className="text-white text-sm font-medium truncate max-w-[200px]">
-                      {autoLoginUser.email}
-                    </p>
-                  </div>
-                </div>
-              )}
+            <Separator />
 
-              {/* Device hint message */}
-              <div className="flex items-center gap-2 mt-2 pt-2 border-t border-zinc-700/50">
-                <Smartphone className="w-3 h-3 text-amber-400" />
-                <p className="text-amber-400 text-[10px] font-medium">
-                  Use this number only for this device
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+            <p className="flex items-center gap-2 text-amber-400 text-xs font-medium">
+              <Smartphone className="size-3.5" /> Use this number only for this device
+            </p>
+          </CardContent>
+        </Card>
       </StepLayout>
     );
   }
@@ -455,90 +447,83 @@ export default function PhoneStep() {
       onNext={handleNext}
       isNextDisabled={!isValid || isCheckingUser}
     >
-      <div className="space-y-2">
-        {/* Edit Mode Banner */}
+      <div className="space-y-3">
         {draft.isEditMode && draft.originalChoices && (
-          <div className="p-2 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center gap-2">
-            <RotateCcw className="w-3.5 h-3.5 text-violet-400" />
-            <span className="text-[10px] text-violet-400">
-              Modifying your{" "}
-              <span className="font-medium">
-                {draft.originalChoices.sessionType}
-              </span>{" "}
-              booking
-            </span>
-          </div>
+          <Badge variant="outline" className="border-primary/40 text-primary">
+            <RotateCcw /> Modifying your {draft.originalChoices.sessionType} booking
+          </Badge>
         )}
 
-        {/* Phone input */}
-        <div className="relative">
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-zinc-400">
-            <Phone className="w-4 h-4" />
-            <span className="text-white font-medium text-sm">+91</span>
-          </div>
-          <input
-            type="tel"
-            inputMode="numeric"
-            value={phone}
-            onChange={(e) => handlePhoneChange(e.target.value)}
-            placeholder="98765 43210"
-            className="w-full bg-zinc-800/50 border-2 border-zinc-600 rounded-xl pl-[4.5rem] pr-10 py-2.5 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all text-base"
-            autoFocus
-          />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            {isCheckingUser && (
-              <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
-            )}
-            {!isCheckingUser && isTrustedDevice && phoneValid && (
-              <Shield className="w-4 h-4 text-green-400" />
-            )}
+        <div className="space-y-1.5">
+          <Label htmlFor="booking-phone">WhatsApp number</Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-muted-foreground text-sm">
+              <Phone className="size-4" />
+              <span className="text-foreground font-medium">+91</span>
+            </span>
+            <Input
+              id="booking-phone"
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel-national"
+              value={phone}
+              onChange={(e) => handlePhoneChange(e.target.value)}
+              placeholder="98765 43210"
+              className="h-11 pl-[4.5rem] pr-10 text-base"
+              autoFocus
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2">
+              {isCheckingUser && <Spinner className="text-primary" />}
+              {!isCheckingUser && isTrustedDevice && phoneValid && (
+                <Shield className="size-4 text-emerald-400" aria-label="Trusted device" />
+              )}
+            </span>
           </div>
         </div>
 
-        {/* Name input */}
         {phoneValid && userChecked && (
-          <div className="relative animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
-              <User className="w-4 h-4" />
+          <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-300">
+            <Label htmlFor="booking-name">
+              Name {!isExistingUser && <span className="text-muted-foreground">(required)</span>}
+            </Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                id="booking-name"
+                autoComplete="name"
+                value={name}
+                onChange={(e) => handleNameChange(e.target.value)}
+                placeholder="Your name"
+                className="h-11 pl-10 text-base read-only:opacity-75"
+                readOnly={isExistingUser && !isAdminOrStaff}
+              />
             </div>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => handleNameChange(e.target.value)}
-              placeholder={
-                isExistingUser ? "Your name" : "Your name (required)"
-              }
-              className={`w-full bg-zinc-800/50 border-2 rounded-xl pl-10 pr-4 py-2.5 text-white text-base placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all ${
-                isExistingUser ? "border-zinc-600" : "border-zinc-600"
-              } ${isExistingUser && !isAdminOrStaff ? "opacity-75" : ""}`}
-              readOnly={isExistingUser && !isAdminOrStaff}
-            />
           </div>
         )}
 
-        {/* Email input */}
         {phoneValid && userChecked && (
-          <div className="relative animate-in fade-in slide-in-from-top-2 duration-300 delay-75">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
-              <Mail className="w-4 h-4" />
+          <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-300 delay-75">
+            <Label htmlFor="booking-email">
+              Email {!isExistingUser && <span className="text-muted-foreground">(required)</span>}
+            </Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                id="booking-email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => handleEmailChange(e.target.value)}
+                placeholder="you@example.com"
+                aria-invalid={!emailValid}
+                className="h-11 pl-10 text-base read-only:opacity-75"
+                readOnly={isExistingUser && !canOverrideEmail && !isAdminOrStaff}
+              />
             </div>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => handleEmailChange(e.target.value)}
-              placeholder={
-                isExistingUser ? "Your email" : "Your email (required)"
-              }
-              className={`w-full bg-zinc-800/50 border-2 rounded-xl pl-10 pr-4 py-2.5 text-white text-base placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all ${
-                isExistingUser ? "border-zinc-600" : "border-zinc-600"
-              } ${isExistingUser && !canOverrideEmail && !isAdminOrStaff ? "opacity-75" : ""}`}
-              readOnly={isExistingUser && !canOverrideEmail && !isAdminOrStaff}
-            />
           </div>
         )}
 
-        {/* Info text */}
-        <p className="text-[10px] text-zinc-500 leading-tight px-1">
+        <p className="text-xs text-muted-foreground leading-snug">
           We will use this number for booking confirmations & reminders. Cashback amount will be accumulated against this number only.
         </p>
       </div>

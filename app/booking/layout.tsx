@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import BookingClientWrapper from "./BookingClientWrapper";
+import { OG_BASE } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Book Online",
@@ -9,6 +10,7 @@ export const metadata: Metadata = {
     canonical: "/booking",
   },
   openGraph: {
+    ...OG_BASE,
     title: "Book Online - Resonance Jam Room",
     description:
       "Book your studio session online. Choose from jam room, karaoke, recording, and podcast sessions. Instant booking confirmation.",

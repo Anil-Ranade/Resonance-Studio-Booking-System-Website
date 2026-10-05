@@ -1,28 +1,39 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Loader2, AlertCircle, RefreshCw, Smartphone, CheckCircle, X } from 'lucide-react';
+// The one OTP screen for new / edit / cancel booking flows.
+// Skips straight to onVerified if this device is already trusted for the phone.
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Shield, AlertCircle, RefreshCw, Smartphone, CheckCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { Spinner } from '@/components/ui/spinner';
 import { getDeviceFingerprint, addTrustedPhone, isPhoneTrustedLocally } from '@/lib/deviceFingerprint';
 
+export interface OTPVerifiedInfo {
+  deviceTrusted: boolean;
+  fingerprint: string;
+}
+
 interface OTPVerificationProps {
-  phone: string;
+  /** Omit to verify by email alone (the server finds the phone and uses its stored email). */
+  phone?: string;
   email: string;
-  onVerified: () => void;
-  onCancel?: () => void;
-  actionLabel?: string; // e.g., "cancel booking", "edit booking", "complete booking"
-  accentColor?: 'violet' | 'red' | 'blue';
+  onVerified: (info: OTPVerifiedInfo) => void;
+  actionLabel?: string; // e.g. "cancel booking", "edit booking", "complete booking"
+  /** Red verify button, for destructive actions like cancelling. */
+  destructive?: boolean;
 }
 
 export default function OTPVerification({
   phone,
   email,
   onVerified,
-  onCancel,
   actionLabel = 'proceed',
-  accentColor = 'violet',
+  destructive = false,
 }: OTPVerificationProps) {
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState('');
@@ -30,62 +41,38 @@ export default function OTPVerification({
   const [cooldown, setCooldown] = useState(0);
   const [isCheckingDevice, setIsCheckingDevice] = useState(true);
   const [deviceVerified, setDeviceVerified] = useState(false);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [sentTo, setSentTo] = useState('');
+  const inFlight = useRef(false);
+  // Who the code is for: phone when known, otherwise the email
+  const identity = phone ? { phone } : { email };
 
-  const colorClasses = {
-    violet: {
-      bg: 'bg-violet-500/20',
-      text: 'text-violet-400',
-      ring: 'focus:ring-violet-500',
-      hover: 'hover:text-violet-300',
-    },
-    red: {
-      bg: 'bg-red-500/20',
-      text: 'text-red-400',
-      ring: 'focus:ring-red-500',
-      hover: 'hover:text-red-300',
-    },
-    blue: {
-      bg: 'bg-blue-500/20',
-      text: 'text-blue-400',
-      ring: 'focus:ring-blue-500',
-      hover: 'hover:text-blue-300',
-    },
-  };
-
-  const colors = colorClasses[accentColor];
-
-  // Check if device is already trusted
   const checkDeviceTrust = useCallback(async () => {
     setIsCheckingDevice(true);
     try {
+      // Device trust is per phone; email-only verification always uses a code
+      if (!phone) {
+        setIsCheckingDevice(false);
+        return;
+      }
       const digits = phone.replace(/\D/g, '');
-      
-      // First check local trust
       if (!isPhoneTrustedLocally(digits)) {
         setIsCheckingDevice(false);
         return;
       }
 
-      // Verify with server
       const { fingerprint } = await getDeviceFingerprint();
       const response = await fetch('/api/auth/verify-device', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          phone: digits, 
-          deviceFingerprint: fingerprint 
-        }),
+        body: JSON.stringify({ phone: digits, deviceFingerprint: fingerprint }),
       });
 
       if (response.ok) {
         const data = await response.json();
         if (data.trusted) {
           setDeviceVerified(true);
-          // Auto-proceed after a brief moment to show trusted status
-          setTimeout(() => {
-            onVerified();
-          }, 1000);
+          // Brief pause so the "verified" state is visible
+          setTimeout(() => onVerified({ deviceTrusted: true, fingerprint }), 1000);
           return;
         }
       }
@@ -99,7 +86,6 @@ export default function OTPVerification({
     checkDeviceTrust();
   }, [checkDeviceTrust]);
 
-  // Cooldown timer
   useEffect(() => {
     if (cooldown > 0) {
       const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
@@ -107,7 +93,7 @@ export default function OTPVerification({
     }
   }, [cooldown]);
 
-  // Send OTP after device check (if not trusted)
+  // Send OTP once we know the device isn't trusted
   useEffect(() => {
     if (!isCheckingDevice && !deviceVerified && !otpSent) {
       sendOTP();
@@ -125,279 +111,166 @@ export default function OTPVerification({
       const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, email }),
+        body: JSON.stringify({ ...identity, email }),
       });
-
       const data = await response.json();
 
       if (response.ok) {
         setOtpSent(true);
+        setSentTo(data.sentTo || '');
         setCooldown(30);
-        inputRefs.current[0]?.focus();
       } else {
         setError(data.error || 'Failed to send OTP');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to send OTP. Please try again.');
     } finally {
       setIsSending(false);
     }
   };
 
-  const handleOtpChange = (index: number, value: string) => {
-    const digit = value.replace(/\D/g, '').slice(-1);
-    
-    const newOtp = [...otp];
-    newOtp[index] = digit;
-    setOtp(newOtp);
-
-    if (error) setError('');
-
-    if (digit && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-
-    if (digit && index === 5) {
-      const fullOtp = newOtp.join('');
-      if (fullOtp.length === 6) {
-        verifyOTP(fullOtp);
-      }
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    
-    if (pasted.length === 6) {
-      const newOtp = pasted.split('');
-      setOtp(newOtp);
-      verifyOTP(pasted);
-    }
-  };
-
   const verifyOTP = async (code: string) => {
+    // onComplete + the button can both fire; only one request at a time
+    if (inFlight.current) return;
+    inFlight.current = true;
     setIsLoading(true);
     setError('');
 
     try {
       const { fingerprint, deviceName } = await getDeviceFingerprint();
-
       const response = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone,
-          code,
-          deviceFingerprint: fingerprint,
-          deviceName,
-        }),
+        body: JSON.stringify({ ...identity, code, deviceFingerprint: fingerprint, deviceName }),
       });
-
       const data = await response.json();
 
       if (response.ok && data.verified) {
-        addTrustedPhone(phone);
+        if (phone) addTrustedPhone(phone);
         setDeviceVerified(true);
-        setTimeout(() => {
-          onVerified();
-        }, 500);
+        setTimeout(() => onVerified({ deviceTrusted: !!data.deviceTrusted, fingerprint }), 500);
       } else {
         setError(data.error || 'Invalid OTP');
-        setOtp(['', '', '', '', '', '']);
-        inputRefs.current[0]?.focus();
+        setOtp('');
       }
-    } catch (err) {
+    } catch {
       setError('Verification failed. Please try again.');
     } finally {
       setIsLoading(false);
+      inFlight.current = false;
     }
   };
 
-  const formatPhone = (phone: string) => {
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length === 10) {
-      return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
-    }
-    return phone;
+  const formatPhone = (p: string) => {
+    const digits = p.replace(/\D/g, '');
+    return digits.length === 10 ? `+91 ${digits.slice(0, 5)} ${digits.slice(5)}` : p;
   };
 
-  // Device check in progress
+  const label = actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1);
+
   if (isCheckingDevice) {
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="glass-strong rounded-2xl p-6 text-center"
-      >
-        <div className={`w-16 h-16 rounded-full ${colors.bg} flex items-center justify-center mx-auto mb-4`}>
-          <Smartphone className={`w-8 h-8 ${colors.text}`} />
+      <div className="flex flex-col items-center gap-3 py-8 text-center">
+        <div className="p-4 rounded-full bg-primary/15 text-primary">
+          <Smartphone className="size-8" />
         </div>
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Loader2 className={`w-5 h-5 ${colors.text} animate-spin`} />
-          <span className="text-white font-medium">Checking device...</span>
-        </div>
-        <p className="text-zinc-400 text-sm">Verifying if this device is trusted</p>
-      </motion.div>
+        <span className="flex items-center gap-2 font-medium">
+          <Spinner className="size-5 text-primary" /> Checking device...
+        </span>
+        <p className="text-muted-foreground text-sm">Verifying if this device is trusted</p>
+      </div>
     );
   }
 
-  // Device is verified - showing success briefly
   if (deviceVerified) {
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="glass-strong rounded-2xl p-6 text-center"
-      >
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: 'spring', stiffness: 200 }}
-          className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4"
-        >
-          <CheckCircle className="w-8 h-8 text-green-400" />
-        </motion.div>
-        <h3 className="text-lg font-bold text-white mb-1">Device Verified</h3>
-        <p className="text-zinc-400 text-sm">Proceeding to {actionLabel}...</p>
-      </motion.div>
+      <div className="flex flex-col items-center gap-3 py-8 text-center">
+        <div className="p-4 rounded-full bg-emerald-500/15 text-emerald-400">
+          <CheckCircle className="size-8" />
+        </div>
+        <h3 className="text-lg font-bold">Verified</h3>
+        <p className="text-muted-foreground text-sm">Proceeding to {actionLabel}...</p>
+      </div>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="glass-strong rounded-2xl p-6"
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 rounded-xl ${colors.bg} flex items-center justify-center`}>
-            <Shield className={`w-6 h-6 ${colors.text}`} />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-white">Verify to {actionLabel}</h3>
-            <p className="text-zinc-400 text-sm">Enter the OTP sent to your email</p>
-          </div>
-        </div>
-        {onCancel && (
-          <button
-            onClick={onCancel}
-            className="p-2 rounded-lg hover:bg-white/5 transition-colors"
-          >
-            <X className="w-5 h-5 text-zinc-400" />
-          </button>
-        )}
+    <div className="flex flex-col items-center gap-5 pt-2">
+      <div className="p-3 rounded-full bg-primary/15 text-primary">
+        <Shield className="size-8" />
       </div>
 
-      {/* Email info */}
-      <div className="mb-6 p-3 rounded-xl bg-white/5 text-center">
-        <p className="text-zinc-400 text-sm">
-          OTP sent to <span className="text-white font-medium">{email}</span>
+      <div className="w-full rounded-xl bg-muted p-3 text-center">
+        <p className="text-muted-foreground text-sm">
+          Code sent to <span className="text-foreground font-medium">{sentTo || 'your email'}</span>
         </p>
-        <p className="text-zinc-500 text-xs mt-1">
-          Phone: {formatPhone(phone)}
-        </p>
+        {phone && <p className="text-muted-foreground text-xs mt-1">Phone: {formatPhone(phone)}</p>}
       </div>
 
-      {/* OTP Input */}
-      <div className="flex justify-center gap-2 mb-4">
-        {otp.map((digit, index) => (
-          <input
-            key={index}
-            ref={(el) => { inputRefs.current[index] = el; }}
-            type="text"
-            inputMode="numeric"
-            maxLength={1}
-            value={digit}
-            onChange={(e) => handleOtpChange(index, e.target.value)}
-            onKeyDown={(e) => handleKeyDown(index, e)}
-            onPaste={handlePaste}
-            disabled={isLoading}
-            autoFocus={index === 0}
-            className={`w-12 h-14 text-center text-xl font-bold rounded-xl border transition-all focus:outline-none focus:ring-2 ${colors.ring} ${
-              error
-                ? 'bg-red-500/10 border-red-500 text-red-400'
-                : 'bg-zinc-800 border-zinc-700 text-white'
-            } disabled:opacity-50`}
-          />
-        ))}
-      </div>
+      <InputOTP
+        maxLength={6}
+        value={otp}
+        onChange={(v) => {
+          setOtp(v);
+          if (error) setError('');
+        }}
+        onComplete={verifyOTP}
+        disabled={isLoading}
+        inputMode="numeric"
+        pattern="^[0-9]*$"
+        autoFocus
+        aria-label="6-digit verification code"
+      >
+        <InputOTPGroup className="gap-2">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <InputOTPSlot
+              key={i}
+              index={i}
+              aria-invalid={!!error}
+              className="size-12 rounded-xl border text-xl font-bold first:rounded-xl last:rounded-xl"
+            />
+          ))}
+        </InputOTPGroup>
+      </InputOTP>
 
-      {/* Error message */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="flex items-center justify-center gap-2 text-red-400 text-sm mb-4"
-          >
-            <AlertCircle className="w-4 h-4" />
-            <span>{error}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Loading indicator */}
-      {isLoading && (
-        <div className={`flex items-center justify-center gap-2 text-sm ${colors.text} mb-4`}>
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span>Verifying...</span>
-        </div>
+      {error && (
+        <Alert variant="destructive" className="w-auto">
+          <AlertCircle />
+          <AlertDescription className="text-destructive">{error}</AlertDescription>
+        </Alert>
       )}
 
-      {/* Verify button */}
-      <motion.button
-        onClick={() => verifyOTP(otp.join(''))}
-        disabled={otp.some(d => !d) || isLoading}
-        className={`w-full py-3 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-          accentColor === 'red'
-            ? 'bg-red-500 hover:bg-red-600 text-white'
-            : accentColor === 'blue'
-            ? 'bg-blue-500 hover:bg-blue-600 text-white'
-            : 'bg-violet-500 hover:bg-violet-600 text-white'
+      <Button
+        onClick={() => verifyOTP(otp)}
+        disabled={otp.length < 6 || isLoading}
+        className={`w-full h-11 font-semibold ${
+          destructive ? 'bg-destructive text-white hover:bg-destructive/90' : ''
         }`}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
       >
-        {isLoading ? 'Verifying...' : `Verify & ${actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1)}`}
-      </motion.button>
-
-      {/* Resend OTP */}
-      <div className="text-center mt-4">
-        {cooldown > 0 ? (
-          <p className="text-zinc-400 text-sm">
-            Resend OTP in <span className={`${colors.text} font-medium`}>{cooldown}s</span>
-          </p>
+        {isLoading ? (
+          <>
+            <Spinner /> Verifying...
+          </>
         ) : (
-          <button
-            onClick={sendOTP}
-            disabled={isSending}
-            className={`flex items-center justify-center gap-2 mx-auto ${colors.text} ${colors.hover} transition-colors text-sm`}
-          >
-            {isSending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
-            <span>{isSending ? 'Sending...' : 'Resend OTP'}</span>
-          </button>
+          `Verify & ${label}`
         )}
-      </div>
+      </Button>
 
-      {/* Trust info */}
-      <div className="flex items-center justify-center gap-2 text-xs text-zinc-500 mt-4 bg-zinc-800/50 rounded-lg px-3 py-2">
-        <Smartphone className="w-3.5 h-3.5" />
-        <span>This device will be remembered for future actions</span>
-      </div>
-    </motion.div>
+      {cooldown > 0 ? (
+        <p className="text-muted-foreground text-sm">
+          Resend code in <span className="text-primary font-medium">{cooldown}s</span>
+        </p>
+      ) : (
+        <Button variant="link" onClick={sendOTP} disabled={isSending}>
+          {isSending ? <Spinner /> : <RefreshCw />}
+          {isSending ? 'Sending...' : 'Resend code'}
+        </Button>
+      )}
+
+      <p className="flex items-center gap-2 text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
+        <Smartphone className="size-3.5" />
+        This device will be remembered for future bookings
+      </p>
+    </div>
   );
 }

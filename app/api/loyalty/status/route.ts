@@ -1,13 +1,23 @@
 import { NextResponse } from 'next/server';
-import { supabaseClient as supabase } from '@/lib/supabaseClient';
+import { supabaseServer as supabase } from '@/lib/supabaseServer';
+import { getAdminUser, getSessionPhone, isPhone, rateLimit } from '@/lib/apiSecurity';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const phone = searchParams.get('phone');
+    const phone = (searchParams.get('phone') || '').replace(/\D/g, '');
 
-    if (!phone) {
-      return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
+    if (!isPhone(phone)) {
+      return NextResponse.json({ error: 'A valid 10-digit phone number is required' }, { status: 400 });
+    }
+
+    const limited = await rateLimit(request, 'loyalty_status', 60, 600);
+    if (limited) return limited;
+
+    // Only the verified customer themselves, or an admin, may see a balance
+    const sessionPhone = await getSessionPhone(request);
+    if (sessionPhone !== phone && !(await getAdminUser(request))) {
+      return NextResponse.json({ error: 'Please verify your phone number to continue.' }, { status: 401 });
     }
 
     // Call the database function for loyalty progress
@@ -16,7 +26,7 @@ export async function GET(request: Request) {
 
     if (loyaltyError) {
       console.error('Error fetching loyalty status:', loyaltyError);
-      return NextResponse.json({ error: loyaltyError.message }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to fetch loyalty status' }, { status: 500 });
     }
 
     // Try to fetch first-time bonus status (may not exist if migration hasn't been run)

@@ -2,21 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { ArrowLeft, Clock, Car, Volume2, Cigarette, Eye, AlertCircle, Loader2 } from "lucide-react";
-
-const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-};
-
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
+import Image from "next/image";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 // Helper function to format time from 24h to 12h format
 function formatTimeToDisplay(time: string): string {
@@ -50,118 +37,111 @@ export default function PoliciesPage() {
     fetchSettings();
   }, []);
 
+  const hours = `${formatTimeToDisplay(defaultOpenTime)} - ${formatTimeToDisplay(defaultCloseTime)}`;
+
+  // Each policy leads with a one-line short version, full wording below
   const policies = [
     {
-      icon: <Clock className="w-6 h-6" />,
-      iconBg: "bg-blue-500/20 text-blue-400",
-      title: "Operating Hours",
-      content: loading 
-        ? "Loading operating hours..." 
+      id: "hours",
+      title: "Operating hours",
+      short: loading ? "Open daily." : `Open daily, ${hours}.`,
+      content: loading
+        ? "Loading operating hours..."
         : `Our standard operating hours are from ${formatTimeToDisplay(defaultOpenTime)} to ${formatTimeToDisplay(defaultCloseTime)}. Should you require studio time outside these hours, special arrangements can be considered upon prior request.`,
     },
     {
-      icon: <Car className="w-6 h-6" />,
-      iconBg: "bg-emerald-500/20 text-emerald-400",
+      id: "parking",
       title: "Parking",
+      short: "Park inside the building. Never block a gate.",
       content: "Please park your vehicle in the designated parking area within our building. If building parking is full, you may use society street parking on the road. Please ensure no gates are blocked and no inconvenience is caused to other residents.",
     },
     {
-      icon: <Volume2 className="w-6 h-6" />,
-      iconBg: "bg-amber-500/20 text-amber-400",
-      title: "Discussions & Noise",
+      id: "noise",
+      title: "Discussions & noise",
+      short: "Chat inside, not on the road.",
       content: "We provide ample space within our premises for your discussions before and after your session. To maintain a peaceful environment for our neighbors, we kindly request that you refrain from extended chatting on the road near the studio.",
     },
     {
-      icon: <Cigarette className="w-6 h-6" />,
-      iconBg: "bg-red-500/20 text-red-400",
-      title: "Smoking Policy",
+      id: "smoking",
+      title: "Smoking",
+      short: "Only in the smoking area, and use the bins.",
       content: "Smoking is always discouraged. If you happen to smoke, please use the designated smoking area only. Ensure all cigarettes are fully extinguished and please dispose of all ash and butts in the provided dustbins.",
     },
     {
-      icon: <Eye className="w-6 h-6" />,
-      iconBg: "bg-violet-500/20 text-violet-400",
-      title: "Privacy & Monitoring",
+      id: "privacy",
+      title: "Privacy & monitoring",
+      short: "Your operator listens from outside. Call them if you need anything.",
       content: "To ensure your privacy, after the initial setup, our sound engineer/operator is advised to monitor externally. However, they will conduct intermittent checks inside the studio to confirm all systems are functioning properly. Should you require any assistance (e.g., an additional microphone, battery replacement, or any other technical support), please call them and they will promptly attend to your needs.",
     },
   ];
 
   return (
-    <div className="min-h-screen py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <motion.div 
-          className="mb-12 text-center"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+    <div className="min-h-screen py-8 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto">
+        <Link
+          href="/home"
+          className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-10"
         >
-          <Link 
-            href="/home"
-            className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-6"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back to Home
-          </Link>
-          
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Studio Policies</h1>
-          <p className="text-zinc-400 text-lg max-w-2xl mx-auto">
-            Please review our policies to ensure a pleasant experience for everyone.
+          <ArrowLeft className="w-5 h-5" />
+          Back to Home
+        </Link>
+
+        <header className="mb-14 lg:mb-20 flex flex-col-reverse lg:flex-row lg:items-center lg:justify-between gap-8">
+          <div>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-fuchsia-400 mb-4">
+            Studio policies · {policies.length} house rules
           </p>
-        </motion.div>
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white tracking-tight leading-[1.02] max-w-3xl">
+            A few house rules, <span className="text-violet-400">so every session runs well.</span>
+          </h1>
+          </div>
+          <Image
+            src="/policies.png"
+            alt="Parchment scroll with a checklist, a fountain pen and a music-note wax seal"
+            width={1254}
+            height={1254}
+            priority
+            sizes="(min-width: 1024px) 320px, 224px"
+            className="w-56 lg:w-80 shrink-0 self-center"
+          />
+        </header>
 
-        {/* Policies List */}
-        <motion.div 
-          className="space-y-6"
-          variants={staggerContainer}
-          initial="initial"
-          animate="animate"
-        >
-          {policies.map((policy, index) => (
-            <motion.div 
-              key={index} 
-              className="glass rounded-2xl p-6"
-              variants={fadeInUp}
-              whileHover={{ x: 5 }}
+        <div className="space-y-14 lg:space-y-16 mb-24">
+          {policies.map((p) => (
+            <section
+              key={p.id}
+              id={p.id}
+              aria-labelledby={`${p.id}-title`}
+              className="scroll-mt-28 grid lg:grid-cols-12 gap-4 lg:gap-12"
             >
-              <div className="flex items-start gap-4">
-                <div className={`w-14 h-14 rounded-xl ${policy.iconBg} flex items-center justify-center flex-shrink-0`}>
-                  {policy.icon}
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white mb-2">{policy.title}</h2>
-                  <p className="text-zinc-400 leading-relaxed">{policy.content}</p>
-                </div>
+              <div className="lg:col-span-4 border-t border-violet-400/60 pt-5">
+                <h2 id={`${p.id}-title`} className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400">
+                  {p.title}
+                </h2>
               </div>
-            </motion.div>
+              <div className="lg:col-span-8 lg:border-t lg:border-white/10 lg:pt-5">
+                <p className="text-2xl sm:text-3xl font-bold text-white tracking-tight leading-snug mb-3">{p.short}</p>
+                <p className="text-zinc-400 leading-relaxed max-w-3xl">{p.content}</p>
+              </div>
+            </section>
           ))}
-        </motion.div>
 
-        {/* Additional Note */}
-        <motion.div 
-          className="mt-12 glass-strong rounded-2xl p-6"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 flex-shrink-0">
-              <AlertCircle className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-white mb-2">Need Assistance?</h3>
-              <p className="text-zinc-400 text-sm">
-                Our team is always here to help. If you have any questions about our policies or need any assistance during your session, don&apos;t hesitate to reach out to our staff.
-              </p>
-              <Link 
-                href="/contact" 
-                className="inline-flex items-center gap-2 mt-4 text-violet-400 hover:text-violet-300 transition-colors"
+          <section className="grid lg:grid-cols-12 gap-4 lg:gap-12">
+            <div className="lg:col-start-5 lg:col-span-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-1">Questions about a policy?</h2>
+                <p className="text-zinc-400">Ask our staff at the studio, or call us before your session.</p>
+              </div>
+              <Link
+                href="/contact"
+                className="group shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-violet-400 hover:bg-violet-300 text-navy font-semibold transition-colors"
               >
-                Contact Us
-                <ArrowLeft className="w-4 h-4 rotate-180" />
+                Contact us
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>
-          </div>
-        </motion.div>
+          </section>
+        </div>
       </div>
     </div>
   );

@@ -17,7 +17,6 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { getSession } from "@/lib/supabaseAuth";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface Booking {
   id: string;
@@ -214,7 +213,7 @@ export default function PaymentsPage() {
             onClick={() => setActiveTab("pending")}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === "pending"
-                ? "bg-violet-500 text-white shadow-lg shadow-violet-500/20"
+                ? "bg-violet-500 text-navy shadow-lg shadow-violet-500/20"
                 : "text-zinc-400 hover:text-white hover:bg-white/5"
             }`}
           >
@@ -245,12 +244,9 @@ export default function PaymentsPage() {
       </div>
 
       {/* Feedback Message */}
-      <AnimatePresence>
+      <>
         {message && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+          <div
             className={`p-4 rounded-xl flex items-center gap-3 ${
               message.type === "success"
                 ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
@@ -269,9 +265,9 @@ export default function PaymentsPage() {
             >
               <XCircle className="w-5 h-5" />
             </button>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {/* Bookings List */}
       <div className="space-y-4">
@@ -287,10 +283,8 @@ export default function PaymentsPage() {
           </div>
         ) : (
           filteredBookings.map((booking) => (
-            <motion.div
+            <div
               key={booking.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
               className="glass rounded-xl p-6 transition-colors hover:bg-white/5 border border-white/5 hover:border-violet-500/30"
             >
               <div className="flex flex-col lg:flex-row gap-6 lg:items-center">
@@ -374,7 +368,7 @@ export default function PaymentsPage() {
                   )}
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))
         )}
       </div>

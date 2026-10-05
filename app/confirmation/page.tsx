@@ -2,13 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { CheckCircle, Mail, Clock, Sparkles, ArrowRight, Calendar, X, Plus, Award, CheckCircle2 } from "lucide-react";
-
-const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-};
 
 interface VerifiedUser {
   id: string;
@@ -73,95 +67,61 @@ export default function ConfirmationPage() {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
         {/* Success Animation */}
-        <motion.div 
+        <div 
           className="mb-8"
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, type: "spring", stiffness: 200 }}
         >
-          <motion.div 
+          <div 
             className="w-24 h-24 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/30"
-            animate={{ 
-              scale: [1, 1.05, 1],
-              boxShadow: [
-                "0 10px 40px -15px rgba(34, 197, 94, 0.3)",
-                "0 10px 60px -15px rgba(34, 197, 94, 0.5)",
-                "0 10px 40px -15px rgba(34, 197, 94, 0.3)"
-              ]
-            }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+            <div
             >
               <CheckCircle className="w-12 h-12 text-white" />
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
           
-          <motion.h1 
+          <h1 
             className="text-3xl md:text-4xl font-bold text-white mb-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
           >
             Booking Confirmed!
-          </motion.h1>
-          <motion.p 
+          </h1>
+          <p 
             className="text-zinc-400 text-lg"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
           >
             Thank you for choosing Resonance Studio. We&apos;ve sent a confirmation to your messages.
-          </motion.p>
-        </motion.div>
+          </p>
+        </div>
 
         {/* Info Card */}
-        <motion.div 
+        <div 
           className="glass rounded-2xl p-6 mb-8 text-left"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
         >
           <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-violet-400" />
             What&apos;s Next?
           </h3>
-          <motion.ul 
+          <ul 
             className="space-y-3"
-            initial="initial"
-            animate="animate"
-            variants={{
-              animate: { transition: { staggerChildren: 0.1, delayChildren: 0.6 } }
-            }}
           >
             {steps.map((step) => (
-              <motion.li 
+              <li 
                 key={step.number}
                 className="flex items-start gap-3"
-                variants={fadeInUp}
               >
-                <motion.div 
+                <div 
                   className="w-6 h-6 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0 mt-0.5 text-violet-400"
-                  whileHover={{ scale: 1.2, backgroundColor: "rgba(139, 92, 246, 0.3)" }}
                 >
                   {step.icon}
-                </motion.div>
+                </div>
                 <p className="text-zinc-400 text-sm">{step.text}</p>
-              </motion.li>
+              </li>
             ))}
-          </motion.ul>
-        </motion.div>
+          </ul>
+        </div>
 
         {/* Loyalty Progress Card */}
         {loyaltyStatus && (loyaltyStatus.hours > 0 || loyaltyStatus.window_start) && (
-          <motion.div
+          <div
             className="glass-strong rounded-2xl p-6 mb-8 relative overflow-hidden group text-left"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.7 }}
           >
              <div className="absolute inset-0 bg-gradient-to-r from-violet-500/10 via-fuchsia-500/10 to-violet-500/10 opacity-50" />
              
@@ -177,11 +137,8 @@ export default function ConfirmationPage() {
                </div>
                
                <div className="h-3 w-full bg-zinc-800 rounded-full overflow-hidden mb-3">
-                 <motion.div 
+                 <div 
                    className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
-                   initial={{ width: 0 }}
-                   animate={{ width: `${Math.min((loyaltyStatus.hours / 50) * 100, 100)}%` }}
-                   transition={{ duration: 1, ease: "easeOut", delay: 0.8 }}
                  />
                </div>
                
@@ -196,48 +153,38 @@ export default function ConfirmationPage() {
                  </p>
                )}
              </div>
-          </motion.div>
+          </div>
         )}
 
         {/* Actions */}
-        <motion.div 
+        <div 
           className="flex flex-col sm:flex-row gap-3"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
         >
-          <motion.button
+          <button
             onClick={handleExit}
             className="flex-1 btn-secondary py-4 flex items-center justify-center gap-2"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
             <X className="w-5 h-5" />
             Exit
-          </motion.button>
-          <motion.button
+          </button>
+          <button
             onClick={handleBookAnotherSlot}
             className="flex-1 btn-accent py-4 flex items-center justify-center gap-2"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
             <Plus className="w-5 h-5" />
             Book Another Slot
-          </motion.button>
-        </motion.div>
+          </button>
+        </div>
 
         {/* Contact Info */}
-        <motion.p 
+        <p 
           className="mt-8 text-zinc-500 text-sm"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
         >
           Questions? Contact us at{" "}
           <a href="mailto:resonancestudio12@gmail.com" className="text-violet-400 hover:text-violet-300 transition-colors">
             resonancestudio12@gmail.com
           </a>
-        </motion.p>
+        </p>
       </div>
     </div>
   );

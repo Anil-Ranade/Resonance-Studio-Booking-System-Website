@@ -2,21 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { ArrowLeft, MapPin, Phone, Mail, Clock } from "lucide-react";
-
-const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-};
-
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
+import Image from "next/image";
+import { ArrowLeft, ArrowUpRight, Phone } from "lucide-react";
 
 // Helper function to format time from 24h to 12h format
 function formatTimeToDisplay(time: string): string {
@@ -25,6 +12,8 @@ function formatTimeToDisplay(time: string): string {
   const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
   return `${displayHours}:00 ${period}`;
 }
+
+const MAPS_QUERY = "45+Shivprasad+Housing+Society+Panmala+Dattawadi+Pune";
 
 export default function ContactPage() {
   const [defaultOpenTime, setDefaultOpenTime] = useState('08:00');
@@ -55,129 +44,118 @@ export default function ContactPage() {
   ];
 
   return (
-    <div className="min-h-screen py-8 px-4">
+    <div className="min-h-screen py-8 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div 
-          className="mb-12"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+        <Link
+          href="/home"
+          className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-10"
         >
-          <Link 
-            href="/home"
-            className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-6"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back to Home
-          </Link>
-          
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Get in Touch</h1>
-          <p className="text-zinc-400 text-lg max-w-2xl">
-            Have questions? Reach out to us through any of the contact methods below.
-          </p>
-        </motion.div>
+          <ArrowLeft className="w-5 h-5" />
+          Back to Home
+        </Link>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          {/* Address */}
-          <motion.div 
-            className="glass rounded-2xl p-6"
-            variants={fadeInUp}
-            initial="initial"
-            animate="animate"
-            whileHover={{ scale: 1.02, y: -5 }}
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center text-violet-400 flex-shrink-0">
-                <MapPin className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold mb-1">Address</h3>
-                <p className="text-zinc-400 text-sm">45, Shivprasad Housing Society</p>
-                <p className="text-zinc-400 text-sm">Dattawadi</p>
-                <p className="text-zinc-400 text-sm">Pune - 411 030</p>
-                <p className="text-zinc-500 text-xs mt-1">(Near Dandekar Pool)</p>
-                <a 
-                  href="https://maps.google.com/?q=45+Shivprasad+Housing+Society+Panmala+Dattawadi+Pune" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="inline-block mt-2 text-sm text-violet-400 hover:text-violet-300 border border-violet-400/30 rounded-lg px-3 py-1"
-                >
-                  Open in Maps
-                </a>
-              </div>
-            </div>
-          </motion.div>
+        <header className="mb-14 lg:mb-16 grid sm:grid-cols-[1fr_auto] items-center gap-8">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-fuchsia-400 mb-4">
+              Open daily · {formatTimeToDisplay(defaultOpenTime)} - {formatTimeToDisplay(defaultCloseTime)}
+            </p>
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white tracking-tight leading-[1.02] max-w-3xl">
+              Call us, or <span className="text-violet-400">come over.</span>
+            </h1>
+          </div>
+          {/* Decorative; hidden on phones so the call list stays near the top */}
+          <Image
+            src="/contact.png"
+            alt=""
+            width={1254}
+            height={1254}
+            priority
+            sizes="(min-width: 1024px) 360px, 240px"
+            className="hidden sm:block w-60 lg:w-[360px] h-auto -my-6 lg:-my-12 drop-shadow-[0_20px_40px_rgba(12,21,48,0.6)] select-none pointer-events-none"
+          />
+        </header>
 
-          {/* Phone Numbers */}
-          <motion.div 
-            className="glass rounded-2xl p-6"
-            variants={fadeInUp}
-            initial="initial"
-            animate="animate"
-            whileHover={{ scale: 1.02, y: -5 }}
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
-                <Phone className="w-6 h-6" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-white font-semibold mb-3">Phone Numbers</h3>
-                <div className="space-y-2">
-                  {phoneNumbers.map((contact, i) => (
-                    <div key={i} className="flex justify-between items-center">
-                      <span className="text-zinc-400 text-sm">{contact.name}</span>
-                      <a href={`tel:${contact.number.replace(/\s/g, '')}`} className="text-violet-400 text-sm hover:text-violet-300">
-                        {contact.number}
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
+        <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 mb-24">
+          {/* Reach us */}
+          <div className="lg:col-span-5 space-y-12">
+            <section aria-labelledby="call-title">
+              <h2 id="call-title" className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400 border-t border-violet-400/60 pt-5 mb-2">
+                Call
+              </h2>
+              <ul>
+                {phoneNumbers.map((c) => (
+                  <li key={c.number}>
+                    <a
+                      href={`tel:${c.number.replace(/\s/g, '')}`}
+                      className="group flex items-center justify-between gap-4 py-4 border-b border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 rounded"
+                    >
+                      <span className="text-zinc-400 group-hover:text-white transition-colors">{c.name}</span>
+                      <span className="flex items-center gap-2 text-xl sm:text-2xl font-bold text-white group-hover:text-violet-400 tabular-nums transition-colors">
+                        {c.number}
+                        <Phone className="w-4 h-4 text-violet-400" />
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
 
-          {/* Email */}
-          <motion.div 
-            className="glass rounded-2xl p-6"
-            variants={fadeInUp}
-            initial="initial"
-            animate="animate"
-            whileHover={{ scale: 1.02, y: -5 }}
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 flex-shrink-0">
-                <Mail className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold mb-1">Email</h3>
-                <a href="mailto:resonancestudio12@gmail.com" className="text-violet-400 hover:text-violet-300">
-                  resonancestudio12@gmail.com
-                </a>
-              </div>
-            </div>
-          </motion.div>
+            <section aria-labelledby="email-title">
+              <h2 id="email-title" className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400 border-t border-violet-400/60 pt-5 mb-3">
+                Email
+              </h2>
+              <a
+                href="mailto:resonancestudio12@gmail.com"
+                className="text-xl font-semibold text-violet-400 hover:text-violet-300 break-all"
+              >
+                resonancestudio12@gmail.com
+              </a>
+            </section>
 
-          {/* Operating Hours */}
-          <motion.div 
-            className="glass rounded-2xl p-6"
-            variants={fadeInUp}
-            initial="initial"
-            animate="animate"
-            whileHover={{ scale: 1.02, y: -5 }}
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400 flex-shrink-0">
-                <Clock className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold mb-1">Operating Hours</h3>
-                <p className="text-zinc-400">Monday - Sunday</p>
-                <p className="text-white font-medium">Daily: {formatTimeToDisplay(defaultOpenTime)} - {formatTimeToDisplay(defaultCloseTime)}</p>
-                <p className="text-zinc-500 text-xs mt-1">Outside hours available on request</p>
-              </div>
+            <section aria-labelledby="hours-title">
+              <h2 id="hours-title" className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400 border-t border-violet-400/60 pt-5 mb-3">
+                Hours
+              </h2>
+              <p className="text-xl font-semibold text-white">
+                Monday - Sunday, {formatTimeToDisplay(defaultOpenTime)} - {formatTimeToDisplay(defaultCloseTime)}
+              </p>
+              <p className="text-zinc-400 mt-1">Sessions outside these hours on request.</p>
+            </section>
+          </div>
+
+          {/* Visit */}
+          <section aria-labelledby="visit-title" className="lg:col-span-7">
+            <h2 id="visit-title" className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400 border-t border-violet-400/60 pt-5 mb-3">
+              Visit
+            </h2>
+            <div className="flex flex-wrap items-end justify-between gap-4 mb-5">
+              <address className="not-italic text-xl font-semibold text-white leading-snug">
+                45, Shivprasad Housing Society
+                <br />
+                Dattawadi, Pune 411030
+                <span className="block text-sm font-normal text-zinc-400 mt-1">Near Dandekar Pool</span>
+              </address>
+              <a
+                href={`https://maps.google.com/?q=${MAPS_QUERY}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-400 hover:bg-violet-300 text-navy text-sm font-semibold transition-colors"
+              >
+                Get directions
+                <ArrowUpRight className="w-4 h-4" />
+              </a>
             </div>
-          </motion.div>
+            <div className="rounded-3xl overflow-hidden border border-white/10">
+              <iframe
+                src={`https://maps.google.com/maps?q=${MAPS_QUERY}&z=16&output=embed`}
+                title="Resonance Studio location on Google Maps"
+                className="w-full h-80 sm:h-[28rem] border-0"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+              />
+            </div>
+          </section>
         </div>
       </div>
     </div>

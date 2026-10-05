@@ -1,22 +1,26 @@
 import { NextResponse } from 'next/server';
-import { supabaseClient as supabase } from '@/lib/supabaseClient';
+import { supabaseServer } from '@/lib/supabaseServer';
+import { getAdminUser, isPhone } from '@/lib/apiSecurity';
 
+// POST /api/loyalty/claim - mark a customer's reward as claimed (admin only)
 export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const { phone } = body;
+  if (!(await getAdminUser(request))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-    if (!phone) {
-      return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
+  try {
+    const body = await request.json().catch(() => ({}));
+    const phone = String(body.phone ?? '').replace(/\D/g, '');
+
+    if (!isPhone(phone)) {
+      return NextResponse.json({ error: 'A valid 10-digit phone number is required' }, { status: 400 });
     }
 
-    // Call the database function
-    const { data, error } = await supabase
-      .rpc('claim_loyalty_reward', { p_phone_number: phone });
+    const { data, error } = await supabaseServer.rpc('claim_loyalty_reward', { p_phone_number: phone });
 
     if (error) {
       console.error('Error claiming reward:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to claim reward' }, { status: 500 });
     }
 
     return NextResponse.json(data);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { requireAdmin } from "@/lib/apiSecurity";
 
 // PUT /api/admin/staff/[id] - Update a staff member
 export async function PUT(
@@ -7,6 +8,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdmin(request, ["admin", "super_admin"]);
+    if (auth instanceof NextResponse) return auth;
+
     const { id } = await params;
     const { name, role, is_active } = await request.json();
 
@@ -91,6 +95,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdmin(request, ["admin", "super_admin"]);
+    if (auth instanceof NextResponse) return auth;
+
     const { id } = await params;
 
     if (!id) {

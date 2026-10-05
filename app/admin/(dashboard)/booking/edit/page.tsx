@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import { getSession } from '@/lib/supabaseAuth';
 import {
   ArrowLeft,
@@ -180,19 +179,13 @@ export default function AdminEditBookingPage() {
       </div>
 
       {/* Confirm Edit Modal */}
-      <AnimatePresence>
+      <>
         {selectedBooking && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => setSelectedBooking(null)}
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+            <div
               className="w-full max-w-lg glass rounded-2xl p-6"
               onClick={(e) => e.stopPropagation()}
             >
@@ -246,34 +239,28 @@ export default function AdminEditBookingPage() {
               </p>
 
               <div className="flex gap-3">
-                <motion.button
+                <button
                   onClick={() => setSelectedBooking(null)}
                   className="flex-1 py-3 rounded-xl border border-zinc-600 text-zinc-400 hover:bg-white/5 transition-colors"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
                 >
                   Cancel
-                </motion.button>
-                <motion.button
+                </button>
+                <button
                   onClick={confirmEdit}
                   className="flex-1 btn-primary py-3 flex items-center justify-center gap-2"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
                 >
                   <Edit3 className="w-4 h-4" />
                   Modify Booking
-                </motion.button>
+                </button>
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {/* Phone Search */}
-      <motion.div 
+      <div 
         className="glass rounded-2xl p-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
       >
         <p className="text-zinc-400 text-sm mb-4">Enter customer&apos;s phone number to find their bookings</p>
         <form onSubmit={handleSubmit} className="flex gap-3">
@@ -288,12 +275,10 @@ export default function AdminEditBookingPage() {
               maxLength={10}
             />
           </div>
-          <motion.button
+          <button
             type="submit"
             disabled={isLoading || phone.length !== 10}
             className="btn-primary px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -301,32 +286,27 @@ export default function AdminEditBookingPage() {
               <Search className="w-4 h-4" />
             )}
             Search
-          </motion.button>
+          </button>
         </form>
-      </motion.div>
+      </div>
 
       {/* Error */}
-      <AnimatePresence>
+      <>
         {error && (
-          <motion.div 
+          <div 
             className="p-4 rounded-xl bg-red-500/10 border border-red-500/20"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
           >
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-red-400" />
               <p className="text-red-400 text-sm">{error}</p>
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {/* Results */}
       {searched && bookings && bookings.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+        <div
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-white">Select a booking to edit</h3>
@@ -370,12 +350,9 @@ export default function AdminEditBookingPage() {
               const StatusIcon = config.icon;
 
               return (
-                <motion.div
+                <div
                   key={booking.id}
                   className="glass rounded-2xl p-4 cursor-pointer hover:border-blue-500/30 transition-all"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
                   onClick={() => handleSelectBooking(booking)}
                 >
                   {/* Status Badge */}
@@ -421,24 +398,22 @@ export default function AdminEditBookingPage() {
                     <span className="text-zinc-400 text-sm">Total Amount</span>
                     <span className="text-white font-bold">₹{booking.total_amount?.toLocaleString('en-IN') || 0}</span>
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* No Bookings Found */}
       {searched && bookings && bookings.length === 0 && (
-        <motion.div 
+        <div 
           className="glass rounded-2xl p-8 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
         >
           <Calendar className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
           <h3 className="text-lg font-medium text-white mb-1">No Editable Bookings Found</h3>
           <p className="text-zinc-400 text-sm">No confirmed bookings found for this phone number.</p>
-        </motion.div>
+        </div>
       )}
     </div>
   );

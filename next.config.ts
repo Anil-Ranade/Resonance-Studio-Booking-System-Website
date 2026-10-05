@@ -14,9 +14,14 @@ const nextConfig: NextConfig = {
   // Experimental features for better performance
   experimental: {
     // Enable optimized package imports to reduce bundle size
-    optimizePackageImports: ['lucide-react', 'framer-motion'],
+    optimizePackageImports: ['lucide-react'],
   },
   
+  // Permanent so search engines consolidate "/" into the canonical "/home"
+  async redirects() {
+    return [{ source: '/', destination: '/home', permanent: true }];
+  },
+
   // Security and caching headers
   async headers() {
     return [
@@ -52,15 +57,6 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/:all*(svg|jpg|jpeg|png|gif|ico|webp|avif)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/:all*(js|css)',
         headers: [
           {
             key: 'Cache-Control',

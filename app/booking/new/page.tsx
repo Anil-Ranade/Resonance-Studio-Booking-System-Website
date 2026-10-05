@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { BookingProvider, useBooking } from '../contexts/BookingContext';
 import PhoneStep from '../components/PhoneStep';
 import SessionStep from '../components/SessionStep';
@@ -39,10 +39,10 @@ function BookingSteps() {
 
 function BookingPageLoading() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-zinc-900 via-zinc-900 to-black">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="flex items-center gap-3">
-        <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
-        <span className="text-zinc-400">Loading...</span>
+        <Spinner className="size-6 text-primary" />
+        <span className="text-muted-foreground">Loading...</span>
       </div>
     </div>
   );

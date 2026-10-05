@@ -1,229 +1,243 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
-import { ArrowLeft, Users, Check, Star } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
-// Optimized animation variants with shorter durations
-const fadeInUp = {
-  initial: { opacity: 0, y: 15 },
-  animate: { opacity: 1, y: 0 },
-};
+// Meter scale: the biggest room fills the meter
+const LIVE_MAX = 12;
+const KARAOKE_MAX = 30;
+const SEGMENTS = 12;
 
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.08,
-    },
+const studios = [
+  {
+    id: "studio-a",
+    letter: "A",
+    size: "Large",
+    bestFor: "Full bands and big karaoke parties",
+    description:
+      "Our largest room, with a full backline set up and ready. Bring your sticks and play.",
+    live: { label: "10-12 musicians", value: 12 },
+    karaoke: { label: "Up to 30 people", value: 30 },
+    gear: [
+      "Yamaha Silver Star drum kit with cymbals",
+      "Two electric guitars",
+      "Keyboard",
+      "Two guitar amps",
+      "Bass amp",
+      "Professional sound system",
+      '65" karaoke screen',
+      "Climate controlled",
+    ],
+    price: 350,
+    images: [
+      "/studios/main/studio_a.jpeg",
+      "/studios/studio-a.jpeg",
+      "/studios/studio-a-2.jpeg",
+      "/studios/studio-a-3.jpeg",
+      "/studios/studio-a-4.jpeg",
+    ],
   },
-};
+  {
+    id: "studio-b",
+    letter: "B",
+    size: "Medium",
+    bestFor: "Karaoke groups and small acoustic sets",
+    description:
+      "A flexible mid-sized room with comfortable seating. Most karaoke groups book this one.",
+    live: { label: "4-5 musicians", value: 5 },
+    karaoke: { label: "Up to 10 people", value: 10 },
+    gear: [
+      '46" karaoke screen',
+      "Professional sound system",
+      "Comfortable seating area",
+      "Climate controlled",
+    ],
+    price: 250,
+    images: [
+      "/studios/main/studio_b.jpeg",
+      "/studios/studio-b-2.jpeg",
+      "/studios/studio-b-3.jpeg",
+      "/studios/studio-b-4.jpeg",
+    ],
+  },
+  {
+    id: "studio-c",
+    letter: "C",
+    size: "Compact",
+    bestFor: "Recording, video and podcasts",
+    description:
+      "Built for audio and video recording. Also works well for podcasts and duo rehearsals.",
+    live: { label: "Up to 2 musicians", value: 2 },
+    karaoke: { label: "Up to 5 people", value: 5 },
+    gear: [
+      "Professional recording equipment",
+      "Video recording setup",
+      "Podcast ready",
+      "Climate controlled",
+    ],
+    price: 200,
+    images: [
+      "/studios/main/studio_c.jpeg",
+      "/studios/studio-c.jpeg",
+      "/studios/studio-c-2.jpeg",
+      "/studios/studio-c-3.jpeg",
+    ],
+  },
+];
 
-export default function StudiosPage() {
-  const studios = [
-    {
-      id: "studio-a",
-      name: "Studio A",
-      tag: "Large Studio",
-      tagColor: "bg-red-500/20 text-red-400",
-      subtitle: "Our largest and most spacious studio",
-      description:
-        "Perfect for big live rehearsals and large groups of Karaoke rehearsal.",
-      capacity: {
-        live: "10-12 musicians",
-        karaoke: "Up to 30 participants",
-      },
-      features: [
-        "Yamaha Silver Star Drum kit (with cymbals)",
-        "Two Electric Guitars",
-        "One Keyboard",
-        "Two Guitar Amps",
-        "One Bass Amp",
-        "Climate controlled",
-        "Professional sound system",
-        'Huge 65" TV screen for karaoke',
-      ],
-      price: "350",
-      image: "/studios/main/studio_a.jpeg",
-    },
-    {
-      id: "studio-b",
-      name: "Studio B",
-      tag: "Medium Studio",
-      tagColor: "bg-amber-500/20 text-amber-400",
-      subtitle: "A versatile, moderately sized studio",
-      description:
-        "Adapts to your needs. Primarily recommended for karaoke rehearsal groups.",
-      capacity: {
-        live: "4-5 musicians",
-        karaoke: "Up to 10 participants",
-      },
-      features: [
-        '46" TV screen for karaoke',
-        "Professional sound system",
-        "Climate controlled",
-        "Comfortable seating area",
-      ],
-      price: "250",
-      image: "/studios/main/studio_b.jpeg",
-    },
-    {
-      id: "studio-c",
-      name: "Studio C",
-      tag: "Small Studio",
-      tagColor: "bg-emerald-500/20 text-emerald-400",
-      subtitle: "Primarily designed for audio/video recording",
-      description: "Also ideal for podcast production and small rehearsals.",
-      capacity: {
-        live: "Up to 2 musicians",
-        karaoke: "Up to 5 participants",
-      },
-      features: [
-        "Professional recording equipment",
-        "Video recording setup",
-        "Podcast production ready",
-        "Climate controlled",
-        "Intimate recording space",
-      ],
-      price: "200",
-      image: "/studios/main/studio_c.jpeg",
-    },
-  ];
+type Studio = (typeof studios)[number];
+
+function Meter({ label, detail, value, max }: { label: string; detail: string; value: number; max: number }) {
+  const lit = Math.max(1, Math.round((value / max) * SEGMENTS));
+  return (
+    <div>
+      <div className="flex justify-between text-xs font-medium uppercase tracking-[0.14em] mb-2">
+        <span className="text-zinc-400">{label}</span>
+        <span className="text-white">{detail}</span>
+      </div>
+      <div className="flex gap-1" role="img" aria-label={`${label}: ${detail}`}>
+        {Array.from({ length: SEGMENTS }, (_, i) => (
+          <span
+            key={i}
+            className={`h-2.5 flex-1 rounded-[2px] ${
+              i >= lit ? "bg-white/[0.07]" : i >= SEGMENTS - 2 ? "bg-fuchsia-400" : "bg-violet-400"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StudioSection({ studio, flip }: { studio: Studio; flip: boolean }) {
+  const [active, setActive] = useState(0);
 
   return (
-    <div className="min-h-screen py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div
-          className="mb-12"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Link
-            href="/home"
-            className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-6"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back to Home
-          </Link>
-
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Our Studios
-          </h1>
-          <p className="text-zinc-400 text-lg max-w-2xl">
-            State-of-the-art recording facilities designed for creativity and
-            professional results
-          </p>
-        </motion.div>
-
-        {/* Studios List */}
-        <motion.div
-          className="space-y-8 mb-16"
-          variants={staggerContainer}
-          initial="initial"
-          animate="animate"
-        >
-          {studios.map((studio, index) => (
-            <motion.div
-              key={index}
-              id={studio.id}
-              className="glass-strong rounded-3xl overflow-hidden group scroll-mt-24"
-              variants={fadeInUp}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              whileHover={{ y: -5, transition: { duration: 0.2 } }}
+    <section id={studio.id} className="scroll-mt-28 grid lg:grid-cols-12 gap-8 lg:gap-14 items-start">
+      {/* Photos */}
+      <div className={`lg:col-span-7 ${flip ? "lg:order-2" : ""}`}>
+        <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-zinc-900 border border-white/10">
+          <Image
+            key={studio.images[active]}
+            src={studio.images[active]}
+            alt={`Studio ${studio.letter}, photo ${active + 1} of ${studio.images.length}`}
+            fill
+            sizes="(min-width: 1024px) 58vw, 100vw"
+            className="object-cover"
+            priority={studio.letter === "A"}
+          />
+        </div>
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+          {studio.images.map((src, i) => (
+            <button
+              key={src}
+              type="button"
+              onClick={() => setActive(i)}
+              aria-label={`Show photo ${i + 1}`}
+              aria-pressed={i === active}
+              className={`relative shrink-0 w-20 h-14 sm:w-24 sm:h-16 rounded-lg overflow-hidden border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${
+                i === active ? "border-violet-400" : "border-transparent opacity-60 hover:opacity-100"
+              }`}
             >
-              <div className="flex flex-col lg:flex-row">
-                {/* Studio Image */}
-                <div className="lg:w-2/5 h-64 lg:h-auto min-h-[280px] relative overflow-hidden bg-zinc-900">
-                  <Image
-                    src={studio.image}
-                    alt={studio.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-
-                {/* Studio Info */}
-                <div className="lg:w-3/5 p-6 lg:p-8">
-                  <div className="mb-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h2 className="text-2xl font-bold text-white">
-                        {studio.name}
-                      </h2>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${studio.tagColor}`}
-                      >
-                        {studio.tag}
-                      </span>
-                    </div>
-                    <p className="text-zinc-400">
-                      {studio.subtitle}. {studio.description}
-                    </p>
-                  </div>
-
-                  {/* Capacity */}
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2 text-white font-medium mb-1">
-                      <Users className="w-4 h-4 text-violet-400" />
-                      Capacity
-                    </div>
-                    <p className="text-zinc-400 text-sm">
-                      Live: {studio.capacity.live} | Karaoke:{" "}
-                      {studio.capacity.karaoke}
-                    </p>
-                  </div>
-
-                  {/* Key Features */}
-                  <div className="mb-6">
-                    <div className="flex items-center gap-2 text-white font-medium mb-3">
-                      <Star className="w-4 h-4 text-amber-400" />
-                      Key Features
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {studio.features.map((feature, i) => (
-                        <motion.div
-                          key={i}
-                          className="flex items-center gap-2 text-sm text-zinc-300"
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.3 + i * 0.05 }}
-                        >
-                          <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                          {feature}
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Price and CTA */}
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-white/10">
-                    <div className="bg-white/5 rounded-xl px-4 py-2">
-                      <p className="text-zinc-400 text-xs">Starting from</p>
-                      <p className="text-2xl font-bold text-white">
-                        ₹{Number(studio.price).toLocaleString("en-IN")}
-                        <span className="text-sm font-normal text-zinc-400">
-                          /hour
-                        </span>
-                      </p>
-                    </div>
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <Link
-                        href="/booking/new"
-                        className="btn-primary px-8 py-3 text-center block"
-                      >
-                        Book {studio.name}
-                      </Link>
-                    </motion.div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+              <Image src={src} alt="" fill sizes="96px" className="object-cover" />
+            </button>
           ))}
-        </motion.div>
+        </div>
+      </div>
+
+      {/* Details */}
+      <div className={`lg:col-span-5 lg:pt-4 ${flip ? "lg:order-1" : ""}`}>
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-fuchsia-400 mb-3">
+          {studio.size} room
+        </p>
+        <h2 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-3">
+          Studio <span className="font-bold text-violet-400">{studio.letter}</span>
+        </h2>
+        <p className="text-lg text-white mb-2">{studio.bestFor}</p>
+        <p className="text-zinc-400 leading-relaxed mb-8">{studio.description}</p>
+
+        <div className="space-y-5 mb-8">
+          <Meter label="Live band" detail={studio.live.label} value={studio.live.value} max={LIVE_MAX} />
+          <Meter label="Karaoke" detail={studio.karaoke.label} value={studio.karaoke.value} max={KARAOKE_MAX} />
+        </div>
+
+        <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400 mb-3">In the room</p>
+        <ul className="grid sm:grid-cols-2 gap-x-6 mb-10 border-t border-white/10">
+          {studio.gear.map((item) => (
+            <li key={item} className="py-2.5 border-b border-white/10 text-sm text-zinc-200">
+              {item}
+            </li>
+          ))}
+        </ul>
+
+        <div className="flex items-center gap-5">
+          <Link
+            href="/booking/new"
+            className="group inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-violet-400 hover:bg-violet-300 text-navy font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-navy"
+          >
+            Book Studio {studio.letter}
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </Link>
+          <p className="text-sm text-zinc-400">
+            <span className="text-2xl font-bold text-white">₹{studio.price}</span> / hour
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function StudiosPage() {
+  return (
+    <div className="min-h-screen py-8 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto">
+        <Link
+          href="/home"
+          className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-10"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          Back to Home
+        </Link>
+
+        {/* Header */}
+        <header className="mb-14 lg:mb-20">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-fuchsia-400 mb-4">
+            Three rooms · Dattawadi, Pune
+          </p>
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white tracking-tight leading-[1.02] max-w-3xl">
+            Find the room that <span className="font-bold text-violet-400">fits your sound.</span>
+          </h1>
+        </header>
+
+        {/* Room picker */}
+        <nav aria-label="Jump to a studio" className="grid sm:grid-cols-3 gap-3 mb-20 lg:mb-28">
+          {studios.map((s) => (
+            <a
+              key={s.id}
+              href={`#${s.id}`}
+              className="group flex items-center gap-4 p-4 rounded-2xl border border-white/10 bg-white/[0.03] hover:border-violet-400/50 hover:bg-white/[0.06] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+            >
+              <span className="font-bold text-5xl leading-none text-violet-400 w-12 text-center">
+                {s.letter}
+              </span>
+              <span className="flex-1">
+                <span className="block text-white font-semibold">{s.bestFor}</span>
+                <span className="block text-xs font-medium uppercase tracking-[0.14em] text-zinc-400 mt-1">
+                  {s.karaoke.label} · ₹{s.price}/hr
+                </span>
+              </span>
+              <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:text-violet-400 rotate-90 transition-colors" />
+            </a>
+          ))}
+        </nav>
+
+        <div className="space-y-24 lg:space-y-36 mb-24">
+          {studios.map((studio, i) => (
+            <StudioSection key={studio.id} studio={studio} flip={i % 2 === 1} />
+          ))}
+        </div>
       </div>
     </div>
   );

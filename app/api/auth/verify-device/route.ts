@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { rateLimit } from '@/lib/apiSecurity';
 
 // Initialize Supabase client with service role for database operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -12,6 +13,9 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
  */
 export async function POST(request: NextRequest) {
   try {
+    const limited = await rateLimit(request, 'verify_device', 30, 600);
+    if (limited) return limited;
+
     // Parse request body
     let body;
     try {
@@ -107,6 +111,9 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
+    const limited = await rateLimit(request, 'verify_device', 30, 600);
+    if (limited) return limited;
+
     // Parse request body
     let body;
     try {

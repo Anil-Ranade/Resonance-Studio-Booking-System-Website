@@ -383,7 +383,7 @@ export default function DisplayPage() {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 mb-4 shadow-lg shadow-violet-500/25">
-              <Lock className="w-8 h-8 text-white" />
+              <Lock className="w-8 h-8 text-navy" />
             </div>
             <h1 className="text-2xl font-bold text-white">Display Access</h1>
             <p className="text-zinc-400 mt-2">
@@ -441,7 +441,7 @@ export default function DisplayPage() {
               <button
                 type="submit"
                 disabled={authLoading}
-                className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all"
+                className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-navy font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all"
               >
                 {authLoading ? (
                   <>
@@ -530,7 +530,7 @@ export default function DisplayPage() {
                         setSelectedDate(new Date());
                         setShowDatePicker(false);
                       }}
-                      className="flex-1 px-3 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors"
+                      className="flex-1 px-3 py-2 bg-violet-600 hover:bg-violet-500 text-navy text-sm font-medium rounded-lg transition-colors"
                     >
                       Today
                     </button>

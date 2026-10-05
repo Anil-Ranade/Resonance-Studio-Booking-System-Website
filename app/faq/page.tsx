@@ -1,8 +1,8 @@
 'use client';
 
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ChevronDown, Calendar, Music, CreditCard, Mic, Building2 } from "lucide-react";
+import Image from "next/image";
+import { ArrowLeft, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface FAQItem {
@@ -11,8 +11,8 @@ interface FAQItem {
 }
 
 interface FAQSection {
+  id: string;
   title: string;
-  icon: React.ReactNode;
   items: FAQItem[];
 }
 
@@ -28,8 +28,8 @@ function formatTimeToDisplay(time: string): string {
 function generateFaqData(openTime: string, closeTime: string, advanceBookingDays: number): FAQSection[] {
   return [
     {
+      id: "booking",
       title: "Booking",
-      icon: <Calendar className="w-6 h-6" />,
       items: [
         {
           question: "How do I book a studio?",
@@ -45,13 +45,13 @@ function generateFaqData(openTime: string, closeTime: string, advanceBookingDays
         },
         {
           question: "What is your cancellation policy?",
-          answer: "For standard 'Pay at Studio' bookings: Free cancellation with 24+ hours notice. Less than 24 hours: ₹100 fee. No-show: ₹200 penalty. For 'Pay Now & Save' bookings: Strictly non-cancellable, but can be rescheduled up to 24 hours prior."
+          answer: "For standard 'Pay at Studio' bookings: Free cancellation with 24+ hours notice. Less than 24 hours: ₹100 fee. No-show: ₹200 penalty."
         }
       ]
     },
     {
-      title: "Studios & Equipment",
-      icon: <Music className="w-6 h-6" />,
+      id: "studios",
+      title: "Studios & equipment",
       items: [
         {
           question: "Which studio should I choose?",
@@ -68,16 +68,16 @@ function generateFaqData(openTime: string, closeTime: string, advanceBookingDays
       ]
     },
     {
-      title: "Payment & Pricing",
-      icon: <CreditCard className="w-6 h-6" />,
+      id: "payment",
+      title: "Payment & pricing",
       items: [
         {
           question: "Do I need to pay in advance?",
-          answer: "Advance payment is optional. You can choose 'Pay Now & Save' to get an instant discount (₹20/hr off), or choose 'Pay at Studio' to pay after your session via cash or UPI."
+          answer: "No advance payment is needed. You pay at the studio after your session, by cash or UPI."
         },
         {
           question: "What is included in the hourly rate?",
-          answer: "The rate includes the studio space, equipment, and a Sound Operator to assist you. If you don't need a Sound Operator (e.g. for self-managed practice), you can opt-out for a discount (₹50/hr off)."
+          answer: "The rate includes the studio space, equipment, and a Sound Operator to assist you."
         },
         {
           question: "Are there any additional charges?",
@@ -86,8 +86,8 @@ function generateFaqData(openTime: string, closeTime: string, advanceBookingDays
       ]
     },
     {
-      title: "Recording Services",
-      icon: <Mic className="w-6 h-6" />,
+      id: "recording",
+      title: "Recording",
       items: [
         {
           question: "How long does recording take?",
@@ -104,8 +104,8 @@ function generateFaqData(openTime: string, closeTime: string, advanceBookingDays
       ]
     },
     {
+      id: "facilities",
       title: "Facilities",
-      icon: <Building2 className="w-6 h-6" />,
       items: [
         {
           question: "Is parking available?",
@@ -122,77 +122,6 @@ function generateFaqData(openTime: string, closeTime: string, advanceBookingDays
       ]
     }
   ];
-}
-
-function FAQAccordion({ item, isOpen, onToggle }: { item: FAQItem; isOpen: boolean; onToggle: () => void }) {
-  return (
-    <motion.div 
-      className="border-b border-white/5 last:border-b-0"
-      initial={false}
-    >
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between py-5 text-left group"
-      >
-        <span className="text-white font-medium pr-4 group-hover:text-violet-400 transition-colors">
-          {item.question}
-        </span>
-        <motion.div
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-          className="flex-shrink-0"
-        >
-          <ChevronDown className="w-5 h-5 text-zinc-400 group-hover:text-violet-400 transition-colors" />
-        </motion.div>
-      </button>
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <p className="text-zinc-400 pb-5 pr-8">
-              {item.answer}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
-}
-
-function FAQSectionComponent({ section, sectionIndex }: { section: FAQSection; sectionIndex: number }) {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-  return (
-    <motion.div
-      className="glass rounded-3xl p-6 md:p-8"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5, delay: sectionIndex * 0.1 }}
-    >
-      <div className="flex items-center gap-4 mb-6">
-        <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center text-violet-400">
-          {section.icon}
-        </div>
-        <h2 className="text-2xl font-bold text-white">{section.title}</h2>
-      </div>
-      <div className="divide-y divide-white/5">
-        {section.items.map((item, index) => (
-          <FAQAccordion
-            key={index}
-            item={item}
-            isOpen={openIndex === index}
-            onToggle={() => setOpenIndex(openIndex === index ? null : index)}
-          />
-        ))}
-      </div>
-    </motion.div>
-  );
 }
 
 export default function FAQPage() {
@@ -218,66 +147,100 @@ export default function FAQPage() {
     fetchSettings();
   }, []);
 
-  // Generate FAQ data with dynamic settings
   const faqData = generateFaqData(defaultOpenTime, defaultCloseTime, advanceBookingDays);
+  const total = faqData.reduce((n, s) => n + s.items.length, 0);
 
   return (
-    <div className="min-h-screen py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <motion.div 
-          className="mb-12"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+    <div className="min-h-screen py-8 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto">
+        <Link
+          href="/home"
+          className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-10"
         >
-          <Link 
-            href="/home"
-            className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-6"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back to Home
-          </Link>
-          
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Frequently Asked Questions</h1>
-          <p className="text-zinc-400 text-lg max-w-2xl">
-            Find answers to common questions about our studios, booking process, and services.
-          </p>
-        </motion.div>
+          <ArrowLeft className="w-5 h-5" />
+          Back to Home
+        </Link>
 
-        {/* FAQ Sections */}
-        <div className="space-y-8">
-          {faqData.map((section, index) => (
-            <FAQSectionComponent key={section.title} section={section} sectionIndex={index} />
-          ))}
-        </div>
-
-        {/* Contact CTA */}
-        <motion.div 
-          className="mt-12 glass-strong rounded-3xl p-8 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <h3 className="text-2xl font-bold text-white mb-3">Still have questions?</h3>
-          <p className="text-zinc-400 mb-6">
-            Can&apos;t find what you&apos;re looking for? We&apos;re here to help!
+        <header className="mb-14 lg:mb-20 flex flex-col-reverse lg:flex-row lg:items-center lg:justify-between gap-8">
+          <div>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-fuchsia-400 mb-4">
+            {total} answers · {faqData.length} topics
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              href="/contact"
-              className="btn-primary"
-            >
-              Contact Us
-            </Link>
-            <Link 
-              href="/booking/new"
-              className="px-6 py-3 rounded-xl border border-violet-500/50 text-violet-400 hover:bg-violet-500/10 transition-colors font-medium"
-            >
-              Book a Studio
-            </Link>
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white tracking-tight leading-[1.02] max-w-3xl">
+            Questions, <span className="text-violet-400">answered.</span>
+          </h1>
           </div>
-        </motion.div>
+          <Image
+            src="/faq.png"
+            alt="Gold studio headphones with a coiled cable curling into a question mark"
+            width={1254}
+            height={1254}
+            priority
+            sizes="(min-width: 1024px) 320px, 224px"
+            className="w-56 lg:w-80 shrink-0 self-center"
+          />
+        </header>
+
+        <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 mb-24">
+          {/* Topic index: pinned while answers scroll */}
+          <nav aria-label="FAQ topics" className="lg:col-span-3">
+            <ul className="lg:sticky lg:top-28 flex lg:flex-col flex-wrap gap-2 lg:gap-0 lg:border-t lg:border-violet-400/60 lg:pt-3">
+              {faqData.map((s) => (
+                <li key={s.id}>
+                  <a
+                    href={`#${s.id}`}
+                    className="flex items-center justify-between gap-3 max-lg:px-4 max-lg:py-2 max-lg:rounded-full max-lg:border max-lg:border-white/10 lg:py-2.5 text-sm text-zinc-300 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 rounded"
+                  >
+                    {s.title}
+                    <span className="text-zinc-500 tabular-nums">{s.items.length}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div className="lg:col-span-9 space-y-16">
+            {faqData.map((section) => (
+              <section key={section.id} id={section.id} aria-labelledby={`${section.id}-title`} className="scroll-mt-28">
+                <h2 id={`${section.id}-title`} className="text-3xl font-bold text-white tracking-tight mb-4">
+                  {section.title}
+                </h2>
+                <div className="border-t border-white/10">
+                  {section.items.map((item) => (
+                    <details key={item.question} className="group border-b border-white/10">
+                      <summary className="flex items-center justify-between gap-6 py-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden text-lg text-white hover:text-violet-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 rounded">
+                        {item.question}
+                        <Plus className="w-5 h-5 shrink-0 text-violet-400 transition-transform group-open:rotate-45 motion-reduce:transition-none" />
+                      </summary>
+                      <p className="text-zinc-400 leading-relaxed pb-6 pr-10 max-w-3xl">{item.answer}</p>
+                    </details>
+                  ))}
+                </div>
+              </section>
+            ))}
+
+            <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-1">Didn&apos;t find your answer?</h2>
+                <p className="text-zinc-400">Call or email us and we&apos;ll sort it out.</p>
+              </div>
+              <div className="flex gap-3 shrink-0">
+                <Link
+                  href="/contact"
+                  className="px-5 py-3 rounded-xl bg-violet-400 hover:bg-violet-300 text-navy font-semibold transition-colors"
+                >
+                  Contact us
+                </Link>
+                <Link
+                  href="/booking/new"
+                  className="px-5 py-3 rounded-xl border border-white/15 hover:border-white/30 text-white font-semibold transition-colors"
+                >
+                  Book a session
+                </Link>
+              </div>
+            </section>
+          </div>
+        </div>
       </div>
     </div>
   );

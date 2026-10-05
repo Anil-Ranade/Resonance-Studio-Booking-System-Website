@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { Music2, Lock, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { signInWithEmail, getSession } from '@/lib/supabaseAuth';
 
@@ -58,6 +57,7 @@ export default function AdminLoginPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           userId: user.id,
@@ -98,45 +98,40 @@ export default function AdminLoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+      <div
         className="w-full max-w-md relative z-10"
       >
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 mb-4 shadow-lg shadow-violet-500/25">
-            <Music2 className="w-8 h-8 text-white" />
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-lg bg-violet-400 flex items-center justify-center">
+              <Music2 className="w-5 h-5 text-navy" />
+            </div>
+            <span className="leading-tight">
+              <span className="block text-sm font-bold text-white">Resonance</span>
+              <span className="block text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-500">Admin</span>
+            </span>
           </div>
-          <h1 className="text-2xl font-bold text-white">Admin Portal</h1>
-          <p className="text-zinc-400 mt-2">Sign in to manage Resonance Studio</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Sign in</h1>
+          <p className="text-zinc-400 mt-1">Manage bookings, rooms and staff.</p>
         </div>
 
         {/* Login Form */}
-        <div className="glass rounded-2xl p-8">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 sm:p-8">
           <form onSubmit={handleLogin} className="space-y-6">
             {/* Error Message */}
             {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
+              <div
                 className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm"
               >
                 {error}
-              </motion.div>
+              </div>
             )}
 
             {/* Email Field */}
             <div>
               <label htmlFor="admin-email" className="block text-sm font-medium text-zinc-300 mb-2.5">
-                Email Address
+                Email
               </label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 pointer-events-none z-10" />
@@ -175,8 +170,8 @@ export default function AdminLoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors focus:outline-none"
-                  tabIndex={-1}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
                 >
                   {showPassword ? (
                     <EyeOff className="w-5 h-5" />
@@ -188,12 +183,10 @@ export default function AdminLoginPage() {
             </div>
 
             {/* Submit Button */}
-            <motion.button
+            <button
               type="submit"
               disabled={loading}
               className="w-full btn-primary flex items-center justify-center gap-2"
-              whileHover={{ scale: loading ? 1 : 1.02 }}
-              whileTap={{ scale: loading ? 1 : 0.98 }}
             >
               {loading ? (
                 <>
@@ -201,20 +194,17 @@ export default function AdminLoginPage() {
                   Signing in...
                 </>
               ) : (
-                <>
-                  <Lock className="w-5 h-5" />
-                  Sign In
-                </>
+                "Sign in"
               )}
-            </motion.button>
+            </button>
           </form>
         </div>
 
         {/* Footer */}
-        <p className="text-center text-zinc-500 text-sm mt-6">
-          Protected area. Authorized personnel only.
+        <p className="text-zinc-500 text-sm mt-6">
+          For studio staff only. Ask an admin if you need access.
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }

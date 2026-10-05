@@ -39,7 +39,7 @@ export function LocalBusinessStructuredData() {
       closes: "22:00",
     },
     priceRange: "₹200 - ₹1200",
-    image: "https://resonancejamroom.in/android-chrome-512x512.png",
+    image: "https://resonancejamroom.in/og-image.png",
     sameAs: [],
     hasOfferCatalog: {
       "@type": "OfferCatalog",

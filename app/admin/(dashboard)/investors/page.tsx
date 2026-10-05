@@ -131,7 +131,7 @@ export default function InvestorsPage() {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-navy rounded-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
           Add Investor
@@ -323,7 +323,7 @@ export default function InvestorsPage() {
                 <button
                   type="submit"
                   disabled={creating}
-                  className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 disabled:opacity-50"
+                  className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-navy text-sm font-medium rounded-lg flex items-center gap-2 disabled:opacity-50"
                 >
                   {creating && <Loader2 className="w-4 h-4 animate-spin" />}
                   Create Account

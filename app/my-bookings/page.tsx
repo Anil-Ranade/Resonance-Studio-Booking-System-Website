@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import { checkAuthStatus } from '@/lib/authClient';
 
 // Helper function to safely parse JSON responses
@@ -80,12 +79,6 @@ interface EditModalState {
   isLoading: boolean;
   error: string;
 }
-
-const fadeInUp = {
-  initial: { opacity: 0, y: 15 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.25 }
-};
 
 const statusConfig = {
   confirmed: { color: 'green', icon: CheckCircle2, label: 'Confirmed' },
@@ -381,10 +374,8 @@ export default function MyBookingsPage() {
     <div className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-black py-6 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <motion.div 
+        <div 
           className="mb-6"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
         >
           <Link 
             href="/"
@@ -396,28 +387,23 @@ export default function MyBookingsPage() {
           
           <h1 className="text-2xl font-bold text-white">My Bookings</h1>
           <p className="text-zinc-400 text-sm mt-1">View and manage your studio bookings</p>
-        </motion.div>
+        </div>
 
         {/* Loading Auth State */}
         {isCheckingAuth && (
-          <motion.div 
+          <div 
             className="glass-strong rounded-2xl p-6 mb-6 flex items-center justify-center gap-3"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
           >
             <Loader2 className="w-5 h-5 animate-spin text-violet-400" />
             <span className="text-zinc-300">Checking authentication...</span>
-          </motion.div>
+          </div>
         )}
 
         {/* Authenticated User Banner */}
         {!isCheckingAuth && isAuthenticated && authenticatedUser && (
           <div className="space-y-6 mb-6">
-            <motion.div 
+            <div 
               className="glass-strong rounded-2xl p-4 border border-green-500/20"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
@@ -428,15 +414,12 @@ export default function MyBookingsPage() {
                   <p className="text-zinc-400 text-sm">Your bookings are loaded automatically</p>
                 </div>
               </div>
-            </motion.div>
+            </div>
 
             {/* Loyalty Progress */}
             {loyaltyStatus && (
-              <motion.div 
+              <div 
                 className="glass-strong rounded-2xl p-6 relative overflow-hidden"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
               >
                 {/* Background Glow */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
@@ -462,11 +445,8 @@ export default function MyBookingsPage() {
                   </div>
 
                   <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-4">
-                    <motion.div 
+                    <div 
                       className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.min((loyaltyStatus.hours / loyaltyStatus.target) * 100, 100)}%` }}
-                      transition={{ duration: 1, ease: "easeOut" }}
                     />
                   </div>
 
@@ -480,7 +460,7 @@ export default function MyBookingsPage() {
                     </p>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             )}
           </div>
         )}
@@ -488,11 +468,8 @@ export default function MyBookingsPage() {
         {/* Phone Search - Only show if not authenticated */}
         {!isCheckingAuth && !isAuthenticated && (
           <>
-            <motion.div 
+            <div 
               className="glass-strong rounded-2xl p-4 mb-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
             >
               <form onSubmit={handleSubmit}>
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -508,12 +485,10 @@ export default function MyBookingsPage() {
                       inputMode="numeric"
                     />
                   </div>
-                  <motion.button
+                  <button
                     type="submit"
                     disabled={isLoading || phoneNumber.length !== 10}
                     className="btn-accent py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
                   >
                     {isLoading ? (
                       <>
@@ -526,18 +501,15 @@ export default function MyBookingsPage() {
                         Search
                       </>
                     )}
-                  </motion.button>
+                  </button>
                 </div>
               </form>
-            </motion.div>
+            </div>
 
             {/* Loyalty Progress for Non-Authenticated Users (shown after search) */}
             {searched && loyaltyStatus && (
-              <motion.div 
+              <div 
                 className="glass-strong rounded-2xl p-6 mb-6 relative overflow-hidden"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
               >
                 {/* Background Glow */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
@@ -563,11 +535,8 @@ export default function MyBookingsPage() {
                   </div>
 
                   <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-4">
-                    <motion.div 
+                    <div 
                       className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.min((loyaltyStatus.hours / loyaltyStatus.target) * 100, 100)}%` }}
-                      transition={{ duration: 1, ease: "easeOut" }}
                     />
                   </div>
 
@@ -581,7 +550,7 @@ export default function MyBookingsPage() {
                     </p>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             )}
           </>
         )}
@@ -589,28 +558,22 @@ export default function MyBookingsPage() {
 
 
         {/* Error */}
-        <AnimatePresence>
+        <>
           {error && (
-            <motion.div 
+            <div 
               className="mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/20"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
             >
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-red-400" />
                 <p className="text-red-400 text-sm">{error}</p>
               </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
+        </>
 
         {/* Bookings List */}
         {searched && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
+          <div
           >
             {bookings && bookings.length > 0 ? (
               <div className="space-y-4">
@@ -621,12 +584,9 @@ export default function MyBookingsPage() {
                   const canEdit = canEditBooking(booking);
 
                   return (
-                    <motion.div
+                    <div
                       key={booking.id}
                       className="glass-strong rounded-2xl p-4 overflow-hidden"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
                     >
                       {/* Status Badge */}
                       <div className="flex items-center justify-between mb-3">
@@ -675,37 +635,32 @@ export default function MyBookingsPage() {
                       {(canEdit || canCancel) && (
                         <div className="mt-3 pt-3 border-t border-white/10 flex gap-2">
                           {canEdit && (
-                            <motion.button
+                            <button
                               onClick={() => openEditModal(booking)}
                               className="flex-1 py-2 px-4 rounded-lg bg-blue-500/20 text-blue-400 text-sm font-medium hover:bg-blue-500/30 transition-colors flex items-center justify-center gap-2"
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
                             >
                               <Edit3 className="w-4 h-4" />
                               Modify
-                            </motion.button>
+                            </button>
                           )}
                           {canCancel && (
-                            <motion.button
+                            <button
                               onClick={() => openCancelModal(booking)}
                               className="flex-1 py-2 px-4 rounded-lg bg-red-500/20 text-red-400 text-sm font-medium hover:bg-red-500/30 transition-colors flex items-center justify-center gap-2"
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
                             >
                               <XCircle className="w-4 h-4" />
                               Cancel
-                            </motion.button>
+                            </button>
                           )}
                         </div>
                       )}
-                    </motion.div>
+                    </div>
                   );
                 })}
               </div>
             ) : (
-              <motion.div 
+              <div 
                 className="glass-strong rounded-2xl p-8 text-center"
-                {...fadeInUp}
               >
                 <Calendar className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
                 <h3 className="text-lg font-medium text-white mb-1">No Bookings Found</h3>
@@ -716,26 +671,20 @@ export default function MyBookingsPage() {
                 >
                   Make a Booking
                 </Link>
-              </motion.div>
+              </div>
             )}
-          </motion.div>
+          </div>
         )}
 
         {/* Cancel Modal */}
-        <AnimatePresence>
+        <>
           {cancelModal.isOpen && (
-            <motion.div
+            <div
               className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
               onClick={closeCancelModal}
             >
-              <motion.div
+              <div
                 className="bg-zinc-900 border border-white/10 rounded-2xl p-6 w-full max-w-md"
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Close Button */}
@@ -793,20 +742,16 @@ export default function MyBookingsPage() {
                     )}
 
                     <div className="flex gap-3">
-                      <motion.button
+                      <button
                         onClick={closeCancelModal}
                         className="flex-1 btn-secondary py-3"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
                       >
                         Keep Booking
-                      </motion.button>
-                      <motion.button
+                      </button>
+                      <button
                         onClick={confirmCancellation}
                         disabled={cancelModal.isLoading}
                         className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
                       >
                         {cancelModal.isLoading ? (
                           <>
@@ -816,45 +761,36 @@ export default function MyBookingsPage() {
                         ) : (
                           'Cancel Booking'
                         )}
-                      </motion.button>
+                      </button>
                     </div>
                   </>
                 )}
 
                 {cancelModal.step === 'success' && (
                   <div className="text-center py-6">
-                    <motion.div 
+                    <div 
                       className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 200 }}
                     >
                       <Check className="w-8 h-8 text-green-400" />
-                    </motion.div>
+                    </div>
                     <h3 className="text-xl font-bold text-white mb-2">Booking Cancelled</h3>
                     <p className="text-zinc-400 text-sm">Your booking has been successfully cancelled.</p>
                   </div>
                 )}
-              </motion.div>
-            </motion.div>
+              </div>
+            </div>
           )}
-        </AnimatePresence>
+        </>
 
         {/* Edit Modal */}
-        <AnimatePresence>
+        <>
           {editModal.isOpen && (
-            <motion.div
+            <div
               className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
               onClick={closeEditModal}
             >
-              <motion.div
+              <div
                 className="bg-zinc-900 border border-white/10 rounded-2xl p-6 w-full max-w-md"
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Close Button */}
@@ -916,20 +852,16 @@ export default function MyBookingsPage() {
                     )}
 
                     <div className="flex gap-3">
-                      <motion.button
+                      <button
                         onClick={closeEditModal}
                         className="flex-1 btn-secondary py-3"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
                       >
                         Cancel
-                      </motion.button>
-                      <motion.button
+                      </button>
+                      <button
                         onClick={confirmEdit}
                         disabled={editModal.isLoading}
                         className="flex-1 btn-accent py-3 disabled:opacity-50 flex items-center justify-center gap-2"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
                       >
                         {editModal.isLoading ? (
                           <>
@@ -942,14 +874,14 @@ export default function MyBookingsPage() {
                             Modify Booking
                           </>
                         )}
-                      </motion.button>
+                      </button>
                     </div>
                   </>
                 )}
-              </motion.div>
-            </motion.div>
+              </div>
+            </div>
           )}
-        </AnimatePresence>
+        </>
       </div>
     </div>
   );

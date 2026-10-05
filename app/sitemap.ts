@@ -1,16 +1,11 @@
 import { MetadataRoute } from 'next';
+import { SITE_URL } from '@/lib/seo';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://resonancejamroom.in';
+  const baseUrl = SITE_URL;
   const currentDate = new Date().toISOString();
 
   return [
-    {
-      url: baseUrl,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 1,
-    },
     {
       url: `${baseUrl}/home`,
       lastModified: currentDate,
@@ -72,10 +67,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.3,
     },
     {
-      url: `${baseUrl}/view-bookings`,
+      url: `${baseUrl}/how-to-book`,
       lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.5,
+      changeFrequency: 'monthly',
+      priority: 0.7,
     },
   ];
 }

@@ -14,6 +14,7 @@ import {
   ACCESS_TOKEN_MAX_AGE,
   REFRESH_TOKEN_MAX_AGE,
 } from '@/lib/tokens';
+import { rateLimit } from '@/lib/apiSecurity';
 
 // Initialize Supabase client with service role for database operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -53,6 +54,9 @@ async function getUserInfo(phone: string) {
  */
 export async function POST(request: NextRequest): Promise<NextResponse<AutoLoginResponse>> {
   try {
+    const limited = await rateLimit(request, 'auto_login', 30, 600);
+    if (limited) return limited as NextResponse<any>;
+
     // First check for valid cookies
     const cookieHeader = request.headers.get('cookie');
     const cookies = parseCookies(cookieHeader);

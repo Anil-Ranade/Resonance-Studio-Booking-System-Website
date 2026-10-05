@@ -106,28 +106,28 @@ function getKaraokeSuggestion(option: KaraokeOption): StudioSuggestion {
       allowed = ["Studio C", "Studio B", "Studio A"];
       rate = rateCard["Studio C"].karaoke["1_5"];
       explanation =
-        "For 1–5 participants, Studio C is perfect. You can upgrade to B or A for more space.";
+        "For 1-5 participants, Studio C is perfect. You can upgrade to B or A for more space.";
       break;
     case "6_10":
       suggested = "Studio B";
       allowed = ["Studio B", "Studio A"];
       rate = rateCard["Studio B"].karaoke["6_10"];
       explanation =
-        "For 6–10 participants, Studio B is recommended. You can upgrade to A for more space.";
+        "For 6-10 participants, Studio B is recommended. You can upgrade to A for more space.";
       break;
     case "11_20":
       suggested = "Studio A";
       allowed = ["Studio A"];
       rate = rateCard["Studio A"].karaoke["11_20"];
       explanation =
-        "For 11–20 participants, only Studio A can accommodate your group.";
+        "For 11-20 participants, only Studio A can accommodate your group.";
       break;
     case "21_30":
       suggested = "Studio A";
       allowed = ["Studio A"];
       rate = rateCard["Studio A"].karaoke["21_30"];
       explanation =
-        "For 21–30 participants, Studio A is required for your group size.";
+        "For 21-30 participants, Studio A is required for your group size.";
       break;
     default:
       suggested = "Studio C";
@@ -176,14 +176,14 @@ function getLiveSuggestion(option: LiveMusicianOption): StudioSuggestion {
       allowed = ["Studio C", "Studio B", "Studio A"];
       rate = rateCard["Studio C"].live["1_2"];
       explanation =
-        "For 1–2 musicians, Studio C is ideal. You can upgrade to B or A for more space.";
+        "For 1-2 musicians, Studio C is ideal. You can upgrade to B or A for more space.";
       break;
     case "3_4":
       suggested = "Studio B";
       allowed = ["Studio B", "Studio A"];
       rate = rateCard["Studio B"].live["3_4"];
       explanation =
-        "For 3–4 musicians, Studio B is recommended. You can upgrade to A.";
+        "For 3-4 musicians, Studio B is recommended. You can upgrade to A.";
       break;
     case "5":
       suggested = "Studio B";
@@ -197,14 +197,14 @@ function getLiveSuggestion(option: LiveMusicianOption): StudioSuggestion {
       allowed = ["Studio A"];
       rate = rateCard["Studio A"].live["6_8"];
       explanation =
-        "For 6–8 musicians, Studio A is required for adequate space.";
+        "For 6-8 musicians, Studio A is required for adequate space.";
       break;
     case "9_12":
       suggested = "Studio A";
       allowed = ["Studio A"];
       rate = rateCard["Studio A"].live["9_12"];
       explanation =
-        "For 9–12 musicians, only Studio A can accommodate your group.";
+        "For 9-12 musicians, only Studio A can accommodate your group.";
       break;
     default:
       suggested = "Studio C";

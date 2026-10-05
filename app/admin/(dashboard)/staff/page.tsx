@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   UserPlus,
   Loader2,
@@ -278,33 +277,26 @@ export default function StaffPage() {
           <p className="text-zinc-400 mt-1">Create and manage staff members</p>
         </div>
         <div className="flex items-center gap-3">
-          <motion.button
+          <button
             onClick={fetchStaff}
             className="p-2.5 rounded-xl bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
           >
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-          </motion.button>
-          <motion.button
+          </button>
+          <button
             onClick={() => setShowCreateModal(true)}
             className="btn-primary flex items-center gap-2"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
             <UserPlus className="w-5 h-5" />
             Add Staff
-          </motion.button>
+          </button>
         </div>
       </div>
 
       {/* Messages */}
-      <AnimatePresence>
+      <>
         {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+          <div
             className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3"
           >
             <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
@@ -315,21 +307,18 @@ export default function StaffPage() {
             >
               <X className="w-4 h-4" />
             </button>
-          </motion.div>
+          </div>
         )}
 
         {success && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+          <div
             className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3"
           >
             <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
             <span className="text-emerald-400">{success}</span>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {/* Loading State */}
       {loading ? (
@@ -340,9 +329,7 @@ export default function StaffPage() {
         <>
           {/* Staff List */}
           {staff.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+            <div
               className="glass rounded-2xl p-12 text-center"
             >
               <Users className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
@@ -350,20 +337,16 @@ export default function StaffPage() {
               <p className="text-zinc-400 mb-6">
                 Get started by adding your first staff member
               </p>
-              <motion.button
+              <button
                 onClick={() => setShowCreateModal(true)}
                 className="btn-primary inline-flex items-center gap-2"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
               >
                 <UserPlus className="w-5 h-5" />
                 Add Staff Member
-              </motion.button>
-            </motion.div>
+              </button>
+            </div>
           ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+            <div
               className="glass rounded-2xl overflow-hidden"
             >
               {/* Table Header */}
@@ -380,16 +363,14 @@ export default function StaffPage() {
                 {staff.map((member) => {
                   const isCurrentAdmin = member.id === currentAdminId;
                   return (
-                  <motion.div
+                  <div
                     key={member.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
                     className="p-4 md:p-6 hover:bg-white/[0.02] transition-colors"
                   >
                     <div className="md:grid md:grid-cols-6 md:gap-4 md:items-center space-y-3 md:space-y-0">
                       {/* Staff Info */}
                       <div className="col-span-2 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-navy font-bold">
                           {member.name?.[0]?.toUpperCase() || member.email[0].toUpperCase()}
                         </div>
                         <div>
@@ -451,7 +432,7 @@ export default function StaffPage() {
 
                       {/* Actions */}
                       <div className="flex items-center gap-2 md:justify-end">
-                        <motion.button
+                        <button
                           onClick={() =>
                             !isCurrentAdmin && setEditingId(editingId === member.id ? null : member.id)
                           }
@@ -460,14 +441,12 @@ export default function StaffPage() {
                               ? 'bg-white/5 text-zinc-600 cursor-not-allowed'
                               : 'bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10'
                           }`}
-                          whileHover={{ scale: isCurrentAdmin ? 1 : 1.05 }}
-                          whileTap={{ scale: isCurrentAdmin ? 1 : 0.95 }}
                           title={isCurrentAdmin ? "Cannot edit your own role" : "Edit Role"}
                           disabled={isCurrentAdmin}
                         >
                           <Edit2 className="w-4 h-4" />
-                        </motion.button>
-                        <motion.button
+                        </button>
+                        <button
                           onClick={() => !isCurrentAdmin && handleToggleActive(member.id, member.is_active)}
                           className={`p-2 rounded-lg transition-colors ${
                             isCurrentAdmin
@@ -476,52 +455,42 @@ export default function StaffPage() {
                                 ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
                                 : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
                           }`}
-                          whileHover={{ scale: isCurrentAdmin ? 1 : 1.05 }}
-                          whileTap={{ scale: isCurrentAdmin ? 1 : 0.95 }}
                           title={isCurrentAdmin ? "Cannot deactivate yourself" : member.is_active ? 'Deactivate' : 'Activate'}
                           disabled={isCurrentAdmin}
                         >
                           <UserX className="w-4 h-4" />
-                        </motion.button>
-                        <motion.button
+                        </button>
+                        <button
                           onClick={() => !isCurrentAdmin && handleDeleteStaff(member.id, member.name)}
                           className={`p-2 rounded-lg transition-colors ${
                             isCurrentAdmin
                               ? 'bg-white/5 text-zinc-600 cursor-not-allowed'
                               : 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
                           }`}
-                          whileHover={{ scale: isCurrentAdmin ? 1 : 1.05 }}
-                          whileTap={{ scale: isCurrentAdmin ? 1 : 0.95 }}
                           title={isCurrentAdmin ? "Cannot delete yourself" : "Delete permanently"}
                           disabled={isCurrentAdmin}
                         >
                         <Trash2 className="w-4 h-4" />
-                        </motion.button>
+                        </button>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                   );
                 })}
               </div>
-            </motion.div>
+            </div>
           )}
         </>
       )}
 
       {/* Create Staff Modal */}
-      <AnimatePresence>
+      <>
         {showCreateModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => setShowCreateModal(false)}
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            <div
               className="w-full max-w-md glass rounded-2xl p-6"
               onClick={(e) => e.stopPropagation()}
             >
@@ -647,12 +616,10 @@ export default function StaffPage() {
                   >
                     Cancel
                   </button>
-                  <motion.button
+                  <button
                     type="submit"
                     disabled={saving}
                     className="flex-1 btn-primary flex items-center justify-center gap-2"
-                    whileHover={{ scale: saving ? 1 : 1.02 }}
-                    whileTap={{ scale: saving ? 1 : 0.98 }}
                   >
                     {saving ? (
                       <>
@@ -665,13 +632,13 @@ export default function StaffPage() {
                         Create Staff
                       </>
                     )}
-                  </motion.button>
+                  </button>
                 </div>
               </form>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
     </div>
   );
 }

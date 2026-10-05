@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
 import { getSession } from '@/lib/supabaseAuth';
 import {
   ArrowLeft,
@@ -195,45 +194,34 @@ export default function AdminCancelBookingPage() {
       </div>
 
       {/* Cancel Confirmation Modal */}
-      <AnimatePresence>
+      <>
         {selectedBooking && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => !isCancelling && resetFlow()}
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+            <div
               className="w-full max-w-lg glass rounded-2xl p-6"
               onClick={(e) => e.stopPropagation()}
             >
               {cancelled ? (
                 // Success State
                 <div className="text-center py-4">
-                  <motion.div 
+                  <div 
                     className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
                   >
                     <Check className="w-8 h-8 text-green-400" />
-                  </motion.div>
+                  </div>
                   <h3 className="text-xl font-bold text-white mb-2">Booking Cancelled</h3>
                   <p className="text-zinc-400 text-sm mb-6">The booking has been successfully cancelled.</p>
                   
                   <div className="flex gap-3 justify-center">
-                    <motion.button
+                    <button
                       onClick={resetFlow}
                       className="btn-primary py-3 px-6"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
                     >
                       Cancel Another Booking
-                    </motion.button>
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -294,21 +282,17 @@ export default function AdminCancelBookingPage() {
                   )}
 
                   <div className="flex gap-3">
-                    <motion.button
+                    <button
                       onClick={resetFlow}
                       disabled={isCancelling}
                       className="flex-1 py-3 rounded-xl border border-zinc-600 text-zinc-400 hover:bg-white/5 transition-colors disabled:opacity-50"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
                     >
                       Go Back
-                    </motion.button>
-                    <motion.button
+                    </button>
+                    <button
                       onClick={confirmCancellation}
                       disabled={isCancelling}
                       className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
                     >
                       {isCancelling ? (
                         <>
@@ -318,20 +302,18 @@ export default function AdminCancelBookingPage() {
                       ) : (
                         'Confirm Cancellation'
                       )}
-                    </motion.button>
+                    </button>
                   </div>
                 </>
               )}
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {/* Phone Search */}
-      <motion.div 
+      <div 
         className="glass rounded-2xl p-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
       >
         <p className="text-zinc-400 text-sm mb-4">Enter customer&apos;s phone number to find their bookings</p>
         <form onSubmit={handleSubmit} className="flex gap-3">
@@ -346,12 +328,10 @@ export default function AdminCancelBookingPage() {
               maxLength={10}
             />
           </div>
-          <motion.button
+          <button
             type="submit"
             disabled={isLoading || phone.length !== 10}
             className="btn-primary px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -359,32 +339,27 @@ export default function AdminCancelBookingPage() {
               <Search className="w-4 h-4" />
             )}
             Search
-          </motion.button>
+          </button>
         </form>
-      </motion.div>
+      </div>
 
       {/* Error */}
-      <AnimatePresence>
+      <>
         {error && !selectedBooking && (
-          <motion.div 
+          <div 
             className="p-4 rounded-xl bg-red-500/10 border border-red-500/20"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
           >
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-red-400" />
               <p className="text-red-400 text-sm">{error}</p>
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {/* Results */}
       {searched && bookings && bookings.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+        <div
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-white">Select a booking to cancel</h3>
@@ -428,12 +403,9 @@ export default function AdminCancelBookingPage() {
               const StatusIcon = config.icon;
 
               return (
-                <motion.div
+                <div
                   key={booking.id}
                   className="glass rounded-2xl p-4 cursor-pointer hover:border-red-500/30 transition-all"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
                   onClick={() => handleSelectBooking(booking)}
                 >
                   {/* Status Badge */}
@@ -479,24 +451,22 @@ export default function AdminCancelBookingPage() {
                     <span className="text-zinc-400 text-sm">Total Amount</span>
                     <span className="text-white font-bold">₹{booking.total_amount?.toLocaleString('en-IN') || 0}</span>
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* No Bookings Found */}
       {searched && bookings && bookings.length === 0 && (
-        <motion.div 
+        <div 
           className="glass rounded-2xl p-8 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
         >
           <Calendar className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
           <h3 className="text-lg font-medium text-white mb-1">No Cancellable Bookings Found</h3>
           <p className="text-zinc-400 text-sm">No confirmed bookings found for this phone number.</p>
-        </motion.div>
+        </div>
       )}
     </div>
   );

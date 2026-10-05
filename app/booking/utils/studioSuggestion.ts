@@ -1,4 +1,4 @@
-import {
+import type {
   SessionType,
   KaraokeOption,
   LiveMusicianOption,
@@ -17,17 +17,17 @@ interface StudioSuggestionResult {
  * STUDIO SUGGESTION LOGIC (exact mapping as specified)
  *
  * Karaoke:
- * - 1–5 participants → recommend Studio C (allow upgrade to B or A)
- * - 6–10 → recommend Studio B (allow upgrade to A)
- * - 11–20 → recommend Studio A only (A locked)
- * - 21–30 → Studio A only (A locked)
+ * - 1-5 participants → recommend Studio C (allow upgrade to B or A)
+ * - 6-10 → recommend Studio B (allow upgrade to A)
+ * - 11-20 → recommend Studio A only (A locked)
+ * - 21-30 → Studio A only (A locked)
  *
  * Live with musicians:
- * - 1–2 musicians → recommend Studio C (allow upgrades)
- * - 3–4 → recommend Studio B (allow upgrade to A)
+ * - 1-2 musicians → recommend Studio C (allow upgrades)
+ * - 3-4 → recommend Studio B (allow upgrade to A)
  * - 5 → recommend Studio B (allow upgrade to A)
- * - 6–8 → Studio A only
- * - 9–12 → Studio A only
+ * - 6-8 → Studio A only
+ * - 9-12 → Studio A only
  *
  * Only Drum Practice:
  * - Studio A only
@@ -49,28 +49,28 @@ export function getKaraokeStudioSuggestion(
         recommendedStudio: "Studio C",
         allowedStudios: ["Studio C", "Studio B", "Studio A"],
         explanation:
-          "For 1–5 participants, Studio C is perfect. You can upgrade to B or A for more space.",
+          "For 1-5 participants, Studio C is perfect. You can upgrade to B or A for more space.",
       };
     case "6_10":
       return {
         recommendedStudio: "Studio B",
         allowedStudios: ["Studio B", "Studio A"],
         explanation:
-          "For 6–10 participants, Studio B is recommended. You can upgrade to A for more comfort.",
+          "For 6-10 participants, Studio B is recommended. You can upgrade to A for more comfort.",
       };
     case "11_20":
       return {
         recommendedStudio: "Studio A",
         allowedStudios: ["Studio A"],
         explanation:
-          "For 11–20 participants, only Studio A can accommodate your group.",
+          "For 11-20 participants, only Studio A can accommodate your group.",
       };
     case "21_30":
       return {
         recommendedStudio: "Studio A",
         allowedStudios: ["Studio A"],
         explanation:
-          "For 21–30 participants, Studio A is required for your group size.",
+          "For 21-30 participants, Studio A is required for your group size.",
       };
     default:
       return {
@@ -90,14 +90,14 @@ export function getLiveStudioSuggestion(
         recommendedStudio: "Studio C",
         allowedStudios: ["Studio C", "Studio B", "Studio A"],
         explanation:
-          "For 1–2 musicians, Studio C is ideal. You can upgrade to B or A for more space.",
+          "For 1-2 musicians, Studio C is ideal. You can upgrade to B or A for more space.",
       };
     case "3_4":
       return {
         recommendedStudio: "Studio B",
         allowedStudios: ["Studio B", "Studio A"],
         explanation:
-          "For 3–4 musicians, Studio B is recommended. You can upgrade to A.",
+          "For 3-4 musicians, Studio B is recommended. You can upgrade to A.",
       };
     case "5":
       return {
@@ -111,14 +111,14 @@ export function getLiveStudioSuggestion(
         recommendedStudio: "Studio A",
         allowedStudios: ["Studio A"],
         explanation:
-          "For 6–8 musicians, Studio A is required for adequate space.",
+          "For 6-8 musicians, Studio A is required for adequate space.",
       };
     case "9_12":
       return {
         recommendedStudio: "Studio A",
         allowedStudios: ["Studio A"],
         explanation:
-          "For 9–12 musicians, only Studio A can accommodate your group.",
+          "For 9-12 musicians, only Studio A can accommodate your group.",
       };
     default:
       return {

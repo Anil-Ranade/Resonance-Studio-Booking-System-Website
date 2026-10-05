@@ -12,6 +12,7 @@ import {
   ACCESS_TOKEN_MAX_AGE,
   REFRESH_TOKEN_MAX_AGE,
 } from '@/lib/tokens';
+import { rateLimit, resolveOtpTarget } from '@/lib/apiSecurity';
 
 // Initialize Supabase client with service role for database operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -39,6 +40,10 @@ function isValidOTPFormat(code: string): boolean {
 
 export async function POST(request: Request) {
   try {
+    // Per-code attempts are capped below; this caps guessing across fresh codes
+    const limited = await rateLimit(request, 'otp_verify', 20, 900);
+    if (limited) return limited;
+
     // Parse request body with error handling
     let body;
     try {
@@ -58,10 +63,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const phone = body.phone?.toString().trim();
     const code = body.code?.toString().trim();
-    const deviceFingerprint = body.deviceFingerprint?.toString().trim();
-    const deviceName = body.deviceName?.toString().trim();
+    let phone = body.phone?.toString().trim();
+    // Email-only verification (manage-booking flow): find the phone the code was sent for
+    if (!phone && body.email) {
+      const target = await resolveOtpTarget(undefined, body.email.toString());
+      if ('error' in target) {
+        return NextResponse.json({ error: target.error }, { status: target.status });
+      }
+      phone = target.phone;
+    }
+    const deviceFingerprint = body.deviceFingerprint?.toString().trim().slice(0, 128);
+    const deviceName = body.deviceName?.toString().trim().slice(0, 100);
 
     // Validate phone number is provided
     if (!phone) {

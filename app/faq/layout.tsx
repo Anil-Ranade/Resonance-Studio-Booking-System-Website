@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { FAQPageStructuredData } from "../components/StructuredData";
+import { OG_BASE } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "FAQ",
@@ -9,6 +10,7 @@ export const metadata: Metadata = {
     canonical: "/faq",
   },
   openGraph: {
+    ...OG_BASE,
     title: "FAQ - Resonance Jam Room",
     description:
       "Get answers to common questions about studio bookings, equipment, payment, recording services, and facilities.",

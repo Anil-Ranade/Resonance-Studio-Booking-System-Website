@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { getAdminUser, getSessionPhone, maskEmail, rateLimit } from "@/lib/apiSecurity";
 
 interface CheckUserRequest {
   phone: string;
@@ -7,9 +8,14 @@ interface CheckUserRequest {
   email?: string;
 }
 
-// POST /api/check-user - Check if user exists or create new user
+// POST /api/check-user - Does a customer exist for this phone?
+// Full name/email only for that verified customer or an admin; everyone else
+// gets a masked email so phone numbers can't be used to harvest contact details.
 export async function POST(request: Request) {
   try {
+    const limited = await rateLimit(request, "check_user", 20, 600);
+    if (limited) return limited;
+
     // Parse request body with error handling
     let body: CheckUserRequest;
     try {
@@ -30,7 +36,6 @@ export async function POST(request: Request) {
     }
 
     // Validate phone is provided
-    console.log('[Check User] Received body:', JSON.stringify(body));
     
     if (!body.phone || body.phone.toString().trim() === '') {
       return NextResponse.json(
@@ -38,8 +43,6 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
-    const { name, email } = body;
 
     // Normalize phone to digits only
     const phone = body.phone.toString().trim().replace(/\D/g, "");
@@ -55,14 +58,14 @@ export async function POST(request: Request) {
     // Look up user in 'users' table
     const { data: existingUser, error: lookupError } = await supabaseServer
       .from("users")
-      .select("*")
+      .select("phone_number, name, email")
       .eq("phone_number", phone)
       .single();
 
     if (lookupError && lookupError.code !== "PGRST116") {
       // PGRST116 = no rows returned, any other error is a real error
       return NextResponse.json(
-        { error: lookupError.message },
+        { error: "Failed to look up user" },
         { status: 500 }
       );
     }
@@ -85,36 +88,24 @@ export async function POST(request: Request) {
         isAdminEmail = !!adminUser;
       }
       
-      return NextResponse.json({ 
-        user: existingUser,
-        isAdminEmail 
+      const canSeeDetails =
+        (await getSessionPhone(request)) === phone || !!(await getAdminUser(request));
+
+      return NextResponse.json({
+        user: canSeeDetails
+          ? existingUser
+          : { phone_number: phone, name: existingUser.name, email: maskEmail(existingUser.email) },
+        emailMasked: !canSeeDetails,
+        isAdminEmail,
       });
     }
 
-    // User does not exist - check if name and email are provided
-    if (!name || !email) {
-      return NextResponse.json({ needsSignup: true });
-    }
-
-    // Create new user
-    const { data: newUser, error: createError } = await supabaseServer
-      .from("users")
-      .insert({ phone_number: phone, name, email })
-      .select()
-      .single();
-
-    if (createError) {
-      return NextResponse.json(
-        { error: createError.message },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ user: newUser });
+    // New customer: the account is created when their first booking is made
+    return NextResponse.json({ needsSignup: true });
   } catch (error) {
     console.error('[Check User] Unexpected error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "An unexpected error occurred" },
+      { error: "An unexpected error occurred" },
       { status: 500 }
     );
   }

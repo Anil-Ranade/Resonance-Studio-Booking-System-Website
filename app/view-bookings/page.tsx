@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
 import { checkAuthStatus } from "@/lib/authClient";
+import SessionTicket from "../components/SessionTicket";
 
 // Helper function to safely parse JSON responses
 async function safeJsonParse(response: Response) {
@@ -15,24 +15,7 @@ async function safeJsonParse(response: Response) {
     throw new Error('Server returned an invalid response. Please try again.');
   }
 }
-import {
-  ArrowLeft,
-  Mail,
-  Search,
-  Calendar,
-  Clock,
-  Building2,
-  Loader2,
-  AlertCircle,
-  CheckCircle2,
-  XCircle,
-  CalendarX,
-  Mic,
-  Users,
-  Shield,
-  Award,
-  TrendingUp,
-} from "lucide-react";
+import { ArrowLeft, Search, Loader2, AlertCircle, Shield } from "lucide-react";
 
 interface LoyaltyStatus {
   hours: number;
@@ -58,14 +41,6 @@ interface Booking {
   total_amount: number;
   created_at: string;
 }
-
-const statusConfig: Record<string, { color: string; icon: typeof CheckCircle2; label: string }> = {
-  pending: { color: 'amber', icon: Clock, label: 'Pending' },
-  confirmed: { color: 'green', icon: CheckCircle2, label: 'Confirmed' },
-  cancelled: { color: 'red', icon: XCircle, label: 'Cancelled' },
-  completed: { color: 'violet', icon: CheckCircle2, label: 'Completed' },
-  no_show: { color: 'zinc', icon: XCircle, label: 'No Show' },
-};
 
 export default function ViewBookingsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -180,274 +155,162 @@ export default function ViewBookingsPage() {
     await fetchBookings(searchQuery);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-IN", {
-      weekday: "short",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const formatTime = (timeString: string) => {
-    const [hours, minutes] = timeString.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-    return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
-  };
+  const LOYALTY_SEGMENTS = 25;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-black py-6 px-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <motion.div 
-          className="mb-6"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
+    <div className="min-h-screen py-8 px-4 sm:px-6">
+      <div className="max-w-3xl mx-auto">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-10"
         >
-          <Link 
-            href="/"
-            className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-4 text-sm"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Home
-          </Link>
-          
-          <h1 className="text-2xl font-bold text-white">View Bookings</h1>
-          <p className="text-zinc-400 text-sm mt-1">Check your upcoming bookings</p>
-        </motion.div>
+          <ArrowLeft className="w-5 h-5" />
+          Back to Home
+        </Link>
 
-        {/* Loading Auth State */}
+        <header className="mb-10">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-fuchsia-400 mb-4">
+            View bookings
+          </p>
+          <h1 className="text-5xl sm:text-6xl font-bold text-white tracking-tight leading-[1.02]">
+            Your upcoming <span className="text-violet-400">sessions.</span>
+          </h1>
+        </header>
+
+        {/* Auth check */}
         {isCheckingAuth && (
-          <motion.div 
-            className="glass-strong rounded-2xl p-6 mb-6 flex items-center justify-center gap-3"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
+          <div className="flex items-center gap-3 py-6 text-zinc-400" role="status">
             <Loader2 className="w-5 h-5 animate-spin text-violet-400" />
-            <span className="text-zinc-300">Checking authentication...</span>
-          </motion.div>
+            Checking if you&apos;re signed in…
+          </div>
         )}
 
-        {/* Authenticated User Banner */}
+        {/* Signed in */}
         {!isCheckingAuth && isAuthenticated && authenticatedUser && (
-          <motion.div 
-            className="glass-strong rounded-2xl p-4 mb-6 border border-green-500/20"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                <Shield className="w-5 h-5 text-green-400" />
-              </div>
-              <div>
-                <p className="text-white font-medium">Welcome back{authenticatedUser.name ? `, ${authenticatedUser.name}` : ''}!</p>
-                <p className="text-zinc-400 text-sm">Your bookings are loaded automatically</p>
-              </div>
-            </div>
-          </motion.div>
+          <p className="flex items-center gap-2 text-zinc-300 mb-10 border-t border-violet-400/60 pt-5">
+            <Shield className="w-4 h-4 text-emerald-400" />
+            Signed in as <span className="text-white font-medium">{authenticatedUser.name || authenticatedUser.email}</span>
+            <span className="text-zinc-500">· showing your bookings</span>
+          </p>
         )}
 
-        {/* Email Search - Only show if not authenticated */}
+        {/* Search */}
         {!isCheckingAuth && !isAuthenticated && (
-          <motion.div 
-            className="glass-strong rounded-2xl p-4 mb-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <form onSubmit={handleSubmit}>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex-1 relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Enter email or phone number"
-                    className="w-full py-3 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
-                  />
-                </div>
-                <motion.button
-                  type="submit"
-                  disabled={loading || (!isValidEmail(searchQuery) && !isValidPhone(searchQuery))}
-                  className="btn-accent py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Searching...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4" />
-                      Search
-                    </>
-                  )}
-                </motion.button>
+          <form onSubmit={handleSubmit} className="mb-10 border-t border-violet-400/60 pt-5">
+            <label htmlFor="booking-lookup" className="block text-xs font-medium uppercase tracking-[0.14em] text-zinc-400 mb-3">
+              Email or phone number used for booking
+            </label>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                <input
+                  id="booking-lookup"
+                  type="text"
+                  inputMode="email"
+                  autoComplete="email"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="you@example.com or 98XXXXXXXX"
+                  className="w-full py-4 pl-12 pr-4 bg-white/[0.04] border border-white/15 rounded-xl text-lg text-white placeholder-zinc-500 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/30 transition-colors"
+                />
               </div>
-            </form>
-          </motion.div>
+              <button
+                type="submit"
+                disabled={loading || (!isValidEmail(searchQuery) && !isValidPhone(searchQuery))}
+                className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-violet-400 hover:bg-violet-300 text-navy font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-navy"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Finding bookings…
+                  </>
+                ) : (
+                  "Find my bookings"
+                )}
+              </button>
+            </div>
+          </form>
         )}
 
         {/* Error */}
-        <AnimatePresence>
-          {error && (
-            <motion.div 
-              className="mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/20"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-400" />
-                <p className="text-red-400 text-sm">{error}</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {((isAuthenticated && loyaltyStatus) || (searched && loyaltyStatus)) && (
-          <motion.div 
-            className="glass-strong rounded-2xl p-6 mb-6 relative overflow-hidden"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            {/* Background Glow */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Award className="w-5 h-5 text-amber-400" />
-                  <h3 className="text-lg font-bold text-white">Loyalty Status</h3>
-                </div>
-                {loyaltyStatus.eligible && (
-                  <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold border border-amber-500/20 animate-pulse">
-                    Reward Available!
-                  </span>
-                )}
-              </div>
-              
-              <div className="mb-2 flex justify-between text-sm">
-                <span className="text-zinc-400">Progress</span>
-                <span className="text-white font-medium">
-                  {loyaltyStatus.hours} / {loyaltyStatus.target} hours
-                </span>
-              </div>
-
-              <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-4">
-                <motion.div 
-                  className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min((loyaltyStatus.hours / loyaltyStatus.target) * 100, 100)}%` }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                />
-              </div>
-
-              <div className="flex items-start gap-2 text-xs text-zinc-400">
-                <TrendingUp className="w-3.5 h-3.5 mt-0.5 text-zinc-500" />
-                <p>
-                  {loyaltyStatus.eligible 
-                    ? `Congratulations! You've unlocked a ₹${(loyaltyStatus.reward_amount || 2000).toLocaleString('en-IN')} discount on your next booking.`
-                    : `Complete ${loyaltyStatus.target - loyaltyStatus.hours} more hours to unlock a ₹${(loyaltyStatus.reward_amount || 2000).toLocaleString('en-IN')} reward.`
-                  }
-                </p>
-              </div>
-            </div>
-          </motion.div>
+        {error && (
+          <p role="alert" className="flex items-center gap-2 mb-8 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/25 text-red-300 text-sm">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {error}
+          </p>
         )}
 
-        {/* Bookings List */}
-        {searched && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            {bookings && bookings.length > 0 ? (
-              <div className="space-y-4">
-                {bookings.map((booking, index) => {
-                  const config = statusConfig[booking.status] || statusConfig.pending;
-                  const StatusIcon = config.icon;
-
-                  return (
-                    <motion.div
-                      key={booking.id}
-                      className="glass-strong rounded-2xl p-4 overflow-hidden"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      {/* Status Badge */}
-                      <div className="flex items-center justify-between mb-3">
-                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full bg-${config.color}-500/20`}>
-                          <StatusIcon className={`w-3.5 h-3.5 text-${config.color}-400`} />
-                          <span className={`text-xs font-medium text-${config.color}-400`}>{config.label}</span>
-                        </div>
-                        <span className="text-xs text-zinc-500">ID: {booking.id.slice(0, 8)}</span>
-                      </div>
-
-                      {/* Booking Details */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Mic className="w-4 h-4 text-violet-400" />
-                          <span className="text-white font-medium">{booking.session_type}</span>
-                        </div>
-                        {booking.session_details && (
-                          <div className="flex items-center gap-2">
-                            <Users className="w-4 h-4 text-violet-400" />
-                            <span className="text-zinc-300 text-sm">{booking.session_details}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2">
-                          <Building2 className="w-4 h-4 text-violet-400" />
-                          <span className="text-zinc-300 text-sm">{booking.studio}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-violet-400" />
-                          <span className="text-zinc-300 text-sm">{formatDate(booking.date)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-violet-400" />
-                          <span className="text-zinc-300 text-sm">
-                            {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Total */}
-                      <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
-                        <span className="text-zinc-400 text-sm">Total Amount</span>
-                        <span className="text-white font-bold">₹{booking.total_amount?.toLocaleString('en-IN') || 0}</span>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+        {/* Loyalty */}
+        {((isAuthenticated && loyaltyStatus) || (searched && loyaltyStatus)) && (() => {
+          const reward = (loyaltyStatus.reward_amount || 2000).toLocaleString('en-IN');
+          const lit = Math.min(LOYALTY_SEGMENTS, Math.round((loyaltyStatus.hours / loyaltyStatus.target) * LOYALTY_SEGMENTS));
+          return (
+            <section aria-labelledby="loyalty-title" className="mb-12 rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+              <div className="flex items-baseline justify-between gap-4 mb-4">
+                <h2 id="loyalty-title" className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400">
+                  Cashback progress
+                </h2>
+                <p className="text-white font-semibold tabular-nums">
+                  {loyaltyStatus.hours} <span className="text-zinc-500 font-normal">/ {loyaltyStatus.target} hours</span>
+                </p>
               </div>
-            ) : (
-              <motion.div 
-                className="glass-strong rounded-2xl p-8 text-center"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+              <div
+                className="flex gap-1 mb-4"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={loyaltyStatus.target}
+                aria-valuenow={loyaltyStatus.hours}
+                aria-label="Hours completed toward cashback"
               >
-                <CalendarX className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-                <h3 className="text-lg font-medium text-white mb-1">No Upcoming Bookings</h3>
-                <p className="text-zinc-400 text-sm">No upcoming bookings found for this email or phone number.</p>
-                <Link 
-                  href="/booking/new"
-                  className="inline-block mt-4 btn-accent py-2 px-6 text-sm"
-                >
-                  Make a Booking
-                </Link>
-              </motion.div>
-            )}
-          </motion.div>
+                {Array.from({ length: LOYALTY_SEGMENTS }, (_, i) => (
+                  <span
+                    key={i}
+                    className={`h-2.5 flex-1 rounded-[2px] ${
+                      i >= lit ? "bg-white/[0.07]" : i >= LOYALTY_SEGMENTS - 3 ? "bg-fuchsia-400" : "bg-violet-400"
+                    }`}
+                  />
+                ))}
+              </div>
+              <p className="text-sm text-zinc-300">
+                {loyaltyStatus.eligible ? (
+                  <><span className="text-violet-400 font-semibold">₹{reward} unlocked.</span> You&apos;ve reached the target.</>
+                ) : (
+                  <>{loyaltyStatus.target - loyaltyStatus.hours} more hours to unlock <span className="text-white font-semibold">₹{reward}</span>.</>
+                )}
+              </p>
+            </section>
+          );
+        })()}
+
+        {/* Bookings */}
+        {searched && (
+          bookings && bookings.length > 0 ? (
+            <section aria-label="Upcoming bookings">
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400 mb-4">
+                {bookings.length} upcoming {bookings.length === 1 ? "session" : "sessions"}
+              </p>
+              <ul className="space-y-4 mb-24">
+                {bookings.map((booking) => (
+                  <li key={booking.id}>
+                    <SessionTicket booking={booking} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : (
+            <section className="mb-24 rounded-3xl border border-white/10 bg-white/[0.03] p-8 sm:p-10">
+              <h2 className="text-2xl font-bold text-white mb-2">No upcoming bookings</h2>
+              <p className="text-zinc-400 mb-6">
+                Nothing is booked under this email or phone number. Check it matches the one you booked with, or book a new session.
+              </p>
+              <Link
+                href="/booking/new"
+                className="inline-flex px-6 py-3.5 rounded-xl bg-violet-400 hover:bg-violet-300 text-navy font-semibold transition-colors"
+              >
+                Book a session
+              </Link>
+            </section>
+          )
         )}
       </div>
     </div>

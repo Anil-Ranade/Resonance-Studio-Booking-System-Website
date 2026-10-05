@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   Calendar,
@@ -211,11 +210,8 @@ export default function ReviewPage() {
 
       {/* Content */}
       <div className="max-w-2xl mx-auto px-4 py-8">
-        <AnimatePresence mode="wait">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+        <>
+          <div
             className="space-y-6"
           >
             {/* Booking Summary Card */}
@@ -329,14 +325,12 @@ export default function ReviewPage() {
 
             {/* Error Message */}
             {error && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+              <div
                 className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3"
               >
                 <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
                 <p className="text-red-400">{error}</p>
-              </motion.div>
+              </div>
             )}
 
             {/* Actions */}
@@ -347,12 +341,10 @@ export default function ReviewPage() {
               >
                 Go Back
               </button>
-              <motion.button
+              <button
                 onClick={handleConfirmBooking}
                 disabled={isSubmitting}
-                className="flex-1 py-4 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold hover:from-violet-500 hover:to-fuchsia-500 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                className="flex-1 py-4 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-navy font-semibold hover:from-violet-500 hover:to-fuchsia-500 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   <>
@@ -365,7 +357,7 @@ export default function ReviewPage() {
                     {draft.isEditMode ? "Update Booking" : "Confirm Booking"}
                   </>
                 )}
-              </motion.button>
+              </button>
             </div>
 
             {/* Info Note */}
@@ -373,8 +365,8 @@ export default function ReviewPage() {
               By confirming, you agree to our booking terms and cancellation
               policy.
             </p>
-          </motion.div>
-        </AnimatePresence>
+          </div>
+        </>
       </div>
     </div>
   );

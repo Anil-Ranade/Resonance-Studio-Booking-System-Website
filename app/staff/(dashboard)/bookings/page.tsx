@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
   Search,
@@ -673,7 +672,7 @@ export default function StaffBookingsPage() {
         </div>
         <Link
           href="/staff/booking"
-          className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-semibold py-3 px-6 rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2"
+          className="bg-gradient-to-r from-violet-500 to-fuchsia-600 text-navy font-semibold py-3 px-6 rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
           New Booking
@@ -690,7 +689,7 @@ export default function StaffBookingsPage() {
               placeholder="Search by name, phone, or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 pl-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+              className="w-full px-4 pl-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
             />
           </div>
           <div className="sm:w-48">
@@ -713,7 +712,7 @@ export default function StaffBookingsPage() {
       <div className="glass rounded-2xl overflow-hidden">
         {loading ? (
           <div className="p-12 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-teal-400 animate-spin" />
+            <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
           </div>
         ) : filteredBookings.length === 0 ? (
           <div className="p-12 text-center">
@@ -747,10 +746,8 @@ export default function StaffBookingsPage() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {filteredBookings.map((booking) => (
-                  <motion.tr
+                  <tr
                     key={booking.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
                     className="hover:bg-white/5 transition-colors"
                   >
                     <td className="p-4">
@@ -802,7 +799,7 @@ export default function StaffBookingsPage() {
                         <Eye className="w-4 h-4" />
                       </button>
                     </td>
-                  </motion.tr>
+                  </tr>
                 ))}
               </tbody>
             </table>
@@ -811,19 +808,13 @@ export default function StaffBookingsPage() {
       </div>
 
       {/* Booking Detail Modal */}
-      <AnimatePresence>
+      <>
         {selectedBooking && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => setSelectedBooking(null)}
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+            <div
               className="w-full max-w-lg glass rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
@@ -840,12 +831,9 @@ export default function StaffBookingsPage() {
               </div>
 
               {/* Message */}
-              <AnimatePresence>
+              <>
                 {message && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
+                  <div
                     className={`mb-4 p-3 rounded-xl flex items-center gap-2 ${
                       message.type === "success"
                         ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
@@ -858,14 +846,14 @@ export default function StaffBookingsPage() {
                       <AlertCircle className="w-4 h-4" />
                     )}
                     <span className="text-sm">{message.text}</span>
-                  </motion.div>
+                  </div>
                 )}
-              </AnimatePresence>
+              </>
 
               <div className="space-y-4">
                 <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl">
-                  <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center">
-                    <User className="w-6 h-6 text-teal-400" />
+                  <div className="w-12 h-12 rounded-full bg-violet-500/20 flex items-center justify-center">
+                    <User className="w-6 h-6 text-violet-400" />
                   </div>
                   <div>
                     <p className="text-white font-medium">
@@ -894,7 +882,7 @@ export default function StaffBookingsPage() {
                   <div className="p-4 bg-white/5 rounded-xl">
                     <p className="text-zinc-400 text-sm mb-1">Studio</p>
                     <p className="text-white font-medium flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-teal-400" />
+                      <MapPin className="w-4 h-4 text-violet-400" />
                       {selectedBooking.studio}
                     </p>
                   </div>
@@ -907,14 +895,14 @@ export default function StaffBookingsPage() {
                   <div className="p-4 bg-white/5 rounded-xl">
                     <p className="text-zinc-400 text-sm mb-1">Date</p>
                     <p className="text-white font-medium flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-teal-400" />
+                      <Calendar className="w-4 h-4 text-violet-400" />
                       {formatDate(selectedBooking.date)}
                     </p>
                   </div>
                   <div className="p-4 bg-white/5 rounded-xl">
                     <p className="text-zinc-400 text-sm mb-1">Time</p>
                     <p className="text-white font-medium flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-teal-400" />
+                      <Clock className="w-4 h-4 text-violet-400" />
                       {formatTime(selectedBooking.start_time)} -{" "}
                       {formatTime(selectedBooking.end_time)}
                     </p>
@@ -1110,35 +1098,29 @@ export default function StaffBookingsPage() {
                   </div>
                 </div>
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {/* New Booking Modal */}
-      <AnimatePresence>
+      <>
         {showNewBookingModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => {
               setShowNewBookingModal(false);
               resetBookingForm();
             }}
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+            <div
               className="w-full max-w-2xl glass rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center">
-                    <Plus className="w-5 h-5 text-teal-400" />
+                  <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center">
+                    <Plus className="w-5 h-5 text-violet-400" />
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-white">
@@ -1161,12 +1143,9 @@ export default function StaffBookingsPage() {
               </div>
 
               {/* Message */}
-              <AnimatePresence>
+              <>
                 {message && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
+                  <div
                     className={`mb-4 p-3 rounded-xl flex items-center gap-2 ${
                       message.type === "success"
                         ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
@@ -1179,9 +1158,9 @@ export default function StaffBookingsPage() {
                       <AlertCircle className="w-4 h-4" />
                     )}
                     <span className="text-sm">{message.text}</span>
-                  </motion.div>
+                  </div>
                 )}
-              </AnimatePresence>
+              </>
 
               <form onSubmit={handleCreateBooking} className="space-y-5">
                 {/* Customer Information */}
@@ -1334,7 +1313,7 @@ export default function StaffBookingsPage() {
                                 bookingFormData.band_equipment.includes(
                                   opt.value
                                 )
-                                  ? "bg-teal-500/20 text-teal-400 border border-teal-500/30"
+                                  ? "bg-violet-500/20 text-violet-400 border border-violet-500/30"
                                   : "bg-white/5 text-zinc-400 border border-white/10 hover:bg-white/10"
                               }`}
                             >
@@ -1397,7 +1376,7 @@ export default function StaffBookingsPage() {
                       <label className="block text-sm text-zinc-400 mb-1.5">
                         Studio *{" "}
                         {getAllowedStudios().length < 3 && (
-                          <span className="text-xs text-teal-400 ml-2">
+                          <span className="text-xs text-violet-400 ml-2">
                             (Limited based on selection)
                           </span>
                         )}
@@ -1503,7 +1482,7 @@ export default function StaffBookingsPage() {
                               send_notification: e.target.checked,
                             })
                           }
-                          className="w-4 h-4 rounded border-zinc-600 text-teal-500 focus:ring-teal-500 bg-zinc-800"
+                          className="w-4 h-4 rounded border-zinc-600 text-violet-500 focus:ring-violet-500 bg-zinc-800"
                         />
                         <span className="text-sm text-zinc-300">
                           Send email notification
@@ -1549,7 +1528,7 @@ export default function StaffBookingsPage() {
                       !bookingFormData.phone ||
                       bookingFormData.phone.length !== 10
                     }
-                    className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="flex-1 bg-gradient-to-r from-violet-500 to-fuchsia-600 text-navy font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {creatingBooking ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
@@ -1560,10 +1539,10 @@ export default function StaffBookingsPage() {
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
     </div>
   );
 }

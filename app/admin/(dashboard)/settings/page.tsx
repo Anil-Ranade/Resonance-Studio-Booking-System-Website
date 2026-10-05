@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
 import { Save, Loader2, CheckCircle, Settings, Clock, AlertCircle } from 'lucide-react';
 import { getSession } from '@/lib/supabaseAuth';
 
@@ -116,20 +115,16 @@ export default function SettingsPage() {
         <>
           {/* Error Message */}
           {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
+            <div
               className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3"
             >
               <AlertCircle className="w-5 h-5 text-red-400" />
               <span className="text-red-400">{error}</span>
-            </motion.div>
+            </div>
           )}
 
           {/* Business Hours */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+          <div
             className="glass rounded-2xl p-6"
           >
         <div className="flex items-center gap-3 mb-6">
@@ -164,13 +159,10 @@ export default function SettingsPage() {
             />
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Booking Settings */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
+      <div
         className="glass rounded-2xl p-6"
       >
         <div className="flex items-center gap-3 mb-6">
@@ -250,31 +242,24 @@ export default function SettingsPage() {
             />
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Save Button */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
+      <div
         className="flex items-center justify-end gap-4"
       >
         {saved && (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
+          <div
             className="flex items-center gap-2 text-emerald-400"
           >
             <CheckCircle className="w-5 h-5" />
             Settings saved!
-          </motion.div>
+          </div>
         )}
-        <motion.button
+        <button
           onClick={handleSave}
           disabled={saving}
           className="btn-primary flex items-center gap-2"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
         >
           {saving ? (
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -282,8 +267,8 @@ export default function SettingsPage() {
             <Save className="w-5 h-5" />
           )}
           {saving ? 'Saving...' : 'Save Settings'}
-        </motion.button>
-      </motion.div>
+        </button>
+      </div>
         </>
       )}
     </div>

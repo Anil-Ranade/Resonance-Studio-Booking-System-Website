@@ -263,9 +263,10 @@ export default function AvailabilityPage() {
   };
 
   return (
-    <div className="h-screen w-screen bg-[#0a0a0f] flex flex-col overflow-hidden">
+    <div className="h-[calc(100svh-4rem)] md:h-[calc(100svh-5rem)] flex flex-col overflow-hidden">
+      {/* Height = viewport minus MainContent's top padding (pt-16 md:pt-20) for the floating nav */}
       {/* Date Navigation Header - Responsive (like Display Page) */}
-      <div className="h-16 md:h-20 flex items-center justify-between md:justify-center bg-zinc-900/50 border-b border-zinc-800 flex-shrink-0 px-2 md:px-4 relative">
+      <div className="h-16 md:h-20 flex items-center justify-between md:justify-center flex-shrink-0 px-2 md:px-4 relative">
         <div className="flex items-center gap-2 md:gap-6">
           {/* Previous Day Button */}
           <button
@@ -331,7 +332,7 @@ export default function AvailabilityPage() {
                         setSelectedDate(new Date());
                         setShowDatePicker(false);
                       }}
-                      className="flex-1 px-3 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors"
+                      className="flex-1 px-3 py-2 bg-violet-600 hover:bg-violet-500 text-navy text-sm font-medium rounded-lg transition-colors"
                     >
                       Today
                     </button>

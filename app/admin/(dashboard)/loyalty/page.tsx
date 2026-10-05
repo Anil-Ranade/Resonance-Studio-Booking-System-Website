@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, 
   Loader2, 
@@ -12,6 +11,7 @@ import {
   CheckCircle2,
   Phone
 } from 'lucide-react';
+import { adminFetch } from "@/lib/adminFetch";
 
 interface LoyaltyStatus {
   phone_number?: string; // from get_all_statuses distinct result
@@ -35,7 +35,7 @@ export default function LoyaltyPage() {
     setIsLoading(true);
     setError('');
     try {
-      const response = await fetch('/api/loyalty/all');
+      const response = await adminFetch('/api/loyalty/all');
       const data = await response.json();
 
       if (!response.ok) {
@@ -76,7 +76,7 @@ export default function LoyaltyPage() {
 
     setProcessingPhone(phone);
     try {
-      const response = await fetch('/api/loyalty/claim', {
+      const response = await adminFetch('/api/loyalty/claim', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),

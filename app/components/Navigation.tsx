@@ -49,13 +49,14 @@ export default function Navigation() {
 
   return (
     <>
-      <nav className="main-nav fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-violet-500/10 shadow-lg shadow-violet-500/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 md:h-20">
+      {/* Floating bar: top offset + height must stay equal to MainContent's pt-16 md:pt-20 */}
+      <nav className="main-nav fixed top-2 md:top-4 inset-x-2 md:inset-x-4 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 rounded-2xl bg-navy/75 backdrop-blur-xl border border-white/10 shadow-xl shadow-black/30">
+          <div className="flex items-center justify-between h-14 md:h-16">
             {/* Logo */}
             <Link href="/home" className="flex items-center gap-3 group">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:shadow-violet-500/25 transition-all duration-300">
-                <Music2 className="w-5 h-5 text-white" />
+                <Music2 className="w-5 h-5 text-navy" />
               </div>
               <div className="flex flex-col">
                 <span className="text-lg font-bold text-white leading-none">
@@ -68,7 +69,7 @@ export default function Navigation() {
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-1">
+            <div className="hidden xl:flex items-center gap-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -87,7 +88,7 @@ export default function Navigation() {
             {/* CTA Button - Desktop */}
             <Link
               href="/booking/new"
-              className="btn-primary text-sm hidden md:flex items-center gap-2"
+              className="btn-primary text-sm hidden xl:flex items-center gap-2 whitespace-nowrap"
             >
               <Calendar className="w-4 h-4" />
               Book Now
@@ -101,7 +102,7 @@ export default function Navigation() {
                 e.stopPropagation();
                 setIsMenuOpen((prev) => !prev);
               }}
-              className="md:hidden p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors touch-manipulation"
+              className="xl:hidden p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors touch-manipulation"
               aria-label={isMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={isMenuOpen}
             >
@@ -118,7 +119,7 @@ export default function Navigation() {
       {/* Mobile Menu Overlay */}
       {isMenuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm xl:hidden"
           onClick={() => setIsMenuOpen(false)}
           aria-hidden="true"
         />
@@ -127,9 +128,9 @@ export default function Navigation() {
       {/* Mobile Menu Panel */}
       {isMenuOpen && (
         <div
-          className="fixed top-16 left-0 right-0 z-50 bg-[#0a0a0f]/98 backdrop-blur-xl border-b border-violet-500/10 md:hidden transition-all duration-300 ease-out opacity-100 visible"
+          className="fixed top-[4.5rem] md:top-[5.5rem] inset-x-2 md:inset-x-4 z-50 rounded-2xl bg-navy/95 backdrop-blur-xl border border-white/10 shadow-xl shadow-black/30 xl:hidden"
         >
-          <div className="max-h-[calc(100vh-4rem)] overflow-y-auto">
+          <div className="max-h-[calc(100vh-5.5rem)] overflow-y-auto">
             <div className="px-4 py-4 space-y-1">
               {navLinks.map((link) => (
                 <Link
@@ -151,7 +152,7 @@ export default function Navigation() {
                 <Link
                   href="/booking/new"
                   onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-medium rounded-lg hover:from-violet-500 hover:to-purple-500 transition-all duration-300 shadow-lg shadow-violet-500/25"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-navy font-medium rounded-lg hover:from-violet-500 hover:to-purple-500 transition-all duration-300 shadow-lg shadow-violet-500/25"
                 >
                   <Calendar className="w-4 h-4" />
                   Book Now

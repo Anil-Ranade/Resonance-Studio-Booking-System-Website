@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { OG_BASE } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Services & Pricing",
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
     canonical: "/rate-card",
   },
   openGraph: {
+    ...OG_BASE,
     title: "Studio Pricing & Services - Resonance Jam Room",
     description:
       "Affordable rates for jam room, karaoke, recording, mixing, mastering, and video production. No advance payment required.",

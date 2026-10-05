@@ -3,28 +3,29 @@ import { supabaseServer } from "@/lib/supabaseServer";
 import { deleteEvent } from "@/lib/googleCalendar";
 import { sendBookingCancellationEmail } from "@/lib/email";
 import { logBookingCancellation, logOriginalBooking } from "@/lib/googleSheets";
+import { cleanText, isUuid, rateLimit, requireCustomer } from "@/lib/apiSecurity";
 
-// POST /api/bookings/cancel - Cancel a booking (no OTP verification required)
+// POST /api/bookings/cancel - Cancel your own booking (requires an OTP-verified session)
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { bookingId, phone, reason } = body;
+    const limited = await rateLimit(request, "booking_cancel", 10, 600);
+    if (limited) return limited;
 
-    // Validate inputs
-    if (!bookingId) {
+    const body = await request.json().catch(() => ({}));
+    const { bookingId } = body;
+    const reason = cleanText(body.reason, 300);
+
+    if (!isUuid(bookingId)) {
       return NextResponse.json(
-        { error: "Booking ID is required" },
+        { error: "A valid booking ID is required" },
         { status: 400 }
       );
     }
 
-    const normalizedPhone = phone?.replace(/\D/g, "");
-    if (!normalizedPhone || normalizedPhone.length !== 10) {
-      return NextResponse.json(
-        { error: "Phone number must be exactly 10 digits" },
-        { status: 400 }
-      );
-    }
+    // The session's phone decides ownership; a phone in the body must match it
+    const auth = await requireCustomer(request, body.phone || undefined);
+    if (auth instanceof NextResponse) return auth;
+    const normalizedPhone = auth.phone;
 
     // Get the booking and verify it belongs to the user
     const { data: booking, error: fetchError } = await supabaseServer
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if booking is in the past
-    const bookingDate = new Date(`${booking.date}T${booking.start_time}`);
+    const bookingDate = new Date(`${booking.date}T${String(booking.start_time).slice(0, 5)}:00`);
     if (bookingDate < new Date()) {
       return NextResponse.json(
         { error: "Cannot cancel a past booking" },

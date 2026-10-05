@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
   Trash2,
@@ -504,37 +503,30 @@ export default function AvailabilityManagementPage() {
           <p className="text-zinc-400 mt-1">All slots are open by default. Block slots to prevent bookings.</p>
         </div>
         <div className="flex items-center gap-3">
-          <motion.button
+          <button
             onClick={() => setShowBulkModal(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500/30 transition-colors"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
             <Copy className="w-4 h-4" />
             Bulk Block
-          </motion.button>
-          <motion.button
+          </button>
+          <button
             onClick={() => {
               resetForm();
               setShowAddModal(true);
             }}
             className="flex items-center gap-2 px-4 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
             <Plus className="w-4 h-4" />
             Block Slot
-          </motion.button>
+          </button>
         </div>
       </div>
 
       {/* Message */}
-      <AnimatePresence>
+      <>
         {message && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+          <div
             className={`p-4 rounded-xl flex items-center gap-3 ${
               message.type === 'success'
                 ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
@@ -553,9 +545,9 @@ export default function AvailabilityManagementPage() {
             >
               <X className="w-4 h-4" />
             </button>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {/* Filters */}
       <div className="glass rounded-2xl p-4">
@@ -625,10 +617,8 @@ export default function AvailabilityManagementPage() {
                   </h3>
                   <div className="grid gap-3">
                     {dateSlots.map((slot) => (
-                      <motion.div
+                      <div
                         key={slot.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
                         className="p-4 rounded-xl bg-red-500/10 border border-red-500/20"
                       >
                         <div className="flex items-center justify-between">
@@ -718,7 +708,7 @@ export default function AvailabilityManagementPage() {
                             ))}
                           </div>
                         )}
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -728,19 +718,13 @@ export default function AvailabilityManagementPage() {
       </div>
 
       {/* Block Slot Modal */}
-      <AnimatePresence>
+      <>
         {showAddModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => setShowAddModal(false)}
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+            <div
               className="w-full max-w-md glass rounded-2xl p-6"
               onClick={(e) => e.stopPropagation()}
             >
@@ -848,28 +832,22 @@ export default function AvailabilityManagementPage() {
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {/* Edit Blocked Slot Modal */}
-      <AnimatePresence>
+      <>
         {showEditModal && editingSlot && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => {
               setShowEditModal(false);
               setEditingSlot(null);
             }}
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+            <div
               className="w-full max-w-md glass rounded-2xl p-6"
               onClick={(e) => e.stopPropagation()}
             >
@@ -981,25 +959,19 @@ export default function AvailabilityManagementPage() {
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {/* Bulk Block Modal */}
-      <AnimatePresence>
+      <>
         {showBulkModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => setShowBulkModal(false)}
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+            <div
               className="w-full max-w-lg glass rounded-2xl p-6"
               onClick={(e) => e.stopPropagation()}
             >
@@ -1091,7 +1063,7 @@ export default function AvailabilityManagementPage() {
                         onClick={() => toggleBulkDate(date)}
                         className={`p-2 text-sm rounded-lg transition-colors ${
                           bulkDates.includes(date)
-                            ? 'bg-violet-500 text-white'
+                            ? 'bg-violet-500 text-navy'
                             : 'bg-white/5 text-zinc-400 hover:bg-white/10'
                         }`}
                       >
@@ -1141,25 +1113,19 @@ export default function AvailabilityManagementPage() {
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {/* Book for Customer Modal */}
-      <AnimatePresence>
+      <>
         {showBookingModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => setShowBookingModal(false)}
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+            <div
               className="w-full max-w-lg glass rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
@@ -1395,10 +1361,10 @@ export default function AvailabilityManagementPage() {
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/apiSecurity";
 
 // Sanitize input to prevent XSS
 function sanitizeInput(input: string): string {
@@ -18,7 +19,10 @@ function isValidEmail(email: string): boolean {
 // POST /api/contact - Handle contact form submissions
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const limited = await rateLimit(request, "contact", 5, 3600);
+    if (limited) return limited;
+
+    const body = await request.json().catch(() => ({}));
     
     const firstName = sanitizeInput(body.firstName || '');
     const lastName = sanitizeInput(body.lastName || '');

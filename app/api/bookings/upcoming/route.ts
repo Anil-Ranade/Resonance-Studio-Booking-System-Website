@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { escapeLike, getSessionPhone, publicBooking, rateLimit } from "@/lib/apiSecurity";
 
 // GET /api/bookings/upcoming?email=xxx@example.com - Fetch only upcoming bookings by email
 export async function GET(request: NextRequest) {
   try {
+    const limited = await rateLimit(request, "bookings_lookup", 30, 600);
+    if (limited) return limited;
+
     const { searchParams } = new URL(request.url);
     const email = searchParams.get("email");
     const phone = searchParams.get("phone"); // Keep phone support for backward compatibility
@@ -28,7 +32,7 @@ export async function GET(request: NextRequest) {
     if (email) {
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
+      if (!emailRegex.test(email) || email.length > 254) {
         return NextResponse.json(
           { error: "Please enter a valid email address" },
           { status: 400 }
@@ -39,7 +43,7 @@ export async function GET(request: NextRequest) {
       const { data: user, error: userError } = await supabaseServer
         .from("users")
         .select("phone_number")
-        .ilike("email", email.trim())
+        .ilike("email", escapeLike(email.trim()))
         .single();
 
       if (userError || !user) {
@@ -47,7 +51,7 @@ export async function GET(request: NextRequest) {
         const { data: bookingWithEmail } = await supabaseServer
           .from("bookings")
           .select("phone_number")
-          .ilike("email", email.trim())
+          .ilike("email", escapeLike(email.trim()))
           .limit(1)
           .single();
         
@@ -88,7 +92,7 @@ export async function GET(request: NextRequest) {
     if (bookingsError) {
       console.error("[Upcoming Bookings API] Database error:", bookingsError);
       return NextResponse.json(
-        { error: bookingsError.message },
+        { error: "Failed to fetch bookings" },
         { status: 500 }
       );
     }
@@ -109,11 +113,11 @@ export async function GET(request: NextRequest) {
       return false;
     });
 
-    console.log(`[Upcoming Bookings API] Returning ${upcomingBookings.length} upcoming bookings`);
-
-    return NextResponse.json({ 
-      bookings: upcomingBookings,
-      phone: phoneToSearch 
+    // Personal fields (and the phone behind an email) only for the verified owner
+    const isOwner = (await getSessionPhone(request)) === phoneToSearch;
+    return NextResponse.json({
+      bookings: isOwner ? upcomingBookings : upcomingBookings.map(publicBooking),
+      ...(isOwner && { phone: phoneToSearch }),
     });
   } catch (error) {
     console.error("[Upcoming Bookings API] Unexpected error:", error);

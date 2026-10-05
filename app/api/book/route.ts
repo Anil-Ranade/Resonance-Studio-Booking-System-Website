@@ -26,6 +26,49 @@ interface BookRequest {
   is_modification?: boolean;
   original_booking_id?: string; // For updating existing booking
   is_prompt_payment?: boolean;
+  /** Choices the price depends on; the rate itself is always computed here. */
+  options?: {
+    karaokeOption?: string;
+    liveOption?: string;
+    bandEquipment?: string[];
+    recordingOption?: string;
+  };
+}
+
+/** Shape/format checks shared by create and update. Returns an error message or null. */
+function validateBookingInput(body: BookRequest): string | null {
+  if (!isStudio(body.studio)) return "Invalid studio";
+  if (!isSessionType(body.session_type)) return "Invalid session type";
+  if (!isDate(body.date)) return "Invalid date";
+  if (!isTime(body.start_time) || !isTime(body.end_time)) return "Invalid time";
+  if (body.name && cleanText(body.name, 100).length === 0) return "Invalid name";
+  if (body.email && !isEmail(body.email.trim())) return "Invalid email address";
+  if (body.session_details && body.session_details.length > 300) return "Session details too long";
+  return null;
+}
+
+/** Hourly (or per-song) rate from the studio price list - never trust a client price. */
+function serverRate(body: BookRequest): number {
+  const o = body.options || {};
+  return getStudioRate(body.studio as StudioName, body.session_type as SessionType, {
+    karaokeOption: o.karaokeOption as KaraokeOption,
+    liveOption: o.liveOption as LiveMusicianOption,
+    bandEquipment: (o.bandEquipment || []) as BandEquipment[],
+    recordingOption: o.recordingOption,
+  });
+}
+
+/** Existing customers keep their stored email; the client value only counts for new
+ *  customers or when the stored one is an admin placeholder. */
+async function resolveCustomerEmail(phone: string, clientEmail?: string) {
+  const cleaned = clientEmail?.trim() && isEmail(clientEmail.trim()) ? clientEmail.trim() : null;
+  const { data: user } = await supabaseServer
+    .from("users")
+    .select("email")
+    .eq("phone_number", phone)
+    .single();
+  if (user?.email && !(await isPlaceholderEmail(user.email))) return user.email as string;
+  return cleaned;
 }
 
 interface BookingSettings {
@@ -73,42 +116,51 @@ async function getBookingSettings(): Promise<BookingSettings> {
   return defaults;
 }
 
-import { checkRateLimit } from "@/lib/rateLimit";
-import { headers } from "next/headers";
+import {
+  cleanText,
+  isDate,
+  isEmail,
+  isSessionType,
+  isStudio,
+  isTime,
+  isUuid,
+  rateLimit,
+  requireCustomer,
+} from "@/lib/apiSecurity";
+import { getStudioRate } from "@/app/booking/utils/studioSuggestion";
+import type {
+  BandEquipment,
+  KaraokeOption,
+  LiveMusicianOption,
+  SessionType,
+  StudioName,
+} from "@/app/booking/contexts/BookingContext";
 
 // POST /api/book - Create a new booking
 export async function POST(request: Request) {
   try {
-    // Check Rate Limit (5 requests per hour per IP)
-    const headersList = await headers();
-    const forwardedFor = headersList.get("x-forwarded-for");
-    const ip = forwardedFor ? forwardedFor.split(",")[0] : "unknown";
+    // 5 bookings per hour per IP
+    const limited = await rateLimit(request, "booking_create", 5, 3600);
+    if (limited) return limited;
 
-    const isAllowed = await checkRateLimit(ip, "booking_create", 5, 3600);
-
-    if (!isAllowed) {
-      return NextResponse.json(
-        { error: "Too many booking requests. Please try again later." },
-        { status: 429 },
-      );
-    }
-
-    const body: BookRequest = await request.json();
-    const {
-      name,
-      email,
-      studio,
-      session_type,
-      session_details,
-      date,
-      start_time,
-      end_time,
-      rate_per_hour,
-      is_modification,
-    } = body;
+    const body: BookRequest = await request.json().catch(() => ({}) as BookRequest);
+    const { studio, session_type, date, start_time, end_time } = body;
+    const name = cleanText(body.name, 100) || undefined;
+    const session_details = cleanText(body.session_details, 300) || undefined;
 
     // Normalize phone to digits only
-    const phone = body.phone.replace(/\D/g, "");
+    const phone = String(body.phone ?? "").replace(/\D/g, "");
+
+    // Only the OTP-verified owner of this phone can book under it
+    const auth = await requireCustomer(request, phone);
+    if (auth instanceof NextResponse) return auth;
+
+    const invalid = validateBookingInput(body);
+    if (invalid) {
+      return NextResponse.json({ error: invalid }, { status: 400 });
+    }
+    const rate_per_hour = serverRate(body);
+    const email = await resolveCustomerEmail(phone, body.email);
 
     // Validate phone number (exactly 10 digits)
     if (phone.length !== 10) {
@@ -226,7 +278,7 @@ export async function POST(request: Request) {
     if (rpcError) {
       console.error("[Book API] RPC error:", rpcError);
       return NextResponse.json(
-        { error: rpcError.message || "Failed to create booking" },
+        { error: "Failed to create booking" },
         { status: 500 },
       );
     }
@@ -269,7 +321,6 @@ export async function POST(request: Request) {
         const isNewEmailPlaceholder = await isPlaceholderEmail(email);
         
         if (!isNewEmailPlaceholder) {
-          console.log(`[Book API] Updating user ${phone} email from ${existingUser.email} to ${email}`);
           const { error: updateUserError } = await supabaseServer
             .from("users")
             .update({ 
@@ -337,16 +388,7 @@ export async function POST(request: Request) {
     const hasResendConfig =
       process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL;
 
-    // Get user email if not provided in request
-    let userEmail = body.email;
-    if (!userEmail) {
-      const { data: userData } = await supabaseServer
-        .from("users")
-        .select("email")
-        .eq("phone_number", phone)
-        .single();
-      userEmail = userData?.email;
-    }
+    const userEmail = await resolveCustomerEmail(phone, body.email);
 
     if (hasResendConfig && userEmail) {
       try {
@@ -422,24 +464,26 @@ export async function POST(request: Request) {
 // PUT /api/book - Update an existing booking
 export async function PUT(request: Request) {
   try {
-    const body: BookRequest = await request.json();
-    const {
-      name,
-      studio,
-      session_type,
-      session_details,
-      date,
-      start_time,
-      end_time,
-      rate_per_hour,
-      original_booking_id,
-    } = body;
+    const body: BookRequest = await request.json().catch(() => ({}) as BookRequest);
+    const { studio, session_type, date, start_time, end_time, original_booking_id } = body;
+    const name = cleanText(body.name, 100) || undefined;
+    const session_details = cleanText(body.session_details, 300) || undefined;
 
     // Normalize phone to digits only
-    const phone = body.phone.replace(/\D/g, "");
+    const phone = String(body.phone ?? "").replace(/\D/g, "");
+
+    // Only the OTP-verified owner can change their booking
+    const auth = await requireCustomer(request, phone);
+    if (auth instanceof NextResponse) return auth;
+
+    const invalid = validateBookingInput(body);
+    if (invalid) {
+      return NextResponse.json({ error: invalid }, { status: 400 });
+    }
+    const rate_per_hour = serverRate(body);
 
     // Validate booking ID
-    if (!original_booking_id) {
+    if (!isUuid(original_booking_id)) {
       return NextResponse.json(
         { error: "Original booking ID is required for updates" },
         { status: 400 },
@@ -496,7 +540,7 @@ export async function PUT(request: Request) {
 
     // Check 24-hour modification restriction
     const bookingStartDateTime = new Date(
-      `${originalBooking.date}T${originalBooking.start_time}:00`,
+      `${originalBooking.date}T${String(originalBooking.start_time).slice(0, 5)}:00`,
     );
     const now = new Date();
     const hoursUntilBooking =
@@ -610,7 +654,7 @@ export async function PUT(request: Request) {
     if (rpcError) {
       console.error("[Book API PUT] RPC error:", rpcError);
       return NextResponse.json(
-        { error: rpcError.message || "Failed to update booking" },
+        { error: "Failed to update booking" },
         { status: 500 },
       );
     }
@@ -691,16 +735,7 @@ export async function PUT(request: Request) {
     const hasResendConfig =
       process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL;
 
-    // Get user email if not provided in request
-    let userEmail = body.email;
-    if (!userEmail) {
-      const { data: userData } = await supabaseServer
-        .from("users")
-        .select("email")
-        .eq("phone_number", phone)
-        .single();
-      userEmail = userData?.email;
-    }
+    const userEmail = await resolveCustomerEmail(phone, body.email);
 
     if (hasResendConfig && userEmail) {
       try {

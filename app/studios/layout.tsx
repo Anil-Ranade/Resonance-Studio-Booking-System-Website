@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { OG_BASE } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Our Studios",
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
     canonical: "/studios",
   },
   openGraph: {
+    ...OG_BASE,
     title: "Three Professional Studios in Pune - Resonance Jam Room",
     description:
       "State-of-the-art recording facilities with drums, guitars, keyboards, professional sound systems, and video recording equipment.",

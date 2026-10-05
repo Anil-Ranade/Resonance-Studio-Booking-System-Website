@@ -14,6 +14,14 @@ import {
 } from "lucide-react";
 import { useBooking, TimeSlot, StudioName } from "../contexts/BookingContext";
 import StepLayout from "./StepLayout";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { optionChip } from "./optionStyles";
 import { getStudioRate } from "../utils/studioSuggestion";
 
 interface AvailableSlot extends TimeSlot {
@@ -519,6 +527,9 @@ export default function TimeStep() {
 
   const duration = getDuration();
 
+  const sectionLabel =
+    "text-[11px] text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider font-semibold";
+
   return (
     <StepLayout
       title={draft.isEditMode ? "Modify date & time" : "Select date & time"}
@@ -531,82 +542,63 @@ export default function TimeStep() {
       onNext={handleNext}
       isNextDisabled={!date || !draft.selectedSlot}
     >
-      <div className="space-y-3">
-        {/* Edit Mode Banner */}
+      <div className="space-y-4">
         {draft.isEditMode && draft.originalChoices && (
-          <div className="p-2 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center gap-2">
-            <RotateCcw className="w-3 h-3 text-violet-400" />
-            <span className="text-xs text-violet-400">
-              Original:{" "}
-              <span className="font-medium">
-                {formatDate(draft.originalChoices.date)}
-              </span>{" "}
-              at{" "}
-              <span className="font-medium">
-                {formatTimeSlot(
-                  draft.originalChoices.start_time,
-                  draft.originalChoices.end_time
-                )}
-              </span>
-            </span>
-          </div>
+          <Badge variant="outline" className="border-primary/40 text-primary h-auto whitespace-normal py-1">
+            <RotateCcw />
+            Original: {formatDate(draft.originalChoices.date)} at{" "}
+            {formatTimeSlot(draft.originalChoices.start_time, draft.originalChoices.end_time)}
+          </Badge>
         )}
 
-        {/* Guidance Message */}
         {!draft.isEditMode && (
-          <div className="space-y-3 mb-2">
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-              <AlertCircle className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-blue-300">
-                <p className="font-medium mb-1">How to select your time:</p>
-                <ol className="list-decimal list-inside space-y-0.5 text-blue-300/90">
-                  <li>Select an available time slot</li>
-                  <li>Choose your preferred start time</li>
-                  <li>Choose your preferred end time</li>
-                </ol>
-              </div>
-            </div>
-          </div>
+          <Alert>
+            <AlertCircle className="text-primary" />
+            <AlertTitle>How to select your time</AlertTitle>
+            <AlertDescription className="text-xs">
+              <ol className="list-decimal list-inside space-y-0.5">
+                <li>Select an available time slot</li>
+                <li>Choose your preferred start time</li>
+                <li>Choose your preferred end time</li>
+              </ol>
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* Date selector */}
-        <div className="space-y-1">
-          <label className="text-[10px] text-zinc-400 flex items-center gap-1 uppercase tracking-wider font-semibold">
-            <Calendar className="w-3 h-3" />
-            Select Date
-          </label>
-
+        <div className="space-y-1.5">
+          <Label className={sectionLabel}>
+            <Calendar className="size-3" /> Select date
+          </Label>
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant="secondary"
+              size="icon-lg"
               onClick={() => navigateDate(-1)}
               disabled={!date || date === getMinDate()}
-              className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              aria-label="Previous day"
             >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            <button
+              <ChevronLeft />
+            </Button>
+            <Button
+              variant="outline"
               onClick={openDatePicker}
-              className="flex-1 py-2 px-3 rounded-lg bg-zinc-800 border border-violet-500/50 hover:border-violet-500 transition-all cursor-pointer"
+              className="flex-1 h-9 border-primary/50 hover:border-primary"
             >
-              <div className="flex items-center justify-center gap-2">
-                <Calendar className="w-3.5 h-3.5 text-violet-400" />
-                <span className="text-white font-medium text-sm">
-                  {date ? formatDate(date) : "Select Date"}
-                </span>
-              </div>
-            </button>
-
-            <button
+              <Calendar className="text-primary" />
+              {date ? formatDate(date) : "Select date"}
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon-lg"
               onClick={() => navigateDate(1)}
               disabled={!date || date === getMaxDate()}
-              className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              aria-label="Next day"
             >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+              <ChevronRight />
+            </Button>
           </div>
-
-          {/* Hidden date input */}
+          {/* Native picker, opened by the date button */}
           <input
             ref={dateInputRef}
             type="date"
@@ -615,245 +607,180 @@ export default function TimeStep() {
             max={getMaxDate()}
             onChange={(e) => handleDateChange(e.target.value)}
             className="sr-only"
+            tabIndex={-1}
+            aria-hidden="true"
           />
         </div>
 
-        {/* Studio Selector - Only show if multiple studios are allowed */}
+        {/* Studio selector - only when several studios fit */}
         {draft.allowedStudios.length > 1 && (
-          <div className="space-y-1">
-            <label className="text-[10px] text-zinc-400 flex items-center gap-1 uppercase tracking-wider font-semibold">
-              <Building2 className="w-3 h-3" />
-              Studio
-            </label>
-
-            <div className="flex flex-wrap gap-1.5">
+          <div className="space-y-1.5">
+            <Label className={sectionLabel}>
+              <Building2 className="size-3" /> Studio
+            </Label>
+            <ToggleGroup
+              type="single"
+              value={selectedStudio}
+              onValueChange={(v) => v && handleStudioChange(v as StudioName)}
+              className="flex-wrap gap-1.5"
+            >
               {draft.allowedStudios.map((studio) => {
-                const isSelected = selectedStudio === studio;
-                const isRecommended = studio === draft.recommendedStudio;
-                const availableSlots = studioAvailability[studio] ?? 0;
                 const hasNoSlots = !!date && studioAvailability[studio] === 0;
-                const rate = getStudioRateForDisplay(studio);
-                const showUpgrade = isUpgrade(studio);
-
                 return (
-                  <button
+                  <ToggleGroupItem
                     key={studio}
-                    onClick={() => handleStudioChange(studio)}
+                    value={studio}
                     disabled={hasNoSlots}
-                    className={`px-2.5 py-1.5 rounded-lg transition-all text-xs font-medium flex items-center gap-1.5 ${
-                      isSelected
-                        ? "bg-violet-500 text-white ring-1 ring-violet-400"
-                        : hasNoSlots
-                        ? "bg-zinc-900 text-zinc-600 cursor-not-allowed opacity-60"
-                        : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                    }`}
+                    className={optionChip}
                   >
-                    <span>{studio.replace("Studio ", "")}</span>
-                    <span className="opacity-70">₹{rate}/hr</span>
-                    {showUpgrade && !isSelected && (
-                      <span className="flex items-center gap-0.5 text-emerald-400">
-                        <ArrowUp className="w-2.5 h-2.5" />
-                      </span>
+                    {studio.replace("Studio ", "")}
+                    <span className="opacity-70">₹{getStudioRateForDisplay(studio)}/hr</span>
+                    {isUpgrade(studio) && selectedStudio !== studio && (
+                      <ArrowUp className="size-3 text-emerald-400" />
                     )}
                     {date && (
-                      <span
-                        className={`text-[10px] ${
-                          hasNoSlots ? "text-red-400" : "text-emerald-400"
-                        }`}
-                      >
-                        {hasNoSlots ? "0" : availableSlots}
+                      <span className={hasNoSlots ? "text-red-400" : "text-emerald-400"}>
+                        {studioAvailability[studio] ?? 0}
                       </span>
                     )}
-                  </button>
+                  </ToggleGroupItem>
                 );
               })}
-            </div>
-
-            {/* Clear upgrade message - always show when upgrades are available */}
-            {draft.allowedStudios.some((s) => isUpgrade(s)) && (
-              <div
-                className={`mt-1 p-1.5 rounded-lg flex items-center gap-2 ${
+            </ToggleGroup>
+            {draft.allowedStudios.some((st) => isUpgrade(st)) && (
+              <Badge
+                variant="outline"
+                className={
                   selectedStudio !== draft.recommendedStudio
-                    ? "bg-emerald-500/10 border border-emerald-500/30"
-                    : "bg-blue-500/10 border border-blue-500/30"
-                }`}
+                    ? "border-emerald-500/40 text-emerald-400"
+                    : "border-primary/40 text-primary"
+                }
               >
-                <ArrowUp
-                  className={`w-3 h-3 ${
-                    selectedStudio !== draft.recommendedStudio
-                      ? "text-emerald-400"
-                      : "text-blue-400"
-                  }`}
-                />
-                <span
-                  className={`text-[10px] ${
-                    selectedStudio !== draft.recommendedStudio
-                      ? "text-emerald-400"
-                      : "text-blue-400"
-                  }`}
-                >
-                  {selectedStudio !== draft.recommendedStudio
-                    ? `Upgraded to ${selectedStudio}`
-                    : `Upgrade available`}
-                </span>
-              </div>
+                <ArrowUp />
+                {selectedStudio !== draft.recommendedStudio
+                  ? `Upgraded to ${selectedStudio}`
+                  : "Upgrade available"}
+              </Badge>
             )}
           </div>
         )}
-
-        {/* Loading state */}
 
         {loading && (
-          <div className="flex items-center justify-center py-4">
-            <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
-            <span className="ml-2 text-xs text-zinc-400">
-              Checking availability...
-            </span>
+          <div className="flex items-center justify-center gap-2 py-4 text-xs text-muted-foreground">
+            <Spinner className="text-primary" /> Checking availability...
           </div>
         )}
 
-        {/* Error state */}
         {error && (
-          <div className="flex items-center justify-center gap-2 py-2 text-amber-400">
-            <AlertCircle className="w-3 h-3" />
-            <span className="text-xs">{error}</span>
-          </div>
+          <Alert variant="destructive">
+            <AlertCircle />
+            <AlertDescription className="text-xs">{error}</AlertDescription>
+          </Alert>
         )}
 
-        {/* Available Time Slabs */}
+        {/* Step 1: slab */}
         {date && !loading && !error && (
-          <div className="space-y-1">
-            <label className="text-[10px] text-zinc-400 flex items-center gap-1 uppercase tracking-wider font-semibold">
-              <Clock className="w-3 h-3" />
-              Step 1: Select Available Time Slot
-            </label>
-
+          <div className="space-y-1.5">
+            <Label className={sectionLabel}>
+              <Clock className="size-3" /> Step 1: Select available time slot
+            </Label>
             {continuousSlabs.length === 0 ? (
-              <div className="text-center py-2 text-zinc-500 text-xs">
-                No available slots
-              </div>
+              <p className="text-center py-2 text-muted-foreground text-xs">No available slots</p>
             ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {continuousSlabs.map((slab, index) => {
-                  const isSelected =
-                    selectedSlab?.start === slab.start &&
-                    selectedSlab?.end === slab.end;
-
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => handleSlabSelect(slab)}
-                      className={`px-2.5 py-1.5 rounded-lg transition-all text-xs font-medium ${
-                        isSelected
-                          ? "bg-violet-500 text-white ring-1 ring-violet-400"
-                          : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                      }`}
-                    >
-                      {slab.label}
-                    </button>
-                  );
-                })}
-              </div>
+              <ToggleGroup
+                type="single"
+                value={selectedSlab ? `${selectedSlab.start}-${selectedSlab.end}` : ""}
+                onValueChange={() => {}}
+                className="flex-wrap gap-1.5"
+              >
+                {continuousSlabs.map((slab) => (
+                  <ToggleGroupItem
+                    key={`${slab.start}-${slab.end}`}
+                    value={`${slab.start}-${slab.end}`}
+                    onClick={() => handleSlabSelect(slab)}
+                    className={optionChip}
+                  >
+                    {slab.label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
             )}
           </div>
         )}
 
-        {/* Start Time Selection */}
+        {/* Step 2: start */}
         {selectedSlab && (
-          <div className="space-y-1">
-            <label className="text-[10px] text-zinc-400 flex items-center gap-1 uppercase tracking-wider font-semibold">
-              <Clock className="w-3 h-3" />
-              Step 2: Select Start Time
-            </label>
-
-            <div className="flex flex-wrap gap-1.5">
+          <div className="space-y-1.5">
+            <Label className={sectionLabel}>
+              <Clock className="size-3" /> Step 2: Select start time
+            </Label>
+            <ToggleGroup
+              type="single"
+              value={startTime}
+              onValueChange={() => {}}
+              className="flex-wrap gap-1.5"
+            >
               {startTimes
                 .filter((t) => !startTime || t.time === startTime)
-                .map((timeOption) => {
-                  const isSelected = startTime === timeOption.time;
-
-                  return (
-                    <button
-                      key={timeOption.time}
-                      onClick={() => handleStartTimeSelect(timeOption.time)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        isSelected
-                          ? "bg-violet-500 text-white ring-1 ring-violet-400"
-                          : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                      }`}
-                    >
-                      {timeOption.label}
-                    </button>
-                  );
-                })}
-            </div>
+                .map((t) => (
+                  <ToggleGroupItem
+                    key={t.time}
+                    value={t.time}
+                    onClick={() => handleStartTimeSelect(t.time)}
+                    className={optionChip}
+                  >
+                    {t.label}
+                  </ToggleGroupItem>
+                ))}
+            </ToggleGroup>
           </div>
         )}
 
-        {/* End Time Selection */}
+        {/* Step 3: end */}
         {startTime && (
-          <div className="space-y-1">
-            <label className="text-[10px] text-zinc-400 flex items-center gap-1 uppercase tracking-wider font-semibold">
-              <Clock className="w-3 h-3" />
-              Step 3: Select End Time
-            </label>
-
-            <div className="flex flex-wrap gap-1.5">
+          <div className="space-y-1.5">
+            <Label className={sectionLabel}>
+              <Clock className="size-3" /> Step 3: Select end time
+            </Label>
+            <ToggleGroup
+              type="single"
+              value={endTime}
+              onValueChange={() => {}}
+              className="flex-wrap gap-1.5"
+            >
               {endTimes
                 .filter((t) => !endTime || t.time === endTime)
-                .map((timeOption) => {
-                  const isSelected = endTime === timeOption.time;
-
-                  return (
-                      <button
-                      key={timeOption.time}
-                      onClick={() =>
-                        handleEndTimeSelect(
-                          timeOption.time,
-                          timeOption.duration
-                        )
-                      }
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        isSelected
-                          ? "bg-violet-500 text-white ring-1 ring-violet-400"
-                          : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                      }`}
-                    >
-                      {timeOption.label}
-                    </button>
-                  );
-                })}
-            </div>
+                .map((t) => (
+                  <ToggleGroupItem
+                    key={t.time}
+                    value={t.time}
+                    onClick={() => handleEndTimeSelect(t.time, t.duration)}
+                    className={optionChip}
+                  >
+                    {t.label}
+                  </ToggleGroupItem>
+                ))}
+            </ToggleGroup>
           </div>
         )}
 
-        {/* Selected time display summary */}
         {draft.selectedSlot && (
-          <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/30">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div>
-                  <span className="text-xs text-violet-400">
-                    Your booking:{" "}
-                  </span>
-                  <span className="text-white font-semibold text-sm">
-                    {formatTimeSlot(
-                      draft.selectedSlot.start,
-                      draft.selectedSlot.end
-                    )}
-                  </span>
-                </div>
-                <div className="px-2 py-0.5 rounded bg-violet-500/20 border border-violet-500/30">
-                  <span className="text-violet-300 font-medium text-xs">
-                    {duration} {duration === 1 ? "hour" : "hours"}
-                  </span>
-                </div>
+          <Card size="sm" className="ring-primary/40 bg-primary/10">
+            <CardContent className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-primary">Your booking:</span>
+                <span className="font-semibold text-sm">
+                  {formatTimeSlot(draft.selectedSlot.start, draft.selectedSlot.end)}
+                </span>
+                <Badge variant="outline" className="border-primary/40 text-primary">
+                  {duration} {duration === 1 ? "hour" : "hours"}
+                </Badge>
               </div>
-              <span className="text-violet-400 font-bold">
+              <span className="text-primary font-bold">
                 ₹{(draft.ratePerHour * duration).toLocaleString("en-IN")}
               </span>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </StepLayout>

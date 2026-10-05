@@ -13,6 +13,7 @@ import {
   ACCESS_TOKEN_MAX_AGE,
   REFRESH_TOKEN_MAX_AGE,
 } from '@/lib/tokens';
+import { rateLimit } from '@/lib/apiSecurity';
 
 // Initialize Supabase client with service role for database operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -25,6 +26,9 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
+    const limited = await rateLimit(request, 'auth_refresh', 30, 600);
+    if (limited) return limited as NextResponse<any>;
+
     // Get refresh token from cookies
     const cookieHeader = request.headers.get('cookie');
     const cookies = parseCookies(cookieHeader);

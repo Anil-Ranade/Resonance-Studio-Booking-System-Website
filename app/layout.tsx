@@ -1,33 +1,29 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Geist_Mono } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import Script from "next/script";
+import { OG_BASE, SITE_URL } from "@/lib/seo";
 import "./globals.css";
 import Navigation from "./components/Navigation";
 import Footer from "./components/Footer";
 import MainContent from "./components/MainContent";
 import ClearCache from "./components/ClearCache";
+import Preloader from "./components/Preloader";
+import SiteMotion from "./components/SiteMotion";
 import { LocalBusinessStructuredData } from "./components/StructuredData";
 
-const inter = Inter({
-  variable: "--font-inter",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
   display: "swap",
   weight: ["400", "500", "600", "700"],
   preload: true,
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  display: "swap",
-  preload: false,
-});
-
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
-  themeColor: '#0f0f1a',
+  themeColor: '#192a56',
 };
 
 export const metadata: Metadata = {
@@ -63,9 +59,10 @@ export const metadata: Metadata = {
   publisher: "Resonance Jam Room",
   
   // Canonical URL
-  metadataBase: new URL("https://resonancejamroom.in"),
+  metadataBase: new URL(SITE_URL),
+  // Every page is its own canonical unless its layout overrides it
   alternates: {
-    canonical: "/",
+    canonical: "./",
   },
   
   // Robots
@@ -83,20 +80,13 @@ export const metadata: Metadata = {
   
   // Open Graph
   openGraph: {
-    type: "website",
-    locale: "en_IN",
-    url: "https://resonancejamroom.in",
-    siteName: "Resonance Jam Room",
+    ...OG_BASE,
     title: "Resonance Jam Room - Professional Recording & Jam Room Studio in Pune",
     description: "Pune's premier professional recording studio and jam room. Book online for music recording, mixing, mastering, podcast production, karaoke sessions, and band rehearsals.",
-    images: [
-      {
-        url: "/android-chrome-512x512.png",
-        width: 512,
-        height: 512,
-        alt: "Resonance Jam Room - Professional Recording Studio in Pune",
-      },
-    ],
+  },
+  // Title, description and image fill in from each page's openGraph
+  twitter: {
+    card: "summary_large_image",
   },
   
   
@@ -139,7 +129,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en-IN">
       <head>
 
         <LocalBusinessStructuredData />
@@ -158,11 +148,15 @@ export default function RootLayout({
         </Script>
       </head>
       <body
-        className={`${inter.variable} ${geistMono.variable} antialiased bg-noise font-sans flex flex-col min-h-screen`}
-        style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+        className={`${dmSans.variable} antialiased bg-noise font-sans flex flex-col min-h-screen`}
+        style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
       >
         {/* Clear cache on app open */}
         <ClearCache />
+
+        {/* First-visit loading screen + site-wide GSAP motion */}
+        <Preloader />
+        <SiteMotion />
 
         {/* Navigation - conditionally renders based on route */}
         <Navigation />

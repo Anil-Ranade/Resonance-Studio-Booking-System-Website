@@ -9,6 +9,10 @@ import {
   RecordingOption,
 } from "../contexts/BookingContext";
 import StepLayout from "./StepLayout";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { optionCard } from "./optionStyles";
 import { getStudioSuggestion, getStudioRate } from "../utils/studioSuggestion";
 
 const KARAOKE_OPTIONS: {
@@ -16,12 +20,12 @@ const KARAOKE_OPTIONS: {
   label: string;
   description: string;
 }[] = [
-  { value: "1_5", label: "1–5 participants", description: "Small group" },
-  { value: "6_10", label: "6–10 participants", description: "Medium group" },
-  { value: "11_20", label: "11–20 participants", description: "Large group" },
+  { value: "1_5", label: "1-5 participants", description: "Small group" },
+  { value: "6_10", label: "6-10 participants", description: "Medium group" },
+  { value: "11_20", label: "11-20 participants", description: "Large group" },
   {
     value: "21_30",
-    label: "21–30 participants",
+    label: "21-30 participants",
     description: "Extra large group",
   },
 ];
@@ -32,11 +36,11 @@ const LIVE_OPTIONS: {
   label: string;
   description: string;
 }[] = [
-  { value: "1_2", label: "1–2 musicians", description: "Solo or duo" },
-  { value: "3_4", label: "3–4 musicians", description: "Small band" },
+  { value: "1_2", label: "1-2 musicians", description: "Solo or duo" },
+  { value: "3_4", label: "3-4 musicians", description: "Small band" },
   { value: "5", label: "5 musicians", description: "Medium band" },
-  { value: "6_8", label: "6–8 musicians", description: "Medium ensemble" },
-  { value: "9_12", label: "9–12 musicians", description: "Large ensemble" },
+  { value: "6_8", label: "6-8 musicians", description: "Medium ensemble" },
+  { value: "9_12", label: "9-12 musicians", description: "Large ensemble" },
 ];
 
 // Band equipment options
@@ -147,10 +151,6 @@ export default function ParticipantsStep() {
     }
   };
 
-  const handleBandContinue = () => {
-    // This is now handled by the Sound Operator selection
-  };
-
   const handleRecordingSelect = (option: RecordingOption) => {
     const suggestion = getStudioSuggestion("Recording", {
       recordingOption: option,
@@ -174,167 +174,130 @@ export default function ParticipantsStep() {
     switch (draft.sessionType) {
       case "Karaoke":
         return (
-          <div className="space-y-2">
+          <>
             {!draft.isEditMode && (
-              <div className="mb-1 p-2 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
-                <p className="text-xs text-zinc-300">
-                  You have selected <span className="font-bold text-white">Karaoke</span>. 
-                  Now select how many participants...
-                </p>
-              </div>
+              <p className="mb-2 text-xs text-muted-foreground">
+                You have selected <span className="font-semibold text-foreground">Karaoke</span>.
+                Now select how many participants.
+              </p>
             )}
-            <div className="grid grid-cols-2 gap-2">
-              {KARAOKE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => handleKaraokeSelect(option.value)}
-                  className={`w-full flexflex-col items-start p-3 rounded-lg border transition-all text-left ${
-                    draft.karaokeOption === option.value
-                      ? "bg-violet-500/20 border-violet-500"
-                      : "bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600"
-                  }`}
-                >
-                  <span className={`font-semibold text-sm ${
-                    draft.karaokeOption === option.value ? "text-white" : "text-zinc-300"
-                  }`}>
-                    {option.label}
-                  </span>
-                  <p className="text-[10px] text-zinc-400 mt-0.5">{option.description}</p>
-                </button>
-              ))}
-            </div>
-
-          </div>
+          <ToggleGroup
+            type="single"
+            value={draft.karaokeOption || ""}
+            onValueChange={() => {}}
+            className="grid w-full grid-cols-2 gap-2"
+          >
+            {KARAOKE_OPTIONS.map((option) => (
+              <ToggleGroupItem key={option.value} value={option.value}
+              onClick={() => handleKaraokeSelect(option.value)} className={optionCard}>
+                <span className="font-semibold text-sm">{option.label}</span>
+                <span className="text-xs text-muted-foreground">{option.description}</span>
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+          </>
         );
 
       case "Live with musicians":
         return (
-          <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              {LIVE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => handleLiveSelect(option.value)}
-                  className={`w-full flex flex-col items-start p-3 rounded-lg border transition-all text-left ${
-                    draft.liveOption === option.value
-                      ? "bg-violet-500/20 border-violet-500"
-                      : "bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600"
-                  }`}
-                >
-                  <span className={`font-semibold text-sm ${
-                    draft.liveOption === option.value ? "text-white" : "text-zinc-300"
-                  }`}>
-                    {option.label}
-                  </span>
-                  <p className="text-[10px] text-zinc-400 mt-0.5">{option.description}</p>
-                </button>
-              ))}
-            </div>
-
-          </div>
+          <ToggleGroup
+            type="single"
+            value={draft.liveOption || ""}
+            onValueChange={() => {}}
+            className="grid w-full grid-cols-2 gap-2"
+          >
+            {LIVE_OPTIONS.map((option) => (
+              <ToggleGroupItem key={option.value} value={option.value}
+              onClick={() => handleLiveSelect(option.value)} className={optionCard}>
+                <span className="font-semibold text-sm">{option.label}</span>
+                <span className="text-xs text-muted-foreground">{option.description}</span>
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
         );
 
       case "Only Drum Practice":
         return (
-          <div className="flex flex-col items-center justify-center py-2 text-center">
-            <div className="p-3 rounded-full bg-violet-500/20 mb-2">
-              <Drum className="w-8 h-8 text-violet-400" />
-            </div>
-            <h3 className="text-sm font-semibold text-white mb-1">
-              Drum Practice Session
-            </h3>
-            <p className="text-zinc-400 text-xs max-w-xs">
-              Drum practice is available exclusively in Studio A with our
-              professional drum kit.
-            </p>
-            <div className="mt-2 px-3 py-1.5 bg-zinc-800 rounded-lg">
-              <span className="text-violet-400 font-semibold text-sm">
-                ₹350/hour
-              </span>
-            </div>
-
-          </div>
+          <Card className="items-center text-center">
+            <CardContent className="flex flex-col items-center gap-2">
+              <div className="p-3 rounded-full bg-primary/15 text-primary">
+                <Drum className="w-8 h-8" />
+              </div>
+              <h3 className="text-sm font-semibold">Drum Practice Session</h3>
+              <p className="text-muted-foreground text-xs max-w-xs">
+                Drum practice is available exclusively in Studio A with our
+                professional drum kit.
+              </p>
+              <Badge className="text-sm h-7 px-3">₹350/hour</Badge>
+            </CardContent>
+          </Card>
         );
 
       case "Band":
         return (
           <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2">
+            <ToggleGroup
+              type="multiple"
+              value={draft.bandEquipment}
+              onValueChange={(v) => {
+                // Radix gives the full next set; toggle the one item that changed.
+                const changed =
+                  v.find((e) => !draft.bandEquipment.includes(e as BandEquipment)) ??
+                  draft.bandEquipment.find((e) => !v.includes(e));
+                if (changed) handleBandEquipmentToggle(changed as BandEquipment);
+              }}
+              className="grid w-full grid-cols-2 gap-2"
+            >
               {BAND_EQUIPMENT.map((equipment) => (
-                <button
+                <ToggleGroupItem
                   key={equipment.value}
-                  onClick={() => handleBandEquipmentToggle(equipment.value)}
-                  className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border transition-all ${
-                    draft.bandEquipment.includes(equipment.value)
-                      ? "bg-violet-500/20 border-violet-500 text-white"
-                      : "bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
-                  }`}
+                  value={equipment.value}
+                  className={`${optionCard} items-center text-center gap-1.5`}
                 >
-                  <div
-                    className={`p-2 rounded-lg ${
-                      draft.bandEquipment.includes(equipment.value)
-                        ? "bg-violet-500 text-white"
-                        : "bg-zinc-700 text-zinc-400"
-                    }`}
-                  >
+                  <span className="p-2 rounded-lg bg-primary/10 text-primary">
                     {equipment.icon}
-                  </div>
-                  <span className="font-medium text-sm text-white">
-                    {equipment.label}
                   </span>
-                </button>
+                  <span className="font-medium text-sm">{equipment.label}</span>
+                </ToggleGroupItem>
               ))}
-            </div>
+            </ToggleGroup>
             {draft.bandEquipment.length > 0 && (
-              <>
-                <div className="mt-2 p-2 bg-zinc-800/50 rounded-lg text-xs text-zinc-400">
-                  Selected:{" "}
-                  {draft.bandEquipment
-                    .map(
-                      (e) => BAND_EQUIPMENT.find((eq) => eq.value === e)?.label
-                    )
-                    .join(", ")}
-                </div>
-    
-              </>
+              <p className="text-xs text-muted-foreground px-1">
+                Selected:{" "}
+                {draft.bandEquipment
+                  .map((e) => BAND_EQUIPMENT.find((eq) => eq.value === e)?.label)
+                  .join(", ")}
+              </p>
             )}
           </div>
         );
 
       case "Recording":
         return (
-          <div className="space-y-2">
+          <ToggleGroup
+            type="single"
+            orientation="vertical"
+            value={draft.recordingOption || ""}
+            onValueChange={() => {}}
+            className="w-full gap-2"
+          >
             {RECORDING_OPTIONS.map((option) => (
-              <button
+              <ToggleGroupItem
                 key={option.value}
-                onClick={() => handleRecordingSelect(option.value)}
-                className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all text-left ${
-                  draft.recordingOption === option.value
-                    ? "bg-violet-500/20 border-violet-500"
-                    : "bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600"
-                }`}
+                value={option.value}
+              onClick={() => handleRecordingSelect(option.value)}
+                className={`${optionCard} flex-row items-center justify-between`}
               >
-                <div>
-                  <span className={`font-semibold text-sm ${
-                    draft.recordingOption === option.value ? "text-white" : "text-zinc-300"
-                  }`}>
-                    {option.label}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-violet-400">
-                    {option.price}
-                  </span>
-                </div>
-              </button>
+                <span className="font-semibold text-sm">{option.label}</span>
+                <span className="text-xs font-medium text-primary">{option.price}</span>
+              </ToggleGroupItem>
             ))}
-
-          </div>
+          </ToggleGroup>
         );
 
       default:
         return (
-          <div className="text-center py-4 text-zinc-400">
+          <div className="text-center py-4 text-muted-foreground">
             Please select a session type first
           </div>
         );
@@ -409,15 +372,10 @@ export default function ParticipantsStep() {
       onNext={nextStep}
       isNextDisabled={false}
     >
-      {/* Edit Mode Banner */}
       {draft.isEditMode && getOriginalDetails() && (
-        <div className="mb-2 p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-2">
-          <RotateCcw className="w-4 h-4 text-violet-400" />
-          <span className="text-xs text-violet-400">
-            Original:{" "}
-            <span className="font-medium">{getOriginalDetails()}</span>
-          </span>
-        </div>
+        <Badge variant="outline" className="mb-3 border-primary/40 text-primary">
+          <RotateCcw /> Original: {getOriginalDetails()}
+        </Badge>
       )}
 
       {renderContent()}

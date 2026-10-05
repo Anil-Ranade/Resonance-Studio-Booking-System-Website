@@ -1,29 +1,12 @@
-'use client';
+import type { Metadata } from "next";
+import DisplayChrome from "./DisplayChrome";
+import { NO_INDEX } from "@/lib/seo";
 
-export default function DisplayLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <>
-      {/* Hide the main navigation and footer on the display page */}
-      <style jsx global>{`
-        nav {
-          display: none !important;
-        }
-        main {
-          padding-top: 0 !important;
-          margin: 0 !important;
-        }
-        footer {
-          display: none !important;
-        }
-        body {
-          overflow: hidden !important;
-        }
-      `}</style>
-      {children}
-    </>
-  );
+export const metadata: Metadata = {
+  title: "Studio Display",
+  robots: NO_INDEX,
+};
+
+export default function DisplayLayout({ children }: { children: React.ReactNode }) {
+  return <DisplayChrome>{children}</DisplayChrome>;
 }

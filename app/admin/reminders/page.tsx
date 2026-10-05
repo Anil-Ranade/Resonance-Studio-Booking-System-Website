@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageCircle,
   Search,
@@ -23,6 +22,7 @@ import {
 } from "lucide-react";
 import { getSession, signInWithEmail, signOut } from "@/lib/supabaseAuth";
 import { useRouter } from "next/navigation";
+import { adminFetch } from "@/lib/adminFetch";
 
 // --- Types ---
 
@@ -176,6 +176,7 @@ export default function StandaloneRemindersPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           userId: user.id,
@@ -272,7 +273,7 @@ export default function StandaloneRemindersPage() {
     // Fetch loyalty status
     let loyaltyMessagePart = "";
     try {
-      const res = await fetch(`/api/loyalty/status?phone=${phone}`);
+      const res = await adminFetch(`/api/loyalty/status?phone=${phone}`);
       const loyaltyData = await res.json();
       if (loyaltyData && !loyaltyData.error) {
         const currentHours = Number(loyaltyData.hours || 0);
@@ -354,7 +355,7 @@ export default function StandaloneRemindersPage() {
       sessionDetailsDisplay = `${prefix}${booking.session_details}`;
     }
 
-    const message = `*Booking Confirmed – Resonance Studio, Sinhgad Road Branch*
+    const message = `*Booking Confirmed - Resonance Studio, Sinhgad Road Branch*
 
 Your booking of ${formattedDate} from ${formattedStartTime} to ${formattedEndTime} (${duration} hours) for ${sessionTypeDisplay}${sessionDetailsDisplay} in ${booking.studio} is confirmed with us.
 
@@ -445,7 +446,7 @@ Enjoy your session!`;
       sessionDetailsDisplay = `${prefix}${booking.session_details}`;
     }
 
-    const message = `*Reminder – Resonance Studio, Sinhgad Road Branch*
+    const message = `*Reminder - Resonance Studio, Sinhgad Road Branch*
 
 This is to remind you that you have an upcoming booking on ${niceDate} from ${formattedStartTime} to ${formattedEndTime} (${duration} hours) for a ${sessionTypeDisplay}${sessionDetailsDisplay} in ${booking.studio} with us.
 
@@ -512,60 +513,57 @@ See you soon!`;
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center" role="status">
+        <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
       </div>
     );
   }
 
-  // Not Authorized -> Show Login
+  const brand = (label: string) => (
+    <div className="flex items-center gap-3">
+      <div className="w-9 h-9 rounded-lg bg-violet-400 flex items-center justify-center">
+        <Music2 className="w-4 h-4 text-navy" />
+      </div>
+      <span className="leading-tight">
+        <span className="block text-sm font-bold text-white">Resonance</span>
+        <span className="block text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-500">{label}</span>
+      </span>
+    </div>
+  );
+
+  // Not authorized -> sign in
   if (!isAuthorized) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4 relative overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl opacity-50" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl opacity-50" />
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md relative z-10"
-        >
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 mb-4 shadow-lg shadow-violet-500/25">
-              <MessageCircle className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-white">Reminders Portal</h1>
-            <p className="text-zinc-400 mt-2">Sign in to manage booking reminders</p>
+      <div className="min-h-screen flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md">
+          <div className="mb-8">
+            <div className="mb-8">{brand("Reminders")}</div>
+            <h1 className="text-3xl font-bold text-white tracking-tight">Sign in</h1>
+            <p className="text-zinc-400 mt-1">Send WhatsApp reminders for upcoming sessions.</p>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-xl">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 sm:p-8">
             <form onSubmit={handleLogin} className="space-y-6">
               {loginError && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm"
-                >
+                <p role="alert" className="p-4 bg-red-500/10 border border-red-500/25 rounded-xl text-red-300 text-sm">
                   {loginError}
-                </motion.div>
+                </p>
               )}
 
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-2.5">
-                  Email Address
+                <label htmlFor="rem-email" className="block text-sm font-medium text-zinc-300 mb-2.5">
+                  Email
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 pointer-events-none" />
                   <input
+                    id="rem-email"
                     type="email"
+                    autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@resonance.studio"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
+                    placeholder="you@resonance.studio"
+                    className="w-full bg-white/[0.04] border border-white/15 rounded-xl pl-12 pr-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/30 transition-colors"
                     required
                     disabled={loginLoading}
                   />
@@ -573,30 +571,29 @@ See you soon!`;
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-2.5">
+                <label htmlFor="rem-password" className="block text-sm font-medium text-zinc-300 mb-2.5">
                   Password
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 pointer-events-none" />
                   <input
+                    id="rem-password"
                     type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-12 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
+                    className="w-full bg-white/[0.04] border border-white/15 rounded-xl pl-12 pr-12 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/30 transition-colors"
                     required
                     disabled={loginLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
                   >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
@@ -604,29 +601,26 @@ See you soon!`;
               <button
                 type="submit"
                 disabled={loginLoading}
-                className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-violet-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-violet-400 hover:bg-violet-300 text-navy font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loginLoading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Signing in...
+                    Signing in…
                   </>
                 ) : (
-                  <>
-                    <Lock className="w-4 h-4" />
-                    Enter Portal
-                  </>
+                  "Sign in"
                 )}
               </button>
             </form>
           </div>
-        </motion.div>
+          <p className="text-zinc-500 text-sm mt-6">For studio admins only.</p>
+        </div>
       </div>
     );
   }
 
-  // Authorized -> Show Reminders Page Management
-  
+  // Authorized -> reminder queue
   const filteredBookings = bookings
     .filter((booking) => {
       const searchLower = searchTerm.toLowerCase();
@@ -636,7 +630,6 @@ See you soon!`;
 
       if (!matchesSearch) return false;
 
-      // Tab filter
       if (activeTab === "pending") {
         return !booking.whatsapp_reminder_sent_at;
       } else {
@@ -645,289 +638,181 @@ See you soon!`;
     })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  const pendingCount = bookings.filter(
-    (b) => !b.whatsapp_reminder_sent_at
-  ).length;
+  const pendingCount = bookings.filter((b) => !b.whatsapp_reminder_sent_at).length;
   const sentCount = bookings.filter((b) => b.whatsapp_reminder_sent_at).length;
 
+  const tab = (active: boolean) =>
+    `inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${
+      active ? "bg-violet-400 text-navy" : "text-zinc-400 hover:text-white"
+    }`;
+
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
-      {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-30 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-white/5 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-              <MessageCircle className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold">Reminders Portal</h1>
-              <p className="text-xs text-zinc-400">Resonance Studio</p>
-            </div>
-          </div>
-          
+    <div className="min-h-screen text-white">
+      <header className="sticky top-0 z-30 h-16 bg-[#101c3d]/90 backdrop-blur-xl border-b border-white/[0.06] px-4 lg:px-8">
+        <div className="max-w-6xl mx-auto h-full flex items-center justify-between">
+          {brand("Reminders")}
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 text-zinc-400 hover:text-red-400 rounded-lg transition-colors text-sm font-medium"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
           >
             <LogOut className="w-4 h-4" />
-            Sign Out
+            Sign out
           </button>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Header content and filters */}
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h2 className="text-2xl font-bold flex items-center gap-3">
-                WhatsApp Reminders
-              </h2>
-              <p className="text-zinc-400 mt-1 max-w-2xl">
-                Send booking reminders to customers for upcoming sessions (within the next 24 hours).
-              </p>
-            </div>
+      <main className="max-w-6xl mx-auto px-4 lg:px-8 py-8 space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-zinc-500 mb-1">WhatsApp reminders</p>
+            <h1 className="text-3xl font-bold tracking-tight">Sessions in the next 24 hours</h1>
+          </div>
+          <button
+            onClick={fetchBookings}
+            disabled={loading}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        </div>
 
-            <button
-              onClick={fetchBookings}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              Refresh
+        <dl className="grid grid-cols-3 rounded-2xl border border-white/10 bg-white/[0.03] divide-x divide-white/10">
+          {[
+            { label: "In window", value: bookings.length, tone: "text-white" },
+            { label: "To send", value: pendingCount, tone: pendingCount ? "text-amber-300" : "text-white" },
+            { label: "Sent", value: sentCount, tone: "text-emerald-300" },
+          ].map((s) => (
+            <div key={s.label} className="p-4 sm:p-6">
+              <dt className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400 mb-2">{s.label}</dt>
+              <dd className={`text-2xl sm:text-3xl font-bold tabular-nums ${s.tone}`}>{s.value}</dd>
+            </div>
+          ))}
+        </dl>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex p-1 rounded-lg bg-white/[0.04] border border-white/10 w-fit" role="tablist">
+            <button role="tab" aria-selected={activeTab === "pending"} onClick={() => setActiveTab("pending")} className={tab(activeTab === "pending")}>
+              To send <span className="tabular-nums opacity-70">{pendingCount}</span>
+            </button>
+            <button role="tab" aria-selected={activeTab === "sent"} onClick={() => setActiveTab("sent")} className={tab(activeTab === "sent")}>
+              Sent <span className="tabular-nums opacity-70">{sentCount}</span>
             </button>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 p-4"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-violet-400" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{bookings.length}</p>
-                  <p className="text-zinc-400 text-sm">Total Eligible</p>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 p-4"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-amber-400" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{pendingCount}</p>
-                  <p className="text-zinc-400 text-sm">Pending Reminders</p>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 p-4"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{sentCount}</p>
-                  <p className="text-zinc-400 text-sm">Reminders Sent</p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-          <div className="flex flex-col gap-4">
-             {/* Tabs */}
-            <div className="flex p-1 bg-white/5 rounded-xl w-fit">
-              <button
-                onClick={() => setActiveTab("pending")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === "pending"
-                    ? "bg-violet-500 text-white shadow-lg shadow-violet-500/20"
-                    : "text-zinc-400 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                Reminders Pending
-              </button>
-              <button
-                onClick={() => setActiveTab("sent")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === "sent"
-                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
-                    : "text-zinc-400 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                Reminders Sent
-              </button>
-            </div>
-
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-              <input
-                type="text"
-                placeholder="Search by name or phone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
-              />
-            </div>
+          <div className="relative sm:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <input
+              type="search"
+              aria-label="Search by name or phone"
+              placeholder="Search name or phone"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-white/[0.04] border border-white/10 rounded-lg text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-violet-400"
+            />
           </div>
         </div>
 
-        {/* Reminders List */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
+          <div className="flex items-center justify-center py-20" role="status">
             <Loader2 className="w-8 h-8 animate-spin text-violet-400" />
           </div>
         ) : filteredBookings.length === 0 ? (
-          <div className="text-center py-20 bg-white/5 rounded-2xl border border-white/5">
-            <MessageCircle className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">
-              No Reminders Found
-            </h3>
-            <p className="text-zinc-400">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-16 text-center">
+            <MessageCircle className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
+            <h2 className="text-lg font-semibold mb-1">
+              {bookings.length === 0 ? "Nothing to send right now" : activeTab === "pending" && !searchTerm ? "All reminders sent" : "No matches"}
+            </h2>
+            <p className="text-sm text-zinc-400">
               {bookings.length === 0
-                ? "There are no confirmed bookings within the 24-hour reminder window."
-                : "No bookings match your current filter."}
+                ? "No confirmed sessions start in the next 24 hours. Refresh later."
+                : activeTab === "pending" && !searchTerm
+                  ? "Every session in the window has had its reminder."
+                  : "No sessions match this search."}
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 pb-10">
+          <ul className="rounded-2xl border border-white/10 bg-white/[0.03] divide-y divide-white/[0.06] overflow-hidden mb-10">
             {filteredBookings.map((booking) => {
-              const hoursUntil = getHoursUntilBooking(
-                booking.date,
-                booking.start_time
-              );
-              const isUrgent = hoursUntil <= 4;
+              const hoursUntil = getHoursUntilBooking(booking.date, booking.start_time);
+              const sent = !!booking.whatsapp_reminder_sent_at;
+              const isUrgent = hoursUntil <= 4 && !sent;
+              const started = hasEventStarted(booking.date, booking.start_time);
+              const left = Math.min(1, Math.max(0, hoursUntil / 24)); // share of the 24h window remaining
 
               return (
-                <motion.div
-                  key={booking.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`bg-white/5 backdrop-blur-xl rounded-xl border overflow-hidden ${
-                    isUrgent && !booking.whatsapp_reminder_sent_at
-                      ? "border-amber-500/30"
-                      : "border-white/10"
-                  }`}
-                >
-                  <div className="p-4 sm:p-5">
-                    <div className="flex flex-col sm:flex-row justify-between gap-4">
-                      {/* Booking Info */}
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold">
-                            {booking.name?.[0]?.toUpperCase() || "?"}
-                          </div>
-                          <div>
-                            <h3 className="text-white font-medium">
-                              {booking.name || "Unknown"}
-                            </h3>
-                            <p className="text-zinc-400 text-sm flex items-center gap-1">
-                              <Phone className="w-3 h-3" />
-                              {booking.phone_number}
-                            </p>
-                          </div>
-                          {isUrgent && !booking.whatsapp_reminder_sent_at && (
-                            <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-xs font-medium rounded-lg">
-                              Urgent
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex flex-wrap gap-4 text-sm">
-                          <div className="flex items-center gap-2 text-zinc-300">
-                            <Calendar className="w-4 h-4 text-zinc-500" />
-                            {formatDate(booking.date)}
-                          </div>
-                          <div className="flex items-center gap-2 text-zinc-300">
-                            <Clock className="w-4 h-4 text-zinc-500" />
-                            {formatTime(booking.start_time)} -{" "}
-                            {formatTime(booking.end_time)}
-                          </div>
-                          <div className="flex items-center gap-2 text-zinc-300">
-                            <User className="w-4 h-4 text-zinc-500" />
-                            {booking.studio} • {booking.session_type}
-                          </div>
-                        </div>
-
-                        <p className="text-zinc-500 text-sm">
-                          Session starts in{" "}
-                          <span
-                            className={
-                              isUrgent ? "text-amber-400" : "text-violet-400"
-                            }
-                          >
-                            {hoursUntil <= 0
-                              ? "less than an hour"
-                              : `${hoursUntil} hour${
-                                  hoursUntil !== 1 ? "s" : ""
-                                }`}
-                          </span>
-                        </p>
-                      </div>
-
-                      {/* Action */}
-                      <div className="flex flex-col items-end justify-center gap-2">
-                        <button
-                          onClick={() => sendConfirmation(booking)}
-                          disabled={hasEventStarted(booking.date, booking.start_time)}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
-                            hasEventStarted(booking.date, booking.start_time)
-                              ? "bg-zinc-500/20 text-zinc-500 cursor-not-allowed"
-                              : "bg-violet-500/20 hover:bg-violet-500/30 text-violet-400"
-                          }`}
-                        >
-                          <BadgeCheck className="w-4 h-4" />
-                          {hasEventStarted(booking.date, booking.start_time)
-                            ? "Event Started"
-                            : "Send Confirmation"}
-                        </button>
-
-                        {booking.whatsapp_reminder_sent_at ? (
-                          <>
-                            <span className="flex items-center gap-2 text-emerald-400 text-xs">
-                              <CheckCircle className="w-3 h-3" />
-                              Reminder Sent
-                            </span>
-                            <button
-                              onClick={() => handleSendReminder(booking)}
-                              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-sm"
-                            >
-                              <Send className="w-4 h-4" />
-                              Send Again
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => handleSendReminder(booking)}
-                            className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors font-medium text-sm"
-                          >
-                            <MessageCircle className="w-4 h-4" />
-                            Send Reminder
-                          </button>
-                        )}
-                      </div>
+                <li key={booking.id} className="flex flex-col md:flex-row md:items-center gap-4 p-4 sm:p-5">
+                  {/* Countdown */}
+                  <div className="md:w-28 shrink-0 flex md:block items-center gap-3">
+                    <p className={`text-xl font-bold tabular-nums ${isUrgent ? "text-amber-300" : "text-white"}`}>
+                      {hoursUntil <= 0 ? "< 1h" : `in ${hoursUntil}h`}
+                    </p>
+                    <div className="h-1 w-20 md:w-full rounded-full bg-white/10 overflow-hidden md:mt-2" aria-hidden="true">
+                      <div
+                        className={`h-full rounded-full ${isUrgent ? "bg-amber-400" : sent ? "bg-emerald-400" : "bg-violet-400"}`}
+                        style={{ width: `${left * 100}%` }}
+                      />
                     </div>
                   </div>
-                </motion.div>
+
+                  {/* Who and when */}
+                  <div className="flex-1 min-w-0 grid sm:grid-cols-2 gap-x-6 gap-y-1">
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate">
+                        {booking.name || "Unknown"}
+                        {isUrgent && (
+                          <span className="ml-2 align-middle px-1.5 py-0.5 rounded bg-amber-400/15 text-amber-300 text-[11px] font-medium">
+                            Urgent
+                          </span>
+                        )}
+                      </p>
+                      <a href={`tel:${booking.phone_number}`} className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white tabular-nums">
+                        <Phone className="w-3.5 h-3.5" />
+                        {booking.phone_number}
+                      </a>
+                    </div>
+                    <div className="min-w-0 text-sm">
+                      <p className="text-zinc-200 tabular-nums">
+                        {formatDate(booking.date)} · {formatTime(booking.start_time)} – {formatTime(booking.end_time)}
+                      </p>
+                      <p className="text-zinc-400 truncate">
+                        {booking.studio}
+                        {booking.session_type ? ` · ${booking.session_type}` : ""}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-wrap items-center gap-2 md:justify-end shrink-0">
+                    {sent && (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-emerald-300 mr-1">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        Reminder sent
+                      </span>
+                    )}
+                    <button
+                      onClick={() => sendConfirmation(booking)}
+                      disabled={started}
+                      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <BadgeCheck className="w-4 h-4 text-violet-400" />
+                      {started ? "Session started" : "Send confirmation"}
+                    </button>
+                    <button
+                      onClick={() => handleSendReminder(booking)}
+                      className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                        sent
+                          ? "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white"
+                          : "bg-emerald-500 hover:bg-emerald-400 text-white"
+                      }`}
+                    >
+                      {sent ? <Send className="w-4 h-4" /> : <MessageCircle className="w-4 h-4" />}
+                      {sent ? "Send again" : "Send reminder"}
+                    </button>
+                  </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
       </main>
     </div>

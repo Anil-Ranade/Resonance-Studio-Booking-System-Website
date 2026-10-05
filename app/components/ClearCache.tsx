@@ -10,6 +10,9 @@ const CACHE_KEYS = [
   'resonance_user_data',
 ];
 
+// Device identity must survive restarts or "remember this device" never works
+const KEEP_KEYS = ['resonance_device_fp', 'resonance_device_name', 'resonance_trusted_phones'];
+
 const SESSION_KEYS = [
   'editBookingData',
   'bookingConfirmation',
@@ -47,7 +50,7 @@ export default function ClearCache() {
         const keysToRemove: string[] = [];
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
-          if (key && key.startsWith('resonance_')) {
+          if (key && key.startsWith('resonance_') && !KEEP_KEYS.includes(key)) {
             keysToRemove.push(key);
           }
         }

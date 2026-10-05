@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { requireAdmin } from "@/lib/apiSecurity";
 
 // GET /api/admin/staff - List all staff members
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAdmin(request, ["admin", "super_admin"]);
+    if (auth instanceof NextResponse) return auth;
+
     const supabase = supabaseAdmin();
 
     const { data: staffMembers, error } = await supabase
@@ -32,6 +36,9 @@ export async function GET() {
 // POST /api/admin/staff - Create a new staff member
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin(request, ["admin", "super_admin"]);
+    if (auth instanceof NextResponse) return auth;
+
     const { name, email, password, role } = await request.json();
 
     // Validate required fields
