@@ -172,7 +172,7 @@ export default function DisplayPage() {
       );
       if (response.ok) {
         const data = await response.json();
-        // ponytail: API drops phone_number without a valid session cookie (12h expiry) -> re-login
+        // ponytail: API drops phone_number without a valid session cookie (password changed) -> re-login
         if (data.bookings?.some((b: Booking) => !("phone_number" in b))) {
           setIsAuthenticated(false);
           return;

@@ -7,9 +7,22 @@ import {
   safeEqual,
 } from "@/lib/apiSecurity";
 
+// ponytail: 400 days is the browser max; GET re-sets it so an in-use screen never expires.
+// Changing DISPLAY_PASSWORD changes the token, which logs every screen out.
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict" as const,
+  path: "/",
+  maxAge: 400 * 24 * 60 * 60,
+};
+
 // GET /api/display/auth - Whether the display session cookie is still valid
 export async function GET(request: NextRequest) {
-  return NextResponse.json({ authenticated: hasDisplaySession(request) });
+  const authenticated = hasDisplaySession(request);
+  const response = NextResponse.json({ authenticated });
+  if (authenticated) response.cookies.set(DISPLAY_COOKIE, displayToken()!, COOKIE_OPTIONS);
+  return response;
 }
 
 // POST /api/display/auth - Check the display password and start a display session
@@ -34,15 +47,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid password" }, { status: 401 });
     }
 
-    // httpOnly cookie unlocks names/phones in /api/display/bookings for 12 hours
+    // httpOnly cookie unlocks names/phones in /api/display/bookings
     const response = NextResponse.json({ success: true });
-    response.cookies.set(DISPLAY_COOKIE, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-      maxAge: 12 * 60 * 60,
-    });
+    response.cookies.set(DISPLAY_COOKIE, token, COOKIE_OPTIONS);
     return response;
   } catch (error) {
     console.error("[Display Auth] Unexpected error:", error);
