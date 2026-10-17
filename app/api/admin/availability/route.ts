@@ -108,6 +108,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (end_time <= start_time) {
+      return NextResponse.json({ error: "End time must be after start time" }, { status: 400 });
+    }
+
     const supabase = supabaseAdmin();
 
     // Check if the date/time is in the past (using IST timezone)
@@ -237,6 +241,9 @@ export async function PUT(request: NextRequest) {
     const updates: Record<string, any> = {};
     if (studio !== undefined) updates.studio = studio;
     if (date !== undefined) updates.date = date;
+    if (start_time !== undefined && end_time !== undefined && end_time <= start_time) {
+      return NextResponse.json({ error: "End time must be after start time" }, { status: 400 });
+    }
     if (start_time !== undefined) updates.start_time = start_time;
     if (end_time !== undefined) updates.end_time = end_time;
     if (is_available !== undefined) updates.is_available = is_available;
