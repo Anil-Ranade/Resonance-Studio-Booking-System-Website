@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
+import { todayIST } from "@/lib/ist";
 
 // Verify staff token from Authorization header
 async function verifyStaffToken(request: NextRequest) {
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
   const studio = searchParams.get("studio");
 
   const supabase = supabaseAdmin();
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayIST();
 
   // Build query for bookings created by this staff member
   let query = supabase

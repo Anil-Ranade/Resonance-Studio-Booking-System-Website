@@ -4,6 +4,7 @@ import { deleteEvent } from "@/lib/googleCalendar";
 import { sendBookingCancellationEmail } from "@/lib/email";
 import { logBookingCancellation, logOriginalBooking } from "@/lib/googleSheets";
 import { cleanText, isUuid, rateLimit, requireCustomer } from "@/lib/apiSecurity";
+import { istDateTime } from "@/lib/ist";
 
 // POST /api/bookings/cancel - Cancel your own booking (requires an OTP-verified session)
 export async function POST(request: NextRequest) {
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if booking is in the past
-    const bookingDate = new Date(`${booking.date}T${String(booking.start_time).slice(0, 5)}:00`);
+    const bookingDate = istDateTime(booking.date, String(booking.start_time));
     if (bookingDate < new Date()) {
       return NextResponse.json(
         { error: "Cannot cancel a past booking" },

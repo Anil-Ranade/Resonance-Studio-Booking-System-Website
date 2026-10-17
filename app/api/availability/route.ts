@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
+import { addDaysYMD, istNow } from '@/lib/ist';
 
 interface TimeSlot {
   start: string;
@@ -128,24 +129,6 @@ function chunkOverlapsBlocked(chunk: TimeSlot, blockedSlot: BlockedSlot): boolea
   return chunkStart < blockedEnd && chunkEnd > blockedStart;
 }
 
-// Helper function to get current time in IST (India Standard Time)
-function getISTDate(): Date {
-  const now = new Date();
-  // Convert to IST by adding 5 hours 30 minutes to UTC
-  const istOffset = 5.5 * 60 * 60 * 1000; // 5 hours 30 minutes in milliseconds
-  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-  return new Date(utcTime + istOffset);
-}
-
-// Helper function to get today's date string in IST (YYYY-MM-DD)
-function getISTDateString(): string {
-  const istDate = getISTDate();
-  const year = istDate.getFullYear();
-  const month = String(istDate.getMonth() + 1).padStart(2, '0');
-  const day = String(istDate.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const studio = searchParams.get('studio');
@@ -175,14 +158,10 @@ export async function GET(request: NextRequest) {
     const bookingSettings = await getBookingSettings();
     
     // Use IST for date calculations (India Standard Time)
-    const todayIST = getISTDateString();
-    const today = new Date(todayIST);
-    today.setHours(0, 0, 0, 0);
-    const selectedDate = new Date(date);
-    const maxDate = new Date(today);
-    maxDate.setDate(maxDate.getDate() + bookingSettings.advanceBookingDays);
-    
-    if (selectedDate > maxDate) {
+    const todayIST = istNow().date;
+    const maxDate = addDaysYMD(todayIST, bookingSettings.advanceBookingDays);
+
+    if (date > maxDate) {
       return NextResponse.json(
         { error: `Cannot book more than ${bookingSettings.advanceBookingDays} days in advance` },
         { status: 400 }
@@ -256,11 +235,7 @@ export async function GET(request: NextRequest) {
     const isToday = date === todayIST;
     let currentTimeInMinutes = 0;
     if (isToday) {
-      const nowIST = getISTDate();
-      const currentHour = nowIST.getHours();
-      const currentMinutes = nowIST.getMinutes();
-      // Calculate current time in minutes since midnight (IST)
-      currentTimeInMinutes = currentHour * 60 + currentMinutes;
+      currentTimeInMinutes = istNow().minutes;
     }
 
     // Create a set of available slot start times for quick lookup

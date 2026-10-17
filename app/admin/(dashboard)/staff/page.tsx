@@ -239,7 +239,7 @@ export default function StaffPage() {
   // Format date
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Never';
-    return new Date(dateString).toLocaleDateString('en-IN', {
+    return new Date(dateString).toLocaleDateString('en-IN', { timeZone: "Asia/Kolkata",
       day: 'numeric',
       month: 'short',
       year: 'numeric',

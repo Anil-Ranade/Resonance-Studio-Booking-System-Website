@@ -61,7 +61,7 @@ export function changeBlockReason(booking: Booking) {
 
   const t = booking.start_time;
   const time = t.includes(":") ? (t.split(":").length === 2 ? `${t}:00` : t) : "00:00:00";
-  const start = new Date(`${booking.date}T${time}`);
+  const start = new Date(`${booking.date.slice(0, 10)}T${time}+05:30`);
   if (isNaN(start.getTime())) return "";
 
   const hoursUntil = (start.getTime() - Date.now()) / 36e5;
@@ -71,7 +71,7 @@ export function changeBlockReason(booking: Booking) {
 }
 
 export const formatDate = (dateStr: string) =>
-  new Date(`${dateStr}T00:00:00`).toLocaleDateString("en-IN", {
+  new Date(`${dateStr}T00:00:00+05:30`).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata",
     weekday: "short",
     day: "numeric",
     month: "short",

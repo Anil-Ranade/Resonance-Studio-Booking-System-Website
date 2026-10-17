@@ -226,7 +226,7 @@ export default function ConfirmStep() {
 
   // Format date for display
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("en-IN", {
+    return new Date(dateStr).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata",
       weekday: "long",
       day: "numeric",
       month: "long",

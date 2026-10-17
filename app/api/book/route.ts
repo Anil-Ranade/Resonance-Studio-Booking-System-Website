@@ -135,6 +135,7 @@ import type {
   SessionType,
   StudioName,
 } from "@/app/booking/contexts/BookingContext";
+import { todayIST, addDaysYMD, istDateTime } from "@/lib/ist";
 
 // POST /api/book - Create a new booking
 export async function POST(request: Request) {
@@ -211,13 +212,11 @@ export async function POST(request: Request) {
     }
 
     // Validate advance booking limit
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const bookingDate = new Date(date);
-    bookingDate.setHours(0, 0, 0, 0);
+    const today = todayIST();
+    const bookingDate = date;
 
     // Users cannot book same-day slots
-    if (bookingDate.getTime() === today.getTime()) {
+    if (bookingDate === today) {
       return NextResponse.json(
         {
           error:
@@ -227,8 +226,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const maxDate = new Date(today);
-    maxDate.setDate(maxDate.getDate() + bookingSettings.advanceBookingDays);
+    const maxDate = addDaysYMD(today, bookingSettings.advanceBookingDays);
 
     if (bookingDate > maxDate) {
       return NextResponse.json(
@@ -539,9 +537,7 @@ export async function PUT(request: Request) {
     }
 
     // Check 24-hour modification restriction
-    const bookingStartDateTime = new Date(
-      `${originalBooking.date}T${String(originalBooking.start_time).slice(0, 5)}:00`,
-    );
+    const bookingStartDateTime = istDateTime(originalBooking.date, String(originalBooking.start_time));
     const now = new Date();
     const hoursUntilBooking =
       (bookingStartDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
@@ -584,12 +580,9 @@ export async function PUT(request: Request) {
     }
 
     // Validate advance booking limit
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const bookingDate = new Date(date);
-    bookingDate.setHours(0, 0, 0, 0);
-    const maxDate = new Date(today);
-    maxDate.setDate(maxDate.getDate() + bookingSettings.advanceBookingDays);
+    const today = todayIST();
+    const bookingDate = date;
+    const maxDate = addDaysYMD(today, bookingSettings.advanceBookingDays);
 
     // Prevent past or same-day modifications
     if (bookingDate < today) {
@@ -599,7 +592,7 @@ export async function PUT(request: Request) {
       );
     }
 
-    if (bookingDate.getTime() === today.getTime()) {
+    if (bookingDate === today) {
       return NextResponse.json(
         {
           error:

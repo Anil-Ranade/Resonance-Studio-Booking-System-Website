@@ -162,7 +162,7 @@ function statusLine(color: string, label: string): string {
 
 /** Booking details as label/value rows (same rows and order as the original emails). */
 function details(booking: EmailBooking, opts: { muted?: boolean; highlightWhen?: boolean } = {}): string {
-  const formattedDate = new Date(`${booking.date.slice(0, 10)}T00:00:00`).toLocaleDateString('en-IN', {
+  const formattedDate = new Date(`${booking.date.slice(0, 10)}T00:00:00+05:30`).toLocaleDateString('en-IN', { timeZone: "Asia/Kolkata",
     weekday: 'long',
     day: 'numeric',
     month: 'long',

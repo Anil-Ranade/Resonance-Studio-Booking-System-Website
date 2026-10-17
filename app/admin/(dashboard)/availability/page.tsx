@@ -20,6 +20,7 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { getSession } from '@/lib/supabaseAuth';
+import { addDaysYMD, todayIST } from '@/lib/ist';
 
 interface SlotBooking {
   id: string;
@@ -92,15 +93,8 @@ export default function AvailabilityManagementPage() {
   const [selectedStudio, setSelectedStudio] = useState<string>('all');
   const [defaultOpenTime, setDefaultOpenTime] = useState('08:00');
   const [defaultCloseTime, setDefaultCloseTime] = useState('22:00');
-  const [startDate, setStartDate] = useState<string>(() => {
-    const today = new Date();
-    return today.toLocaleDateString("en-CA");
-  });
-  const [endDate, setEndDate] = useState<string>(() => {
-    const nextWeek = new Date();
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    return nextWeek.toLocaleDateString("en-CA");
-  });
+  const [startDate, setStartDate] = useState<string>(() => todayIST());
+  const [endDate, setEndDate] = useState<string>(() => addDaysYMD(todayIST(), 7));
 
   // Generate time options based on admin settings
   const timeOptions = generateTimeOptions(defaultOpenTime, defaultCloseTime);
@@ -113,7 +107,7 @@ export default function AvailabilityManagementPage() {
   const [editingSlot, setEditingSlot] = useState<AvailabilitySlot | null>(null);
   const [formData, setFormData] = useState<SlotFormData>({
     studio: 'Studio A',
-    date: new Date().toLocaleDateString("en-CA"),
+    date: todayIST(),
     start_time: '08:00',
     end_time: '22:00',
     is_available: false, // Blocked slots have is_available = false
@@ -125,7 +119,7 @@ export default function AvailabilityManagementPage() {
     name: '',
     studio: 'Studio A',
     session_type: 'Karaoke',
-    date: new Date().toLocaleDateString("en-CA"),
+    date: todayIST(),
     start_time: '10:00',
     end_time: '12:00',
     rate_per_hour: 400,
@@ -143,12 +137,8 @@ export default function AvailabilityManagementPage() {
 
   const [bulkMode, setBulkMode] = useState<'dates' | 'weekly'>('dates');
   const [bulkWeekdays, setBulkWeekdays] = useState<number[]>([]);
-  const [bulkFrom, setBulkFrom] = useState(() => new Date().toLocaleDateString("en-CA"));
-  const [bulkTo, setBulkTo] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 90);
-    return d.toLocaleDateString("en-CA");
-  });
+  const [bulkFrom, setBulkFrom] = useState(() => todayIST());
+  const [bulkTo, setBulkTo] = useState(() => addDaysYMD(todayIST(), 90));
   const [bulkResult, setBulkResult] = useState<{
     blocked: string[];
     skipped: { date: string; reason: 'past' | 'booking'; bookings?: { start_time: string; end_time: string }[] }[];
@@ -438,7 +428,7 @@ export default function AvailabilityManagementPage() {
       name: '',
       studio: 'Studio A',
       session_type: 'Karaoke',
-      date: new Date().toLocaleDateString("en-CA"),
+      date: todayIST(),
       start_time: '10:00',
       end_time: '12:00',
       rate_per_hour: 400,
@@ -449,20 +439,14 @@ export default function AvailabilityManagementPage() {
 
   // Generate next 14 days for bulk selection
   const getNext14Days = () => {
-    const days = [];
-    const today = new Date();
-    for (let i = 0; i < 14; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      days.push(date.toLocaleDateString("en-CA"));
-    }
-    return days;
+    const today = todayIST();
+    return Array.from({ length: 14 }, (_, i) => addDaysYMD(today, i));
   };
 
   const resetForm = () => {
     setFormData({
       studio: 'Studio A',
-      date: new Date().toLocaleDateString("en-CA"),
+      date: todayIST(),
       start_time: defaultOpenTime,
       end_time: defaultCloseTime,
       is_available: false, // Blocked slots have is_available = false
@@ -491,8 +475,8 @@ export default function AvailabilityManagementPage() {
 
   // Format date for display
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr + 'T00:00');
-    return date.toLocaleDateString('en-US', {
+    const date = new Date(dateStr + 'T00:00:00+05:30');
+    return date.toLocaleDateString('en-US', { timeZone: "Asia/Kolkata",
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -1132,7 +1116,7 @@ export default function AvailabilityManagementPage() {
                               : 'bg-white/5 text-zinc-400 hover:bg-white/10'
                           }`}
                         >
-                          {new Date(date + 'T00:00').toLocaleDateString('en-US', {
+                          {new Date(date + 'T00:00:00+05:30').toLocaleDateString('en-US', { timeZone: "Asia/Kolkata",
                             month: 'short',
                             day: 'numeric',
                           })}

@@ -141,7 +141,7 @@ export default function AdminEditBookingPage() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-IN', {
+    return new Date(dateStr).toLocaleDateString('en-IN', { timeZone: "Asia/Kolkata",
       weekday: 'short',
       day: 'numeric',
       month: 'short',

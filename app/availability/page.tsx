@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Clock, Loader2, CalendarDays } from "lucide-react";
+import { addDaysYMD, istDateTime, istNow, todayIST } from "@/lib/ist";
 
 interface BookingSlot {
   start_time: string;
@@ -27,7 +28,9 @@ interface BookingBlock {
 }
 
 export default function AvailabilityPage() {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  // Selected day as an IST "YYYY-MM-DD" string; selectedDate is that day's IST midnight (for formatting)
+  const [selectedDay, setSelectedDay] = useState<string>(todayIST());
+  const selectedDate = istDateTime(selectedDay);
   const [bookings, setBookings] = useState<BookingSlot[]>([]);
   const [blocked, setBlocked] = useState<BlockedSlot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,14 +42,9 @@ export default function AvailabilityPage() {
   const studios = ["Studio A", "Studio B", "Studio C"];
 
   // Format selected date for API
-  const formattedDate = selectedDate.toLocaleDateString("en-CA");
+  const formattedDate = selectedDay;
 
-  // Calculate max date based on advance booking days
-  const getMaxDate = useCallback(() => {
-    const maxDate = new Date();
-    maxDate.setDate(maxDate.getDate() + advanceBookingDays);
-    return maxDate;
-  }, [advanceBookingDays]);
+  const getMaxDate = useCallback(() => addDaysYMD(todayIST(), advanceBookingDays), [advanceBookingDays]);
 
   // Fetch settings on mount
   useEffect(() => {
@@ -98,56 +96,10 @@ export default function AvailabilityPage() {
     return () => clearInterval(interval);
   }, [formattedDate]);
 
-  // Navigate to previous day
-  const goToPreviousDay = () => {
-    setSelectedDate((prev) => {
-      const newDate = new Date(prev);
-      newDate.setDate(newDate.getDate() - 1);
-      // Don't go before today
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (newDate >= today) {
-        return newDate;
-      }
-      return prev;
-    });
-  };
-
-  // Navigate to next day
-  const goToNextDay = () => {
-    setSelectedDate((prev) => {
-      const newDate = new Date(prev);
-      newDate.setDate(newDate.getDate() + 1);
-      // Don't go beyond advance booking limit
-      if (newDate <= getMaxDate()) {
-        return newDate;
-      }
-      return prev;
-    });
-  };
-
-  // Check if can navigate
-  const canGoPrevious = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const prevDate = new Date(selectedDate);
-    prevDate.setDate(selectedDate.getDate() - 1);
-    return prevDate >= today;
-  };
-
-  const canGoNext = () => {
-    const nextDate = new Date(selectedDate);
-    nextDate.setDate(selectedDate.getDate() + 1);
-    return nextDate <= getMaxDate();
-  };
-
-  // Check if selected date is today
-  const isToday = useMemo(() => {
-    const today = new Date();
-    const todayString = today.toLocaleDateString("en-CA");
-    const selectedString = selectedDate.toLocaleDateString("en-CA");
-    return todayString === selectedString;
-  }, [selectedDate]);
+  const canGoPrevious = () => addDaysYMD(selectedDay, -1) >= todayIST();
+  const canGoNext = () => addDaysYMD(selectedDay, 1) <= getMaxDate();
+  const goToPreviousDay = () => canGoPrevious() && setSelectedDay(addDaysYMD(selectedDay, -1));
+  const goToNextDay = () => canGoNext() && setSelectedDay(addDaysYMD(selectedDay, 1));
 
   // Build booking blocks for each studio
   const studioBlocks = useMemo(() => {
@@ -196,8 +148,9 @@ export default function AvailabilityPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const currentHour = currentTime.getHours();
-  const currentMinutes = currentTime.getMinutes();
+  const currentHour = Math.floor(istNow(currentTime).minutes / 60);
+  const currentMinutes = istNow(currentTime).minutes % 60;
+  const isToday = selectedDay === istNow(currentTime).date;
 
   // Calculate current time position
   const getCurrentTimePosition = () => {
@@ -239,7 +192,7 @@ export default function AvailabilityPage() {
 
   // Format date for display
   const formatDisplayDate = () => {
-    return selectedDate.toLocaleDateString("en-US", {
+    return selectedDate.toLocaleDateString("en-US", { timeZone: "Asia/Kolkata",
       weekday: "long",
       month: "long",
       day: "numeric",
@@ -249,7 +202,7 @@ export default function AvailabilityPage() {
 
   // Short date for mobile
   const formatDisplayDateShort = () => {
-    return selectedDate.toLocaleDateString("en-US", {
+    return selectedDate.toLocaleDateString("en-US", { timeZone: "Asia/Kolkata",
       weekday: "short",
       month: "short",
       day: "numeric",
@@ -259,6 +212,7 @@ export default function AvailabilityPage() {
   // Format time for display (12-hour with seconds)
   const formatDisplayTime = () => {
     return currentTime.toLocaleTimeString("en-US", {
+      timeZone: "Asia/Kolkata",
       hour: "numeric",
       minute: "2-digit",
       second: "2-digit",
@@ -269,6 +223,7 @@ export default function AvailabilityPage() {
   // Short time for mobile
   const formatDisplayTimeShort = () => {
     return currentTime.toLocaleTimeString("en-US", {
+      timeZone: "Asia/Kolkata",
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
@@ -322,19 +277,14 @@ export default function AvailabilityPage() {
                   <label className="text-sm text-zinc-400 font-medium">Select a date</label>
                   <input
                     type="date"
-                    value={selectedDate.toLocaleDateString("en-CA")}
-                    min={new Date().toLocaleDateString("en-CA")}
-                    max={getMaxDate().toLocaleDateString("en-CA")}
+                    value={selectedDay}
+                    min={todayIST()}
+                    max={getMaxDate()}
                     onChange={(e) => {
-                      const newDate = new Date(e.target.value + "T00:00");
-                      if (!isNaN(newDate.getTime())) {
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        const maxDate = getMaxDate();
-                        if (newDate >= today && newDate <= maxDate) {
-                          setSelectedDate(newDate);
-                          setShowDatePicker(false);
-                        }
+                      const v = e.target.value;
+                      if (v && v >= todayIST() && v <= getMaxDate()) {
+                        setSelectedDay(v);
+                        setShowDatePicker(false);
                       }
                     }}
                     className="w-full bg-zinc-800 border border-zinc-600 rounded-lg px-4 py-3 text-white text-base outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent cursor-pointer"
@@ -342,7 +292,7 @@ export default function AvailabilityPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
-                        setSelectedDate(new Date());
+                        setSelectedDay(todayIST());
                         setShowDatePicker(false);
                       }}
                       className="flex-1 px-3 py-2 bg-violet-600 hover:bg-violet-500 text-navy text-sm font-medium rounded-lg transition-colors"

@@ -89,7 +89,7 @@ export default function HomePage() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("en-US", {
+    return new Date(dateStr).toLocaleDateString("en-US", { timeZone: "Asia/Kolkata",
       weekday: "short",
       month: "short",
       day: "numeric",

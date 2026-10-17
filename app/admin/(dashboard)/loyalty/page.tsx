@@ -101,7 +101,7 @@ export default function LoyaltyPage() {
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('en-IN', {
+    return new Date(dateStr).toLocaleDateString('en-IN', { timeZone: "Asia/Kolkata",
       day: 'numeric',
       month: 'short',
       year: 'numeric',

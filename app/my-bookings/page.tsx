@@ -293,7 +293,7 @@ export default function MyBookingsPage() {
       : '00:00:00';
     
     // Create date from ISO string format
-    const bookingDateTime = new Date(`${bookingDateStr}T${formattedTime}`);
+    const bookingDateTime = new Date(`${bookingDateStr}T${formattedTime}+05:30`);
     const now = new Date();
     
     // Check if date parsing was successful
@@ -355,7 +355,7 @@ export default function MyBookingsPage() {
   const canEditBooking = canCancelBooking; // Same rules as cancellation
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-IN', {
+    return new Date(dateStr).toLocaleDateString('en-IN', { timeZone: "Asia/Kolkata",
       weekday: 'short',
       day: 'numeric',
       month: 'short',

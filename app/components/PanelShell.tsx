@@ -138,7 +138,7 @@ export default function PanelShell({
             </button>
             <h1 className="text-base font-semibold text-white truncate">{current?.label || "Dashboard"}</h1>
             <span className="hidden sm:inline text-sm text-zinc-500">
-              {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
+              {new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", weekday: "long", day: "numeric", month: "long" })}
             </span>
           </div>
           <Link

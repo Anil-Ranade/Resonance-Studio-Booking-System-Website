@@ -40,7 +40,7 @@ export default function SessionTicket({
   muted?: boolean;
 }) {
   // T00:00 keeps the date in local time so the day doesn't shift
-  const d = new Date(`${booking.date.slice(0, 10)}T00:00:00`);
+  const d = new Date(`${booking.date.slice(0, 10)}T00:00:00+05:30`);
   const status = ticketStatus[booking.status as Status] ?? ticketStatus.pending;
 
   return (
@@ -51,10 +51,10 @@ export default function SessionTicket({
     >
       <div className="relative w-28 sm:w-36 shrink-0 flex flex-col items-center justify-center text-center py-6 px-3 bg-violet-400/[0.08]">
         <span className="text-xs font-medium uppercase tracking-[0.14em] text-violet-300">
-          {d.toLocaleDateString("en-IN", { weekday: "short" })}
+          {d.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", weekday: "short" })}
         </span>
-        <span className="text-5xl sm:text-6xl font-bold text-white leading-none my-1 tabular-nums">{d.getDate()}</span>
-        <span className="text-xs text-zinc-400">{d.toLocaleDateString("en-IN", { month: "short", year: "numeric" })}</span>
+        <span className="text-5xl sm:text-6xl font-bold text-white leading-none my-1 tabular-nums">{d.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric" })}</span>
+        <span className="text-xs text-zinc-400">{d.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", month: "short", year: "numeric" })}</span>
         <span className={`mt-4 inline-flex items-center gap-1.5 text-xs font-medium ${status.text}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
           {status.label}

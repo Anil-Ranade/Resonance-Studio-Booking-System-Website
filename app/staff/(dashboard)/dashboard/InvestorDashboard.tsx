@@ -247,7 +247,7 @@ export default function InvestorDashboard({ user }: InvestorDashboardProps) {
                      {bookings.map((booking) => (
                         <tr key={booking.id} className="hover:bg-white/5 transition-colors">
                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-white">{new Date(booking.date).toLocaleDateString()}</div>
+                              <div className="text-sm text-white">{new Date(booking.date).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}</div>
                               <div className="text-xs text-zinc-400">
                                  {booking.start_time.slice(0, 5)} - {booking.end_time.slice(0, 5)}
                               </div>

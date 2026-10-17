@@ -23,6 +23,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { optionChip } from "./optionStyles";
 import { getStudioRate } from "../utils/studioSuggestion";
+import { addDaysYMD, todayIST } from "@/lib/ist";
 
 interface AvailableSlot extends TimeSlot {
   available: boolean;
@@ -48,12 +49,7 @@ export default function TimeStep() {
 
   // Get default date (tomorrow for customers, today for admin/staff)
   const getDefaultDate = () => {
-    const today = new Date();
-    if (mode === "customer") {
-      today.setDate(today.getDate() + 1);
-    }
-    // Use local time YYYY-MM-DD
-    return today.toLocaleDateString("en-CA");
+    return addDaysYMD(todayIST(), mode === "customer" ? 1 : 0);
   };
 
   const [date, setDate] = useState(draft.date || getDefaultDate());
@@ -104,21 +100,15 @@ export default function TimeStep() {
   const getMinDate = () => {
     // For customers, minimum is tomorrow (same-day bookings not allowed)
     if (mode === "customer") {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      return tomorrow.toLocaleDateString("en-CA");
+      return addDaysYMD(todayIST(), 1);
     }
     
     // For admin/staff, allow past dates (e.g., up to 1 year ago)
-    const pastDate = new Date();
-    pastDate.setFullYear(pastDate.getFullYear() - 1);
-    return pastDate.toLocaleDateString("en-CA");
+    return addDaysYMD(todayIST(), -365);
   };
 
   const getMaxDate = () => {
-    const maxDate = new Date();
-    maxDate.setDate(maxDate.getDate() + advanceBookingDays);
-    return maxDate.toLocaleDateString("en-CA");
+    return addDaysYMD(todayIST(), advanceBookingDays);
   };
 
   // Fetch available slots when date or studio changes
@@ -436,14 +426,10 @@ export default function TimeStep() {
 
   // Navigate dates
   const navigateDate = (days: number) => {
-    const current = date ? new Date(date) : new Date();
-    current.setDate(current.getDate() + days);
+    const next = addDaysYMD(date || todayIST(), days);
 
-    const minDate = new Date(getMinDate());
-    const maxDate = new Date(getMaxDate());
-
-    if (current >= minDate && current <= maxDate) {
-      handleDateChange(current.toISOString().split("T")[0]);
+    if (next >= getMinDate() && next <= getMaxDate()) {
+      handleDateChange(next);
     }
   };
 
@@ -505,7 +491,7 @@ export default function TimeStep() {
 
   // Format date for display
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("en-IN", {
+    return new Date(dateStr).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata",
       weekday: "short",
       day: "numeric",
       month: "short",

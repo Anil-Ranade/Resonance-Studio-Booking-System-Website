@@ -23,6 +23,7 @@ import {
 import { getSession, signInWithEmail, signOut } from "@/lib/supabaseAuth";
 import { useRouter } from "next/navigation";
 import { adminFetch } from "@/lib/adminFetch";
+import { istDateTime } from "@/lib/ist";
 
 // --- Types ---
 
@@ -49,17 +50,13 @@ interface Booking {
 
 const isBookingTimePassed = (date: string, endTime: string): boolean => {
   const now = new Date();
-  const bookingDate = new Date(date);
-  const [hours, minutes] = endTime.split(":").map(Number);
-  bookingDate.setHours(hours, minutes, 0, 0);
+  const bookingDate = istDateTime(date, endTime);
   return now > bookingDate;
 };
 
 const hasEventStarted = (date: string, startTime: string): boolean => {
   const now = new Date();
-  const bookingStartDate = new Date(date);
-  const [startHours, startMinutes] = startTime.split(":").map(Number);
-  bookingStartDate.setHours(startHours, startMinutes, 0, 0);
+  const bookingStartDate = istDateTime(date, startTime);
   return now >= bookingStartDate;
 };
 
@@ -72,9 +69,7 @@ const isWithin24HoursBeforeBooking = (
   if (isBookingTimePassed(date, endTime)) {
     return false;
   }
-  const bookingStartDate = new Date(date);
-  const [startHours, startMinutes] = startTime.split(":").map(Number);
-  bookingStartDate.setHours(startHours, startMinutes, 0, 0);
+  const bookingStartDate = istDateTime(date, startTime);
   const twentyFourHoursBefore = new Date(
     bookingStartDate.getTime() - 24 * 60 * 60 * 1000
   );
@@ -83,9 +78,7 @@ const isWithin24HoursBeforeBooking = (
 
 const getHoursUntilBooking = (date: string, startTime: string): number => {
   const now = new Date();
-  const bookingStartDate = new Date(date);
-  const [startHours, startMinutes] = startTime.split(":").map(Number);
-  bookingStartDate.setHours(startHours, startMinutes, 0, 0);
+  const bookingStartDate = istDateTime(date, startTime);
   const diff = bookingStartDate.getTime() - now.getTime();
   return Math.round(diff / (1000 * 60 * 60));
 };
@@ -99,7 +92,7 @@ const formatTime = (time: string) => {
 
 const formatDate = (dateStr: string) => {
   const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString("en-US", { timeZone: "Asia/Kolkata",
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -278,7 +271,7 @@ export default function StandaloneRemindersPage() {
       if (loyaltyData && !loyaltyData.error) {
         const currentHours = Number(loyaltyData.hours || 0);
         const target = Number(loyaltyData.target || 50);
-        const windowEnd = loyaltyData.window_end ? new Date(loyaltyData.window_end).toLocaleDateString("en-GB", { day: 'numeric', month: 'long', year: 'numeric' }) : "expiration date";
+        const windowEnd = loyaltyData.window_end ? new Date(loyaltyData.window_end).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata", day: 'numeric', month: 'long', year: 'numeric' }) : "expiration date";
 
         // Assuming 50 hours = 1500 Rs reward => 30 Rs/hr value
         const balance = Math.round(currentHours * 30);
@@ -424,10 +417,10 @@ Enjoy your session!`;
 
     // Date formatting with ordinal
     const dateObj = new Date(booking.date);
-    const dayName = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
-    const d = dateObj.getDate();
+    const dayName = dateObj.toLocaleDateString('en-GB', { timeZone: "Asia/Kolkata", weekday: 'long' });
+    const d = dateObj.getUTCDate();
     const ordinal = (d > 3 && d < 21) ? 'th' : ['th', 'st', 'nd', 'rd'][d % 10] || 'th';
-    const monthYear = dateObj.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    const monthYear = dateObj.toLocaleDateString('en-GB', { timeZone: "Asia/Kolkata", month: 'long', year: 'numeric' });
     const niceDate = `${dayName}, ${d}${ordinal} ${monthYear}`;
 
     // Duration calculation

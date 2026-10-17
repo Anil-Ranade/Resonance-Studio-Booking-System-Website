@@ -45,6 +45,7 @@ import type {
   StudioName,
 } from "@/app/booking/contexts/BookingContext";
 import { adminFetch } from "@/lib/adminFetch";
+import { istDateTime, todayIST } from "@/lib/ist";
 
 interface Booking {
   id: string;
@@ -173,11 +174,7 @@ const STUDIOS: StudioName[] = ["Studio A", "Studio B", "Studio C"];
 // Helper function to check if a booking's time has passed
 const isBookingTimePassed = (date: string, endTime: string): boolean => {
   const now = new Date();
-  const bookingDate = new Date(date);
-  const [hours, minutes] = endTime.split(":").map(Number);
-
-  // Set the booking end datetime
-  bookingDate.setHours(hours, minutes, 0, 0);
+  const bookingDate = istDateTime(date, endTime);
 
   return now > bookingDate;
 };
@@ -197,9 +194,7 @@ const isWithin24HoursBeforeBooking = (
   }
 
   // Calculate booking start datetime
-  const bookingStartDate = new Date(date);
-  const [startHours, startMinutes] = startTime.split(":").map(Number);
-  bookingStartDate.setHours(startHours, startMinutes, 0, 0);
+  const bookingStartDate = istDateTime(date, startTime);
 
   // Calculate 24 hours before booking start
   const twentyFourHoursBefore = new Date(
@@ -244,7 +239,7 @@ export default function BookingsManagementPage() {
     studio: "Studio A",
     session_type: "Walk-in",
     session_details: "",
-    date: new Date().toISOString().split("T")[0],
+    date: todayIST(),
     start_time: "10:00",
     end_time: "11:00",
     rate_per_hour: 400,
@@ -520,7 +515,7 @@ export default function BookingsManagementPage() {
       studio: "Studio A",
       session_type: "Walk-in",
       session_details: "",
-      date: new Date().toISOString().split("T")[0],
+      date: todayIST(),
       start_time: "10:00",
       end_time: "11:00",
       rate_per_hour: 400,
@@ -803,7 +798,7 @@ export default function BookingsManagementPage() {
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleDateString("en-US", { timeZone: "Asia/Kolkata",
       weekday: "short",
       month: "short",
       day: "numeric",
@@ -958,7 +953,7 @@ export default function BookingsManagementPage() {
           <div class="invoice-title">Booking Invoice</div>
           <div class="invoice-id">Invoice #${booking.id
             .slice(0, 8)
-            .toUpperCase()} &bull; ${new Date().toLocaleDateString("en-US", {
+            .toUpperCase()} &bull; ${new Date().toLocaleDateString("en-US", { timeZone: "Asia/Kolkata",
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -1431,10 +1426,10 @@ export default function BookingsManagementPage() {
 
                             // Date formatting with ordinal
                             const dateObj = new Date(selectedBooking.date);
-                            const dayName = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
-                            const d = dateObj.getDate();
+                            const dayName = dateObj.toLocaleDateString('en-GB', { timeZone: "Asia/Kolkata", weekday: 'long' });
+                            const d = dateObj.getUTCDate();
                             const ordinal = (d > 3 && d < 21) ? 'th' : ['th', 'st', 'nd', 'rd'][d % 10] || 'th';
-                            const monthYear = dateObj.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+                            const monthYear = dateObj.toLocaleDateString('en-GB', { timeZone: "Asia/Kolkata", month: 'long', year: 'numeric' });
                             const niceDate = `${dayName}, ${d}${ordinal} ${monthYear}`;
 
                             // Duration calculation
@@ -1563,7 +1558,7 @@ See you soon!`;
                           if (loyaltyData && !loyaltyData.error) {
                             const currentHours = Number(loyaltyData.hours || 0);
                             const target = Number(loyaltyData.target || 50);
-                            const windowEnd = loyaltyData.window_end ? new Date(loyaltyData.window_end).toLocaleDateString("en-GB", { day: 'numeric', month: 'long', year: 'numeric' }) : "expiration date";
+                            const windowEnd = loyaltyData.window_end ? new Date(loyaltyData.window_end).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata", day: 'numeric', month: 'long', year: 'numeric' }) : "expiration date";
 
                             // Assuming 50 hours = 1500 Rs reward => 30 Rs/hr value
                             const balance = Math.round(currentHours * 30);

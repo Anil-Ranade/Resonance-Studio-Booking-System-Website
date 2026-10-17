@@ -42,6 +42,7 @@ import type {
   RecordingOption,
   StudioName,
 } from "@/app/booking/contexts/BookingContext";
+import { istDateTime, todayIST } from "@/lib/ist";
 
 interface Booking {
   id: string;
@@ -165,11 +166,7 @@ const STUDIOS: StudioName[] = ["Studio A", "Studio B", "Studio C"];
 // Helper function to check if a booking's time has passed
 const isBookingTimePassed = (date: string, endTime: string): boolean => {
   const now = new Date();
-  const bookingDate = new Date(date);
-  const [hours, minutes] = endTime.split(":").map(Number);
-
-  // Set the booking end datetime
-  bookingDate.setHours(hours, minutes, 0, 0);
+  const bookingDate = istDateTime(date, endTime);
 
   return now > bookingDate;
 };
@@ -207,7 +204,7 @@ export default function StaffBookingsPage() {
     studio: "Studio A",
     session_type: "Walk-in",
     session_details: "",
-    date: new Date().toISOString().split("T")[0],
+    date: todayIST(),
     start_time: "10:00",
     end_time: "11:00",
     rate_per_hour: 400,
@@ -373,7 +370,7 @@ export default function StaffBookingsPage() {
       studio: "Studio A",
       session_type: "Walk-in",
       session_details: "",
-      date: new Date().toISOString().split("T")[0],
+      date: todayIST(),
       start_time: "10:00",
       end_time: "11:00",
       rate_per_hour: 400,
@@ -650,7 +647,7 @@ export default function StaffBookingsPage() {
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleDateString("en-US", { timeZone: "Asia/Kolkata",
       weekday: "short",
       month: "short",
       day: "numeric",

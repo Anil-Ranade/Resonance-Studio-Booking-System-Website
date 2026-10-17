@@ -20,6 +20,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { getSession } from '@/lib/supabaseAuth';
+import { addDaysYMD, dayOfWeekYMD, istNow, todayIST } from '@/lib/ist';
 
 type DatePreset = 'today' | 'week' | 'month' | 'all';
 type SortField = 'date' | 'status' | 'studio';
@@ -62,29 +63,21 @@ interface TodayBooking {
 
 // Helper functions for date calculations
 const getDateRange = (preset: DatePreset): { startDate: string; endDate: string } | null => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
+  const todayStr = todayIST();
+
   switch (preset) {
     case 'today':
-      const todayStr = today.toISOString().split('T')[0];
       return { startDate: todayStr, endDate: todayStr };
-    case 'week':
-      const weekStart = new Date(today);
-      weekStart.setDate(today.getDate() - today.getDay());
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-      return { 
-        startDate: weekStart.toISOString().split('T')[0], 
-        endDate: weekEnd.toISOString().split('T')[0] 
-      };
-    case 'month':
-      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-      const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-      return { 
-        startDate: monthStart.toISOString().split('T')[0], 
-        endDate: monthEnd.toISOString().split('T')[0] 
-      };
+    case 'week': {
+      const weekStart = addDaysYMD(todayStr, -dayOfWeekYMD(todayStr)); // Sunday
+      return { startDate: weekStart, endDate: addDaysYMD(weekStart, 6) };
+    }
+    case 'month': {
+      const [y, m] = todayStr.split('-').map(Number);
+      const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      const mm = String(m).padStart(2, '0');
+      return { startDate: `${y}-${mm}-01`, endDate: `${y}-${mm}-${String(last).padStart(2, '0')}` };
+    }
     case 'all':
     default:
       return null;
@@ -159,7 +152,7 @@ export default function StaffDashboard() {
     setLoading(true);
     try {
       const token = await getAccessToken();
-      const today = new Date().toISOString().split('T')[0];
+      const today = todayIST();
       
       // Build query params for stats
       const statsParams = new URLSearchParams();
@@ -346,7 +339,7 @@ export default function StaffDashboard() {
   const span = dayEnd - dayStart;
   const pos = (t: number) => `${((t - dayStart) / span) * 100}%`;
   const now = new Date();
-  const nowH = now.getHours() + now.getMinutes() / 60;
+  const nowH = istNow().minutes / 60;
   const hourMarks = Array.from({ length: span + 1 }, (_, i) => dayStart + i);
   const hourLabel = (h: number) => `${h % 12 === 0 ? 12 : h % 12}${h < 12 ? 'a' : 'p'}`;
 
@@ -458,7 +451,7 @@ export default function StaffDashboard() {
           <div>
             <h3 id="today-title" className="text-lg font-semibold text-white">Your sessions today</h3>
             <p className="text-sm text-zinc-400">
-              {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })} · {todayBookings.length} confirmed{' '}
+              {now.toLocaleDateString('en-IN', { timeZone: "Asia/Kolkata", weekday: 'long', day: 'numeric', month: 'short' })} · {todayBookings.length} confirmed{' '}
               {todayBookings.length === 1 ? 'session' : 'sessions'}
             </p>
           </div>
@@ -588,7 +581,7 @@ export default function StaffDashboard() {
                       </td>
                       <td className="px-3 py-3 text-zinc-300 whitespace-nowrap">{booking.studio}</td>
                       <td className="px-3 py-3 text-zinc-300 whitespace-nowrap tabular-nums">
-                        {new Date(`${booking.date}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        {new Date(`${booking.date}T00:00:00+05:30`).toLocaleDateString('en-IN', { timeZone: "Asia/Kolkata", day: 'numeric', month: 'short' })}
                       </td>
                       <td className="px-3 py-3 text-zinc-300 whitespace-nowrap tabular-nums">
                         {formatTime(booking.start_time)} – {formatTime(booking.end_time)}

@@ -227,7 +227,7 @@ export default function InvestorsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">
-                        {new Date(inv.created_at).toLocaleDateString()}
+                        {new Date(inv.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}
                       </td>
                      
                     </tr>
