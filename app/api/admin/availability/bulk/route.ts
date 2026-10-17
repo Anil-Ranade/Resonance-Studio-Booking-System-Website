@@ -56,13 +56,39 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { studio, dates, start_time, end_time } = body;
+    const { studio, start_time, end_time, weekdays, from_date, to_date } = body;
+    let dates: string[] = body.dates;
     // Blocked slots have is_available = false
     const is_available = false;
 
-    if (!studio || !dates || !Array.isArray(dates) || dates.length === 0 || !start_time || !end_time) {
+    const timeRe = /^\d{2}:\d{2}$/;
+    const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+    if (!studio || !timeRe.test(start_time) || !timeRe.test(end_time) || end_time <= start_time) {
       return NextResponse.json(
-        { error: "Missing required fields: studio, dates (array), start_time, end_time" },
+        { error: "studio, start_time and end_time (HH:MM, end after start) are required" },
+        { status: 400 }
+      );
+    }
+
+    // Recurring: expand weekdays (0=Sun..6=Sat) between from_date and to_date into dates
+    if (Array.isArray(weekdays) && weekdays.length > 0) {
+      if (!dateRe.test(from_date) || !dateRe.test(to_date) || to_date < from_date) {
+        return NextResponse.json({ error: "Valid from_date and to_date are required" }, { status: 400 });
+      }
+      const days = (Date.parse(to_date) - Date.parse(from_date)) / 86400000;
+      if (days > 366) {
+        return NextResponse.json({ error: "Date range cannot exceed 1 year" }, { status: 400 });
+      }
+      dates = [];
+      for (let i = 0; i <= days; i++) {
+        const d = new Date(Date.parse(from_date) + i * 86400000);
+        if (weekdays.includes(d.getUTCDay())) dates.push(d.toISOString().split("T")[0]);
+      }
+    }
+
+    if (!Array.isArray(dates) || dates.length === 0 || !dates.every((d) => dateRe.test(d))) {
+      return NextResponse.json(
+        { error: "Provide dates (array), or weekdays with from_date and to_date" },
         { status: 400 }
       );
     }
@@ -76,11 +102,13 @@ export async function POST(request: NextRequest) {
     const istToday = istNow.toISOString().split('T')[0];
     const istCurrentTime = istNow.toISOString().split('T')[1].substring(0, 5);
 
-    // Filter out past dates and today if time has passed
+    const skipped: { date: string; reason: "past" | "booking"; bookings?: { start_time: string; end_time: string }[] }[] = [];
+
+    // Skip past dates and today if time has passed
     const validDates = dates.filter((date: string) => {
-      if (date < istToday) return false;
-      if (date === istToday && start_time < istCurrentTime) return false;
-      return true;
+      const past = date < istToday || (date === istToday && start_time < istCurrentTime);
+      if (past) skipped.push({ date, reason: "past" });
+      return !past;
     });
 
     if (validDates.length === 0) {
@@ -90,25 +118,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for conflicting bookings for all valid dates
+    // Existing confirmed bookings overlapping the range are never touched; those dates are skipped
     const { data: conflictingBookings } = await supabase
       .from("bookings")
-      .select("id, date")
+      .select("date, start_time, end_time")
       .eq("studio", studio)
       .in("date", validDates)
       .eq("status", "confirmed")
       .lt("start_time", end_time)
       .gt("end_time", start_time);
 
-    // Filter out dates that have conflicting bookings
-    const conflictingDates = new Set(conflictingBookings?.map(b => b.date) || []);
-    const finalDates = validDates.filter((date: string) => !conflictingDates.has(date));
+    const conflictsByDate = new Map<string, { start_time: string; end_time: string }[]>();
+    for (const b of conflictingBookings || []) {
+      const list = conflictsByDate.get(b.date) || [];
+      list.push({ start_time: b.start_time.slice(0, 5), end_time: b.end_time.slice(0, 5) });
+      conflictsByDate.set(b.date, list);
+    }
+    const finalDates = validDates.filter((date: string) => {
+      const c = conflictsByDate.get(date);
+      if (c) skipped.push({ date, reason: "booking", bookings: c });
+      return !c;
+    });
+    skipped.sort((a, b) => a.date.localeCompare(b.date));
 
     if (finalDates.length === 0) {
-      return NextResponse.json(
-        { error: "All slots conflict with existing confirmed bookings" },
-        { status: 409 }
-      );
+      return NextResponse.json({ success: true, slots: [], count: 0, blocked: [], skipped });
     }
 
     // Create blocked slots for each valid date
@@ -138,10 +172,10 @@ export async function POST(request: NextRequest) {
       admin_id: admin.user.id,
       action: "bulk_block",
       entity_type: "availability_slot",
-      new_data: { count: slots?.length, studio, dates, start_time, end_time },
+      new_data: { count: slots?.length, studio, dates: finalDates, skipped, start_time, end_time },
     });
 
-    return NextResponse.json({ success: true, slots, count: slots?.length });
+    return NextResponse.json({ success: true, slots, count: slots?.length, blocked: finalDates, skipped });
   } catch (error) {
     return NextResponse.json(
       { error: "Invalid request body" },

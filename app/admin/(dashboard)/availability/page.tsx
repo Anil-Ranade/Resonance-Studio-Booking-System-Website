@@ -81,6 +81,7 @@ function generateTimeOptions(openTime: string, closeTime: string): string[] {
   
   for (let hour = openHour; hour <= closeHour; hour++) {
     options.push(`${hour.toString().padStart(2, '0')}:00`);
+    if (hour < closeHour) options.push(`${hour.toString().padStart(2, '0')}:30`);
   }
   return options;
 }
@@ -139,6 +140,19 @@ export default function AvailabilityManagementPage() {
     start_time: '08:00',
     end_time: '22:00',
   });
+
+  const [bulkMode, setBulkMode] = useState<'dates' | 'weekly'>('dates');
+  const [bulkWeekdays, setBulkWeekdays] = useState<number[]>([]);
+  const [bulkFrom, setBulkFrom] = useState(() => new Date().toISOString().split('T')[0]);
+  const [bulkTo, setBulkTo] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 90);
+    return d.toISOString().split('T')[0];
+  });
+  const [bulkResult, setBulkResult] = useState<{
+    blocked: string[];
+    skipped: { date: string; reason: 'past' | 'booking'; bookings?: { start_time: string; end_time: string }[] }[];
+  } | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -324,8 +338,8 @@ export default function AvailabilityManagementPage() {
   // Bulk create slots
   const handleBulkCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (bulkDates.length === 0) {
-      setMessage({ type: 'error', text: 'Please select at least one date' });
+    if (bulkMode === 'dates' ? bulkDates.length === 0 : bulkWeekdays.length === 0) {
+      setMessage({ type: 'error', text: bulkMode === 'dates' ? 'Please select at least one date' : 'Please select at least one weekday' });
       return;
     }
 
@@ -342,18 +356,18 @@ export default function AvailabilityManagementPage() {
         },
         body: JSON.stringify({
           studio: bulkFormData.studio,
-          dates: bulkDates,
+          ...(bulkMode === 'dates'
+            ? { dates: bulkDates }
+            : { weekdays: bulkWeekdays, from_date: bulkFrom, to_date: bulkTo }),
           start_time: bulkFormData.start_time,
           end_time: bulkFormData.end_time,
-          is_available: true,
         }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setMessage({ type: 'success', text: `${data.count} slots blocked successfully!` });
-        setShowBulkModal(false);
+        setBulkResult({ blocked: data.blocked, skipped: data.skipped });
         setBulkDates([]);
         fetchSlots();
       } else {
@@ -504,7 +518,7 @@ export default function AvailabilityManagementPage() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setShowBulkModal(true)}
+            onClick={() => { setBulkResult(null); setShowBulkModal(true); }}
             className="flex items-center gap-2 px-4 py-2.5 bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500/30 transition-colors"
           >
             <Copy className="w-4 h-4" />
@@ -987,6 +1001,42 @@ export default function AvailabilityManagementPage() {
               <p className="text-zinc-400 text-sm mb-4">
                 Block multiple dates at once to prevent bookings during these periods.
               </p>
+              {bulkResult ? (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium text-emerald-400 mb-1">
+                      Blocked {bulkResult.blocked.length} date{bulkResult.blocked.length !== 1 ? 's' : ''}
+                    </p>
+                    <p className="text-xs text-zinc-300 max-h-24 overflow-y-auto">
+                      {bulkResult.blocked.map(formatDate).join(', ') || 'None'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-amber-400 mb-1">
+                      Skipped {bulkResult.skipped.length} date{bulkResult.skipped.length !== 1 ? 's' : ''}
+                    </p>
+                    <ul className="text-xs text-zinc-300 max-h-32 overflow-y-auto space-y-1">
+                      {bulkResult.skipped.map((s) => (
+                        <li key={s.date}>
+                          {formatDate(s.date)} —{' '}
+                          {s.reason === 'past'
+                            ? 'already past'
+                            : `existing booking ${s.bookings?.map((b) => `${formatTime(b.start_time)}–${formatTime(b.end_time)}`).join(', ')}`}
+                        </li>
+                      ))}
+                      {bulkResult.skipped.length === 0 && <li>None</li>}
+                    </ul>
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button type="button" onClick={() => setBulkResult(null)} className="flex-1 btn-secondary">
+                      Block More
+                    </button>
+                    <button type="button" onClick={() => setShowBulkModal(false)} className="flex-1 btn-secondary">
+                      Done
+                    </button>
+                  </div>
+                </div>
+              ) : (
               <form onSubmit={handleBulkCreate} className="space-y-4">
                 <div>
                   <label htmlFor="bulk-studio" className="block text-sm text-zinc-400 mb-2.5">Studio</label>
@@ -1051,46 +1101,91 @@ export default function AvailabilityManagementPage() {
                     </select>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm text-zinc-400 mb-2">
-                    Select Dates ({bulkDates.length} selected)
-                  </label>
-                  <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-2 bg-white/5 rounded-xl">
-                    {getNext14Days().map((date) => (
-                      <button
-                        key={date}
-                        type="button"
-                        onClick={() => toggleBulkDate(date)}
-                        className={`p-2 text-sm rounded-lg transition-colors ${
-                          bulkDates.includes(date)
-                            ? 'bg-violet-500 text-navy'
-                            : 'bg-white/5 text-zinc-400 hover:bg-white/10'
-                        }`}
-                      >
-                        {new Date(date).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex gap-2 mt-2">
+                <div className="flex gap-2">
+                  {(['dates', 'weekly'] as const).map((m) => (
                     <button
+                      key={m}
                       type="button"
-                      onClick={() => setBulkDates(getNext14Days())}
-                      className="text-xs text-violet-400 hover:text-violet-300"
+                      onClick={() => setBulkMode(m)}
+                      className={`flex-1 p-2 text-sm rounded-lg transition-colors ${
+                        bulkMode === m ? 'bg-violet-500 text-navy' : 'bg-white/5 text-zinc-400 hover:bg-white/10'
+                      }`}
                     >
-                      Select All
+                      {m === 'dates' ? 'Specific dates' : 'Repeat weekly'}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setBulkDates([])}
-                      className="text-xs text-zinc-400 hover:text-zinc-300"
-                    >
-                      Clear All
-                    </button>
-                  </div>
+                  ))}
                 </div>
+                {bulkMode === 'dates' ? (
+                <div>
+                    <label className="block text-sm text-zinc-400 mb-2">
+                      Select Dates ({bulkDates.length} selected)
+                    </label>
+                    <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-2 bg-white/5 rounded-xl">
+                      {getNext14Days().map((date) => (
+                        <button
+                          key={date}
+                          type="button"
+                          onClick={() => toggleBulkDate(date)}
+                          className={`p-2 text-sm rounded-lg transition-colors ${
+                            bulkDates.includes(date)
+                              ? 'bg-violet-500 text-navy'
+                              : 'bg-white/5 text-zinc-400 hover:bg-white/10'
+                          }`}
+                        >
+                          {new Date(date).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setBulkDates(getNext14Days())}
+                        className="text-xs text-violet-400 hover:text-violet-300"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBulkDates([])}
+                        className="text-xs text-zinc-400 hover:text-zinc-300"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-7 gap-1">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() =>
+                            setBulkWeekdays((prev) => (prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]))
+                          }
+                          className={`p-2 text-xs rounded-lg transition-colors ${
+                            bulkWeekdays.includes(i) ? 'bg-violet-500 text-navy' : 'bg-white/5 text-zinc-400 hover:bg-white/10'
+                          }`}
+                        >
+                          {d}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="bulk-from" className="block text-sm text-zinc-400 mb-2.5">From</label>
+                        <input id="bulk-from" type="date" value={bulkFrom} onChange={(e) => setBulkFrom(e.target.value)} className="input" />
+                      </div>
+                      <div>
+                        <label htmlFor="bulk-to" className="block text-sm text-zinc-400 mb-2.5">To</label>
+                        <input id="bulk-to" type="date" value={bulkTo} min={bulkFrom} onChange={(e) => setBulkTo(e.target.value)} className="input" />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
@@ -1101,7 +1196,7 @@ export default function AvailabilityManagementPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={saving || bulkDates.length === 0}
+                    disabled={saving || (bulkMode === 'dates' ? bulkDates.length === 0 : bulkWeekdays.length === 0)}
                     className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2.5 px-4 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {saving ? (
@@ -1109,10 +1204,11 @@ export default function AvailabilityManagementPage() {
                     ) : (
                       <Plus className="w-4 h-4" />
                     )}
-                    {saving ? 'Blocking...' : `Block ${bulkDates.length} Slot${bulkDates.length !== 1 ? 's' : ''}`}
+                    {saving ? 'Blocking...' : bulkMode === 'dates' ? `Block ${bulkDates.length} Slot${bulkDates.length !== 1 ? 's' : ''}` : 'Block Weekly'}
                   </button>
                 </div>
               </form>
+              )}
             </div>
           </div>
         )}

@@ -9,6 +9,17 @@ interface BookingSlot {
   studio: string;
 }
 
+interface BlockedSlot {
+  studio: string;
+  start_time: string;
+  end_time: string;
+}
+
+const toHours = (t: string) => {
+  const [h, m] = t.split(":").map(Number);
+  return h + m / 60;
+};
+
 interface BookingBlock {
   start: number;
   end: number;
@@ -18,6 +29,7 @@ interface BookingBlock {
 export default function AvailabilityPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [bookings, setBookings] = useState<BookingSlot[]>([]);
+  const [blocked, setBlocked] = useState<BlockedSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [startHour, setStartHour] = useState(8);
   const [endHour, setEndHour] = useState(22);
@@ -70,6 +82,7 @@ export default function AvailabilityPage() {
       if (response.ok) {
         const data = await response.json();
         setBookings(data.bookings || []);
+        setBlocked(data.blocked || []);
       }
     } catch (error) {
       console.error("Error fetching bookings:", error);
@@ -149,8 +162,8 @@ export default function AvailabilityPage() {
       let currentBlock: BookingBlock | null = null;
 
       studioBookings.forEach((b) => {
-        const start = parseInt(b.start_time.split(":")[0], 10);
-        const end = parseInt(b.end_time.split(":")[0], 10);
+        const start = toHours(b.start_time);
+        const end = toHours(b.end_time);
 
         if (currentBlock && currentBlock.end === start) {
           // Merge consecutive bookings
@@ -459,6 +472,29 @@ export default function AvailabilityPage() {
                         );
                       })}
                     </div>
+
+                    {/* Blocked (studio-created unavailability) */}
+                    {blocked
+                      .filter((x) => x.studio === studio)
+                      .map((x, idx) => {
+                        const start = toHours(x.start_time);
+                        const end = toHours(x.end_time);
+                        return (
+                          <div
+                            key={`blocked-${idx}`}
+                            className="absolute left-0.5 right-0.5 md:left-1 md:right-1 z-[5] rounded-md border border-dashed border-zinc-500 bg-zinc-800/90 text-zinc-300 flex items-center justify-center overflow-hidden"
+                            style={{
+                              top: `${((start - startHour) / timeSlots.length) * 100}%`,
+                              height: `${((end - start) / timeSlots.length) * 100}%`,
+                              minHeight: "28px",
+                            }}
+                          >
+                            <span className="text-xs md:text-sm font-bold uppercase tracking-wider">
+                              Blocked
+                            </span>
+                          </div>
+                        );
+                      })}
 
                     {/* Busy blocks - Shows "Busy" instead of booking details */}
                     {studioBlocks[studio]?.map((block, idx) => {

@@ -36,6 +36,17 @@ interface Booking {
   notes: string | null;
 }
 
+interface BlockedSlot {
+  studio: string;
+  start_time: string;
+  end_time: string;
+}
+
+const toHours = (t: string) => {
+  const [h, m] = t.split(":").map(Number);
+  return h + m / 60;
+};
+
 interface BookingBlock {
   start: number;
   end: number;
@@ -53,6 +64,7 @@ export default function DisplayPage() {
   const [authError, setAuthError] = useState("");
 
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [blocked, setBlocked] = useState<BlockedSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [startHour, setStartHour] = useState(8);
   const [endHour, setEndHour] = useState(22);
@@ -178,6 +190,7 @@ export default function DisplayPage() {
           return;
         }
         setBookings(data.bookings || []);
+        setBlocked(data.blocked || []);
       }
     } catch (error) {
       console.error("Error fetching bookings:", error);
@@ -682,6 +695,29 @@ export default function DisplayPage() {
                         );
                       })}
                     </div>
+
+                    {/* Blocked (studio-created unavailability) */}
+                    {blocked
+                      .filter((x) => x.studio === studio)
+                      .map((x, idx) => {
+                        const start = toHours(x.start_time);
+                        const end = toHours(x.end_time);
+                        return (
+                          <div
+                            key={`blocked-${idx}`}
+                            className="absolute left-0.5 right-0.5 md:left-1 md:right-1 z-[5] rounded-md border border-dashed border-zinc-500 bg-zinc-800/90 text-zinc-300 flex items-center justify-center overflow-hidden"
+                            style={{
+                              top: `${((start - startHour) / timeSlots.length) * 100}%`,
+                              height: `${((end - start) / timeSlots.length) * 100}%`,
+                              minHeight: "28px",
+                            }}
+                          >
+                            <span className="text-xs md:text-sm font-bold uppercase tracking-wider">
+                              Blocked
+                            </span>
+                          </div>
+                        );
+                      })}
 
                     {/* Booking blocks - Vertical, Clickable */}
                     {studioBlocks[studio]?.map((block, idx) => {

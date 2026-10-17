@@ -62,7 +62,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ bookings: bookings || [] });
+    // Studio-created blocks (times only) so screens can show "Blocked" rather than "Busy"
+    let blockedQuery = supabaseServer
+      .from("availability_slots")
+      .select("studio, start_time, end_time")
+      .eq("date", date)
+      .eq("is_available", false)
+      .order("start_time", { ascending: true });
+    if (studio && studio !== "all") {
+      blockedQuery = blockedQuery.eq("studio", studio);
+    }
+    const { data: blocked } = await blockedQuery;
+
+    return NextResponse.json({ bookings: bookings || [], blocked: blocked || [] });
   } catch (error) {
     console.error("[Display Bookings API] Unexpected error:", error);
     return NextResponse.json(
