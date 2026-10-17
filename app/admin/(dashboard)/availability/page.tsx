@@ -94,12 +94,12 @@ export default function AvailabilityManagementPage() {
   const [defaultCloseTime, setDefaultCloseTime] = useState('22:00');
   const [startDate, setStartDate] = useState<string>(() => {
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    return today.toLocaleDateString("en-CA");
   });
   const [endDate, setEndDate] = useState<string>(() => {
     const nextWeek = new Date();
     nextWeek.setDate(nextWeek.getDate() + 7);
-    return nextWeek.toISOString().split('T')[0];
+    return nextWeek.toLocaleDateString("en-CA");
   });
 
   // Generate time options based on admin settings
@@ -113,7 +113,7 @@ export default function AvailabilityManagementPage() {
   const [editingSlot, setEditingSlot] = useState<AvailabilitySlot | null>(null);
   const [formData, setFormData] = useState<SlotFormData>({
     studio: 'Studio A',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString("en-CA"),
     start_time: '08:00',
     end_time: '22:00',
     is_available: false, // Blocked slots have is_available = false
@@ -125,7 +125,7 @@ export default function AvailabilityManagementPage() {
     name: '',
     studio: 'Studio A',
     session_type: 'Karaoke',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString("en-CA"),
     start_time: '10:00',
     end_time: '12:00',
     rate_per_hour: 400,
@@ -143,11 +143,11 @@ export default function AvailabilityManagementPage() {
 
   const [bulkMode, setBulkMode] = useState<'dates' | 'weekly'>('dates');
   const [bulkWeekdays, setBulkWeekdays] = useState<number[]>([]);
-  const [bulkFrom, setBulkFrom] = useState(() => new Date().toISOString().split('T')[0]);
+  const [bulkFrom, setBulkFrom] = useState(() => new Date().toLocaleDateString("en-CA"));
   const [bulkTo, setBulkTo] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 90);
-    return d.toISOString().split('T')[0];
+    return d.toLocaleDateString("en-CA");
   });
   const [bulkResult, setBulkResult] = useState<{
     blocked: string[];
@@ -438,7 +438,7 @@ export default function AvailabilityManagementPage() {
       name: '',
       studio: 'Studio A',
       session_type: 'Karaoke',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString("en-CA"),
       start_time: '10:00',
       end_time: '12:00',
       rate_per_hour: 400,
@@ -454,7 +454,7 @@ export default function AvailabilityManagementPage() {
     for (let i = 0; i < 14; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
-      days.push(date.toISOString().split('T')[0]);
+      days.push(date.toLocaleDateString("en-CA"));
     }
     return days;
   };
@@ -462,7 +462,7 @@ export default function AvailabilityManagementPage() {
   const resetForm = () => {
     setFormData({
       studio: 'Studio A',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString("en-CA"),
       start_time: defaultOpenTime,
       end_time: defaultCloseTime,
       is_available: false, // Blocked slots have is_available = false
@@ -491,7 +491,7 @@ export default function AvailabilityManagementPage() {
 
   // Format date for display
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+    const date = new Date(dateStr + 'T00:00');
     return date.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
@@ -1132,7 +1132,7 @@ export default function AvailabilityManagementPage() {
                               : 'bg-white/5 text-zinc-400 hover:bg-white/10'
                           }`}
                         >
-                          {new Date(date).toLocaleDateString('en-US', {
+                          {new Date(date + 'T00:00').toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
                           })}

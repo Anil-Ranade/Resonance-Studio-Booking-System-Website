@@ -39,7 +39,7 @@ export default function AvailabilityPage() {
   const studios = ["Studio A", "Studio B", "Studio C"];
 
   // Format selected date for API
-  const formattedDate = selectedDate.toISOString().split("T")[0];
+  const formattedDate = selectedDate.toLocaleDateString("en-CA");
 
   // Calculate max date based on advance booking days
   const getMaxDate = useCallback(() => {
@@ -144,8 +144,8 @@ export default function AvailabilityPage() {
   // Check if selected date is today
   const isToday = useMemo(() => {
     const today = new Date();
-    const todayString = today.toISOString().split("T")[0];
-    const selectedString = selectedDate.toISOString().split("T")[0];
+    const todayString = today.toLocaleDateString("en-CA");
+    const selectedString = selectedDate.toLocaleDateString("en-CA");
     return todayString === selectedString;
   }, [selectedDate]);
 
@@ -322,11 +322,11 @@ export default function AvailabilityPage() {
                   <label className="text-sm text-zinc-400 font-medium">Select a date</label>
                   <input
                     type="date"
-                    value={selectedDate.toISOString().split("T")[0]}
-                    min={new Date().toISOString().split("T")[0]}
-                    max={getMaxDate().toISOString().split("T")[0]}
+                    value={selectedDate.toLocaleDateString("en-CA")}
+                    min={new Date().toLocaleDateString("en-CA")}
+                    max={getMaxDate().toLocaleDateString("en-CA")}
                     onChange={(e) => {
-                      const newDate = new Date(e.target.value);
+                      const newDate = new Date(e.target.value + "T00:00");
                       if (!isNaN(newDate.getTime())) {
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
