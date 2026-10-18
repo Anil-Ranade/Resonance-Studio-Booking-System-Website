@@ -45,9 +45,9 @@ export default function InvestorsPage() {
     try {
       const session = await getSession();
       if (session?.access_token) return session.access_token;
-      return localStorage.getItem("accessToken");
+      return null;
     } catch {
-      return localStorage.getItem("accessToken");
+      return null;
     }
   }, []);
 

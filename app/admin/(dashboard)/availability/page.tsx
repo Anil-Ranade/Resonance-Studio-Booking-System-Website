@@ -155,12 +155,11 @@ export default function AvailabilityManagementPage() {
       const session = await getSession();
       if (session?.access_token) {
         // Update localStorage with fresh token
-        localStorage.setItem('accessToken', session.access_token);
         return session.access_token;
       }
-      return localStorage.getItem('accessToken');
+        return null;
     } catch {
-      return localStorage.getItem('accessToken');
+      return null;
     }
   }, []);
 

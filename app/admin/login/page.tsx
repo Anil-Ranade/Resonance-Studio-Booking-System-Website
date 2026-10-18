@@ -76,7 +76,6 @@ export default function AdminLoginPage() {
 
       // Store admin info in localStorage
       localStorage.setItem('admin', JSON.stringify(data.admin));
-      localStorage.setItem('accessToken', session.access_token);
 
       // Redirect to admin dashboard
       router.push('/admin/dashboard');

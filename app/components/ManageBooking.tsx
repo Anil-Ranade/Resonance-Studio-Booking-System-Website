@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 // Shared UI + helpers for the edit-booking and cancel-booking pages.
 
 import Link from "next/link";
@@ -21,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
+import { Eye, EyeOff } from "lucide-react";
 
 export const SEARCH_FORM_ID = "manage-booking-search";
 
@@ -52,6 +55,28 @@ export async function safeJsonParse(response: Response) {
 }
 
 export const isValidPhone = (phone: string) => /^\d{10}$/.test(phone.replace(/\D/g, ""));
+
+function PasswordInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="relative">
+      <Input id="manage-password" type={visible ? "text" : "password"} autoComplete="current-password" value={value} onChange={(e) => onChange(e.target.value)} placeholder="Enter your password" className="h-11 pr-11 text-base" />
+      <button type="button" onClick={() => setVisible((current) => !current)} aria-label={visible ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+        {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+      </button>
+    </div>
+  );
+}
+
+export async function signInCustomer(phone: string, name: string, password: string) {
+  const response = await fetch("/api/auth/password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone, name, password, confirmPassword: password }),
+  });
+  const data = await safeJsonParse(response);
+  if (!response.ok) throw new Error(data.error || "Unable to verify password");
+}
 
 /** Why a booking can't be changed: hidden (invalid/past), locked (<24h), or "" if allowed. */
 export function changeBlockReason(booking: Booking) {
@@ -107,16 +132,20 @@ export function ErrorAlert({ message }: { message: string }) {
 export function PhoneNameSearch({
   phone,
   name,
+  password,
   onPhoneChange,
   onNameChange,
+  onPasswordChange,
   onSubmit,
   error,
   noResults,
 }: {
   phone: string;
   name: string;
+  password: string;
   onPhoneChange: (v: string) => void;
   onNameChange: (v: string) => void;
+  onPasswordChange: (v: string) => void;
   onSubmit: () => void;
   error: string;
   noResults: boolean;
@@ -148,6 +177,9 @@ export function PhoneNameSearch({
         </div>
         <Label htmlFor="manage-name">Name</Label>
         <Input id="manage-name" autoComplete="name" value={name} onChange={(e) => onNameChange(e.target.value)} placeholder="Your name" className="h-11 text-base" />
+        <Label htmlFor="manage-password">Password</Label>
+        <PasswordInput value={password} onChange={onPasswordChange} />
+        <p className="text-xs text-muted-foreground">A password is required to view, change, or cancel bookings. <Link href="/forgot-password" className="text-primary underline">Forgot password?</Link></p>
         <p className="text-xs text-muted-foreground">Your mobile number and name are used for WhatsApp booking confirmations and one-day advance reminders.</p>
       </form>
 

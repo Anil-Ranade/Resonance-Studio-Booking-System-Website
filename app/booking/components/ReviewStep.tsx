@@ -132,12 +132,10 @@ export default function ReviewStep() {
         )}
 
         <Card size="sm">
-          <CardHeader>
+          <CardContent className="space-y-2 pt-3">
             <CardTitle className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
               Date & time
             </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1.5">
             <p className="flex items-center gap-2">
               <Calendar className="size-4 text-primary" /> {formatDate(draft.date)}
             </p>

@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Phone,
   Smartphone,
   Shield,
   RotateCcw,
   User,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useBooking } from "../contexts/BookingContext";
 import StepLayout from "./StepLayout";
@@ -57,10 +60,38 @@ export default function PhoneStep() {
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [isEditingDetails, setIsEditingDetails] = useState(false);
   const [isSavingDetails, setIsSavingDetails] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordMode, setPasswordMode] = useState<"existing" | "new" | null>(null);
+  const [isCheckingPassword, setIsCheckingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const checkPasswordAccount = useCallback(async (phoneDigits: string) => {
+    if (mode !== "customer" || phoneDigits.length !== 10) return;
+    setIsCheckingPassword(true);
+    setPasswordError("");
+    try {
+      const response = await fetch(`/api/auth/password?phone=${phoneDigits}`);
+      const data = await response.json();
+      if (response.ok) {
+        setPasswordMode(data.exists && data.hasPassword ? "existing" : "new");
+        if (data.name) {
+          setName(data.name);
+          updateDraft({ name: data.name });
+        }
+        setUserChecked(true);
+      }
+    } finally {
+      setIsCheckingPassword(false);
+    }
+  }, [mode, updateDraft]);
 
   // Check if user exists when phone number is complete
   const checkExistingUser = useCallback(
     async (phoneDigits: string) => {
+      if (mode === "customer") return;
       if (phoneDigits.length !== 10) {
         setUserChecked(false);
         setIsExistingUser(false);
@@ -70,7 +101,7 @@ export default function PhoneStep() {
       setIsCheckingUser(true);
       try {
         // Staff/admin see full customer details.
-        const response = await (mode === "customer" ? fetch : adminFetch)("/api/check-user", {
+        const response = await adminFetch("/api/check-user", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ phone: phoneDigits }),
@@ -102,6 +133,10 @@ export default function PhoneStep() {
     },
     [updateDraft, mode]
   );
+
+  useEffect(() => {
+    if (showManualEntry && mode === "customer") checkPasswordAccount(phone.replace(/\D/g, ""));
+  }, [phone, showManualEntry, mode, checkPasswordAccount]);
 
   // Auto-login check on mount - check if device is trusted for auto-authentication
   useEffect(() => {
@@ -346,6 +381,33 @@ export default function PhoneStep() {
   const handleNext = async () => {
     const digits = phone.replace(/\D/g, "");
     if (digits.length === 10) {
+      if (mode === "customer" && !isTrustedDevice) {
+        setPasswordError("");
+        if (passwordMode === "new" && password !== confirmPassword) {
+          setPasswordError("Passwords do not match.");
+          return;
+        }
+        setIsSavingDetails(true);
+        try {
+          const { fingerprint, deviceName } = await getDeviceFingerprint();
+          const response = await fetch("/api/auth/password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone: digits, name: name.trim(), password, confirmPassword, deviceFingerprint: fingerprint, deviceName }),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            setPasswordError(data.error || "Unable to verify password.");
+            return;
+          }
+          updateDraft({ deviceFingerprint: fingerprint, deviceTrusted: true });
+        } catch {
+          setPasswordError("Unable to verify password. Please try again.");
+          return;
+        } finally {
+          setIsSavingDetails(false);
+        }
+      }
       if (isExistingUser && name.trim() && (isEditingDetails || mode !== "customer")) {
         setIsSavingDetails(true);
         try {
@@ -384,9 +446,12 @@ export default function PhoneStep() {
 
   // Validate: phone and name are required.
   const phoneValid = phone.replace(/\D/g, "").length === 10;
+  const passwordValid = mode !== "customer" || isTrustedDevice || (passwordMode !== null && password.length >= 8 && (passwordMode === "existing" || password === confirmPassword));
   const isValid =
     phoneValid &&
-    name.trim() !== "";
+    name.trim() !== "" &&
+    passwordValid &&
+    !isCheckingPassword;
 
   // Handle confirming the auto-detected user
   const handleConfirmUser = () => {
@@ -537,6 +602,33 @@ export default function PhoneStep() {
                 readOnly={isExistingUser && mode === "customer" && !isEditingDetails}
               />
             </div>
+          </div>
+        )}
+
+        {mode === "customer" && showManualEntry && phoneValid && userChecked && !isTrustedDevice && passwordMode && (
+          <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="space-y-1.5">
+              <Label htmlFor="booking-password">{passwordMode === "new" ? "Create password" : "Password"}</Label>
+              <div className="relative">
+                <Input id="booking-password" type={showPassword ? "text" : "password"} autoComplete={passwordMode === "new" ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" className="h-11 pr-11 text-base" />
+                <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+            </div>
+            {passwordMode === "new" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="booking-confirm-password">Confirm password</Label>
+                <div className="relative">
+                  <Input id="booking-confirm-password" type={showConfirmPassword ? "text" : "password"} autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Enter it again" className="h-11 pr-11 text-base" />
+                  <button type="button" onClick={() => setShowConfirmPassword((value) => !value)} aria-label={showConfirmPassword ? "Hide confirmed password" : "Show confirmed password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+              </div>
+            )}
+            {passwordMode === "existing" && <Link href="/forgot-password" className="text-xs text-primary underline">Forgot password? Request a reset.</Link>}
+            {passwordError && <p className="text-sm text-destructive" role="alert">{passwordError}</p>}
           </div>
         )}
 

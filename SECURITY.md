@@ -11,7 +11,10 @@
 ### 1. Authentication & Authorization
 
 #### Customer Authentication
-- Customer booking flow requires a **10-digit mobile number and name**
+- Customer booking flow requires a **10-digit WhatsApp number, name, and password**
+- Existing customers receive their saved name automatically; new customers set a password
+- Customer passwords are stored as bcrypt hashes and are never stored in plaintext
+- Forgot-password requests are created through `/forgot-password` and resolved by authorized admins
 - Customer data is used for WhatsApp booking confirmations and one-day advance reminders
 - **Cookie-based session management** with HttpOnly secure cookies
 - **Auto-login** for trusted devices with valid session cookies
@@ -22,12 +25,14 @@
 - Access tokens verified on every admin API request
 - Admin status verified against `admin_users` table
 - Active status check (`is_active = true`)
+- Successful admin login stores the Supabase session in an HttpOnly cookie
 
 #### Staff Authentication
 - **Supabase Auth** handles staff email/password authentication
 - Staff status verified against `admin_users` table (role: `staff`)
 - Access tokens verified on every staff API request
 - Staff has limited permissions compared to admin
+- Successful staff login stores the Supabase session in an HttpOnly cookie
 
 #### Investor Authentication
 - **Supabase Auth** handles investor email/password authentication
@@ -71,7 +76,7 @@ The following headers are enforced via `next.config.ts`:
 
 ### 4. Database Security
 
-- **Row Level Security (RLS)** enabled on all tables
+- **Row Level Security (RLS)** enabled on protected tables after migrations are applied
 - Private users and bookings are accessed through server-side service-role APIs
 - Browser-authenticated sessions do not receive broad direct table/function grants
 - **UUID primary keys** (non-sequential, non-guessable)
@@ -86,13 +91,13 @@ The following headers are enforced via `next.config.ts`:
 - Service role key: never exposed to client
 - Resend API key: server-only, never exposed
 - Google API credentials: server-only (Calendar & Sheets access)
-- Auth cookies: HttpOnly, Secure, SameSite=Lax
+- Auth cookies: HttpOnly, Secure in production, SameSite=Strict
 
 ### 6. Session Security
 
 - HttpOnly cookies prevent XSS token theft
 - Secure flag ensures HTTPS-only transmission
-- SameSite=Lax prevents CSRF attacks
+- SameSite=Strict reduces CSRF exposure
 - Session expiry with automatic refresh
 - Logout properly clears all auth cookies
 - Trusted device fingerprints stored securely
@@ -135,7 +140,7 @@ openssl rand -base64 32  # For JWT_SECRET
 ```
 
 ### Supabase Configuration
-1. Enable RLS on all tables
+1. Enable RLS on all protected tables
 2. Review and test RLS policies
 3. Use anon key for client, service role for server only
 4. Enable audit logging
@@ -154,11 +159,14 @@ openssl rand -base64 32  # For JWT_SECRET
 ### Rate Limiting
 Rate limiting is database-backed and applied across public/authentication-sensitive API routes. It uses endpoint and client keys and fails closed if the rate-limit check cannot complete. Production deployments should still use provider-level DDoS protection.
 
+### Password Reset Operations
+Admins can resolve customer reset requests from `/admin/password-requests`. The current workflow lets an admin set a replacement password and share it through WhatsApp; use a temporary password and ask the customer to change it after signing in.
+
 ## Dependencies
 
 Run `npm audit` regularly to check for vulnerabilities in dependencies.
 
-Current status (verified October 19, 2026): **0 vulnerabilities** (`npm audit`)
+Dependency status must be checked in the deployment environment with `npm audit`; it was not independently verified in this workspace because registry access was unavailable.
 
 ## Recent Security Updates (October 2026)
 
@@ -168,10 +176,14 @@ Current status (verified October 19, 2026): **0 vulnerabilities** (`npm audit`)
 - Preserved admin/staff **skip_validation** override capability for emergency bookings
 - Added **`check_rate_limit`** database function for endpoint and client-key rate limiting
 - Enforced admin/super-admin roles on admin APIs
-- Redacted unauthenticated booking lookups and removed customer enumeration responses
+- Redacted unauthenticated booking lookups and limited customer status responses
 - Added fail-closed rate limiting, CSP, and trusted-device session checks
+- Added per-phone customer-password rate limiting
+- Added HttpOnly admin/staff session cookies and cookie logout
+- Logout now disables the trusted device used by the customer session
+- Added customer password setup/login and admin-managed password reset requests
 - Added database migration `011_security_hardening.sql`
-- Removed vulnerable development-only dependency chains; full `npm audit` is clean
+- Removed vulnerable development-only dependency chains; run `npm audit` in the deployment environment to verify dependencies
 
 ## Contact
 

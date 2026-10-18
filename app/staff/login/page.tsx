@@ -76,7 +76,6 @@ export default function StaffLoginPage() {
 
       // Store staff info in localStorage (separate from admin)
       localStorage.setItem('staff', JSON.stringify(data.staff));
-      localStorage.setItem('staffAccessToken', session.access_token);
 
       // Redirect to staff dashboard
       router.push('/staff/dashboard');

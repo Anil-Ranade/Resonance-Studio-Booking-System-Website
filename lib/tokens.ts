@@ -23,6 +23,8 @@ export const COOKIE_OPTIONS = {
 
 export const ACCESS_TOKEN_COOKIE = 'resonance_access_token';
 export const REFRESH_TOKEN_COOKIE = 'resonance_refresh_token';
+export const ADMIN_SESSION_COOKIE = 'resonance_admin_session';
+export const STAFF_SESSION_COOKIE = 'resonance_staff_session';
 
 interface TokenPayload {
   phone: string;

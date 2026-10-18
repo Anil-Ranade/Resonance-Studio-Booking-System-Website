@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS users (
     phone_number VARCHAR(15) NOT NULL UNIQUE,
     name VARCHAR(255),
     email VARCHAR(255),
+    password_hash VARCHAR(255),
     is_verified BOOLEAN DEFAULT FALSE,
     total_bookings INTEGER DEFAULT 0,
     last_booking_at TIMESTAMPTZ,
@@ -102,6 +103,23 @@ CREATE TABLE IF NOT EXISTS users (
 -- Create indexes on users
 CREATE INDEX IF NOT EXISTS idx_users_phone_number ON users(phone_number);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- =====================================================
+-- TABLE: password_reset_requests
+-- =====================================================
+CREATE TABLE IF NOT EXISTS password_reset_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    phone_number VARCHAR(15) NOT NULL,
+    name VARCHAR(255),
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    admin_note TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    resolved_at TIMESTAMPTZ,
+    CONSTRAINT chk_password_reset_request_status CHECK (status IN ('pending', 'resolved'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_reset_requests_status_created
+    ON password_reset_requests(status, created_at DESC);
 
 -- =====================================================
 -- TABLE: admin_users

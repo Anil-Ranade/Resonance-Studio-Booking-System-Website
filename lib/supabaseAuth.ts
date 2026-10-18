@@ -28,6 +28,7 @@ export async function signInWithEmail(email: string, password: string) {
 
 // Sign out
 export async function signOut() {
+  await fetch('/api/auth/admin-logout', { method: 'POST', credentials: 'include' });
   const { error } = await supabaseAuth.auth.signOut();
   if (error) {
     throw error;

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { checkAuthStatus } from '@/lib/authClient';
+import { signInCustomer } from '@/app/components/ManageBooking';
 
 // Helper function to safely parse JSON responses
 async function safeJsonParse(response: Response) {
@@ -36,6 +37,8 @@ import {
   Gift,
   Award,
   TrendingUp,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 interface LoyaltyStatus {
@@ -90,6 +93,9 @@ const statusConfig = {
 
 export default function MyBookingsPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -128,7 +134,7 @@ export default function MyBookingsPage() {
           
           // Auto-fetch bookings and loyalty for authenticated user
           await Promise.all([
-            fetchBookingsForPhone(status.user.phone),
+            fetchBookingsForPhone(status.user.phone, false),
             fetchLoyaltyStatus(status.user.phone)
           ]);
         }
@@ -142,7 +148,7 @@ export default function MyBookingsPage() {
     checkAuth();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchBookingsForPhone = async (phone: string) => {
+  const fetchBookingsForPhone = async (phone: string, requirePassword = true) => {
     if (phone.replace(/\D/g, '').length !== 10) {
       setError('Please enter a valid 10-digit phone number');
       return;
@@ -157,6 +163,7 @@ export default function MyBookingsPage() {
     }
 
     try {
+      if (requirePassword) await signInCustomer(phone, name.trim(), password);
       const response = await fetch(`/api/bookings?phone=${phone}`);
       const data = await safeJsonParse(response);
 
@@ -193,7 +200,7 @@ export default function MyBookingsPage() {
   };
 
   const fetchBookings = async () => {
-    await fetchBookingsForPhone(phoneNumber);
+    await fetchBookingsForPhone(phoneNumber, true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -486,9 +493,30 @@ export default function MyBookingsPage() {
                       inputMode="numeric"
                     />
                   </div>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your name"
+                    autoComplete="name"
+                    className="flex-1 py-3 px-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                  />
+                  <div className="flex-1 relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Password"
+                      autoComplete="current-password"
+                      className="w-full py-3 px-4 pr-12 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                    />
+                    <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white">
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                   <button
                     type="submit"
-                    disabled={isLoading || phoneNumber.length !== 10}
+                    disabled={isLoading || phoneNumber.length !== 10 || !name.trim() || !password}
                     className="btn-accent py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isLoading ? (
@@ -504,6 +532,7 @@ export default function MyBookingsPage() {
                     )}
                   </button>
                 </div>
+                <Link href="/forgot-password" className="inline-block mt-3 text-xs text-violet-300 underline">Forgot password? Request a reset.</Link>
               </form>
             </div>
 

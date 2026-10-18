@@ -97,12 +97,17 @@ export async function requireCustomer(
 /** Active admin_users row for the Supabase access token in Authorization, or null. */
 export async function getAdminUser(request: Request) {
   const auth = request.headers.get("authorization");
-  if (!auth?.startsWith("Bearer ")) return null;
+  const cookies = parseCookies(request.headers.get("cookie"));
+  const headerToken = auth?.startsWith("Bearer ") ? auth.slice("Bearer ".length).trim() : "";
+  const sessionToken = headerToken && headerToken !== "null" && headerToken !== "undefined"
+    ? headerToken
+    : cookies.resonance_admin_session || cookies.resonance_staff_session;
+  if (!sessionToken) return null;
 
   const supabaseAuth = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: auth } } },
+    { global: { headers: { Authorization: `Bearer ${sessionToken}` } } },
   );
   const {
     data: { user },

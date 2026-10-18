@@ -58,7 +58,6 @@ export default function StaffDashboardLayout({
         }
         
         // Update token in localStorage with fresh one
-        localStorage.setItem('staffAccessToken', session.access_token);
         
         const staffData = JSON.parse(storedStaff);
         setStaff(staffData);

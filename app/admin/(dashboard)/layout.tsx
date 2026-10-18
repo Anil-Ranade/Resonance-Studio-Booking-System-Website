@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import PanelShell from "@/app/components/PanelShell";
-import { LayoutDashboard, Calendar, Clock, Users, Settings, Gift, CreditCard } from "lucide-react";
+import { LayoutDashboard, Calendar, Clock, Users, Settings, Gift, CreditCard, KeyRound } from "lucide-react";
 import { signOut, getSession } from "@/lib/supabaseAuth";
 
 interface AdminInfo {
@@ -65,10 +65,17 @@ const navItems = [
   },
   { 
     label: "Settings",
-    group: "Team",
+    group: "System",
     href: "/admin/settings", 
     icon: Settings,
     allowedRoles: ['admin', 'super_admin', 'staff', 'investor']
+  },
+  {
+    label: "Password Requests",
+    group: "Operate",
+    href: "/admin/password-requests",
+    icon: KeyRound,
+    allowedRoles: ['admin', 'super_admin'],
   },
 ];
 
@@ -102,7 +109,6 @@ export default function DashboardLayout({
         }
 
         // Update token in localStorage with fresh one
-        localStorage.setItem("accessToken", session.access_token);
 
         const adminData = JSON.parse(storedAdmin);
         setAdmin(adminData);

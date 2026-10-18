@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getAdminUser } from "@/lib/apiSecurity";
+import { createCookieHeader, ADMIN_SESSION_COOKIE } from "@/lib/tokens";
 
 // POST /api/admin/login - Verify admin status after Supabase auth
 export async function POST(request: NextRequest) {
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
       .update({ last_login_at: new Date().toISOString() })
       .eq("id", userId);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       admin: {
         id: adminUser.id,
@@ -55,6 +56,8 @@ export async function POST(request: NextRequest) {
         role: adminUser.role,
       },
     });
+    response.headers.append("Set-Cookie", createCookieHeader(ADMIN_SESSION_COOKIE, request.headers.get("authorization")!.slice("Bearer ".length), 60 * 60 * 8));
+    return response;
   } catch (error) {
     console.error("[Admin Login API] Error:", error);
     return NextResponse.json(

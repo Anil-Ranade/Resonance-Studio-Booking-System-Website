@@ -9,9 +9,7 @@ export default function AdminPage() {
   useEffect(() => {
     // Check if logged in
     const admin = localStorage.getItem('admin');
-    const token = localStorage.getItem('accessToken');
-
-    if (admin && token) {
+    if (admin) {
       router.push('/admin/dashboard');
     } else {
       router.push('/admin/login');

@@ -59,12 +59,11 @@ export default function StaffCancelBookingPage() {
     try {
       const session = await getSession();
       if (session?.access_token) {
-        localStorage.setItem("staffAccessToken", session.access_token);
         return session.access_token;
       }
-      return localStorage.getItem("staffAccessToken");
+        return null;
     } catch {
-      return localStorage.getItem("staffAccessToken");
+      return null;
     }
   }, []);
 

@@ -35,9 +35,9 @@ export default function InvestorDashboard({ user }: InvestorDashboardProps) {
     try {
       const session = await getSession();
       if (session?.access_token) return session.access_token;
-      return localStorage.getItem("staffAccessToken");
+      return null;
     } catch {
-      return localStorage.getItem("staffAccessToken");
+      return null;
     }
   }, []);
 

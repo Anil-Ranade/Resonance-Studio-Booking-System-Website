@@ -186,7 +186,6 @@ export default function StandaloneRemindersPage() {
       }
 
       // Success
-      localStorage.setItem('accessToken', session.access_token);
       setIsAuthorized(true);
     } catch (err: any) {
       console.error("Login error:", err);
@@ -217,9 +216,9 @@ export default function StandaloneRemindersPage() {
       if (session?.access_token) {
         return session.access_token;
       }
-      return localStorage.getItem("accessToken");
+        return null;
     } catch {
-      return localStorage.getItem("accessToken");
+      return null;
     }
   }, []);
 

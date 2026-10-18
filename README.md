@@ -2,8 +2,8 @@
 
 A modern, full-stack studio booking and management platform built with Next.js 16 and React 19.
 
-![Next.js](https://img.shields.io/badge/Next.js-16.0.10-black?logo=next.js)
-![React](https://img.shields.io/badge/React-19.2.0-blue?logo=react)
+![Next.js](https://img.shields.io/badge/Next.js-16.1.1-black?logo=next.js)
+![React](https://img.shields.io/badge/React-19.2.3-blue?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38B2AC?logo=tailwind-css)
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)
@@ -11,7 +11,7 @@ A modern, full-stack studio booking and management platform built with Next.js 1
 
 ## 📖 Overview
 
-Resonance Studio Booking is a comprehensive booking system that allows customers to book music studio sessions, manage their bookings, and provides admin and staff dashboards for studio management. The customer flow is mobile-first: customers provide a 10-digit mobile number and name, which are used for WhatsApp booking confirmations and one-day advance reminders.
+Resonance Studio Booking is a comprehensive booking system that allows customers to book music studio sessions, manage their bookings, and provides admin and staff dashboards for studio management. The customer flow is mobile-first: customers provide a 10-digit WhatsApp number, name, and password. The saved name is automatically prefetched for returning customers.
 
 ## ✨ Features
 
@@ -36,7 +36,10 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 
 ### 📱 Secure Authentication
 
-- Mobile-first customer identification using a 10-digit number and name
+- Mobile-first customer authentication using a 10-digit WhatsApp number, name, and password
+- Existing customers have their saved name prefilled automatically
+- New customers set and confirm a password during their first booking
+- Forgot-password requests are handled through the admin Password Requests screen
 - WhatsApp confirmation and one-day advance reminder messaging
 - **Trusted device management** with cookie-based auto-login
 - Session-based authentication for booking access
@@ -93,6 +96,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - **Invoice printing** - Generate and print professional booking invoices
 - **Booking restore/delete** - Restore cancelled bookings or permanently delete
 - **Staff management** - Create and manage staff members
+- **Password Requests** - Review and resolve customer forgot-password requests
 - Availability slot management (block/unblock)
 - Payment verification management
 - Bulk availability operations
@@ -165,7 +169,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 | **UI Library** | React 19                 |
 | **Language**   | TypeScript 5                 |
 | **Styling**    | Tailwind CSS 4               |
-| **Animations** | Framer Motion 12             |
+| **Animations** | GSAP 3                       |
 | **Icons**      | Lucide React                 |
 | **Database**   | Supabase (PostgreSQL)        |
 | **Auth**       | JWT/device sessions + Supabase Auth |
@@ -297,6 +301,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │       ├── investors/      # Investor management
 │   │       ├── loyalty/        # Loyalty program management
 │   │       ├── payments/       # Payment verification
+│   │       ├── password-requests/ # Customer reset requests
 │   │       └── settings/       # Configuration
 │   │
 │   ├── staff/                  # Staff portal
@@ -312,16 +317,19 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │   │   ├── verify-device/  # Verify trusted device
 │   │   │   ├── status/         # Check auth status
 │   │   │   ├── auto-login/     # Auto-login for trusted devices
+│   │   │   ├── password/       # Customer password login/setup/status
+│   │   │   ├── password-reset-request/ # Forgot-password requests
+│   │   │   ├── admin-logout/   # Clear admin/staff session cookies
 │   │   │   ├── refresh/        # Refresh auth session
 │   │   │   └── logout/         # Logout and clear session
 │   │   ├── book/               # Booking creation
 │   │   ├── bookings/           # Booking operations
 │   │   │   ├── cancel/         # Cancel with notification
-│   │   │   ├── cancel-silent/  # Silent cancellation
 │   │   │   └── upcoming/       # Upcoming bookings
 │   │   ├── availability/       # Availability checks
 │   │   ├── admin/              # Admin endpoints
 │   │   │   ├── login/          # Admin authentication
+│   │   │   ├── password-requests/ # Reset request management
 │   │   │   ├── stats/          # Dashboard statistics
 │   │   │   ├── bookings/       # Booking management
 │   │   │   ├── availability/   # Availability management
@@ -338,7 +346,6 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │   ├── settings/           # Public settings
 │   │   ├── contact/            # Contact form
 │   │   ├── check-user/         # User verification
-│   │   ├── check-loyalty/      # Loyalty status check
 │   │   ├── display/            # Display endpoints
 │   │   └── loyalty/            # Loyalty program endpoints
 │   │

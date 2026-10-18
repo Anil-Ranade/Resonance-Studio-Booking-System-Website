@@ -27,10 +27,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Revoke refresh token in database if present
     if (refreshToken) {
       const tokenHash = hashRefreshToken(refreshToken);
+      const { data: tokenRecord, error: lookupError } = await supabase
+        .from('refresh_tokens')
+        .select('user_phone, device_fingerprint')
+        .eq('token_hash', tokenHash)
+        .maybeSingle();
       const { error: revokeError } = await supabase
         .from('refresh_tokens')
         .update({ revoked_at: new Date().toISOString() })
         .eq('token_hash', tokenHash);
+
+      if (!lookupError && tokenRecord?.device_fingerprint) {
+        await supabase
+          .from('trusted_devices')
+          .update({ is_active: false })
+          .eq('phone', tokenRecord.user_phone)
+          .eq('device_fingerprint', tokenRecord.device_fingerprint);
+      }
 
       if (revokeError) {
         console.error('[Logout] Failed to revoke refresh token:', revokeError);

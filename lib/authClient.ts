@@ -7,6 +7,8 @@
 
 'use client';
 
+import { clearDeviceFingerprint } from '@/lib/deviceFingerprint';
+
 interface AuthStatus {
   authenticated: boolean;
   user?: {
@@ -72,6 +74,8 @@ export async function logout(): Promise<boolean> {
       method: 'POST',
       credentials: 'include', // Important: include cookies
     });
+
+    clearDeviceFingerprint();
 
     return response.ok;
   } catch (error) {

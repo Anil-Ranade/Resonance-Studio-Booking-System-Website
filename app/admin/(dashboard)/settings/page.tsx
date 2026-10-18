@@ -37,12 +37,11 @@ export default function SettingsPage() {
     try {
       const session = await getSession();
       if (session?.access_token) {
-        localStorage.setItem('accessToken', session.access_token);
         return session.access_token;
       }
-      return localStorage.getItem('accessToken');
+        return null;
     } catch {
-      return localStorage.getItem('accessToken');
+      return null;
     }
   }, []);
 

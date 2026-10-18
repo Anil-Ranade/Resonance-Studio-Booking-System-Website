@@ -16,6 +16,7 @@ import {
   SEARCH_FORM_ID,
   isValidPhone,
   safeJsonParse,
+  signInCustomer,
 } from "../components/ManageBooking";
 
 type Step = "search" | "select" | "verify" | "confirm";
@@ -32,6 +33,7 @@ export default function EditBookingPage() {
   const router = useRouter();
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [error, setError] = useState("");
@@ -48,7 +50,7 @@ export default function EditBookingPage() {
         if (status.authenticated && status.user?.phone) {
           setPhone(status.user.phone);
           setName(status.user.name || "");
-          await fetchBookings(status.user.phone, status.user.name || "");
+          await fetchBookings(status.user.phone, status.user.name || "", false);
         }
       } catch (error) {
         console.error("Auth check failed:", error);
@@ -59,7 +61,7 @@ export default function EditBookingPage() {
     checkAuth();
   }, []);
 
-  const fetchBookings = async (phoneToFetch: string, nameToFetch: string) => {
+  const fetchBookings = async (phoneToFetch: string, nameToFetch: string, requirePassword = true) => {
     if (!isValidPhone(phoneToFetch) || !nameToFetch.trim()) {
       setError("Please enter a valid 10-digit mobile number and name");
       return;
@@ -70,6 +72,7 @@ export default function EditBookingPage() {
     setSearched(true);
 
     try {
+      if (requirePassword) await signInCustomer(phoneToFetch.replace(/\D/g, ""), nameToFetch.trim(), password);
       const response = await fetch(
         `/api/bookings/upcoming?phone=${encodeURIComponent(phoneToFetch.replace(/\D/g, ""))}&name=${encodeURIComponent(nameToFetch.trim())}`,
       );
@@ -122,7 +125,7 @@ export default function EditBookingPage() {
         onBack={() => router.push("/booking")}
         nextForm={isCheckingAuth ? undefined : SEARCH_FORM_ID}
         nextLabel="Find my bookings"
-        nextDisabled={!isValidPhone(phone) || !name.trim()}
+        nextDisabled={!isValidPhone(phone) || !name.trim() || !password}
         loading={isLoading}
       />
     ),
@@ -162,8 +165,10 @@ export default function EditBookingPage() {
           <PhoneNameSearch
             phone={phone}
             name={name}
+            password={password}
             onPhoneChange={setPhone}
             onNameChange={setName}
+            onPasswordChange={setPassword}
             onSubmit={() => fetchBookings(phone, name)}
             error={error}
             noResults={searched && !!bookings && bookings.length === 0}

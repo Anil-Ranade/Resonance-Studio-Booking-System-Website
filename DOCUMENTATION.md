@@ -24,12 +24,11 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 
 | Technology        | Version   | Purpose                         |
 | ----------------- | --------- | ------------------------------- |
-| **Next.js**       | 16.0.10   | React framework with App Router |
-| **React**         | 19.2.0    | UI library                      |
+| **Next.js**       | 16.1.1    | React framework with App Router |
+| **React**         | 19.2.3    | UI library                      |
 | **TypeScript**    | ^5        | Type-safe JavaScript            |
 | **Tailwind CSS**  | ^4        | Utility-first CSS framework     |
-| **Framer Motion** | ^12.23.24 | Animation library               |
-| **Lucide React**  | ^0.554.0  | Icon library                    |
+| **Lucide React**  | ^0.562.0  | Icon library                    |
 
 ### Backend
 
@@ -46,8 +45,8 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 | Technology                | Purpose                         |
 | ------------------------- | ------------------------------- |
 | **Supabase Auth**         | Admin & Staff authentication    |
-| **bcryptjs**              | Password/OTP hashing            |
-| **Mobile/name flow**      | Customer identification and booking access |
+| **bcryptjs**              | Customer password hashing       |
+| **Mobile/name/password flow** | Customer identification and booking access |
 | **Device Fingerprinting** | Trusted device management       |
 | **Cookie Sessions**       | Secure HttpOnly auth tokens     |
 | **Auto-login**            | Seamless trusted device access  |
@@ -145,8 +144,12 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 6. **Mobile Number & Name**
 
    - Enter a numbers-only 10-digit mobile number
-   - Enter the customer name; both fields are mandatory
-   - Returning devices can auto-populate saved details
+   - Enter the customer name; both fields are mandatory for first-time setup
+   - Existing numbers automatically load the saved name
+   - First-time customers create and confirm a password
+   - Existing customers enter their password
+   - Trusted devices can authenticate automatically
+   - Use Forgot password to submit a reset request for admin handling
    - Use Edit and Continue to update saved details
    - Details are used for WhatsApp confirmations and one-day advance reminders
 
@@ -234,6 +237,14 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 - **Reminders** (`/admin/reminders`)
   - View bookings requiring reminders
   - Send WhatsApp reminders manually
+
+- **Operate → Password Requests** (`/admin/password-requests`)
+  - View pending customer password-reset requests
+  - Set a replacement password and mark the request resolved
+  - Share the changed-password message through WhatsApp
+
+- **System → Settings** (`/admin/settings`)
+  - Configure booking limits, buffers, advance days, and operating hours
 
 ### Edit Booking Flow
 
@@ -331,7 +342,6 @@ A modern, full-stack studio booking application built for Resonance Studio. This
   - Create new staff members
   - View and manage existing staff
   - Deactivate staff accounts
-  - Reset staff passwords
 
 ---
 
@@ -465,6 +475,7 @@ Text Colors:
 │   │       ├── loyalty/        # Loyalty program management
 │   │       ├── availability/   # Slot management
 │   │       ├── staff/          # Staff management
+│   │       ├── password-requests/ # Customer password reset requests
 │   │       └── settings/       # System settings
 │   │
 │   ├── staff/                  # Staff portal section
@@ -485,17 +496,18 @@ Text Colors:
 │   │   │   ├── verify-device/  # Device verification
 │   │   │   ├── status/         # Check auth status
 │   │   │   ├── auto-login/     # Auto-login for trusted devices
+│   │   │   ├── password/       # Customer password login/setup/status
+│   │   │   ├── password-reset-request/ # Forgot-password requests
+│   │   │   ├── admin-logout/   # Admin/staff cookie logout
 │   │   │   ├── refresh/        # Refresh auth session
 │   │   │   └── logout/         # Logout and clear session
 │   │   ├── book/               # Create booking
 │   │   ├── bookings/           # Booking operations
 │   │   │   ├── route.ts        # Get bookings
 │   │   │   ├── cancel/         # Cancel booking
-│   │   │   ├── cancel-silent/  # Silent cancellation
 │   │   │   └── upcoming/       # Upcoming bookings
 │   │   ├── availability/       # Check availability
 │   │   ├── check-user/         # User verification
-│   │   ├── check-loyalty/      # Loyalty status check
 │   │   ├── contact/            # Contact form
 │   │   ├── rates/              # Rate card data
 │   │   ├── settings/           # Public settings
@@ -505,6 +517,7 @@ Text Colors:
 │   │   ├── loyalty/            # Loyalty program endpoints
 │   │   ├── admin/              # Admin-only endpoints
 │   │   │   ├── login/          # Admin authentication
+│   │   │   ├── password-requests/ # Customer reset-request management
 │   │   │   ├── stats/          # Dashboard statistics
 │   │   │   ├── bookings/       # Booking management
 │   │   │   ├── availability/   # Availability management
@@ -634,7 +647,7 @@ Text Colors:
 - ✅ Supabase PostgreSQL database with RLS
 - ✅ JWT authentication for admins
 - ✅ Device fingerprinting for trusted devices
-- ✅ Smooth animations (Framer Motion)
+- ✅ Smooth animations (GSAP)
 - ✅ Accessibility support (reduced motion)
 - ✅ Performance-optimized motion components
 - ✅ SEO optimization (structured data, sitemap, meta tags)
@@ -657,7 +670,7 @@ Text Colors:
 | Table                | Purpose                                                            |
 | -------------------- | ------------------------------------------------------------------ |
 | `studios`            | Studio information (name, type, capacity, hourly rates, amenities) |
-| `users`              | Customer information (phone, name, email, verification status)     |
+| `users`              | Customer information, including bcrypt password hashes              |
 | `admin_users`        | Admin user accounts (roles: admin, super_admin, staff, investor)   |
 | `bookings`           | All booking records (status, payment_status, is_prompt_payment)    |
 | `availability_slots` | Blocked time slots per studio                                      |
@@ -666,6 +679,8 @@ Text Colors:
 | `rate_cards`         | Pricing per studio, session type, and sub-option                   |
 | `audit_logs`         | Admin action tracking for accountability                           |
 | `trusted_devices`    | Verified device fingerprints                                       |
+| `refresh_tokens`     | Hashed customer refresh tokens and revocation state                |
+| `password_reset_requests` | Customer forgot-password requests and resolution state        |
 
 ### Database Features
 
@@ -697,6 +712,10 @@ Text Colors:
 | `POST` | `/api/auth/verify-device` | Verify trusted device          |
 | `GET`  | `/api/auth/status`        | Check authentication status    |
 | `POST` | `/api/auth/auto-login`    | Auto-login for trusted devices |
+| `POST` | `/api/auth/password`      | Customer password setup/login  |
+| `GET`  | `/api/auth/password`      | Customer password-flow status |
+| `POST` | `/api/auth/password-reset-request` | Submit forgot-password request |
+| `POST` | `/api/auth/admin-logout`  | Clear admin/staff session cookies |
 | `POST` | `/api/auth/refresh`       | Refresh auth session token     |
 | `POST` | `/api/auth/logout`        | Logout and clear session       |
 
@@ -707,7 +726,6 @@ Text Colors:
 | `GET`  | `/api/bookings`               | Get user's bookings              |
 | `POST` | `/api/book`                   | Create new booking               |
 | `POST` | `/api/bookings/cancel`        | Cancel booking with notification |
-| `POST` | `/api/bookings/cancel-silent` | Cancel booking silently          |
 | `GET`  | `/api/bookings/upcoming`      | Get upcoming bookings            |
 
 ### Availability
@@ -725,7 +743,6 @@ Text Colors:
 | `GET`  | `/api/settings`       | Get public booking settings    |
 | `POST` | `/api/contact`        | Submit contact form            |
 | `POST` | `/api/check-user`     | Check if user exists           |
-| `GET`  | `/api/check-loyalty`  | Check loyalty status           |
 | `GET`  | `/api/display/bookings` | Get bookings for display page |
 | `GET`  | `/api/loyalty/status` | Get loyalty points/tier        |
 | `POST` | `/api/loyalty/claim`  | Claim loyalty reward           |
@@ -747,6 +764,8 @@ Text Colors:
 | `POST`   | `/api/admin/whatsapp-reminder` | Mark reminder sent |
 | `GET`    | `/api/loyalty/all`        | Get loyalty/cashback data |
 | `GET`    | `/api/admin/investors`    | Get investor data         |
+| `GET`    | `/api/admin/password-requests` | List password reset requests |
+| `PATCH`  | `/api/admin/password-requests` | Set password and resolve request |
 
 ### Staff
 
@@ -763,8 +782,8 @@ Text Colors:
 | -------- | ------------------ | ----------------------- |
 | `GET`    | `/api/admin/staff` | Get all staff members   |
 | `POST`   | `/api/admin/staff` | Create new staff member |
-| `PUT`    | `/api/admin/staff` | Update staff member     |
-| `DELETE` | `/api/admin/staff` | Deactivate staff member |
+| `PUT`    | `/api/admin/staff/[id]` | Update staff member     |
+| `DELETE` | `/api/admin/staff/[id]` | Delete staff member     |
 
 ---
 
@@ -824,7 +843,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ### Authentication
 
-- **Customer Auth**: 10-digit mobile number and name
+- **Customer Auth**: 10-digit WhatsApp number, name, and password
   - Returning devices can use trusted-device auto-login
   - Private booking fields require an authenticated customer session
 - **Admin Auth**: Supabase Auth + JWT
@@ -864,7 +883,7 @@ The application enforces the following security headers via `next.config.ts`:
 
 ### Database Security
 
-- Row Level Security (RLS) policies on all tables
+- Row Level Security (RLS) policies on protected tables after migrations are applied
 - Private user and booking data is accessed through authenticated server APIs
 - Browser sessions do not receive broad direct table access
 - Service role key for server-side operations only

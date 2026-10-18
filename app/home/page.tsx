@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { signInCustomer } from "@/app/components/ManageBooking";
 import {
   Mic,
   Radio,
@@ -30,6 +31,8 @@ import {
   Check,
   Shield,
   RefreshCw,
+  EyeOff,
+  Eye as EyeIcon,
 } from "lucide-react";
 
 // Helper function to safely parse JSON responses
@@ -66,6 +69,9 @@ export default function HomePage() {
   // Modal state for Change/Cancel/View flows
   const [actionMode, setActionMode] = useState<ActionMode>(null);
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPassword, setCustomerPassword] = useState("");
+  const [showCustomerPassword, setShowCustomerPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -83,6 +89,8 @@ export default function HomePage() {
   const resetModal = () => {
     setActionMode(null);
     setPhoneNumber("");
+    setCustomerName("");
+    setCustomerPassword("");
     setError("");
     setBookings([]);
     setSelectedBooking(null);
@@ -116,6 +124,7 @@ export default function HomePage() {
     setError("");
 
     try {
+      await signInCustomer(normalized, customerName.trim(), customerPassword);
       const response = await fetch(
         `/api/bookings/upcoming?phone=${normalized}`
       );
@@ -765,6 +774,29 @@ export default function HomePage() {
                       </div>
                     </div>
 
+                    <input
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="Your name"
+                      autoComplete="name"
+                      className="w-full py-3.5 px-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500"
+                    />
+                        <div className="relative">
+                          <input
+                            value={customerPassword}
+                            onChange={(e) => setCustomerPassword(e.target.value)}
+                            type={showCustomerPassword ? "text" : "password"}
+                            placeholder="Your password"
+                            autoComplete="current-password"
+                            className="w-full py-3.5 px-4 pr-12 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500"
+                          />
+                          <button type="button" onClick={() => setShowCustomerPassword((value) => !value)} aria-label={showCustomerPassword ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white">
+                            {showCustomerPassword ? <EyeOff className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+                          </button>
+                        </div>
+                    <p className="text-xs text-zinc-500">Password required to view, change, or cancel bookings.</p>
+                        <Link href="/forgot-password" className="inline-block text-xs text-violet-300 underline">Forgot password? Request a reset.</Link>
+
                     {error && (
                       <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
@@ -777,7 +809,9 @@ export default function HomePage() {
                       onClick={handleFetchBookings}
                       disabled={
                         isLoading ||
-                        phoneNumber.replace(/\D/g, "").length !== 10
+                        phoneNumber.replace(/\D/g, "").length !== 10 ||
+                        !customerName.trim() ||
+                        !customerPassword
                       }
                       className={`w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
                         actionMode === "change"

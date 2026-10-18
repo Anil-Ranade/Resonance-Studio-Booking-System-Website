@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getAdminUser } from "@/lib/apiSecurity";
+import { createCookieHeader, STAFF_SESSION_COOKIE } from "@/lib/tokens";
 
 // POST /api/staff/login - Verify staff status after Supabase auth
 export async function POST(request: NextRequest) {
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
       .update({ last_login_at: new Date().toISOString() })
       .eq("id", userId);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       staff: {
         id: staffUser.id,
@@ -55,6 +56,8 @@ export async function POST(request: NextRequest) {
         role: staffUser.role,
       },
     });
+    response.headers.append("Set-Cookie", createCookieHeader(STAFF_SESSION_COOKIE, request.headers.get("authorization")!.slice("Bearer ".length), 60 * 60 * 8));
+    return response;
   } catch (error) {
     console.error("[Staff Login API] Error:", error);
     return NextResponse.json(

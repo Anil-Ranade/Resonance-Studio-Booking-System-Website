@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { checkAuthStatus } from "@/lib/authClient";
 import SessionTicket from "../components/SessionTicket";
+import { signInCustomer } from "../components/ManageBooking";
 
 // Helper function to safely parse JSON responses
 async function safeJsonParse(response: Response) {
@@ -15,7 +16,7 @@ async function safeJsonParse(response: Response) {
     throw new Error('Server returned an invalid response. Please try again.');
   }
 }
-import { ArrowLeft, Search, Loader2, AlertCircle, Shield } from "lucide-react";
+import { ArrowLeft, Search, Loader2, AlertCircle, Shield, Eye, EyeOff } from "lucide-react";
 
 interface LoyaltyStatus {
   hours: number;
@@ -45,6 +46,8 @@ interface Booking {
 export default function ViewBookingsPage() {
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -78,7 +81,7 @@ export default function ViewBookingsPage() {
           setName(status.user.name || "");
           
           // Auto-fetch bookings for authenticated user
-          await fetchBookings(status.user.phone, status.user.name || "");
+          await fetchBookings(status.user.phone, status.user.name || "", false);
           
           if (status.user.phone) {
             fetchLoyaltyStatus(status.user.phone);
@@ -99,7 +102,7 @@ export default function ViewBookingsPage() {
     return /^\d{10}$/.test(str.trim().replace(/\D/g, ""));
   };
 
-  const fetchBookings = async (phoneQuery: string, nameQuery: string) => {
+  const fetchBookings = async (phoneQuery: string, nameQuery: string, requirePassword = true) => {
     const normalizedPhone = phoneQuery.replace(/\D/g, "");
     if (!isValidPhone(normalizedPhone) || !nameQuery.trim()) {
       setError("Please enter a valid 10-digit mobile number and name");
@@ -110,6 +113,7 @@ export default function ViewBookingsPage() {
     setError("");
 
     try {
+      if (requirePassword) await signInCustomer(normalizedPhone, nameQuery.trim(), password);
       const url = `/api/bookings/upcoming?phone=${encodeURIComponent(normalizedPhone)}&name=${encodeURIComponent(nameQuery.trim())}`;
 
       const response = await fetch(url);
@@ -205,7 +209,7 @@ export default function ViewBookingsPage() {
               </div>
               <button
                 type="submit"
-                disabled={loading || !isValidPhone(phone) || !name.trim()}
+                disabled={loading || !isValidPhone(phone) || !name.trim() || !password}
                 className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-violet-400 hover:bg-violet-300 text-navy font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-navy"
               >
                 {loading ? (
@@ -219,6 +223,14 @@ export default function ViewBookingsPage() {
               </button>
             </div>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" autoComplete="name" className="w-full mt-3 py-4 px-4 bg-white/[0.04] border border-white/15 rounded-xl text-lg text-white placeholder-zinc-500 focus:outline-none focus:border-violet-400" />
+            <div className="relative mt-3">
+              <input value={password} onChange={(e) => setPassword(e.target.value)} type={showPassword ? "text" : "password"} placeholder="Your password" autoComplete="current-password" className="w-full py-4 px-4 pr-12 bg-white/[0.04] border border-white/15 rounded-xl text-lg text-white placeholder-zinc-500 focus:outline-none focus:border-violet-400" />
+              <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white">
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+            <p className="text-xs text-zinc-500 mt-2">A password is required to view your bookings. If you have not set one yet, this will set it for you.</p>
+            <Link href="/forgot-password" className="inline-block text-xs text-violet-300 underline mt-2">Forgot password? Request a reset.</Link>
           </form>
         )}
 

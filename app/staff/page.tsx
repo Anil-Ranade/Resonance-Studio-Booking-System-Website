@@ -9,9 +9,7 @@ export default function StaffPage() {
   useEffect(() => {
     // Check if logged in as staff
     const staff = localStorage.getItem('staff');
-    const token = localStorage.getItem('staffAccessToken');
-
-    if (staff && token) {
+    if (staff) {
       router.push('/staff/dashboard');
     } else {
       router.push('/staff/login');

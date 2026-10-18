@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
-import { escapeLike, getSessionPhone, publicBooking, rateLimit } from "@/lib/apiSecurity";
+import { escapeLike, getSessionPhone, publicBooking, rateLimit, requireCustomer } from "@/lib/apiSecurity";
 
 // GET /api/bookings/upcoming?email=xxx@example.com - Fetch only upcoming bookings by email
 export async function GET(request: NextRequest) {
@@ -79,6 +79,9 @@ export async function GET(request: NextRequest) {
     if (!phoneToSearch) {
       return NextResponse.json({ bookings: [] });
     }
+
+    const auth = await requireCustomer(request, phoneToSearch);
+    if (auth instanceof NextResponse) return auth;
 
     // Now fetch bookings by phone number
     const { data: allBookings, error: bookingsError } = await supabaseServer
