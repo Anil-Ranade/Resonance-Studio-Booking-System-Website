@@ -1,5 +1,6 @@
 "use client";
 
+import { userMessage } from "@/lib/errors";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Edit3 } from "lucide-react";
@@ -80,7 +81,7 @@ export default function EditBookingPage() {
       setBookings(upcoming);
       if (upcoming.length > 0) setStep("select");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch bookings");
+      setError(userMessage(err, "Failed to fetch bookings"));
       setBookings(null);
     } finally {
       setIsLoading(false);

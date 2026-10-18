@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json(
-        { error: authError.message || "Failed to create user account" },
+        { error: "Failed to create user account" },
         { status: 400 }
       );
     }

@@ -1,5 +1,6 @@
 "use client";
 
+import { userMessage } from "@/lib/errors";
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -98,7 +99,7 @@ export default function StaffEditBookingPage() {
 
       setBookings(editableBookings);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch bookings");
+      setError(userMessage(err, "Failed to fetch bookings"));
       setBookings(null);
     } finally {
       setIsLoading(false);

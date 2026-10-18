@@ -1,5 +1,6 @@
 "use client";
 
+import { userMessage } from "@/lib/errors";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Check, Home, XCircle } from "lucide-react";
@@ -85,7 +86,7 @@ export default function CancelBookingPage() {
       setBookings(upcoming);
       if (upcoming.length > 0) setStep("select");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch bookings");
+      setError(userMessage(err, "Failed to fetch bookings"));
       setBookings(null);
     } finally {
       setIsLoading(false);
@@ -126,7 +127,7 @@ export default function CancelBookingPage() {
       if (!response.ok) throw new Error(data.error || "Failed to cancel booking");
       setStep("success");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to cancel booking");
+      setError(userMessage(err, "Failed to cancel booking"));
     } finally {
       setIsCancelling(false);
     }

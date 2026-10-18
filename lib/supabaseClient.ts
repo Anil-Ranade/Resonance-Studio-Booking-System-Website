@@ -67,7 +67,7 @@ export async function getUserByPhone(
       return null;
     }
     console.error("Error fetching user by phone:", error.message);
-    throw new Error(`Failed to fetch user: ${error.message}`);
+    throw new Error("Failed to fetch user");
   }
 
   return data as User;
@@ -110,7 +110,7 @@ export async function createUser(params: CreateUserParams): Promise<User> {
       );
     }
     console.error("Error creating user:", error.message);
-    throw new Error(`Failed to create user: ${error.message}`);
+    throw new Error("Failed to create user");
   }
 
   return data as User;

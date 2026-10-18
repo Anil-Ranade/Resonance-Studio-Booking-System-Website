@@ -1,5 +1,6 @@
 "use client";
 
+import { userMessage } from "@/lib/errors";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -163,7 +164,7 @@ export default function ReviewPage() {
       localStorage.setItem("lastBooking", JSON.stringify(data.booking || data));
       router.push("/confirmation");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create booking");
+      setError(userMessage(err, "Failed to create booking"));
     } finally {
       setIsSubmitting(false);
     }

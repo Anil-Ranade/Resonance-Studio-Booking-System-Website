@@ -1,5 +1,6 @@
 "use client";
 
+import { userMessage } from "@/lib/errors";
 import { useEffect, useState, useCallback } from "react";
 import {
   MessageCircle,
@@ -189,7 +190,7 @@ export default function StandaloneRemindersPage() {
       setIsAuthorized(true);
     } catch (err: any) {
       console.error("Login error:", err);
-      setLoginError(err.message || "Failed to login");
+      setLoginError(userMessage(err, "Failed to login"));
     } finally {
       setLoginLoading(false);
     }

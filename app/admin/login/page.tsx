@@ -1,5 +1,6 @@
 'use client';
 
+import { userMessage } from "@/lib/errors";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Music2, Lock, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
@@ -81,7 +82,7 @@ export default function AdminLoginPage() {
       router.push('/admin/dashboard');
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || 'Failed to login. Please try again.');
+      setError(userMessage(err, 'Failed to login. Please try again.'));
     } finally {
       setLoading(false);
     }

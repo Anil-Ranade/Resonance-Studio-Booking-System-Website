@@ -102,7 +102,8 @@ export async function GET(request: NextRequest) {
   const { data: slots, error: slotsError } = await availabilityQuery;
 
   if (slotsError) {
-    return NextResponse.json({ error: slotsError.message }, { status: 500 });
+    console.error(slotsError);
+    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
 
   if (!slots || slots.length === 0) {
@@ -128,7 +129,8 @@ export async function GET(request: NextRequest) {
   const { data: bookings, error: bookingsError } = await bookingsQuery;
 
   if (bookingsError) {
-    return NextResponse.json({ error: bookingsError.message }, { status: 500 });
+    console.error(bookingsError);
+    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
 
   // Helper to check if booking overlaps with slot

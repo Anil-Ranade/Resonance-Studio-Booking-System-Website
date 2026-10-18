@@ -1,5 +1,6 @@
 'use client';
 
+import { userMessage } from "@/lib/errors";
 import { useState, useEffect, useCallback } from 'react';
 import {
   UserPlus,
@@ -141,7 +142,7 @@ export default function StaffPage() {
 
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create staff member');
+      setError(userMessage(err, 'Failed to create staff member'));
     } finally {
       setSaving(false);
     }
@@ -172,7 +173,7 @@ export default function StaffPage() {
 
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update staff member');
+      setError(userMessage(err, 'Failed to update staff member'));
     }
   };
 
@@ -200,7 +201,7 @@ export default function StaffPage() {
 
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update staff member');
+      setError(userMessage(err, 'Failed to update staff member'));
     }
   };
 
@@ -232,7 +233,7 @@ export default function StaffPage() {
 
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete staff member');
+      setError(userMessage(err, 'Failed to delete staff member'));
     }
   };
 

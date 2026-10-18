@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
 
     if (blockedError) {
       return NextResponse.json(
-        { error: `Failed to fetch blocked slots: ${blockedError.message}` },
+        { error: "Failed to fetch blocked slots" },
         { status: 500 }
       );
     }
@@ -207,7 +207,7 @@ export async function GET(request: NextRequest) {
 
     if (bookingsError) {
       return NextResponse.json(
-        { error: `Failed to fetch bookings: ${bookingsError.message}` },
+        { error: "Failed to fetch bookings" },
         { status: 500 }
       );
     }
@@ -265,7 +265,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}` },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

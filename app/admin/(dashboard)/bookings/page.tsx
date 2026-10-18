@@ -1,5 +1,6 @@
 "use client";
 
+import { userMessage } from "@/lib/errors";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
@@ -351,7 +352,7 @@ export default function BookingsManagementPage() {
         throw new Error(data.error || "Failed to update booking");
       }
     } catch (error: any) {
-      setMessage({ type: "error", text: error.message });
+      setMessage({ type: "error", text: userMessage(error) });
     } finally {
       setUpdating(false);
     }
@@ -400,7 +401,7 @@ export default function BookingsManagementPage() {
         throw new Error(data.error || "Failed to update payment status");
       }
     } catch (error: any) {
-      setMessage({ type: "error", text: error.message });
+      setMessage({ type: "error", text: userMessage(error) });
       setUpdating(false);
     }
   };
@@ -445,7 +446,7 @@ export default function BookingsManagementPage() {
         throw new Error(data.error || "Failed to update investor assignment");
       }
     } catch (error: any) {
-      setMessage({ type: "error", text: error.message });
+      setMessage({ type: "error", text: userMessage(error) });
     } finally {
       setUpdating(false);
     }
@@ -500,7 +501,7 @@ export default function BookingsManagementPage() {
         throw new Error(data.error || "Failed to delete booking");
       }
     } catch (error: any) {
-      setMessage({ type: "error", text: error.message });
+      setMessage({ type: "error", text: userMessage(error) });
     } finally {
       setUpdating(false);
     }
@@ -748,7 +749,7 @@ export default function BookingsManagementPage() {
         );
       }
     } catch (error: any) {
-      setMessage({ type: "error", text: error.message });
+      setMessage({ type: "error", text: userMessage(error) });
     } finally {
       setCreatingBooking(false);
     }

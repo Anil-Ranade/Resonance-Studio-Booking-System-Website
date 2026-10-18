@@ -82,7 +82,8 @@ export async function GET(request: NextRequest) {
   const { data: slots, error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
 
   return NextResponse.json({ slots });
@@ -186,7 +187,8 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error(error);
+      return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
     }
 
     // Log the action
@@ -276,7 +278,8 @@ export async function PUT(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error(error);
+      return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
     }
 
     // Log the action
@@ -334,7 +337,8 @@ export async function DELETE(request: NextRequest) {
     .eq("id", id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
 
   // Log the action

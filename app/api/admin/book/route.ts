@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
       if (rpcError) {
         console.error("[Admin Book API] RPC error:", rpcError);
         return NextResponse.json(
-          { error: rpcError.message || "Failed to create booking" },
+          { error: "Failed to create booking" },
           { status: 500 }
         );
       }
@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
 
       if (insertError) {
         return NextResponse.json(
-          { error: insertError.message },
+          { error: "Something went wrong. Please try again." },
           { status: 500 }
         );
       }
@@ -528,7 +528,7 @@ export async function PUT(request: NextRequest) {
     if (rpcError) {
       console.error("[Admin Book API] RPC update error:", rpcError);
       return NextResponse.json(
-        { error: rpcError.message || "Failed to update booking" },
+        { error: "Failed to update booking" },
         { status: 500 }
       );
     }

@@ -1,5 +1,6 @@
 'use client';
 
+import { userMessage } from "@/lib/errors";
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -165,7 +166,7 @@ export default function MyBookingsPage() {
 
       setBookings(data.bookings || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch bookings');
+      setError(userMessage(err, 'Failed to fetch bookings'));
       setBookings(null);
     } finally {
       setIsLoading(false);
@@ -271,7 +272,7 @@ export default function MyBookingsPage() {
       setCancelModal(prev => ({
         ...prev,
         isLoading: false,
-        error: err instanceof Error ? err.message : 'Failed to cancel booking',
+        error: userMessage(err, 'Failed to cancel booking'),
       }));
     }
   };

@@ -1,5 +1,6 @@
 "use client";
 
+import { userMessage } from "@/lib/errors";
 import { useEffect, useState, useCallback } from "react";
 import { 
   Users, 
@@ -109,7 +110,7 @@ export default function InvestorsPage() {
         throw new Error(data.error || "Failed to create investor");
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message });
+      setMessage({ type: 'error', text: userMessage(err) });
     } finally {
       setCreating(false);
     }

@@ -1,5 +1,6 @@
 'use client';
 
+import { userMessage } from "@/lib/errors";
 import { useState, useEffect } from 'react';
 import { 
   Search, 
@@ -45,7 +46,7 @@ export default function LoyaltyPage() {
       setAllStatuses(data);
       setFilteredStatuses(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch statuses');
+      setError(userMessage(err, 'Failed to fetch statuses'));
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +94,7 @@ export default function LoyaltyPage() {
       await fetchAllStatuses();
       
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to process reward');
+      alert(userMessage(err, 'Failed to process reward'));
     } finally {
       setProcessingPhone(null);
     }

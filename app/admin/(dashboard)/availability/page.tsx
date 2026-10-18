@@ -1,5 +1,6 @@
 'use client';
 
+import { userMessage } from "@/lib/errors";
 import { useEffect, useState, useCallback } from 'react';
 import {
   Plus,
@@ -216,7 +217,7 @@ export default function AvailabilityManagementPage() {
       }
     } catch (error) {
       console.error('Error fetching slots:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load availability slots';
+      const errorMessage = userMessage(error, 'Failed to load availability slots');
       setMessage({ type: 'error', text: errorMessage });
     } finally {
       setLoading(false);
@@ -255,7 +256,7 @@ export default function AvailabilityManagementPage() {
         throw new Error(data.error || 'Failed to block slot');
       }
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: userMessage(error) });
     } finally {
       setSaving(false);
     }
@@ -295,7 +296,7 @@ export default function AvailabilityManagementPage() {
         throw new Error(data.error || 'Failed to update blocked slot');
       }
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: userMessage(error) });
     } finally {
       setSaving(false);
     }
@@ -321,7 +322,7 @@ export default function AvailabilityManagementPage() {
         throw new Error('Failed to unblock slot');
       }
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: userMessage(error) });
     }
   };
 
@@ -364,7 +365,7 @@ export default function AvailabilityManagementPage() {
         throw new Error(data.error || 'Failed to block slots');
       }
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: userMessage(error) });
     } finally {
       setSaving(false);
     }
@@ -416,7 +417,7 @@ export default function AvailabilityManagementPage() {
         throw new Error(data.error || data.message || 'Failed to create booking');
       }
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: userMessage(error) });
     } finally {
       setSaving(false);
     }

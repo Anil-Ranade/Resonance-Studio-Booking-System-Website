@@ -1,5 +1,6 @@
 "use client";
 
+import { userMessage } from "@/lib/errors";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
@@ -300,7 +301,7 @@ export default function StaffBookingsPage() {
         throw new Error(data.error || "Failed to update booking");
       }
     } catch (error: any) {
-      setMessage({ type: "error", text: error.message });
+      setMessage({ type: "error", text: userMessage(error) });
     } finally {
       setUpdating(false);
     }
@@ -355,7 +356,7 @@ export default function StaffBookingsPage() {
         throw new Error(data.error || "Failed to delete booking");
       }
     } catch (error: any) {
-      setMessage({ type: "error", text: error.message });
+      setMessage({ type: "error", text: userMessage(error) });
     } finally {
       setUpdating(false);
     }
@@ -597,7 +598,7 @@ export default function StaffBookingsPage() {
         );
       }
     } catch (error: any) {
-      setMessage({ type: "error", text: error.message });
+      setMessage({ type: "error", text: userMessage(error) });
     } finally {
       setCreatingBooking(false);
     }

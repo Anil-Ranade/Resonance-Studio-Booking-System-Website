@@ -1,5 +1,6 @@
 'use client';
 
+import { userMessage } from "@/lib/errors";
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getDeviceFingerprint, addTrustedPhone } from '@/lib/deviceFingerprint';
@@ -130,7 +131,7 @@ export default function OTPLogin({ redirectUrl = '/my-bookings', onSuccess }: OT
       setResendCooldown(60); // 60 seconds cooldown
       setOtp(['', '', '', '', '', '']);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send OTP');
+      setError(userMessage(err, 'Failed to send OTP'));
     } finally {
       setLoading(false);
     }
@@ -193,7 +194,7 @@ export default function OTPLogin({ redirectUrl = '/my-bookings', onSuccess }: OT
         }, 1000);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to verify OTP');
+      setError(userMessage(err, 'Failed to verify OTP'));
       // Clear OTP on error
       setOtp(['', '', '', '', '', '']);
       otpInputRefs.current[0]?.focus();

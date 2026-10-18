@@ -1,5 +1,6 @@
 "use client";
 
+import { userMessage } from "@/lib/errors";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -132,7 +133,7 @@ export default function HomePage() {
         setStep("select");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch bookings");
+      setError(userMessage(err, "Failed to fetch bookings"));
     } finally {
       setIsLoading(false);
     }
@@ -198,7 +199,7 @@ export default function HomePage() {
         resetModal();
       }, 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to cancel booking");
+      setError(userMessage(err, "Failed to cancel booking"));
     } finally {
       setIsCancelling(false);
     }

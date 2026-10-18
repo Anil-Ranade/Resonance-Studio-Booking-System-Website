@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       return NextResponse.json(
-        { error: error.message },
+        { error: "Something went wrong. Please try again." },
         { status: 500 }
       );
     }
@@ -188,7 +188,7 @@ export async function PUT(request: NextRequest) {
       if (error) {
         console.error(`[Settings API] Failed to update ${update.key}:`, error);
         return NextResponse.json(
-          { error: `Failed to update ${update.key}: ${error.message}` },
+          { error: `Failed to update ${update.key}` },
           { status: 500 }
         );
       }

@@ -1,5 +1,6 @@
 'use client';
 
+import { userMessage } from "@/lib/errors";
 import { useState, useEffect, useCallback } from 'react';
 import { Save, Loader2, CheckCircle, Settings, Clock, AlertCircle } from 'lucide-react';
 import { getSession } from '@/lib/supabaseAuth';
@@ -92,7 +93,7 @@ export default function SettingsPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save settings');
+      setError(userMessage(err, 'Failed to save settings'));
     } finally {
       setSaving(false);
     }

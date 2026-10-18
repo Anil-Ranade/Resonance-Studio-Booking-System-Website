@@ -1,5 +1,6 @@
 'use client';
 
+import { userMessage } from "@/lib/errors";
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { getSession } from '@/lib/supabaseAuth';
@@ -95,7 +96,7 @@ export default function AdminCancelBookingPage() {
       
       setBookings(cancellableBookings);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch bookings');
+      setError(userMessage(err, 'Failed to fetch bookings'));
       setBookings(null);
     } finally {
       setIsLoading(false);
@@ -143,7 +144,7 @@ export default function AdminCancelBookingPage() {
       // Update local state
       setBookings(prev => prev?.filter(b => b.id !== selectedBooking.id) || null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to cancel booking');
+      setError(userMessage(err, 'Failed to cancel booking'));
     } finally {
       setIsCancelling(false);
     }

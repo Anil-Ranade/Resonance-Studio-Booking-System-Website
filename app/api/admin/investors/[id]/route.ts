@@ -113,7 +113,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             .single();
 
         if (error) {
-            return NextResponse.json({ error: error.message }, { status: 500 });
+            console.error(error);
+            return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
         }
 
         // Log

@@ -70,7 +70,8 @@ export async function GET(request: NextRequest) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
 
   return NextResponse.json({ investors });
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
     if (authError) {
         // If user already exists, we might want to just add them as admin_user if not present
         // But for now, let's error out
-      return NextResponse.json({ error: authError.message }, { status: 400 });
+      return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 400 });
     }
 
     if (!authData.user) {
@@ -133,7 +134,7 @@ export async function POST(request: NextRequest) {
     if (adminUserError) {
         // Cleanup auth user?
         await supabaseAuth.auth.admin.deleteUser(userId);
-        return NextResponse.json({ error: adminUserError.message }, { status: 500 });
+        return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
     }
 
     // 3. Create Investor Account
@@ -153,7 +154,7 @@ export async function POST(request: NextRequest) {
         // Cleanup
         await supabase.from("admin_users").delete().eq("id", userId);
         await supabaseAuth.auth.admin.deleteUser(userId);
-        return NextResponse.json({ error: investorError.message }, { status: 500 });
+        return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
     }
 
     // 4. Log Action

@@ -1,6 +1,7 @@
 "use strict";
 "use client";
 
+import { userMessage } from "@/lib/errors";
 import { useState, useEffect } from "react";
 
 import {
@@ -116,7 +117,7 @@ export default function PaymentsPage() {
         throw new Error(data.error || "Failed to update payment status");
       }
     } catch (error: any) {
-      setMessage({ type: "error", text: error.message });
+      setMessage({ type: "error", text: userMessage(error) });
     } finally {
       setUpdating(null);
     }
