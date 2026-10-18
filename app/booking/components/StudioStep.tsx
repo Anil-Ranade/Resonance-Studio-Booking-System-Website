@@ -123,7 +123,7 @@ export default function StudioStep() {
         orientation="vertical"
         value={draft.studio || ""}
         onValueChange={() => {}}
-        className="w-full gap-2"
+        className="w-full min-w-0 max-w-full gap-2"
       >
         {STUDIOS.map((studio) => {
           const { isAllowed, isRecommended, isOriginal } = getStudioStatus(studio.name);
@@ -141,7 +141,7 @@ export default function StudioStep() {
               value={studio.name}
               onClick={() => handleStudioSelect(studio.name)}
               disabled={!isAllowed}
-              className={`${optionCard} flex-row items-start justify-between gap-3 ${
+              className={`${optionCard} min-w-0 max-w-full flex-row items-start justify-between gap-3 ${
                 isRecommended && isAllowed ? "border-primary/50" : ""
               }`}
             >

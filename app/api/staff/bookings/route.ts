@@ -58,7 +58,7 @@ async function verifyStaffToken(request: NextRequest) {
   return { user, staffUser };
 }
 
-// GET /api/staff/bookings - Get only bookings created by this staff member
+// GET /api/staff/bookings - Get bookings available to staff for management
 export async function GET(request: NextRequest) {
   const staff = await verifyStaffToken(request);
   if (!staff) {
@@ -75,11 +75,10 @@ export async function GET(request: NextRequest) {
 
   const supabase = supabaseAdmin();
 
-  // Only fetch bookings created by this staff member
+  // Staff can manage bookings created by any staff member.
   let query = supabase
     .from("bookings")
     .select("*")
-    .eq("created_by_staff_id", staff.user.id)
     .order("created_at", { ascending: false });
 
   // Filter by phone number if provided
@@ -119,7 +118,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ bookings: bookings || [] });
 }
 
-// PUT /api/staff/bookings - Update booking status (only own bookings)
+// PUT /api/staff/bookings - Update booking status
 export async function PUT(request: NextRequest) {
   const staff = await verifyStaffToken(request);
   if (!staff) {
@@ -150,7 +149,7 @@ export async function PUT(request: NextRequest) {
 
     const supabase = supabaseAdmin();
 
-    // Fetch the existing booking and verify ownership
+    // Fetch the existing booking
     const { data: existingBooking, error: fetchError } = await supabase
       .from("bookings")
       .select("*")
@@ -159,20 +158,6 @@ export async function PUT(request: NextRequest) {
 
     if (fetchError || !existingBooking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
-    }
-
-    // Verify ownership: Created by this user OR assigned to this investor
-    const isCreator = existingBooking.created_by_staff_id === staff.user.id;
-    const isAssignedInvestor = existingBooking.investor_id === staff.user.id;
-
-    if (!isCreator && !isAssignedInvestor) {
-      return NextResponse.json(
-        {
-          error:
-            "You can only modify bookings you have created or are assigned to",
-        },
-        { status: 403 },
-      );
     }
 
     const updates: Record<string, any> = {};
@@ -419,7 +404,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE /api/staff/bookings?id=xxx - Permanently delete a booking (only own bookings)
+// DELETE /api/staff/bookings?id=xxx - Permanently delete a booking
 export async function DELETE(request: NextRequest) {
   const staff = await verifyStaffToken(request);
   if (!staff) {
@@ -438,7 +423,7 @@ export async function DELETE(request: NextRequest) {
 
   const supabase = supabaseAdmin();
 
-  // Get booking data before deletion for audit log and ownership check
+  // Get booking data before deletion for audit logging
   const { data: existingBooking } = await supabase
     .from("bookings")
     .select("*")
@@ -447,20 +432,6 @@ export async function DELETE(request: NextRequest) {
 
   if (!existingBooking) {
     return NextResponse.json({ error: "Booking not found" }, { status: 404 });
-  }
-
-  // Verify ownership: Created by this user OR assigned to this investor
-  const isCreator = existingBooking.created_by_staff_id === staff.user.id;
-  const isAssignedInvestor = existingBooking.investor_id === staff.user.id;
-
-  if (!isCreator && !isAssignedInvestor) {
-    return NextResponse.json(
-      {
-        error:
-          "You can only delete bookings you have created or are assigned to",
-      },
-      { status: 403 },
-    );
   }
 
   // Delete Google Calendar event if it exists
