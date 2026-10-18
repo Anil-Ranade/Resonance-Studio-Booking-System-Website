@@ -11,6 +11,7 @@ interface StepLayoutProps {
   subtitle?: string;
   children: ReactNode;
   showBack?: boolean;
+  backLabel?: string;
   showNext?: boolean;
   nextLabel?: string;
   onNext?: () => void;
@@ -31,6 +32,7 @@ export default function StepLayout({
   subtitle,
   children,
   showBack = true,
+  backLabel = "Back",
   showNext = false,
   nextLabel = "Next",
   onNext,
@@ -67,6 +69,7 @@ export default function StepLayout({
         (!hideFooter && (
           <FlowNav
             onBack={showBackButton ? onBack ?? prevStep : undefined}
+            backLabel={backLabel}
             onNext={showNext ? onNext ?? nextStep : undefined}
             nextLabel={nextLabel}
             nextDisabled={isNextDisabled || !canProceed(currentStep)}

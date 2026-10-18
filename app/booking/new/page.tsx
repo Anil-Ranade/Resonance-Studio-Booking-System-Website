@@ -9,7 +9,6 @@ import ParticipantsStep from '../components/ParticipantsStep';
 import StudioStep from '../components/StudioStep';
 import TimeStep from '../components/TimeStep';
 import ReviewStep from '../components/ReviewStep';
-import OTPStep from '../components/OTPStep';
 import ConfirmStep from '../components/ConfirmStep';
 
 function BookingSteps() {
@@ -28,8 +27,6 @@ function BookingSteps() {
       return <TimeStep />;
     case 'review':
       return <ReviewStep />;
-    case 'otp':
-      return <OTPStep />;
     case 'confirm':
       return <ConfirmStep />;
     default:

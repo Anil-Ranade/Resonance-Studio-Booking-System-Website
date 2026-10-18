@@ -11,7 +11,7 @@ A modern, full-stack studio booking and management platform built with Next.js 1
 
 ## 📖 Overview
 
-Resonance Studio Booking is a comprehensive booking system that allows customers to book music studio sessions, manage their bookings, and provides an admin dashboard for complete studio management. The application features email-based OTP authentication, Google Calendar integration, Google Sheets logging, email notifications, and enterprise-grade security measures.
+Resonance Studio Booking is a comprehensive booking system that allows customers to book music studio sessions, manage their bookings, and provides admin and staff dashboards for studio management. The customer flow is mobile-first: customers provide a 10-digit mobile number and name, which are used for WhatsApp booking confirmations and one-day advance reminders.
 
 ## ✨ Features
 
@@ -36,12 +36,11 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 
 ### 📱 Secure Authentication
 
-- Email-based OTP verification via Resend
-- Secure phone number verification flow
+- Mobile-first customer identification using a 10-digit number and name
+- WhatsApp confirmation and one-day advance reminder messaging
 - **Trusted device management** with cookie-based auto-login
 - Session-based authentication for booking access
 - Rate limiting with cooldown protection
-- Bcrypt-hashed OTP storage (10 salt rounds)
 
 ### 📅 Google Calendar Integration
 
@@ -59,9 +58,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 
 ### 📧 Email Notifications
 
-- OTP verification codes via email (Resend)
-- Booking confirmation emails
-- Booking update and cancellation notifications
+- Optional operational email notifications for configured studio services
 - Beautiful dark-themed email templates
 
 ### 👤 My Bookings
@@ -76,17 +73,15 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 
 ### ✏️ Edit Booking
 
-- Email-based booking lookup
-- OTP verification for security
+- Mobile number and name lookup with authenticated session checks
 - Modify confirmed bookings
-- Time restrictions (48 hours before session)
+- Free online changes are available more than 24 hours before the session
 
 ### ❌ Cancel Booking
 
-- Email-based booking lookup
-- OTP verification for secure cancellation
+- Mobile number and name lookup with authenticated session checks
 - Cancellation restrictions based on booking time
-- Email confirmation of cancellation
+- Within 24 hours, customers must contact the studio; late cancellation is 50% and no-show is 100%
 
 ### 🔧 Admin Dashboard
 
@@ -166,14 +161,14 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 
 | Category       | Technology                   |
 | -------------- | ---------------------------- |
-| **Framework**  | Next.js 16.0.10 (App Router) |
-| **UI Library** | React 19.2.0                 |
+| **Framework**  | Next.js 16 (App Router) |
+| **UI Library** | React 19                 |
 | **Language**   | TypeScript 5                 |
 | **Styling**    | Tailwind CSS 4               |
 | **Animations** | Framer Motion 12             |
 | **Icons**      | Lucide React                 |
 | **Database**   | Supabase (PostgreSQL)        |
-| **Auth**       | JWT + OTP (bcryptjs)         |
+| **Auth**       | JWT/device sessions + Supabase Auth |
 | **Calendar**   | Google Calendar API          |
 | **Sheets**     | Google Sheets API            |
 | **Email**      | Resend                       |
@@ -217,7 +212,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-   # Email (Resend)
+   # Optional operational email notifications (not required for customer login)
    RESEND_API_KEY=your_resend_api_key
    RESEND_FROM_EMAIL=noreply@yourdomain.com
 
@@ -233,6 +228,9 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
    # JWT (use strong, random strings - min 32 characters)
    JWT_SECRET=your_jwt_secret_min_32_chars
    REFRESH_TOKEN_SECRET=your_refresh_token_secret_min_32_chars
+
+   # Local development only; never enable in production
+   ALLOW_DEBUG_OTP=false
    ```
 
    > ⚠️ **Security Note**: Never commit `.env.local` to version control. Use strong, randomly generated secrets for JWT_SECRET (minimum 32 characters). Rotate secrets periodically.
@@ -309,8 +307,8 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │
 │   ├── api/                    # API routes
 │   │   ├── auth/               # Authentication endpoints
-│   │   │   ├── send-otp/       # Send OTP email
-│   │   │   ├── verify-otp/     # Verify OTP code
+│   │   │   ├── send-otp/       # Legacy OTP compatibility endpoint
+│   │   │   ├── verify-otp/     # Legacy OTP compatibility endpoint
 │   │   │   ├── verify-device/  # Verify trusted device
 │   │   │   ├── status/         # Check auth status
 │   │   │   ├── auto-login/     # Auto-login for trusted devices
@@ -349,7 +347,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │   ├── Footer.tsx          # Site footer
 │   │   ├── MainContent.tsx     # Main content wrapper
 │   │   ├── OTPLogin.tsx        # OTP login component
-│   │   ├── OTPVerification.tsx # OTP verification
+│   │   ├── OTPVerification.tsx # Legacy OTP compatibility component
 │   │   └── ClearCache.tsx      # Cache clearing utility
 │   │
 │   ├── studios/                # Studio information
@@ -407,14 +405,14 @@ See [DOCUMENTATION.md](./DOCUMENTATION.md)
 
 ## 🔒 Security Features
 
-- **HTTP Security Headers** - HSTS, X-Frame-Options, X-Content-Type-Options, CSP-ready
+- **HTTP Security Headers** - HSTS, X-Frame-Options, X-Content-Type-Options, CSP
 - **Supabase Auth** for admin and staff authentication
 - **Secure booking page access** - Authentication required to view/edit/cancel bookings
-- **OTP verification** with bcrypt hashing (10 salt rounds)
+- **Mobile/name validation** with authenticated customer sessions
 - **Cookie-based session management** - Secure HttpOnly cookies for auth tokens
 - **Row Level Security (RLS)** policies in Supabase
 - **Trusted device management** with device fingerprinting and auto-login
-- **Rate limiting** for OTP requests (5 max attempts, 5-minute expiry)
+- **Database-backed rate limiting** with fail-closed behavior
 - **Input sanitization** for XSS prevention
 - **Audit logging** for all admin actions
 - **Environment variable protection** - All secrets in `.env.local`

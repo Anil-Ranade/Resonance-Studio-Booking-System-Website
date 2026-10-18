@@ -27,7 +27,6 @@ import {
   Guitar,
   Radio,
   Users,
-  Mail,
   FileText,
   MessageCircle,
   Printer,
@@ -143,9 +142,9 @@ const SESSION_TYPES: {
 
 // Sub-options for each session type
 const KARAOKE_OPTIONS: { value: KaraokeOption; label: string }[] = [
-  { value: "1_5", label: "1-5 Participants" },
-  { value: "6_10", label: "6-10 Participants" },
-  { value: "11_20", label: "11-20 Participants" },
+  { value: "1_8", label: "1-8 Participants" },
+  { value: "9_12", label: "9-12 Participants" },
+  { value: "13_20", label: "13-20 Participants" },
   { value: "21_30", label: "21-30 Participants" },
 ];
 
@@ -180,32 +179,6 @@ const isBookingTimePassed = (date: string, endTime: string): boolean => {
   return now > bookingDate;
 };
 
-// Helper function to check if booking is within 24 hours before start time
-// Returns true if: current time is within 24 hours before booking start AND event hasn't passed
-const isWithin24HoursBeforeBooking = (
-  date: string,
-  startTime: string,
-  endTime: string
-): boolean => {
-  const now = new Date();
-
-  // Check if event has already passed
-  if (isBookingTimePassed(date, endTime)) {
-    return false;
-  }
-
-  // Calculate booking start datetime
-  const bookingStartDate = istDateTime(date, startTime);
-
-  // Calculate 24 hours before booking start
-  const twentyFourHoursBefore = new Date(
-    bookingStartDate.getTime() - 24 * 60 * 60 * 1000
-  );
-
-  // Return true if current time is between 24 hours before and booking start
-  return now >= twentyFourHoursBefore && now <= bookingStartDate;
-};
-
 // Get effective status - if time has passed and booking is confirmed, treat as completed
 const getEffectiveStatus = (booking: Booking): Booking["status"] => {
   if (
@@ -223,7 +196,9 @@ export default function BookingsManagementPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState("");
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [whatsappMessage, setWhatsappMessage] = useState("");
   const [updating, setUpdating] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -610,7 +585,7 @@ export default function BookingsManagementPage() {
     type: "karaoke" | "live" | "band" | "recording",
     value: string | BandEquipment[]
   ) => {
-    let updates: Partial<BookingFormData> = {};
+    const updates: Partial<BookingFormData> = {};
     let newKaraokeOption = bookingFormData.karaoke_option;
     let newLiveOption = bookingFormData.live_option;
     let newBandEquipment = bookingFormData.band_equipment;
@@ -765,8 +740,13 @@ export default function BookingsManagementPage() {
     const effectiveStatus = getEffectiveStatus(booking);
     const matchesStatus =
       statusFilter === "all" || effectiveStatus === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesDate = !dateFilter || booking.date === dateFilter;
+    return matchesSearch && matchesStatus && matchesDate;
   });
+
+  useEffect(() => {
+    setWhatsappMessage("");
+  }, [selectedBooking?.id]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -805,6 +785,26 @@ export default function BookingsManagementPage() {
       day: "numeric",
       year: "numeric",
     });
+  };
+
+  const handleChangeBooking = (booking: Booking) => {
+    sessionStorage.setItem("editBookingData", JSON.stringify({
+      editMode: true,
+      originalBookingId: booking.id,
+      sessionType: booking.session_type,
+      sessionDetails: booking.session_details,
+      studio: booking.studio,
+      date: booking.date,
+      start_time: booking.start_time,
+      end_time: booking.end_time,
+      phone_number: booking.phone_number,
+      name: booking.name || "",
+      email: booking.email || "",
+      total_amount: booking.total_amount,
+      group_size: booking.group_size || 1,
+      otpVerified: true,
+    }));
+    window.location.href = "/admin/booking/new?source=edit";
   };
 
   // Print Invoice Function
@@ -1105,6 +1105,15 @@ export default function BookingsManagementPage() {
               <option value="cancelled">Cancelled</option>
             </select>
           </div>
+          <div className="sm:w-48">
+            <input
+              type="date"
+              aria-label="Filter bookings by date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="input"
+            />
+          </div>
         </div>
       </div>
 
@@ -1397,13 +1406,8 @@ export default function BookingsManagementPage() {
                   </div>
                 )}
 
-                {/* WhatsApp Reminder Button - Only show for confirmed bookings within 24 hours before start */}
-                {selectedBooking.status === "confirmed" &&
-                  isWithin24HoursBeforeBooking(
-                    selectedBooking.date,
-                    selectedBooking.start_time,
-                    selectedBooking.end_time
-                  ) && (
+                {/* WhatsApp Reminder Button */}
+                {selectedBooking.status === "confirmed" && (
                     <div className="pt-4 border-t border-white/10">
                       <p className="text-zinc-400 text-sm mb-3">
                         Send Reminder
@@ -1467,6 +1471,7 @@ See you soon!`;
                             const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(
                               message
                             )}`;
+                            setWhatsappMessage(message);
                             window.open(whatsappUrl, "_blank");
 
                             // Mark reminder as sent in database
@@ -1535,7 +1540,7 @@ See you soon!`;
                         <MessageCircle className="w-4 h-4" />
                         {selectedBooking.whatsapp_reminder_sent_at
                           ? "Reminder Sent • Send Again?"
-                          : "Send WhatsApp Reminder"}
+                          : "Reminder Pending"}
                       </button>
                     </div>
                   )}
@@ -1561,8 +1566,7 @@ See you soon!`;
                             const target = Number(loyaltyData.target || 50);
                             const windowEnd = loyaltyData.window_end ? new Date(loyaltyData.window_end).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata", day: 'numeric', month: 'long', year: 'numeric' }) : "expiration date";
 
-                            // Assuming 50 hours = 1500 Rs reward => 30 Rs/hr value
-                            const balance = Math.round(currentHours * 30);
+                            const balance = Math.round(currentHours * 40);
                             const neededHours = Math.max(0, target - currentHours);
                             
                             loyaltyMessagePart = `\nincluding this booking, your total cashback balance is ₹${balance.toLocaleString()}.\nTo encash ₹2,000, please complete ${neededHours.toFixed(1)} more hours of booking before ${windowEnd}.`;
@@ -1639,7 +1643,7 @@ Final Amount                                        ${fmtMoney(currentTotal)}
 \`\`\`
 
 You have earned an instant discount of ${fmtMoney(instantDiscount)}.
-Additionally, ₹${Math.round(duration * 30)} cashback has been added against your mobile number.${loyaltyMessagePart}
+Book for 50 hours within any three months and earn ₹2,000 as Cashback.${loyaltyMessagePart}
 
 *Please note and inform all your group members:*
 
@@ -1653,13 +1657,35 @@ We look forward to hosting you.
 Enjoy your session!`;
 
                         const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                        setWhatsappMessage(message);
                         window.open(whatsappUrl, "_blank");
                       }}
                       className="w-full py-3 rounded-xl bg-violet-500/20 text-violet-400 hover:bg-violet-500/30 transition-colors flex items-center justify-center gap-2"
                     >
                       <CheckCircle className="w-4 h-4" />
-                      Send WhatsApp Confirmation
+                      Booking Confirmation
                     </button>
+                  </div>
+                )}
+
+                {whatsappMessage && (
+                  <div className="pt-4 border-t border-white/10">
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <p className="text-zinc-400 text-sm">Generated WhatsApp message</p>
+                      <button
+                        type="button"
+                        onClick={() => navigator.clipboard.writeText(whatsappMessage)}
+                        className="text-xs text-violet-400 hover:text-violet-300"
+                      >
+                        Copy message
+                      </button>
+                    </div>
+                    <textarea
+                      readOnly
+                      value={whatsappMessage}
+                      className="input min-h-[180px] resize-y text-xs"
+                      aria-label="Generated WhatsApp message"
+                    />
                   </div>
                 )}
 
@@ -1667,6 +1693,13 @@ Enjoy your session!`;
                 <div className="pt-4 border-t border-white/10">
                   <p className="text-zinc-400 text-sm mb-3">Actions</p>
                   <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleChangeBooking(selectedBooking)}
+                      className="flex-1 py-3 rounded-xl bg-violet-500/20 text-violet-400 hover:bg-violet-500/30 transition-colors text-center"
+                    >
+                      Change
+                    </button>
                     {/* Pending bookings (time not passed) */}
                     {selectedBooking.status === "pending" &&
                       !isBookingTimePassed(
@@ -1982,23 +2015,6 @@ Enjoy your session!`;
                         className="input"
                       />
                     </div>
-                    <div className="sm:col-span-2">
-                      <label className="block text-sm text-zinc-400 mb-1.5">
-                        Email (for confirmation)
-                      </label>
-                      <input
-                        type="email"
-                        placeholder="customer@email.com"
-                        value={bookingFormData.email}
-                        onChange={(e) =>
-                          setBookingFormData({
-                            ...bookingFormData,
-                            email: e.target.value,
-                          })
-                        }
-                        className="input"
-                      />
-                    </div>
                   </div>
                 </div>
 
@@ -2188,7 +2204,7 @@ Enjoy your session!`;
                       }
                     >
                       <label className="block text-sm text-zinc-400 mb-1.5">
-                        Rate per Hour
+                        Suggested Rate per Hour
                       </label>
                       <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
                         <span className="text-lg font-bold text-emerald-400">
@@ -2199,7 +2215,7 @@ Enjoy your session!`;
                           /hr
                         </span>
                         <span className="text-zinc-500 text-sm ml-2">
-                          (Auto-calculated)
+                          (Override below if needed)
                         </span>
                       </div>
                     </div>
@@ -2274,11 +2290,11 @@ Enjoy your session!`;
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm text-zinc-400 mb-1.5">
-                        Rate per Hour (₹)
+                        Charged Rate per Hour (₹)
                       </label>
                       <input
                         type="number"
-                        placeholder="e.g., 400"
+                        placeholder="e.g., 250"
                         value={bookingFormData.rate_per_hour}
                         onChange={(e) =>
                           setBookingFormData({
@@ -2288,25 +2304,8 @@ Enjoy your session!`;
                         }
                         className="input"
                         min={0}
+                        aria-label="Charged rate per hour"
                       />
-                    </div>
-                    <div className="flex items-end">
-                      <label className="flex items-center gap-2 cursor-pointer p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={bookingFormData.send_notification}
-                          onChange={(e) =>
-                            setBookingFormData({
-                              ...bookingFormData,
-                              send_notification: e.target.checked,
-                            })
-                          }
-                          className="w-4 h-4 rounded border-zinc-600 text-violet-500 focus:ring-violet-500 bg-zinc-800"
-                        />
-                        <span className="text-sm text-zinc-300">
-                          Send email notification
-                        </span>
-                      </label>
                     </div>
                     <div className="sm:col-span-2">
                       <label className="block text-sm text-zinc-400 mb-1.5">

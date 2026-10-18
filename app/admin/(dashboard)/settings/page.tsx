@@ -23,7 +23,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<BookingSettings>({
     // Business Hours
     defaultOpenTime: '08:00',
-    defaultCloseTime: '22:00',
+    defaultCloseTime: '21:30',
     
     // Booking Settings
     minBookingDuration: 1,

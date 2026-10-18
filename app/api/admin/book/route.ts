@@ -44,6 +44,7 @@ async function verifyAdminToken(request: NextRequest) {
     .select("id, role, is_active")
     .eq("id", user.id)
     .eq("is_active", true)
+    .in("role", ["admin", "super_admin"])
     .single();
 
   if (adminError || !adminUser) {
@@ -136,7 +137,7 @@ export async function POST(request: NextRequest) {
     // Use atomic function to prevent race conditions
     // Admin can still skip validation if needed, but we check conflicts first and show them
     if (!skip_validation) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const { data: result, error: rpcError } = await supabaseServer.rpc(
         "create_booking_atomic",
         {
@@ -175,11 +176,11 @@ export async function POST(request: NextRequest) {
           .gt("end_time", start_time);
 
         if (conflictingBookings && conflictingBookings.length > 0) {
-          const conflicts = conflictingBookings.map(b => 
+          const conflicts = conflictingBookings.map(b =>
             `${b.start_time}-${b.end_time} (${b.name || b.phone_number})`
           ).join(", ");
           return NextResponse.json(
-            { 
+            {
               error: "Time slot conflicts with existing bookings",
               conflicts: conflictingBookings,
               message: `Conflicting bookings: ${conflicts}`
@@ -253,18 +254,18 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       // Check if the current email is a placeholder (admin email)
       const isPlaceholder = await isPlaceholderEmail(existingUser.email);
-      
+
       // If it is a placeholder and we have a new valid email, update the user's profile
       if (isPlaceholder && email && email.trim() !== "") {
         const isNewEmailPlaceholder = await isPlaceholderEmail(email);
-        
+
         if (!isNewEmailPlaceholder) {
           console.log(`[Admin Book API] Updating user ${phone} email from ${existingUser.email} to ${email}`);
           const { error: updateUserError } = await supabaseServer
             .from("users")
-            .update({ 
-               email: email, 
-               name: name || existingUser.name 
+            .update({
+               email: email,
+               name: name || existingUser.name
             })
             .eq("phone_number", phone);
 
@@ -386,8 +387,8 @@ export async function POST(request: NextRequest) {
       console.error("[Admin Book API] Failed to log booking to Google Sheet:", sheetError);
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       booking,
       message: "Booking created successfully by admin"
     });
@@ -499,7 +500,7 @@ export async function PUT(request: NextRequest) {
     });
 
     // Use atomic update function
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const { data: result, error: rpcError } = await supabaseServer.rpc(
       "update_booking_atomic",
       {
@@ -547,11 +548,11 @@ export async function PUT(request: NextRequest) {
           .gt("end_time", start_time);
 
           if (conflictingBookings && conflictingBookings.length > 0) {
-               const conflicts = conflictingBookings.map((b: any) => 
+               const conflicts = conflictingBookings.map((b: any) =>
                  `${b.start_time}-${b.end_time} (${b.name || b.phone_number})`
                ).join(", ");
                return NextResponse.json(
-                 { 
+                 {
                    error: "Time slot conflicts with existing bookings",
                    conflicts: conflictingBookings,
                    message: `Conflicting bookings: ${conflicts}`
@@ -573,7 +574,7 @@ export async function PUT(request: NextRequest) {
             .from("bookings")
             .update({ phone_number: newPhone })
             .eq("id", original_booking_id);
-            
+
         if (phoneUpdateError) {
             console.error("[Admin Book API] Failed to update phone number:", phoneUpdateError);
         } else {
@@ -583,7 +584,7 @@ export async function PUT(request: NextRequest) {
                 .select("*")
                 .eq("phone_number", newPhone)
                 .single();
-                
+
             if (!newUser && name && email) {
                  await supabase.from("users").insert({ phone_number: newPhone, name, email });
             }
@@ -700,7 +701,7 @@ export async function PUT(request: NextRequest) {
           notes: existingBooking.notes || "Original booking before admin update",
           created_at: existingBooking.created_at
         });
-        
+
         // Then log the updated booking
         await logBookingUpdate({
           id: booking.id,

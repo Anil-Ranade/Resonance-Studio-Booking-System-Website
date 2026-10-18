@@ -272,7 +272,7 @@ export default function HomePage() {
       name: "Studio A",
       size: "Large",
       tagline: "Big live rehearsals & karaoke groups",
-      live: "10-12 musicians",
+    live: "10-12 musicians",
       liveMax: 12,
       karaoke: "Up to 30 people",
       karaokeMax: 30,
@@ -286,8 +286,8 @@ export default function HomePage() {
       tagline: "Versatile space, great for karaoke groups",
       live: "4-5 musicians",
       liveMax: 5,
-      karaoke: "Up to 10 people",
-      karaokeMax: 10,
+    karaoke: "Up to 12 people",
+      karaokeMax: 12,
       price: 250,
       image: "/studios/main/studio_b.jpeg",
       id: "studio-b",
@@ -298,8 +298,8 @@ export default function HomePage() {
       tagline: "Audio/video recording & podcasts",
       live: "Up to 2 musicians",
       liveMax: 2,
-      karaoke: "Up to 5 people",
-      karaokeMax: 5,
+    karaoke: "Up to 8 people",
+      karaokeMax: 8,
       price: 200,
       image: "/studios/main/studio_c.jpeg",
       id: "studio-c",
@@ -348,24 +348,36 @@ export default function HomePage() {
               band practice and professional audio &amp; video recording.
             </p>
 
-            <div
-              className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-6"
-            >
-              <Link
-                href="/booking"
-                className="group inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-violet-600 hover:bg-violet-500 text-navy font-semibold transition-colors"
-              >
-                <Calendar className="w-5 h-5" />
-                Book a Session
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
-                href="/studios"
-                className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl border border-white/15 hover:border-white/30 hover:bg-white/5 text-white font-semibold transition-colors"
-              >
-                <Building2 className="w-5 h-5" />
-                Explore Studios
-              </Link>
+            <div className="mb-6 max-w-2xl mx-auto lg:mx-0">
+              <div className="flex items-center justify-between gap-4 mb-3">
+                <p className="text-sm font-semibold text-white">What would you like to do?</p>
+                <span className="hidden sm:block text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+                  Start here
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+                {[
+                  ["New", "/booking/new"],
+                  ["Change", "/edit-booking"],
+                  ["Cancel", "/cancel-booking"],
+                  ["View", "/view-bookings"],
+                  ["Explore Studios", "/studios"],
+                ].map(([label, href]) => (
+                  <Link
+                    key={label}
+                    href={href}
+                    className={`group inline-flex min-h-14 items-center justify-center rounded-2xl border px-2.5 py-3 text-xs sm:text-sm font-semibold whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 focus-visible:ring-offset-2 focus-visible:ring-offset-navy ${
+                      label === "Explore Studios" ? "col-span-2" : ""
+                    } ${
+                      label === "New"
+                        ? "border-violet-300 bg-violet-300 text-navy shadow-[0_8px_24px_rgba(167,139,250,0.18)] hover:bg-violet-200"
+                        : "border-white/15 bg-white/[0.03] text-white hover:border-violet-300/60 hover:bg-white/[0.08]"
+                    }`}
+                  >
+                    <span className="transition-transform group-hover:-translate-y-0.5">{label}</span>
+                  </Link>
+                ))}
+              </div>
             </div>
 
             <p className="text-sm text-zinc-500">
@@ -625,7 +637,7 @@ export default function HomePage() {
                 up after your session.
               </p>
               <ul className="flex flex-wrap gap-2 text-sm font-medium">
-                {["No advance payment", "Edit or cancel online", "3 rooms to choose from"].map((item) => (
+                {["No advance payment", "Free online changes 24+ hours before", "3 rooms to choose from"].map((item) => (
                   <li
                     key={item}
                     className="inline-flex items-center gap-1.5 rounded-full bg-navy/10 px-3 py-1.5"
@@ -643,7 +655,7 @@ export default function HomePage() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-navy px-6 py-4 font-semibold text-white hover:bg-navy/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy transition-colors"
               >
                 <Calendar className="w-5 h-5" />
-                Book a session
+                New booking
               </Link>
               <a
                 href="tel:+919822029235"

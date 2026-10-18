@@ -17,9 +17,9 @@ interface StudioSuggestionResult {
  * STUDIO SUGGESTION LOGIC (exact mapping as specified)
  *
  * Karaoke:
- * - 1-5 participants → recommend Studio C (allow upgrade to B or A)
- * - 6-10 → recommend Studio B (allow upgrade to A)
- * - 11-20 → recommend Studio A only (A locked)
+ * - 1-8 participants → recommend Studio C (allow upgrade to B or A)
+ * - 9-12 → recommend Studio B (allow upgrade to A)
+ * - 13-20 → recommend Studio A only (A locked)
  * - 21-30 → Studio A only (A locked)
  *
  * Live with musicians:
@@ -44,26 +44,26 @@ export function getKaraokeStudioSuggestion(
   option: KaraokeOption
 ): StudioSuggestionResult {
   switch (option) {
-    case "1_5":
+    case "1_8":
       return {
         recommendedStudio: "Studio C",
         allowedStudios: ["Studio C", "Studio B", "Studio A"],
         explanation:
-          "For 1-5 participants, Studio C is perfect. You can upgrade to B or A for more space.",
+          "For 1-8 participants, Studio C is perfect. You can upgrade to B or A for more space.",
       };
-    case "6_10":
+    case "9_12":
       return {
         recommendedStudio: "Studio B",
         allowedStudios: ["Studio B", "Studio A"],
         explanation:
-          "For 6-10 participants, Studio B is recommended. You can upgrade to A for more comfort.",
+          "For 9-12 participants, Studio B is recommended. You can upgrade to A for more comfort.",
       };
-    case "11_20":
+    case "13_20":
       return {
         recommendedStudio: "Studio A",
         allowedStudios: ["Studio A"],
         explanation:
-          "For 11-20 participants, only Studio A can accommodate your group.",
+          "For 13-20 participants, only Studio A can accommodate your group.",
       };
     case "21_30":
       return {
@@ -289,12 +289,7 @@ export function getStudioRate(
     case "Band":
       const equipment = options.bandEquipment || [];
       const hasDrum = equipment.includes("drum");
-      // With drums, always use standard rate for Studio A
-      if (hasDrum) {
-        baseRate = rates.band_standard || 450;
-      } else {
-        baseRate = rates.band_small || rates.band_standard || 350;
-      }
+      baseRate = hasDrum ? 500 : rates.band_small || rates.band_standard || 350;
       break;
 
     case "Recording":

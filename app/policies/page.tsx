@@ -7,15 +7,15 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 
 // Helper function to format time from 24h to 12h format
 function formatTimeToDisplay(time: string): string {
-  const [hours] = time.split(':').map(Number);
+  const [hours, minutes = 0] = time.split(':').map(Number);
   const period = hours >= 12 ? 'PM' : 'AM';
   const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-  return `${displayHours}:00 ${period}`;
+  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
 }
 
 export default function PoliciesPage() {
   const [defaultOpenTime, setDefaultOpenTime] = useState('08:00');
-  const [defaultCloseTime, setDefaultCloseTime] = useState('22:00');
+  const [defaultCloseTime, setDefaultCloseTime] = useState('21:30');
   const [loading, setLoading] = useState(true);
 
   // Fetch booking settings on component mount
@@ -26,7 +26,7 @@ export default function PoliciesPage() {
         if (response.ok) {
           const data = await response.json();
           setDefaultOpenTime(data.defaultOpenTime || '08:00');
-          setDefaultCloseTime(data.defaultCloseTime || '22:00');
+          setDefaultCloseTime(data.defaultCloseTime || '21:30');
         }
       } catch (err) {
         console.error('Error fetching booking settings:', err);
@@ -54,6 +54,18 @@ export default function PoliciesPage() {
       title: "Parking",
       short: "Park inside the building. Never block a gate.",
       content: "Please park your vehicle in the designated parking area within our building. If building parking is full, you may use society street parking on the road. Please ensure no gates are blocked and no inconvenience is caused to other residents.",
+    },
+    {
+      id: "cancellation",
+      title: "Cancellation & rescheduling",
+      short: "Free changes with more than 24 hours’ notice.",
+      content: "More than 24 hours before your session, public users can cancel or reschedule online free of charge. Within 24 hours, online changes are locked; please contact the studio directly. Late cancellations carry a 50% charge, and no-shows carry the full 100% charge. Admin and staff can cancel or reschedule at any time.",
+    },
+    {
+      id: "refreshments",
+      title: "Food & refreshments",
+      short: "Tea, snacks, lunch, and dinner by request.",
+      content: "Tea, snacks, lunch, and dinner can be arranged upon request at an extra cost, subject to availability.",
     },
     {
       id: "noise",

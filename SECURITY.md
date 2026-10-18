@@ -11,13 +11,11 @@
 ### 1. Authentication & Authorization
 
 #### Customer Authentication
-- **OTP-based authentication** via Email (Resend)
-- OTPs are hashed using **bcrypt** (10 salt rounds) before storage
-- OTPs expire after **5 minutes**
-- Maximum **5 verification attempts** per OTP
-- Old OTPs are deleted before generating new ones (prevents replay attacks)
+- Customer booking flow requires a **10-digit mobile number and name**
+- Customer data is used for WhatsApp booking confirmations and one-day advance reminders
 - **Cookie-based session management** with HttpOnly secure cookies
 - **Auto-login** for trusted devices with valid session cookies
+- Legacy OTP endpoints remain available only for compatibility; they are not part of the current customer booking UI
 
 #### Admin Authentication
 - **Supabase Auth** handles email/password authentication
@@ -45,10 +43,10 @@
 - Logout endpoint clears all session cookies
 
 #### Edit/Cancel Booking Verification
-- Email-based booking lookup
-- OTP sent to registered email for verification
-- Prevents unauthorized booking modifications
-- Time-based restrictions (48h for confirmed bookings)
+- Mobile number and name are collected in the customer flow
+- Private booking fields require a verified customer session
+- Public online changes are free more than 24 hours before the session
+- Within 24 hours, customers must contact the studio; late cancellation is 50% and no-show is 100%
 
 ### 2. HTTP Security Headers
 
@@ -61,19 +59,21 @@ The following headers are enforced via `next.config.ts`:
 | X-Content-Type-Options | nosniff | Prevent MIME sniffing |
 | Referrer-Policy | strict-origin-when-cross-origin | Control referrer info |
 | Permissions-Policy | camera=(), microphone=(), geolocation=() | Restrict browser APIs |
+| Content-Security-Policy | Self-hosted scripts/styles and approved connections | Reduce XSS impact |
 
 ### 3. Input Validation & Sanitization
 
 - Phone numbers: 10 digits only, non-digits stripped
-- OTP codes: 6 digits only, validated format
-- Email addresses: RFC-compliant format, max 254 characters
+- Mobile numbers: exactly 10 digits
+- Email addresses: validated where operational email integrations use them
 - Text inputs: HTML tags (`<`, `>`) removed to prevent XSS
 - Length limits: 1000 characters default, 5000 for long text
 
 ### 4. Database Security
 
 - **Row Level Security (RLS)** enabled on all tables
-- Users can only access their own records
+- Private users and bookings are accessed through server-side service-role APIs
+- Browser-authenticated sessions do not receive broad direct table/function grants
 - **UUID primary keys** (non-sequential, non-guessable)
 - **Enum types** for constrained values
 - **Service role key** used only server-side
@@ -152,27 +152,26 @@ openssl rand -base64 32  # For JWT_SECRET
 ## Known Security Considerations
 
 ### Rate Limiting
-Currently, rate limiting is implemented at the OTP level (max attempts). For production deployments, consider adding:
-- IP-based rate limiting (via Vercel, Cloudflare, or middleware)
-- Global API rate limiting
-- DDoS protection
-
-### Content Security Policy
-A strict CSP is not currently implemented due to dynamic content requirements. Consider adding a CSP header if your security requirements demand it.
+Rate limiting is database-backed and applied across public/authentication-sensitive API routes. It uses endpoint and client keys and fails closed if the rate-limit check cannot complete. Production deployments should still use provider-level DDoS protection.
 
 ## Dependencies
 
 Run `npm audit` regularly to check for vulnerabilities in dependencies.
 
-Current status (as of December 2025): **0 vulnerabilities**
+Current status (verified October 19, 2026): **0 vulnerabilities** (`npm audit`)
 
-## Recent Security Updates (January 2026)
+## Recent Security Updates (October 2026)
 
 - Added **atomic booking mechanism** with PostgreSQL row-level locking to prevent race conditions
 - Implemented **`create_booking_atomic`** and **`update_booking_atomic`** database functions
 - Updated all booking APIs (`/api/book`, `/api/admin/book`, `/api/staff/book`) to use atomic operations
 - Preserved admin/staff **skip_validation** override capability for emergency bookings
-- Added **`check_rate_limit`** database function infrastructure for future IP-based rate limiting
+- Added **`check_rate_limit`** database function for endpoint and client-key rate limiting
+- Enforced admin/super-admin roles on admin APIs
+- Redacted unauthenticated booking lookups and removed customer enumeration responses
+- Added fail-closed rate limiting, CSP, and trusted-device session checks
+- Added database migration `011_security_hardening.sql`
+- Removed vulnerable development-only dependency chains; full `npm audit` is clean
 
 ## Contact
 

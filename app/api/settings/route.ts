@@ -26,7 +26,7 @@ export async function GET() {
         bookingBuffer: 0,
         advanceBookingDays: 30,
         defaultOpenTime: '08:00',
-        defaultCloseTime: '22:00',
+        defaultCloseTime: '21:30',
       });
     }
 
@@ -37,7 +37,7 @@ export async function GET() {
       bookingBuffer: 0,
       advanceBookingDays: 30,
       defaultOpenTime: '08:00',
-      defaultCloseTime: '22:00',
+      defaultCloseTime: '21:30',
     };
 
     if (settings) {
@@ -75,7 +75,7 @@ export async function GET() {
       bookingBuffer: 0,
       advanceBookingDays: 30,
       defaultOpenTime: '08:00',
-      defaultCloseTime: '22:00',
+      defaultCloseTime: '21:30',
     });
   }
 }

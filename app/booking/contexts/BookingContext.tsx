@@ -19,7 +19,7 @@ export type SessionType =
   | "Recording"
   | "Meetings / Classes";
 export type SoundOperatorOption = "Required" | "Not Required";
-export type KaraokeOption = "1_5" | "6_10" | "11_20" | "21_30";
+export type KaraokeOption = "1_8" | "9_12" | "13_20" | "21_30";
 export type LiveMusicianOption = "1_2" | "3_4" | "5" | "6_8" | "9_12";
 export type BandEquipment = "drum" | "amps" | "guitars" | "keyboard";
 export type RecordingOption =
@@ -122,7 +122,6 @@ const STEP_ORDER: BookingStep[] = [
   "studio",
   "time",
   "review",
-  "otp",
   "confirm",
 ];
 
@@ -196,15 +195,15 @@ export function BookingProvider({
   ) => {
     let karaokeOption: KaraokeOption | "" = "";
     let liveOption: LiveMusicianOption | "" = "";
-    let bandEquipment: BandEquipment[] = [];
+    const bandEquipment: BandEquipment[] = [];
     let recordingOption: RecordingOption | "" = "";
 
     // Parse based on session type
     if (sessionType === "Karaoke") {
       // Match against known karaoke labels
-      if (groupSize <= 5) karaokeOption = "1_5";
-      else if (groupSize <= 10) karaokeOption = "6_10";
-      else if (groupSize <= 20) karaokeOption = "11_20";
+      if (groupSize <= 8) karaokeOption = "1_8";
+      else if (groupSize <= 12) karaokeOption = "9_12";
+      else if (groupSize <= 20) karaokeOption = "13_20";
       else karaokeOption = "21_30";
     } else if (sessionType === "Live with musicians") {
       if (groupSize <= 2) liveOption = "1_2";
@@ -497,7 +496,7 @@ export function BookingProvider({
         case "review":
           return true;
         case "otp":
-          return draft.otpVerified || draft.deviceTrusted;
+          return true;
         case "confirm":
           return true;
         default:
@@ -537,9 +536,9 @@ export function BookingProvider({
       // Compare karaoke option by checking if group size category changed
       const originalKaraokeOption = (() => {
         const size = original.group_size || 1;
-        if (size <= 5) return "1_5";
-        if (size <= 10) return "6_10";
-        if (size <= 20) return "11_20";
+        if (size <= 8) return "1_8";
+        if (size <= 12) return "9_12";
+        if (size <= 20) return "13_20";
         return "21_30";
       })();
       if (draft.karaokeOption !== originalKaraokeOption) return true;
@@ -580,10 +579,10 @@ export function BookingProvider({
         resetDraft,
         canProceed,
         getStepNumber,
-        totalSteps: 7, // Display 7 steps to user (OTP/confirm counted as final step)
+        totalSteps: 6,
         loadEditData,
         hasChangesFromOriginal,
-        skipOtp: mode !== "customer",
+        skipOtp: true,
       }}
     >
       {children}

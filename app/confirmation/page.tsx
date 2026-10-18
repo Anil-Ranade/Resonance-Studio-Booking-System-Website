@@ -132,7 +132,7 @@ export default function ConfirmationPage() {
                </div>
                
                <div className="flex justify-between items-end mb-2">
-                 <span className="text-zinc-300 text-sm">Progress to ₹1500 Cashback</span>
+                 <span className="text-zinc-300 text-sm">Progress to ₹2,000 Cashback</span>
                  <span className="text-violet-400 font-bold">{Math.min(loyaltyStatus.hours, 50).toFixed(1)} / 50 hrs</span>
                </div>
                
@@ -145,11 +145,11 @@ export default function ConfirmationPage() {
                {loyaltyStatus.eligible ? (
                  <div className="mt-4 bg-green-500/20 text-green-400 p-3 rounded-xl border border-green-500/20 flex items-center gap-3">
                     <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                    <p className="text-sm font-medium">You are eligible for <strong>₹1500 Cashback!</strong> <br/> Show this screen to the staff to claim it.</p>
+                    <p className="text-sm font-medium">You are eligible for <strong>₹2,000 Cashback!</strong> <br/> Show this screen to the staff to claim it.</p>
                  </div>
                ) : (
                  <p className="text-xs text-zinc-500">
-                   Complete 50 hours within 3 months to earn rewards.
+                   Book for 50 hours within any three months and earn ₹2,000 as Cashback.
                  </p>
                )}
              </div>

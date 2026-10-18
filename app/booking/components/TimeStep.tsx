@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Calendar,
   Clock,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -598,6 +599,20 @@ export default function TimeStep() {
           />
         </div>
 
+        {date && (
+          <Alert className={loading ? "border-primary/40" : "border-emerald-500/40"}>
+            {loading ? <Loader2 className="animate-spin text-primary" /> : <CheckCircle2 className="text-emerald-400" />}
+            <AlertTitle>Check availability</AlertTitle>
+            <AlertDescription className="text-xs">
+              {loading
+                ? `Checking available slots for ${formatDate(date)}...`
+                : error
+                  ? "Availability could not be checked. Please try again."
+                  : `Showing available time slots for ${formatDate(date)}.`}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Studio selector - only when several studios fit */}
         {draft.allowedStudios.length > 1 && (
           <div className="space-y-1.5">
@@ -668,7 +683,7 @@ export default function TimeStep() {
         {date && !loading && !error && (
           <div className="space-y-1.5">
             <Label className={sectionLabel}>
-              <Clock className="size-3" /> Step 1: Select available time slot
+              <Clock className="size-3" /> Select from available time slots below
             </Label>
             {continuousSlabs.length === 0 ? (
               <p className="text-center py-2 text-muted-foreground text-xs">No available slots</p>

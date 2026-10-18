@@ -10,7 +10,7 @@ export type SessionType =
   | "Meetings / Classes";
 
 // Karaoke participant options
-export type KaraokeOption = "1_5" | "6_10" | "11_20" | "21_30";
+export type KaraokeOption = "1_8" | "9_12" | "13_20" | "21_30";
 
 // Live musician options
 export type LiveMusicianOption = "1_2" | "3_4" | "5" | "6_8" | "9_12";
@@ -28,9 +28,9 @@ export type RecordingOption =
 const rateCard = {
   "Studio A": {
     karaoke: {
-      "1_5": 400,
-      "6_10": 400,
-      "11_20": 400,
+      "1_8": 400,
+      "9_12": 400,
+      "13_20": 400,
       "21_30": 500,
     },
     live: {
@@ -42,7 +42,7 @@ const rateCard = {
     },
     drum_practice: 350,
     band: {
-      with_drum: 600, // Any combination with drums
+      with_drum: 500, // College Students Band package
       without_drum: 400,
     },
     recording: {
@@ -54,8 +54,8 @@ const rateCard = {
   },
   "Studio B": {
     karaoke: {
-      "1_5": 300,
-      "6_10": 300,
+      "1_8": 300,
+      "9_12": 300,
     },
     live: {
       "1_2": 400,
@@ -69,7 +69,7 @@ const rateCard = {
   },
   "Studio C": {
     karaoke: {
-      "1_5": 250,
+      "1_8": 250,
     },
     live: {
       "1_2": 350,
@@ -101,26 +101,26 @@ function getKaraokeSuggestion(option: KaraokeOption): StudioSuggestion {
   let explanation: string;
 
   switch (option) {
-    case "1_5":
+    case "1_8":
       suggested = "Studio C";
       allowed = ["Studio C", "Studio B", "Studio A"];
-      rate = rateCard["Studio C"].karaoke["1_5"];
+      rate = rateCard["Studio C"].karaoke["1_8"];
       explanation =
-        "For 1-5 participants, Studio C is perfect. You can upgrade to B or A for more space.";
+        "For 1-8 participants, Studio C is perfect. You can upgrade to B or A for more space.";
       break;
-    case "6_10":
+    case "9_12":
       suggested = "Studio B";
       allowed = ["Studio B", "Studio A"];
-      rate = rateCard["Studio B"].karaoke["6_10"];
+      rate = rateCard["Studio B"].karaoke["9_12"];
       explanation =
-        "For 6-10 participants, Studio B is recommended. You can upgrade to A for more space.";
+        "For 9-12 participants, Studio B is recommended. You can upgrade to A for more space.";
       break;
-    case "11_20":
+    case "13_20":
       suggested = "Studio A";
       allowed = ["Studio A"];
-      rate = rateCard["Studio A"].karaoke["11_20"];
+      rate = rateCard["Studio A"].karaoke["13_20"];
       explanation =
-        "For 11-20 participants, only Studio A can accommodate your group.";
+        "For 13-20 participants, only Studio A can accommodate your group.";
       break;
     case "21_30":
       suggested = "Studio A";
@@ -132,7 +132,7 @@ function getKaraokeSuggestion(option: KaraokeOption): StudioSuggestion {
     default:
       suggested = "Studio C";
       allowed = ["Studio C", "Studio B", "Studio A"];
-      rate = rateCard["Studio C"].karaoke["1_5"];
+      rate = rateCard["Studio C"].karaoke["1_8"];
       explanation = "Studio C is recommended for smaller groups.";
   }
 
@@ -370,7 +370,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(
           {
             error:
-              "subOption is required for Karaoke (1_5, 6_10, 11_20, 21_30)",
+              "subOption is required for Karaoke (1_8, 9_12, 13_20, 21_30)",
           },
           { status: 400 }
         );

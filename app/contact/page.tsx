@@ -7,17 +7,17 @@ import { ArrowLeft, ArrowUpRight, Phone } from "lucide-react";
 
 // Helper function to format time from 24h to 12h format
 function formatTimeToDisplay(time: string): string {
-  const [hours] = time.split(':').map(Number);
+  const [hours, minutes = 0] = time.split(':').map(Number);
   const period = hours >= 12 ? 'PM' : 'AM';
   const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-  return `${displayHours}:00 ${period}`;
+  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
 }
 
 const MAPS_QUERY = "45+Shivprasad+Housing+Society+Panmala+Dattawadi+Pune";
 
 export default function ContactPage() {
   const [defaultOpenTime, setDefaultOpenTime] = useState('08:00');
-  const [defaultCloseTime, setDefaultCloseTime] = useState('22:00');
+  const [defaultCloseTime, setDefaultCloseTime] = useState('21:30');
 
   // Fetch booking settings on component mount
   useEffect(() => {
@@ -27,7 +27,7 @@ export default function ContactPage() {
         if (response.ok) {
           const data = await response.json();
           setDefaultOpenTime(data.defaultOpenTime || '08:00');
-          setDefaultCloseTime(data.defaultCloseTime || '22:00');
+          setDefaultCloseTime(data.defaultCloseTime || '21:30');
         }
       } catch (err) {
         console.error('Error fetching booking settings:', err);

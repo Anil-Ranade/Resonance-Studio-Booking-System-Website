@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
     // Use atomic function to prevent race conditions
     // Staff can skip validation if needed, but we check conflicts first
     if (!skip_validation) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const { data: result, error: rpcError } = await supabaseServer.rpc(
         "create_booking_atomic",
         {
@@ -177,11 +177,11 @@ export async function POST(request: NextRequest) {
           .gt("end_time", start_time);
 
         if (conflictingBookings && conflictingBookings.length > 0) {
-          const conflicts = conflictingBookings.map(b => 
+          const conflicts = conflictingBookings.map(b =>
             `${b.start_time}-${b.end_time} (${b.name || b.phone_number})`
           ).join(", ");
           return NextResponse.json(
-            { 
+            {
               error: "Time slot conflicts with existing bookings",
               conflicts: conflictingBookings,
               message: `Conflicting bookings: ${conflicts}`
@@ -255,18 +255,18 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       // Check if the current email is a placeholder (admin email)
       const isPlaceholder = await isPlaceholderEmail(existingUser.email);
-      
+
       // If it is a placeholder and we have a new valid email, update the user's profile
       if (isPlaceholder && email && email.trim() !== "") {
         const isNewEmailPlaceholder = await isPlaceholderEmail(email);
-        
+
         if (!isNewEmailPlaceholder) {
           console.log(`[Staff Book API] Updating user ${phone} email from ${existingUser.email} to ${email}`);
           const { error: updateUserError } = await supabaseServer
             .from("users")
-            .update({ 
-               email: email, 
-               name: name || existingUser.name 
+            .update({
+               email: email,
+               name: name || existingUser.name
             })
             .eq("phone_number", phone);
 
@@ -388,8 +388,8 @@ export async function POST(request: NextRequest) {
       console.error("[Staff Book API] Failed to log booking to Google Sheet:", sheetError);
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       booking,
       message: "Booking created successfully by staff"
     });

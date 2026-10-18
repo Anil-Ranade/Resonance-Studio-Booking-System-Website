@@ -96,31 +96,31 @@ const manage = [
     href: "/edit-booking",
     cta: "Change a booking",
     steps: [
-      "Enter the email you booked with",
+      "Enter the mobile number and name used for your booking",
       "Pick the booking to change",
       "Verify with an OTP if asked",
       "Choose a new date, time or room and confirm",
     ],
-    note: "Changes are possible up to 24 hours before the session.",
+    note: "Free online changes are available more than 24 hours before the session. Within 24 hours, contact the studio directly.",
   },
   {
     title: "Cancel a booking",
     href: "/cancel-booking",
     cta: "Cancel a booking",
     steps: [
-      "Enter the email you booked with",
+      "Enter the mobile number and name used for your booking",
       "Pick the booking to cancel",
       "Verify with an OTP if asked",
       "Confirm the cancellation",
     ],
-    note: "Free cancellation with 24+ hours notice.",
+    note: "Free cancellation with more than 24 hours’ notice. Within 24 hours, contact the studio directly; late cancellation is 50%.",
   },
   {
     title: "View your bookings",
     href: "/view-bookings",
     cta: "View bookings",
     steps: [
-      "Enter your email or phone number",
+      "Enter your mobile number and name",
       "See all your upcoming sessions",
       "Check date, time, studio and amount",
     ],
@@ -130,8 +130,8 @@ const manage = [
 
 const goodToKnow = [
   { title: "No advance payment", description: "Pay at the studio after your session." },
-  { title: "Free cancellation", description: "Cancel free with 24+ hours notice." },
-  { title: "Easy rescheduling", description: "Change your date or time with 24 hours notice." },
+  { title: "Free changes", description: "Cancel or reschedule free with more than 24 hours’ notice." },
+  { title: "Late changes", description: "Within 24 hours, contact the studio directly. Late cancellation is 50%; no-show is 100%." },
   { title: "WhatsApp updates", description: "Get your confirmation and reminders on WhatsApp." },
 ];
 
@@ -274,10 +274,10 @@ export default function HowToBookPage() {
             <div className="rounded-3xl border border-violet-400/30 bg-white/[0.03] p-6 sm:p-8 mb-10">
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-fuchsia-400 mb-2">Cashback</p>
               <p className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-3">
-                ₹30 back per hour, plus <span className="text-violet-400">₹500</span> on your first booking.
+                Book for 50 hours within any three months and earn <span className="text-violet-400">₹2,000 as Cashback.</span>
               </p>
               <p className="text-zinc-400 mb-5">
-                Credited when your session is completed. Reach 50 hours within 90 days to unlock a ₹2,000 payout.
+                Cashback is credited after completed sessions and tracked against your mobile number.
               </p>
               <Link
                 href="/rate-card"

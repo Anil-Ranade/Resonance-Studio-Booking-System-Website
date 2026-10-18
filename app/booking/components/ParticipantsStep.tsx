@@ -1,11 +1,10 @@
 "use client";
 
-import { Users, Drum, Radio, Guitar, Music, RotateCcw } from "lucide-react";
+import { Users, Drum, Radio, Guitar, RotateCcw } from "lucide-react";
 import {
   useBooking,
   KaraokeOption,
   LiveMusicianOption,
-  BandEquipment,
   RecordingOption,
 } from "../contexts/BookingContext";
 import StepLayout from "./StepLayout";
@@ -13,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { optionCard } from "./optionStyles";
+import { Button } from "@/components/ui/button";
 import { getStudioSuggestion, getStudioRate } from "../utils/studioSuggestion";
 
 const KARAOKE_OPTIONS: {
@@ -20,9 +20,9 @@ const KARAOKE_OPTIONS: {
   label: string;
   description: string;
 }[] = [
-  { value: "1_5", label: "1-5 participants", description: "Small group" },
-  { value: "6_10", label: "6-10 participants", description: "Medium group" },
-  { value: "11_20", label: "11-20 participants", description: "Large group" },
+  { value: "1_8", label: "1-8 participants", description: "Small group" },
+  { value: "9_12", label: "9-12 participants", description: "Medium group" },
+  { value: "13_20", label: "13-20 participants", description: "Large group" },
   {
     value: "21_30",
     label: "21-30 participants",
@@ -34,25 +34,12 @@ const KARAOKE_OPTIONS: {
 const LIVE_OPTIONS: {
   value: LiveMusicianOption;
   label: string;
-  description: string;
 }[] = [
-  { value: "1_2", label: "1-2 musicians", description: "Solo or duo" },
-  { value: "3_4", label: "3-4 musicians", description: "Small band" },
-  { value: "5", label: "5 musicians", description: "Medium band" },
-  { value: "6_8", label: "6-8 musicians", description: "Medium ensemble" },
-  { value: "9_12", label: "9-12 musicians", description: "Large ensemble" },
-];
-
-// Band equipment options
-const BAND_EQUIPMENT: {
-  value: BandEquipment;
-  label: string;
-  icon: React.ReactNode;
-}[] = [
-  { value: "drum", label: "Drums", icon: <Drum className="w-5 h-5" /> },
-  { value: "amps", label: "Amps", icon: <Radio className="w-5 h-5" /> },
-  { value: "guitars", label: "Guitars", icon: <Guitar className="w-5 h-5" /> },
-  { value: "keyboard", label: "Keyboard", icon: <Music className="w-5 h-5" /> },
+  { value: "1_2", label: "1-2 musicians" },
+  { value: "3_4", label: "3-4 musicians" },
+  { value: "5", label: "5 musicians" },
+  { value: "6_8", label: "6-8 musicians" },
+  { value: "9_12", label: "9-12 musicians" },
 ];
 
 // Recording options
@@ -75,7 +62,7 @@ const RECORDING_OPTIONS: {
 ];
 
 export default function ParticipantsStep() {
-  const { draft, updateDraft, nextStep, setStep } = useBooking();
+  const { draft, updateDraft, nextStep } = useBooking();
 
   const handleKaraokeSelect = (option: KaraokeOption) => {
     const suggestion = getStudioSuggestion("Karaoke", {
@@ -113,42 +100,6 @@ export default function ParticipantsStep() {
       ratePerHour: rate,
     });
     nextStep();
-  };
-
-  const handleBandEquipmentToggle = (equipment: BandEquipment) => {
-    const current = draft.bandEquipment;
-    let newEquipment: BandEquipment[];
-
-    if (current.includes(equipment)) {
-      newEquipment = current.filter((e) => e !== equipment);
-    } else {
-      newEquipment = [...current, equipment];
-    }
-
-    if (newEquipment.length > 0) {
-      const suggestion = getStudioSuggestion("Band", {
-        bandEquipment: newEquipment,
-      });
-      const rate = getStudioRate(suggestion.recommendedStudio, "Band", {
-        bandEquipment: newEquipment,
-      });
-
-      updateDraft({
-        bandEquipment: newEquipment,
-        recommendedStudio: suggestion.recommendedStudio,
-        allowedStudios: suggestion.allowedStudios,
-        studio: suggestion.recommendedStudio,
-        ratePerHour: rate,
-      });
-    } else {
-      updateDraft({
-        bandEquipment: newEquipment,
-        recommendedStudio: "",
-        allowedStudios: [],
-        studio: "",
-        ratePerHour: 0,
-      });
-    }
   };
 
   const handleRecordingSelect = (option: RecordingOption) => {
@@ -191,7 +142,6 @@ export default function ParticipantsStep() {
               <ToggleGroupItem key={option.value} value={option.value}
               onClick={() => handleKaraokeSelect(option.value)} className={optionCard}>
                 <span className="font-semibold text-sm">{option.label}</span>
-                <span className="text-xs text-muted-foreground">{option.description}</span>
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -210,7 +160,6 @@ export default function ParticipantsStep() {
               <ToggleGroupItem key={option.value} value={option.value}
               onClick={() => handleLiveSelect(option.value)} className={optionCard}>
                 <span className="font-semibold text-sm">{option.label}</span>
-                <span className="text-xs text-muted-foreground">{option.description}</span>
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -225,8 +174,7 @@ export default function ParticipantsStep() {
               </div>
               <h3 className="text-sm font-semibold">Drum Practice Session</h3>
               <p className="text-muted-foreground text-xs max-w-xs">
-                Drum practice is available exclusively in Studio A with our
-                professional drum kit.
+                Drums are available in Studio A only. Drum sticks can be rented for ₹50/hour.
               </p>
               <Badge className="text-sm h-7 px-3">₹350/hour</Badge>
             </CardContent>
@@ -235,40 +183,24 @@ export default function ParticipantsStep() {
 
       case "Band":
         return (
-          <div className="space-y-2">
-            <ToggleGroup
-              type="multiple"
-              value={draft.bandEquipment}
-              onValueChange={(v) => {
-                // Radix gives the full next set; toggle the one item that changed.
-                const changed =
-                  v.find((e) => !draft.bandEquipment.includes(e as BandEquipment)) ??
-                  draft.bandEquipment.find((e) => !v.includes(e));
-                if (changed) handleBandEquipmentToggle(changed as BandEquipment);
-              }}
-              className="grid w-full grid-cols-2 gap-2"
-            >
-              {BAND_EQUIPMENT.map((equipment) => (
-                <ToggleGroupItem
-                  key={equipment.value}
-                  value={equipment.value}
-                  className={`${optionCard} items-center text-center gap-1.5`}
-                >
-                  <span className="p-2 rounded-lg bg-primary/10 text-primary">
-                    {equipment.icon}
-                  </span>
-                  <span className="font-medium text-sm">{equipment.label}</span>
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-            {draft.bandEquipment.length > 0 && (
-              <p className="text-xs text-muted-foreground px-1">
-                Selected:{" "}
-                {draft.bandEquipment
-                  .map((e) => BAND_EQUIPMENT.find((eq) => eq.value === e)?.label)
-                  .join(", ")}
-              </p>
-            )}
+          <div className="space-y-3">
+            <Card>
+              <CardContent className="space-y-2 text-sm">
+                <h3 className="font-semibold">College Students Band · ₹500/hour</h3>
+                <p className="text-muted-foreground">Includes drums, keyboard, 2 electric guitars, 2 guitar amps, and 1 bass amp.</p>
+                <p className="text-muted-foreground">Drum sticks are not included; rental is ₹50/hour.</p>
+              </CardContent>
+            </Card>
+            <Button className="w-full" onClick={() => {
+              updateDraft({
+                bandEquipment: ["drum", "keyboard", "guitars", "amps"],
+                recommendedStudio: "Studio A",
+                allowedStudios: ["Studio A"],
+                studio: "Studio A",
+                ratePerHour: 500,
+              });
+              nextStep();
+            }}>Continue with College Students Band</Button>
           </div>
         );
 

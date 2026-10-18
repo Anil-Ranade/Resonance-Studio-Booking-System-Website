@@ -9,7 +9,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
-  Mail,
+  Phone,
   Mic,
   Users,
 } from "lucide-react";
@@ -38,7 +38,6 @@ export interface Booking {
   total_amount: number;
   created_at: string;
   name?: string;
-  email?: string;
   phone_number?: string;
 }
 
@@ -52,8 +51,7 @@ export async function safeJsonParse(response: Response) {
   }
 }
 
-export const isValidEmail = (email: string) =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+export const isValidPhone = (phone: string) => /^\d{10}$/.test(phone.replace(/\D/g, ""));
 
 /** Why a booking can't be changed: hidden (invalid/past), locked (<24h), or "" if allowed. */
 export function changeBlockReason(booking: Booking) {
@@ -105,16 +103,20 @@ export function ErrorAlert({ message }: { message: string }) {
   );
 }
 
-/** Email lookup; submitted by the footer button via form={SEARCH_FORM_ID}. */
-export function EmailSearch({
-  email,
-  onEmailChange,
+/** Mobile + name lookup; submitted by footer button via form={SEARCH_FORM_ID}. */
+export function PhoneNameSearch({
+  phone,
+  name,
+  onPhoneChange,
+  onNameChange,
   onSubmit,
   error,
   noResults,
 }: {
-  email: string;
-  onEmailChange: (v: string) => void;
+  phone: string;
+  name: string;
+  onPhoneChange: (v: string) => void;
+  onNameChange: (v: string) => void;
   onSubmit: () => void;
   error: string;
   noResults: boolean;
@@ -125,24 +127,28 @@ export function EmailSearch({
         id={SEARCH_FORM_ID}
         onSubmit={(e) => {
           e.preventDefault();
-          if (isValidEmail(email)) onSubmit();
+          if (isValidPhone(phone) && name.trim()) onSubmit();
         }}
         className="space-y-1.5"
       >
-        <Label htmlFor="manage-email">Email used for your booking</Label>
+        <Label htmlFor="manage-phone">Mobile number used for your booking</Label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
-            id="manage-email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => onEmailChange(e.target.value)}
-            placeholder="you@example.com"
+            id="manage-phone"
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel-national"
+            value={phone}
+            onChange={(e) => onPhoneChange(e.target.value.replace(/\D/g, "").slice(0, 10))}
+            placeholder="98765 43210"
             className="h-11 pl-10 text-base"
             autoFocus
           />
         </div>
+        <Label htmlFor="manage-name">Name</Label>
+        <Input id="manage-name" autoComplete="name" value={name} onChange={(e) => onNameChange(e.target.value)} placeholder="Your name" className="h-11 text-base" />
+        <p className="text-xs text-muted-foreground">Your mobile number and name are used for WhatsApp booking confirmations and one-day advance reminders.</p>
       </form>
 
       {error && <ErrorAlert message={error} />}
@@ -153,7 +159,7 @@ export function EmailSearch({
             <Calendar className="size-12 text-muted-foreground/50" />
             <h3 className="text-lg font-semibold">No bookings found</h3>
             <p className="text-muted-foreground text-sm">
-              No upcoming bookings found for this email address.
+              No upcoming bookings found for this mobile number and name.
             </p>
             <Button asChild className="mt-2">
               <Link href="/booking/new">Make a booking</Link>

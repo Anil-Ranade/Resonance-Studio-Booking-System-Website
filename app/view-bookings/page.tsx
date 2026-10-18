@@ -43,12 +43,13 @@ interface Booking {
 }
 
 export default function ViewBookingsPage() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [phone, setPhone] = useState("");
+  const [name, setName] = useState("");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authenticatedUser, setAuthenticatedUser] = useState<{ name: string; email: string } | null>(null);
+  const [authenticatedUser, setAuthenticatedUser] = useState<{ name: string } | null>(null);
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
   const [loyaltyStatus, setLoyaltyStatus] = useState<LoyaltyStatus | null>(null);
@@ -70,13 +71,14 @@ export default function ViewBookingsPage() {
     const checkAuth = async () => {
       try {
         const status = await checkAuthStatus();
-        if (status.authenticated && status.user && status.user.email) {
+        if (status.authenticated && status.user?.phone) {
           setIsAuthenticated(true);
-          setAuthenticatedUser({ name: status.user.name, email: status.user.email });
-          setSearchQuery(status.user.email);
+          setAuthenticatedUser({ name: status.user.name });
+          setPhone(status.user.phone);
+          setName(status.user.name || "");
           
           // Auto-fetch bookings for authenticated user
-          await fetchBookings(status.user.email);
+          await fetchBookings(status.user.phone, status.user.name || "");
           
           if (status.user.phone) {
             fetchLoyaltyStatus(status.user.phone);
@@ -92,23 +94,15 @@ export default function ViewBookingsPage() {
     checkAuth();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Validate email format
-  const isValidEmail = (str: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str.trim());
-  };
-
   // Validate phone format (10 digits)
   const isValidPhone = (str: string) => {
     return /^\d{10}$/.test(str.trim().replace(/\D/g, ""));
   };
 
-  const fetchBookings = async (query: string) => {
-    const trimmedQuery = query.trim();
-    const isEmail = isValidEmail(trimmedQuery);
-    const isPhone = isValidPhone(trimmedQuery);
-
-    if (!isEmail && !isPhone) {
-      setError("Please enter a valid email address or 10-digit phone number");
+  const fetchBookings = async (phoneQuery: string, nameQuery: string) => {
+    const normalizedPhone = phoneQuery.replace(/\D/g, "");
+    if (!isValidPhone(normalizedPhone) || !nameQuery.trim()) {
+      setError("Please enter a valid 10-digit mobile number and name");
       return;
     }
 
@@ -116,12 +110,7 @@ export default function ViewBookingsPage() {
     setError("");
 
     try {
-      let url = `/api/bookings/upcoming?`;
-      if (isEmail) {
-        url += `email=${encodeURIComponent(trimmedQuery)}`;
-      } else {
-        url += `phone=${encodeURIComponent(trimmedQuery.replace(/\D/g, ""))}`;
-      }
+      const url = `/api/bookings/upcoming?phone=${encodeURIComponent(normalizedPhone)}&name=${encodeURIComponent(nameQuery.trim())}`;
 
       const response = await fetch(url);
       const data = await safeJsonParse(response);
@@ -137,9 +126,9 @@ export default function ViewBookingsPage() {
       // If phone number is returned from search, fetch loyalty status
       if (data.phone) {
         fetchLoyaltyStatus(data.phone);
-      } else if (isPhone) {
+      } else {
         // If we searched by phone, we can use that directly
-        fetchLoyaltyStatus(trimmedQuery.replace(/\D/g, ""));
+        fetchLoyaltyStatus(normalizedPhone);
       }
     } catch {
       setError("An error occurred while fetching bookings");
@@ -152,7 +141,7 @@ export default function ViewBookingsPage() {
     e.preventDefault();
     setBookings([]);
     setSearched(false);
-    await fetchBookings(searchQuery);
+    await fetchBookings(phone, name);
   };
 
   const LOYALTY_SEGMENTS = 25;
@@ -189,7 +178,7 @@ export default function ViewBookingsPage() {
         {!isCheckingAuth && isAuthenticated && authenticatedUser && (
           <p className="flex items-center gap-2 text-zinc-300 mb-10 border-t border-violet-400/60 pt-5">
             <Shield className="w-4 h-4 text-emerald-400" />
-            Signed in as <span className="text-white font-medium">{authenticatedUser.name || authenticatedUser.email}</span>
+            Signed in as <span className="text-white font-medium">{authenticatedUser.name}</span>
             <span className="text-zinc-500">· showing your bookings</span>
           </p>
         )}
@@ -198,7 +187,7 @@ export default function ViewBookingsPage() {
         {!isCheckingAuth && !isAuthenticated && (
           <form onSubmit={handleSubmit} className="mb-10 border-t border-violet-400/60 pt-5">
             <label htmlFor="booking-lookup" className="block text-xs font-medium uppercase tracking-[0.14em] text-zinc-400 mb-3">
-              Email or phone number used for booking
+              Mobile number and name used for booking
             </label>
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1 relative">
@@ -206,17 +195,17 @@ export default function ViewBookingsPage() {
                 <input
                   id="booking-lookup"
                   type="text"
-                  inputMode="email"
-                  autoComplete="email"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="you@example.com or 98XXXXXXXX"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="98765 43210"
                   className="w-full py-4 pl-12 pr-4 bg-white/[0.04] border border-white/15 rounded-xl text-lg text-white placeholder-zinc-500 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/30 transition-colors"
                 />
               </div>
               <button
                 type="submit"
-                disabled={loading || (!isValidEmail(searchQuery) && !isValidPhone(searchQuery))}
+                disabled={loading || !isValidPhone(phone) || !name.trim()}
                 className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-violet-400 hover:bg-violet-300 text-navy font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-navy"
               >
                 {loading ? (
@@ -229,6 +218,7 @@ export default function ViewBookingsPage() {
                 )}
               </button>
             </div>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" autoComplete="name" className="w-full mt-3 py-4 px-4 bg-white/[0.04] border border-white/15 rounded-xl text-lg text-white placeholder-zinc-500 focus:outline-none focus:border-violet-400" />
           </form>
         )}
 
@@ -301,7 +291,7 @@ export default function ViewBookingsPage() {
             <section className="mb-24 rounded-3xl border border-white/10 bg-white/[0.03] p-8 sm:p-10">
               <h2 className="text-2xl font-bold text-white mb-2">No upcoming bookings</h2>
               <p className="text-zinc-400 mb-6">
-                Nothing is booked under this email or phone number. Check it matches the one you booked with, or book a new session.
+                Nothing is booked under this mobile number and name. Check them and try again, or book a new session.
               </p>
               <Link
                 href="/booking/new"

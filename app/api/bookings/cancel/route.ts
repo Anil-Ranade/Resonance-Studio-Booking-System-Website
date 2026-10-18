@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // The session's phone decides ownership; a phone in the body must match it
-    const auth = await requireCustomer(request, body.phone || undefined);
+    const auth = await requireCustomer(request, body.phone || undefined, body.name);
     if (auth instanceof NextResponse) return auth;
     const normalizedPhone = auth.phone;
 
@@ -41,6 +41,10 @@ export async function POST(request: NextRequest) {
         { error: "Booking not found or does not belong to this phone number" },
         { status: 404 }
       );
+    }
+
+    if (!body.name || booking.name?.trim().toLowerCase() !== String(body.name).trim().toLowerCase()) {
+      return NextResponse.json({ error: "Mobile number and name do not match this booking" }, { status: 403 });
     }
 
     // Check if booking can be cancelled

@@ -274,8 +274,7 @@ export default function StandaloneRemindersPage() {
         const target = Number(loyaltyData.target || 50);
         const windowEnd = loyaltyData.window_end ? new Date(loyaltyData.window_end).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata", day: 'numeric', month: 'long', year: 'numeric' }) : "expiration date";
 
-        // Assuming 50 hours = 1500 Rs reward => 30 Rs/hr value
-        const balance = Math.round(currentHours * 30);
+        const balance = Math.round(currentHours * 40);
         const neededHours = Math.max(0, target - currentHours);
         
         loyaltyMessagePart = `\nincluding this booking, your total cashback balance is ₹${balance.toLocaleString()}.\nTo encash ₹2,000, please complete ${neededHours.toFixed(1)} more hours of booking before ${windowEnd}.`;
@@ -364,7 +363,7 @@ Final Amount                                        ${fmtMoney(currentTotal)}
 \`\`\`
 
 You have earned an instant discount of ${fmtMoney(instantDiscount)}.
-Additionally, ₹${Math.round(duration * 30)} cashback has been added against your mobile number.${loyaltyMessagePart}
+Book for 50 hours within any three months and earn ₹2,000 as Cashback.${loyaltyMessagePart}
 
 *Please note and inform all your group members:*
 

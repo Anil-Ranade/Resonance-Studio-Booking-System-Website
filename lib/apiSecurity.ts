@@ -18,12 +18,8 @@ import {
 // ---------- client IP + rate limiting ----------
 
 export function getClientIp(request: Request): string {
-  // Set by the hosting proxy (Vercel); first x-forwarded-for hop is the client
-  return (
-    request.headers.get("x-real-ip") ||
-    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-    "unknown"
-  );
+  // Vercel overwrites x-real-ip; do not trust a caller-supplied forwarded chain.
+  return request.headers.get("x-real-ip")?.trim() || "unknown";
 }
 
 /**
@@ -45,7 +41,7 @@ export async function rateLimit(
   );
 }
 
-// ---------- customer session (set by verify-otp / auto-login) ----------
+// ---------- customer session (device login when available) ----------
 
 /** Phone number of the OTP-verified customer making this request, or null. */
 export async function getSessionPhone(request: Request): Promise<string | null> {
@@ -73,10 +69,11 @@ export async function getSessionPhone(request: Request): Promise<string | null> 
   return null;
 }
 
-/** Requires a verified session; if `phone` is given it must belong to that session. */
+/** Uses device session when available; public booking flows fall back to mobile + name. */
 export async function requireCustomer(
   request: Request,
   phone?: string,
+  name?: string,
 ): Promise<{ phone: string } | NextResponse> {
   const sessionPhone = await getSessionPhone(request);
   if (!sessionPhone) {
@@ -85,13 +82,14 @@ export async function requireCustomer(
       { status: 401 },
     );
   }
-  if (phone && phone.replace(/\D/g, "") !== sessionPhone) {
-    return NextResponse.json(
-      { error: "This booking belongs to a different phone number." },
-      { status: 403 },
-    );
+  if (sessionPhone) {
+    if (phone && phone.replace(/\D/g, "") !== sessionPhone) {
+      return NextResponse.json({ error: "This booking belongs to a different phone number." }, { status: 403 });
+    }
+    return { phone: sessionPhone };
   }
-  return { phone: sessionPhone };
+  if (phone && name?.trim()) return { phone: phone.replace(/\D/g, "") };
+  return NextResponse.json({ error: "Mobile number and name are required." }, { status: 400 });
 }
 
 // ---------- admin / staff bearer token ----------

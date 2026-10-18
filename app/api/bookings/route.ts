@@ -46,8 +46,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Personal fields only for the verified owner of this phone
+    // This endpoint returns the full booking record, so phone possession alone
+    // is not enough to authorize it.
     const isOwner = (await getSessionPhone(request)) === normalizedPhone;
+    if (!isOwner) {
+      return NextResponse.json(
+        { error: "Please verify your phone number to continue." },
+        { status: 401 },
+      );
+    }
     const shape = (list: typeof bookings) =>
       (list || []).map((b) => (isOwner ? b : publicBooking(b)));
 

@@ -4,7 +4,7 @@ import { OG_BASE } from "@/lib/seo";
 export const metadata: Metadata = {
   title: "Policies",
   description:
-    "Read Resonance Jam Room's booking and cancellation policies. Free cancellation with 24+ hours notice. No advance payment required.",
+    "Read Resonance Jam Room's booking and cancellation policies. Free cancellation or rescheduling more than 24 hours before a session. No advance payment required.",
   alternates: {
     canonical: "/policies",
   },

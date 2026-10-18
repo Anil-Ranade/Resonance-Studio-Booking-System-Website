@@ -114,6 +114,8 @@ export async function GET(request: NextRequest) {
     });
 
     // Personal fields (and the phone behind an email) only for the verified owner
+    // A name is not an authenticator. Only the verified phone session may
+    // receive private booking fields; public lookup remains redacted.
     const isOwner = (await getSessionPhone(request)) === phoneToSearch;
     return NextResponse.json({
       bookings: isOwner ? upcomingBookings : upcomingBookings.map(publicBooking),

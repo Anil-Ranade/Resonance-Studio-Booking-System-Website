@@ -8,10 +8,6 @@ import {
   Shield,
   RotateCcw,
   User,
-  Mail,
-  CheckCircle,
-  UserCheck,
-  ArrowRight,
 } from "lucide-react";
 import { useBooking } from "../contexts/BookingContext";
 import StepLayout from "./StepLayout";
@@ -29,6 +25,8 @@ import {
   checkAutoLogin,
 } from "@/lib/deviceFingerprint";
 
+const CUSTOMER_DETAILS_KEY = "resonance_customer_details";
+
 export default function PhoneStep() {
   const router = useRouter();
   const { draft, updateDraft, nextStep, resetDraft, mode } = useBooking();
@@ -44,12 +42,10 @@ export default function PhoneStep() {
 
   const [phone, setPhone] = useState(() => formatPhoneForDisplay(draft.phone));
   const [name, setName] = useState(draft.name);
-  const [email, setEmail] = useState(draft.email);
   const [isTrustedDevice, setIsTrustedDevice] = useState(false);
   const [isCheckingDevice, setIsCheckingDevice] = useState(true);
   const [isCheckingUser, setIsCheckingUser] = useState(false);
   const [isExistingUser, setIsExistingUser] = useState(draft.isExistingUser);
-  const [canOverrideEmail, setCanOverrideEmail] = useState(false);
   const [userChecked, setUserChecked] = useState(false);
 
   // Auto-login state
@@ -57,9 +53,10 @@ export default function PhoneStep() {
   const [autoLoginUser, setAutoLoginUser] = useState<{
     phone: string;
     name: string;
-    email: string;
   } | null>(null);
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [isEditingDetails, setIsEditingDetails] = useState(false);
+  const [isSavingDetails, setIsSavingDetails] = useState(false);
 
   // Check if user exists when phone number is complete
   const checkExistingUser = useCallback(
@@ -72,7 +69,7 @@ export default function PhoneStep() {
 
       setIsCheckingUser(true);
       try {
-        // Staff/admin see full details; customers get a masked email until verified
+        // Staff/admin see full customer details.
         const response = await (mode === "customer" ? fetch : adminFetch)("/api/check-user", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -84,18 +81,14 @@ export default function PhoneStep() {
           if (data.user) {
             // Existing user - populate name and email
             setName(data.user.name || "");
-            setEmail(data.user.email || "");
             setIsExistingUser(true);
-            setCanOverrideEmail(!!data.isAdminEmail);
             updateDraft({
               name: data.user.name || "",
-              email: data.user.email || "",
               isExistingUser: true,
             });
           } else if (data.needsSignup) {
             // New user - clear fields
             setName("");
-            setEmail("");
             setIsExistingUser(false);
             updateDraft({ name: "", email: "", isExistingUser: false });
           }
@@ -130,14 +123,40 @@ export default function PhoneStep() {
       setIsAutoLoggingIn(true);
 
       try {
+        let storedDetails: { phone: string; name: string } | null = null;
+        try {
+          const stored = localStorage.getItem(CUSTOMER_DETAILS_KEY);
+          if (stored) storedDetails = JSON.parse(stored);
+        } catch {
+          storedDetails = null;
+        }
+
         const result = await checkAutoLogin();
 
         if (result.authenticated && result.user) {
+          if (storedDetails && storedDetails.phone !== result.user.phone) {
+            setShowManualEntry(true);
+            setPhone(formatPhoneForDisplay(storedDetails.phone));
+            setName(storedDetails.name);
+            setIsExistingUser(false);
+            setUserChecked(true);
+            updateDraft({
+              phone: storedDetails.phone,
+              name: storedDetails.name,
+              isExistingUser: false,
+              deviceTrusted: false,
+              otpVerified: false,
+            });
+            return;
+          }
+
+          const savedName = storedDetails?.phone === result.user.phone
+            ? storedDetails.name
+            : result.user.name;
           // Auto-login successful!
-          setAutoLoginUser(result.user);
+          setAutoLoginUser({ ...result.user, name: savedName });
           setPhone(formatPhoneForDisplay(result.user.phone));
-          setName(result.user.name);
-          setEmail(result.user.email);
+          setName(savedName);
           setIsExistingUser(true);
           setUserChecked(true);
           setIsTrustedDevice(true);
@@ -145,8 +164,8 @@ export default function PhoneStep() {
           // Update draft with user info and authentication flags
           updateDraft({
             phone: result.user.phone,
-            name: result.user.name,
-            email: result.user.email,
+            name: savedName,
+            email: "",
             isExistingUser: true,
             deviceTrusted: true,
             otpVerified: true, // Skip OTP since device is trusted
@@ -159,7 +178,7 @@ export default function PhoneStep() {
           const hasTrustedPhone = trustedPhones.length > 0;
 
           // Check if we have complete cached user data from a previous session
-          if (draft.phone && draft.name && draft.email && hasTrustedPhone) {
+          if (draft.phone && draft.name && hasTrustedPhone) {
             // We have cached data and a trusted phone - show as returning user
             const phoneDigits = draft.phone.replace(/\D/g, "");
             if (trustedPhones.includes(phoneDigits)) {
@@ -167,11 +186,9 @@ export default function PhoneStep() {
               setAutoLoginUser({
                 phone: phoneDigits,
                 name: draft.name,
-                email: draft.email,
               });
               setPhone(formatPhoneForDisplay(phoneDigits));
               setName(draft.name);
-              setEmail(draft.email);
               setIsExistingUser(true);
               setUserChecked(true);
               setIsTrustedDevice(true);
@@ -194,13 +211,21 @@ export default function PhoneStep() {
           if (draft.phone) {
             setPhone(formatPhoneForDisplay(draft.phone));
             setName(draft.name || "");
-            setEmail(draft.email || "");
-            if (draft.name && draft.email) {
+            if (draft.name) {
               setIsExistingUser(true);
               setUserChecked(true);
             } else {
               checkExistingUser(draft.phone);
             }
+          } else if (storedDetails) {
+            setPhone(formatPhoneForDisplay(storedDetails.phone));
+            setName(storedDetails.name);
+            setIsExistingUser(false);
+            setUserChecked(true);
+            updateDraft({
+              phone: storedDetails.phone,
+              name: storedDetails.name,
+            });
           } else if (hasTrustedPhone) {
             // Try to auto-populate from local trusted phones
             const lastTrustedPhone = trustedPhones[trustedPhones.length - 1];
@@ -293,6 +318,10 @@ export default function PhoneStep() {
     setPhone(formatPhoneForDisplay(limited));
     updateDraft({ phone: limited });
 
+    if (draft.phone.replace(/\D/g, "") !== limited) {
+      updateDraft({ otpVerified: false, deviceTrusted: false });
+    }
+
     // Reset user check state when phone changes
     if (limited.length !== 10) {
       setUserChecked(false);
@@ -314,15 +343,32 @@ export default function PhoneStep() {
     updateDraft({ name: value });
   };
 
-  const handleEmailChange = (value: string) => {
-    setEmail(value);
-    updateDraft({ email: value });
-  };
-
-  const handleNext = () => {
+  const handleNext = async () => {
     const digits = phone.replace(/\D/g, "");
     if (digits.length === 10) {
-      updateDraft({ phone: digits, name, email, isExistingUser });
+      if (isExistingUser && name.trim() && (isEditingDetails || mode !== "customer")) {
+        setIsSavingDetails(true);
+        try {
+          await (mode === "customer" ? fetch : adminFetch)("/api/check-user", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone: digits, name: name.trim() }),
+          });
+        } catch (error) {
+          console.error("Failed to save customer details:", error);
+        } finally {
+          setIsSavingDetails(false);
+        }
+      }
+      try {
+        localStorage.setItem(
+          CUSTOMER_DETAILS_KEY,
+          JSON.stringify({ phone: digits, name: name.trim() }),
+        );
+      } catch {
+        // Device persistence is best effort; booking flow remains usable.
+      }
+      updateDraft({ phone: digits, name, email: "", isExistingUser, otpVerified: true });
       nextStep();
     }
   };
@@ -330,27 +376,27 @@ export default function PhoneStep() {
   const handleBack = () => {
     if (draft.isEditMode) {
       resetDraft();
-      router.push("/my-bookings");
+      router.push(mode === "customer" ? "/my-bookings" : `/${mode}/bookings`);
     } else {
-      router.push("/booking");
+      router.push(mode === "customer" ? "/booking" : `/${mode}/booking`);
     }
   };
 
-  // Validate: phone must be 10 digits, and for new users name and email are required
+  // Validate: phone and name are required.
   const phoneValid = phone.replace(/\D/g, "").length === 10;
-  const emailValid =
-    email.trim() === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const isAdminOrStaff = mode === "admin" || mode === "staff";
   const isValid =
     phoneValid &&
-    userChecked &&
-    (isExistingUser ||
-      isAdminOrStaff ||
-      (name.trim() !== "" && email.trim() !== "" && emailValid));
+    name.trim() !== "";
 
   // Handle confirming the auto-detected user
   const handleConfirmUser = () => {
     nextStep();
+  };
+
+  const handleEditUser = () => {
+    setAutoLoginUser(null);
+    setShowManualEntry(true);
+    setIsEditingDetails(true);
   };
 
   // Show auto-login checking state
@@ -381,7 +427,8 @@ export default function PhoneStep() {
         title="Confirm your details"
         subtitle="Tap continue to proceed with booking"
         showBack={true}
-        onBack={() => router.push("/home")}
+        backLabel="Edit"
+        onBack={handleEditUser}
         showNext={true}
         onNext={handleConfirmUser}
         nextLabel="Continue"
@@ -414,18 +461,6 @@ export default function PhoneStep() {
               </div>
             </div>
 
-            {autoLoginUser.email && (
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
-                  <Mail className="size-3.5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-muted-foreground text-[10px] uppercase font-medium">Email</p>
-                  <p className="text-sm font-medium truncate">{autoLoginUser.email}</p>
-                </div>
-              </div>
-            )}
-
             <Separator />
 
             <p className="flex items-center gap-2 text-amber-400 text-xs font-medium">
@@ -445,6 +480,7 @@ export default function PhoneStep() {
       onBack={handleBack}
       onExit={() => router.push(mode === "customer" ? "/booking" : `/${mode}/booking`)}
       onNext={handleNext}
+      isLoading={isSavingDetails}
       isNextDisabled={!isValid || isCheckingUser}
     >
       <div className="space-y-3">
@@ -479,6 +515,9 @@ export default function PhoneStep() {
               )}
             </span>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Please provide your <strong className="text-foreground">WhatsApp number</strong> and name so you receive instant booking confirmation and a reminder one day before your session on WhatsApp.
+          </p>
         </div>
 
         {phoneValid && userChecked && (
@@ -495,37 +534,13 @@ export default function PhoneStep() {
                 onChange={(e) => handleNameChange(e.target.value)}
                 placeholder="Your name"
                 className="h-11 pl-10 text-base read-only:opacity-75"
-                readOnly={isExistingUser && !isAdminOrStaff}
+                readOnly={isExistingUser && mode === "customer" && !isEditingDetails}
               />
             </div>
           </div>
         )}
 
-        {phoneValid && userChecked && (
-          <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-300 delay-75">
-            <Label htmlFor="booking-email">
-              Email {!isExistingUser && <span className="text-muted-foreground">(required)</span>}
-            </Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                id="booking-email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => handleEmailChange(e.target.value)}
-                placeholder="you@example.com"
-                aria-invalid={!emailValid}
-                className="h-11 pl-10 text-base read-only:opacity-75"
-                readOnly={isExistingUser && !canOverrideEmail && !isAdminOrStaff}
-              />
-            </div>
-          </div>
-        )}
-
-        <p className="text-xs text-muted-foreground leading-snug">
-          We will use this number for booking confirmations & reminders. Cashback amount will be accumulated against this number only.
-        </p>
+        <p className="text-xs text-muted-foreground leading-snug">Your mobile number and name are used for WhatsApp booking confirmations and one-day advance reminders.</p>
       </div>
     </StepLayout>
   );

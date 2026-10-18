@@ -36,7 +36,7 @@ export function LocalBusinessStructuredData() {
         "Sunday",
       ],
       opens: "08:00",
-      closes: "22:00",
+      closes: "21:30",
     },
     priceRange: "₹200 - ₹1200",
     image: "https://resonancejamroom.in/og-image.png",
@@ -116,7 +116,7 @@ export function FAQPageStructuredData() {
         name: "What are your operating hours?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Our standard operating hours are from 8:00 AM to 10:00 PM. Outside hours can be arranged with prior request.",
+          text: "Our standard operating hours are from 8:00 AM to 9:30 PM. Outside hours can be arranged with prior request.",
         },
       },
       {
@@ -148,7 +148,7 @@ export function FAQPageStructuredData() {
         name: "What is your cancellation policy?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Free cancellation with 24+ hours notice. Less than 24 hours: ₹100 fee. No-show: ₹200 penalty (payable at next booking).",
+          text: "Free cancellation or rescheduling more than 24 hours before the session. Within 24 hours, public online changes are locked; contact the studio directly. Late cancellation is 50%; no-show is 100%.",
         },
       },
     ],

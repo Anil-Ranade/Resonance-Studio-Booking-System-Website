@@ -18,10 +18,10 @@ interface FAQSection {
 
 // Helper function to format time from 24h to 12h format
 function formatTimeToDisplay(time: string): string {
-  const [hours] = time.split(':').map(Number);
+  const [hours, minutes = 0] = time.split(':').map(Number);
   const period = hours >= 12 ? 'PM' : 'AM';
   const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-  return `${displayHours}:00 ${period}`;
+  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
 }
 
 // Function to generate FAQ data with dynamic operating hours
@@ -45,7 +45,7 @@ function generateFaqData(openTime: string, closeTime: string, advanceBookingDays
         },
         {
           question: "What is your cancellation policy?",
-          answer: "For standard 'Pay at Studio' bookings: Free cancellation with 24+ hours notice. Less than 24 hours: ₹100 fee. No-show: ₹200 penalty."
+          answer: "Free cancellation or rescheduling more than 24 hours before the session. Within 24 hours, public online changes are locked; contact the studio directly. A 50% charge applies to late cancellations and 100% applies to no-shows."
         }
       ]
     },
@@ -81,7 +81,7 @@ function generateFaqData(openTime: string, closeTime: string, advanceBookingDays
         },
         {
           question: "Are there any additional charges?",
-          answer: "Basic amenities like WiFi are free. Additional services (recording, video production) and refreshments (snacks/beverages) are charged separately at actual cost."
+          answer: "Basic amenities like WiFi are free. Tea, snacks, lunch, and dinner can be arranged upon request at an extra cost."
         }
       ]
     },
@@ -117,7 +117,7 @@ function generateFaqData(openTime: string, closeTime: string, advanceBookingDays
         },
         {
           question: "Can we get food and beverages?",
-          answer: "Yes, tea, coffee, snacks, lunch, and dinner can be provided at additional cost based on actual price, subject to availability."
+          answer: "Yes, tea, snacks, lunch, and dinner can be arranged upon request at an extra cost, subject to availability."
         }
       ]
     }
@@ -126,7 +126,7 @@ function generateFaqData(openTime: string, closeTime: string, advanceBookingDays
 
 export default function FAQPage() {
   const [defaultOpenTime, setDefaultOpenTime] = useState('08:00');
-  const [defaultCloseTime, setDefaultCloseTime] = useState('22:00');
+  const [defaultCloseTime, setDefaultCloseTime] = useState('21:30');
   const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
 
   // Fetch booking settings on component mount
@@ -137,7 +137,7 @@ export default function FAQPage() {
         if (response.ok) {
           const data = await response.json();
           setDefaultOpenTime(data.defaultOpenTime || '08:00');
-          setDefaultCloseTime(data.defaultCloseTime || '22:00');
+          setDefaultCloseTime(data.defaultCloseTime || '21:30');
           setAdvanceBookingDays(data.advanceBookingDays || 30);
         }
       } catch (err) {

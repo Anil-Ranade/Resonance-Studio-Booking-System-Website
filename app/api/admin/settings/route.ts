@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       bookingBuffer: 0,
       advanceBookingDays: 30,
       defaultOpenTime: '08:00',
-      defaultCloseTime: '22:00',
+      defaultCloseTime: '21:30',
     };
 
     if (settings) {
@@ -106,6 +106,7 @@ async function verifyAdminToken(request: NextRequest) {
     .select("*")
     .eq("id", user.id)
     .eq("is_active", true)
+    .in("role", ["admin", "super_admin"])
     .single();
 
   if (adminError || !adminUser) {

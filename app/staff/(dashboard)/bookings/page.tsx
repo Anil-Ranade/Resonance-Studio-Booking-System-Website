@@ -27,8 +27,8 @@ import {
   Guitar,
   Radio,
   Users,
-  Mail,
   FileText,
+  MessageCircle,
 } from "lucide-react";
 import { getSession } from "@/lib/supabaseAuth";
 import {
@@ -135,9 +135,9 @@ const SESSION_TYPES: {
 
 // Sub-options for each session type
 const KARAOKE_OPTIONS: { value: KaraokeOption; label: string }[] = [
-  { value: "1_5", label: "1-5 Participants" },
-  { value: "6_10", label: "6-10 Participants" },
-  { value: "11_20", label: "11-20 Participants" },
+  { value: "1_8", label: "1-8 Participants" },
+  { value: "9_12", label: "9-12 Participants" },
+  { value: "13_20", label: "13-20 Participants" },
   { value: "21_30", label: "21-30 Participants" },
 ];
 
@@ -188,7 +188,9 @@ export default function StaffBookingsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState("");
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [whatsappMessage, setWhatsappMessage] = useState("");
   const [updating, setUpdating] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -614,7 +616,8 @@ export default function StaffBookingsPage() {
     const effectiveStatus = getEffectiveStatus(booking);
     const matchesStatus =
       statusFilter === "all" || effectiveStatus === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesDate = !dateFilter || booking.date === dateFilter;
+    return matchesSearch && matchesStatus && matchesDate;
   });
 
   const getStatusColor = (status: string) => {
@@ -654,6 +657,39 @@ export default function StaffBookingsPage() {
       day: "numeric",
       year: "numeric",
     });
+  };
+
+  const handleChangeBooking = (booking: Booking) => {
+    sessionStorage.setItem("editBookingData", JSON.stringify({
+      editMode: true,
+      originalBookingId: booking.id,
+      sessionType: booking.session_type,
+      studio: booking.studio,
+      date: booking.date,
+      start_time: booking.start_time,
+      end_time: booking.end_time,
+      phone_number: booking.phone_number,
+      name: booking.name || "",
+      email: booking.email || "",
+      total_amount: booking.total_amount,
+      group_size: booking.group_size || 1,
+      otpVerified: true,
+    }));
+    window.location.href = "/staff/booking/new?source=edit";
+  };
+
+  useEffect(() => {
+    setWhatsappMessage("");
+  }, [selectedBooking?.id]);
+
+  const openWhatsAppMessage = (kind: "reminder" | "confirmation") => {
+    if (!selectedBooking) return;
+    const message = kind === "reminder"
+      ? `*Reminder - Resonance Studio*\n\nThis is a reminder for your booking on ${formatDate(selectedBooking.date)} from ${formatTime(selectedBooking.start_time)} to ${formatTime(selectedBooking.end_time)} in ${selectedBooking.studio}.\n\nPlease inform your group members. We look forward to hosting you!`
+      : `*Booking Confirmation - Resonance Studio*\n\nYour booking on ${formatDate(selectedBooking.date)} from ${formatTime(selectedBooking.start_time)} to ${formatTime(selectedBooking.end_time)} in ${selectedBooking.studio} is confirmed.\n\nBooking amount: ₹${(selectedBooking.total_amount || 0).toLocaleString("en-IN")}\n\nBook for 50 hours within any three months and earn ₹2,000 as Cashback.`;
+    setWhatsappMessage(message);
+    const phone = selectedBooking.phone_number.replace(/\D/g, "");
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
   };
 
 
@@ -702,6 +738,15 @@ export default function StaffBookingsPage() {
               <option value="no_show">No Show</option>
               <option value="cancelled">Cancelled</option>
             </select>
+          </div>
+          <div className="sm:w-48">
+            <input
+              type="date"
+              aria-label="Filter bookings by date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="input"
+            />
           </div>
         </div>
       </div>
@@ -921,10 +966,60 @@ export default function StaffBookingsPage() {
                   </div>
                 )}
 
+                {selectedBooking.status === "confirmed" && (
+                  <div className="pt-4 border-t border-white/10">
+                    <p className="text-zinc-400 text-sm mb-3">WhatsApp</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openWhatsAppMessage("reminder")}
+                        className="flex-1 py-3 rounded-xl bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <MessageCircle className="w-4 h-4" /> Reminder Pending
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openWhatsAppMessage("confirmation")}
+                        className="flex-1 py-3 rounded-xl bg-violet-500/20 text-violet-400 hover:bg-violet-500/30 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle className="w-4 h-4" /> Booking Confirmation
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {whatsappMessage && (
+                  <div className="pt-4 border-t border-white/10">
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <p className="text-zinc-400 text-sm">Generated WhatsApp message</p>
+                      <button
+                        type="button"
+                        onClick={() => navigator.clipboard.writeText(whatsappMessage)}
+                        className="text-xs text-violet-400 hover:text-violet-300"
+                      >
+                        Copy message
+                      </button>
+                    </div>
+                    <textarea
+                      readOnly
+                      value={whatsappMessage}
+                      className="input min-h-[180px] resize-y text-xs"
+                      aria-label="Generated WhatsApp message"
+                    />
+                  </div>
+                )}
+
                 {/* Action Buttons based on status */}
                 <div className="pt-4 border-t border-white/10">
                   <p className="text-zinc-400 text-sm mb-3">Actions</p>
                   <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleChangeBooking(selectedBooking)}
+                      className="flex-1 py-3 rounded-xl bg-violet-500/20 text-violet-400 hover:bg-violet-500/30 transition-colors text-center"
+                    >
+                      Change
+                    </button>
                     {/* Confirmed bookings (time not passed) */}
                     {selectedBooking.status === "confirmed" &&
                       !isBookingTimePassed(
@@ -1205,23 +1300,6 @@ export default function StaffBookingsPage() {
                         className="input"
                       />
                     </div>
-                    <div className="sm:col-span-2">
-                      <label className="block text-sm text-zinc-400 mb-1.5">
-                        Email (for confirmation)
-                      </label>
-                      <input
-                        type="email"
-                        placeholder="customer@email.com"
-                        value={bookingFormData.email}
-                        onChange={(e) =>
-                          setBookingFormData({
-                            ...bookingFormData,
-                            email: e.target.value,
-                          })
-                        }
-                        className="input"
-                      />
-                    </div>
                   </div>
                 </div>
 
@@ -1463,30 +1541,40 @@ export default function StaffBookingsPage() {
                   </div>
                 </div>
 
+                {/* Pricing override */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+                    <FileText className="w-4 h-4" /> Pricing
+                  </h3>
+                  <div>
+                    <label className="block text-sm text-zinc-400 mb-1.5">
+                      Charged Rate per Hour (₹)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={bookingFormData.rate_per_hour}
+                      onChange={(e) =>
+                        setBookingFormData({
+                          ...bookingFormData,
+                          rate_per_hour: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      className="input"
+                      aria-label="Charged rate per hour"
+                    />
+                    <p className="text-xs text-zinc-500 mt-1">
+                      Override the suggested rate when offering a custom price.
+                    </p>
+                  </div>
+                </div>
+
                 {/* Notes */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
                     <FileText className="w-4 h-4" /> Notes & Notifications
                   </h3>
                   <div className="grid grid-cols-1 gap-4">
-                    <div className="flex items-center">
-                      <label className="flex items-center gap-2 cursor-pointer p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={bookingFormData.send_notification}
-                          onChange={(e) =>
-                            setBookingFormData({
-                              ...bookingFormData,
-                              send_notification: e.target.checked,
-                            })
-                          }
-                          className="w-4 h-4 rounded border-zinc-600 text-violet-500 focus:ring-violet-500 bg-zinc-800"
-                        />
-                        <span className="text-sm text-zinc-300">
-                          Send email notification
-                        </span>
-                      </label>
-                    </div>
                     <div>
                       <label className="block text-sm text-zinc-400 mb-1.5">
                         Notes

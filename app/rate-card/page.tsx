@@ -11,33 +11,44 @@ const rateSheet: { activity: string; note?: string; a: Rate[]; b: Rate[]; c: Rat
   {
     activity: "Karaoke",
     a: [
-      { label: "1-20 people", price: 400 },
+      { label: "1-8 people", price: 400 },
+      { label: "9-12 people", price: 400 },
+      { label: "13-20 people", price: 400 },
       { label: "21-30 people", price: 500 },
     ],
-    b: [{ label: "1-10 people", price: 300 }],
-    c: [{ label: "1-5 people", price: 250 }],
+    b: [
+      { label: "1-8 people", price: 300 },
+      { label: "9-12 people", price: 300 },
+    ],
+    c: [{ label: "1-8 people", price: 250 }],
   },
   {
     activity: "Live band",
     a: [
-      { label: "Up to 8 musicians", price: 600 },
-      { label: "8-12 musicians", price: 800 },
+      { label: "1-2 musicians", price: 600 },
+      { label: "3-4 musicians", price: 600 },
+      { label: "5 musicians", price: 600 },
+      { label: "6-8 musicians", price: 600 },
+      { label: "9-12 musicians", price: 800 },
     ],
     b: [
-      { label: "Up to 4 musicians", price: 400 },
+      { label: "1-2 musicians", price: 400 },
+      { label: "3-4 musicians", price: 400 },
       { label: "5 musicians", price: 500 },
     ],
-    c: [{ label: "Up to 2 musicians", price: 350 }],
+    c: [{ label: "1-2 musicians", price: 350 }],
   },
   {
-    activity: "Band practice",
-    note: "Using the studio's own gear",
-    a: [
-      { label: "Drum practice only", price: 350 },
-      { label: "Band with drums", price: 400 },
-      { label: "Band with drums & amps", price: 500 },
-      { label: "Full backline", price: 600 },
-    ],
+    activity: "Drum practice",
+    note: "Studio A only · Drum sticks available for ₹50/hour extra",
+    a: [{ label: "Drum practice", price: 350 }],
+    b: [],
+    c: [],
+  },
+  {
+    activity: "College Students Band",
+    note: "₹500/hour · Drums, keyboard, 2 electric guitars, 2 guitar amps and 1 bass amp included. Drum sticks ₹50/hour extra.",
+    a: [{ label: "Fixed package", price: 500 }],
     b: [],
     c: [],
   },
@@ -70,14 +81,12 @@ const services = [
 ];
 
 const savings = [
-  { amount: "₹30/hr back", how: "Cashback on every completed hour, tracked against your phone number." },
-  { amount: "₹500 bonus", how: "Extra cashback on your first booking with us." },
+  { amount: "₹2,000 Cashback", how: "Book for 50 hours within any three months and earn ₹2,000 as Cashback." },
 ];
 
 const cashbackRules = [
   "Cashback is credited when your session is completed, not when you book.",
-  "Reach ₹2,000 in credit (50 hours) to get it paid out on GPay.",
-  "You have 90 days from your first qualifying booking to reach 50 hours.",
+  "Book for 50 hours within any three months and earn ₹2,000 as Cashback.",
   "If you miss the window, the count restarts from your second booking date.",
   "Your balance and remaining hours appear on every booking confirmation.",
 ];
@@ -85,7 +94,7 @@ const cashbackRules = [
 const notes = [
   "Prices are per hour unless stated otherwise. GST may apply.",
   "No advance needed - pay at the studio after your session.",
-  "Free cancellation up to 24 hours before your slot.",
+  "Cancel or reschedule free more than 24 hours before your slot. Within 24 hours, contact the studio directly; late cancellation is 50% and no-show is 100%.",
   "Snacks and internet are available at extra cost.",
 ];
 
@@ -240,15 +249,16 @@ export default function RateCardPage() {
         <section aria-labelledby="save-title" className="grid lg:grid-cols-12 gap-6 lg:gap-12 mb-24">
           <div className="lg:col-span-4 border-t border-violet-400/60 pt-5">
             <h2 id="save-title" className="text-3xl font-bold text-white tracking-tight mb-2">
-              Cashback
+              Book 50 hours.
+              <span className="block text-violet-400">Earn ₹2,000.</span>
             </h2>
-            <p className="text-zinc-400">Earn back on every hour you book with us.</p>
+            <p className="text-zinc-400">Complete the target within any three months.</p>
           </div>
           <div className="lg:col-span-8">
             <div className="grid sm:grid-cols-2 gap-3 mb-8">
               {savings.map((s) => (
-                <div key={s.amount} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                  <p className="text-2xl font-bold text-violet-400 mb-2">{s.amount}</p>
+                <div key={s.amount} className="rounded-2xl border border-violet-400/30 bg-violet-400/[0.06] p-5">
+                  <p className="text-2xl font-bold text-violet-300 mb-2">{s.amount}</p>
                   <p className="text-sm text-zinc-300">{s.how}</p>
                 </div>
               ))}

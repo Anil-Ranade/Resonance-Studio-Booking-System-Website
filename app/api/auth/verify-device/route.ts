@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { rateLimit } from '@/lib/apiSecurity';
+import { getSessionPhone, rateLimit } from '@/lib/apiSecurity';
 
 // Initialize Supabase client with service role for database operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -52,6 +52,9 @@ export async function POST(request: NextRequest) {
         { error: 'Device fingerprint is required' },
         { status: 400 }
       );
+    }
+    if (deviceFingerprint.length > 256) {
+      return NextResponse.json({ error: 'Invalid device fingerprint' }, { status: 400 });
     }
 
     // Extract digits only from phone
@@ -143,8 +146,15 @@ export async function DELETE(request: NextRequest) {
         { status: 400 }
       );
     }
+    if (deviceFingerprint.length > 256) {
+      return NextResponse.json({ error: 'Invalid device fingerprint' }, { status: 400 });
+    }
 
     const phoneDigits = phone.replace(/\D/g, '');
+
+    if ((await getSessionPhone(request)) !== phoneDigits) {
+      return NextResponse.json({ error: 'Please verify this phone number first' }, { status: 401 });
+    }
 
     // Deactivate the trusted device
     const { error: updateError } = await supabase

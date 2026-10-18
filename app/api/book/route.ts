@@ -153,7 +153,7 @@ export async function POST(request: Request) {
     const phone = String(body.phone ?? "").replace(/\D/g, "");
 
     // Only the OTP-verified owner of this phone can book under it
-    const auth = await requireCustomer(request, phone);
+    const auth = await requireCustomer(request, phone, name);
     if (auth instanceof NextResponse) return auth;
 
     const invalid = validateBookingInput(body);
@@ -245,7 +245,7 @@ export async function POST(request: Request) {
 
     // Use atomic function to prevent race conditions
     // This function acquires row-level locks before checking for conflicts
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const { data: result, error: rpcError } = (await supabaseServer.rpc(
       "create_booking_atomic",
       {
@@ -313,17 +313,17 @@ export async function POST(request: Request) {
     if (existingUser) {
       // Check if the current email is a placeholder (admin email)
       const isPlaceholder = await isPlaceholderEmail(existingUser.email);
-      
+
       // If it is a placeholder and we have a new valid email, update the user's profile
       if (isPlaceholder && email && email.trim() !== "") {
         const isNewEmailPlaceholder = await isPlaceholderEmail(email);
-        
+
         if (!isNewEmailPlaceholder) {
           const { error: updateUserError } = await supabaseServer
             .from("users")
-            .update({ 
-               email: email, 
-               name: name || existingUser.name 
+            .update({
+               email: email,
+               name: name || existingUser.name
             })
             .eq("phone_number", phone);
 
@@ -471,7 +471,7 @@ export async function PUT(request: Request) {
     const phone = String(body.phone ?? "").replace(/\D/g, "");
 
     // Only the OTP-verified owner can change their booking
-    const auth = await requireCustomer(request, phone);
+    const auth = await requireCustomer(request, phone, name);
     if (auth instanceof NextResponse) return auth;
 
     const invalid = validateBookingInput(body);
@@ -519,6 +519,10 @@ export async function PUT(request: Request) {
         { error: "Booking not found or does not belong to this phone number" },
         { status: 404 },
       );
+    }
+
+    if (!name || originalBooking.name?.trim().toLowerCase() !== name.trim().toLowerCase()) {
+      return NextResponse.json({ error: "Mobile number and name do not match this booking" }, { status: 403 });
     }
 
     // Check if booking can be modified
@@ -618,7 +622,7 @@ export async function PUT(request: Request) {
     }
 
     // Use atomic function to prevent race conditions during update
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const { data: result, error: rpcError } = (await supabaseServer.rpc(
       "update_booking_atomic",
       {

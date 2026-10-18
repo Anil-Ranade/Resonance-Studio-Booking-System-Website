@@ -23,15 +23,15 @@ export async function checkRateLimit(
       p_window_seconds: windowSeconds
     });
 
-    if (error) {
+    if (error || typeof data !== 'boolean') {
       console.error("Rate limit check failed:", error);
-      // Fail open: if DB check fails, allow the request to prevent service outage
-      return true;
+      // Fail closed: sensitive endpoints must not become unlimited on DB failure.
+      return false;
     }
 
     return data as boolean;
   } catch (err) {
     console.error("Unexpected rate limit error:", err);
-    return true; // Fail open
+    return false; // Fail closed
   }
 }

@@ -35,7 +35,7 @@ export default function AvailabilityPage() {
   const [blocked, setBlocked] = useState<BlockedSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [startHour, setStartHour] = useState(8);
-  const [endHour, setEndHour] = useState(22);
+  const [endHour, setEndHour] = useState(21.5);
   const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -57,10 +57,8 @@ export default function AvailabilityPage() {
             (data.defaultOpenTime || "08:00").split(":")[0],
             10
           );
-          const closeHour = parseInt(
-            (data.defaultCloseTime || "22:00").split(":")[0],
-            10
-          );
+          const [closeHours, closeMinutes] = (data.defaultCloseTime || "21:30").split(":").map(Number);
+          const closeHour = closeHours + closeMinutes / 60;
           setStartHour(openHour);
           setEndHour(closeHour);
           setAdvanceBookingDays(data.advanceBookingDays || 30);
@@ -135,7 +133,7 @@ export default function AvailabilityPage() {
 
   // Time slots based on admin settings
   const timeSlots = useMemo(() => {
-    return Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
+    return Array.from({ length: Math.ceil(endHour - startHour) }, (_, i) => startHour + i);
   }, [startHour, endHour]);
 
   // Get current time
@@ -178,16 +176,20 @@ export default function AvailabilityPage() {
 
   // Format hour to 12-hour format
   const formatTimeLabel = (hour: number) => {
-    if (hour === 12) return "12 PM";
-    if (hour < 12) return `${hour} AM`;
-    return `${hour - 12} PM`;
+    const totalMinutes = Math.round(hour * 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    return `${displayHour}:${minutes.toString().padStart(2, "0")} ${hours >= 12 ? "PM" : "AM"}`;
   };
 
   // Short format for mobile
   const formatTimeLabelShort = (hour: number) => {
-    if (hour === 12) return "12P";
-    if (hour < 12) return `${hour}A`;
-    return `${hour - 12}P`;
+    const totalMinutes = Math.round(hour * 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    return `${displayHour}:${minutes.toString().padStart(2, "0")}${hours >= 12 ? "P" : "A"}`;
   };
 
   // Format date for display

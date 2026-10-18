@@ -33,7 +33,7 @@ async function getBookingSettings(): Promise<BookingSettings> {
     bookingBuffer: 0,
     advanceBookingDays: 30,
     defaultOpenTime: '08:00',
-    defaultCloseTime: '22:00',
+    defaultCloseTime: '21:30',
   };
 
   try {

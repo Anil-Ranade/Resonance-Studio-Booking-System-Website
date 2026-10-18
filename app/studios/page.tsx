@@ -47,7 +47,7 @@ const studios = [
     description:
       "A flexible mid-sized room with comfortable seating. Most karaoke groups book this one.",
     live: { label: "4-5 musicians", value: 5 },
-    karaoke: { label: "Up to 10 people", value: 10 },
+    karaoke: { label: "Up to 12 people", value: 12 },
     gear: [
       '46" karaoke screen',
       "Professional sound system",
@@ -70,7 +70,7 @@ const studios = [
     description:
       "Built for audio and video recording. Also works well for podcasts and duo rehearsals.",
     live: { label: "Up to 2 musicians", value: 2 },
-    karaoke: { label: "Up to 5 people", value: 5 },
+    karaoke: { label: "Up to 8 people", value: 8 },
     gear: [
       "Professional recording equipment",
       "Video recording setup",

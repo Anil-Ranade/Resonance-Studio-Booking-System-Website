@@ -54,9 +54,9 @@ export default function ReviewStep() {
 
     if (draft.sessionType === "Karaoke" && draft.karaokeOption) {
       const labels: Record<string, string> = {
-        "1_5": "1-5 participants",
-        "6_10": "6-10 participants",
-        "11_20": "11-20 participants",
+        "1_8": "1-8 participants",
+        "9_12": "9-12 participants",
+        "13_20": "13-20 participants",
         "21_30": "21-30 participants",
       };
       return labels[draft.karaokeOption] || "";

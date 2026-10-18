@@ -66,9 +66,9 @@ export default function ConfirmStep() {
 
       if (draft.sessionType === "Karaoke" && draft.karaokeOption) {
         const labels: Record<string, string> = {
-          "1_5": "1-5 participants",
-          "6_10": "6-10 participants",
-          "11_20": "11-20 participants",
+          "1_8": "1-8 participants",
+          "9_12": "9-12 participants",
+          "13_20": "13-20 participants",
           "21_30": "21-30 participants",
         };
         sessionDetails = labels[draft.karaokeOption] || draft.sessionType || "";
@@ -140,7 +140,6 @@ export default function ConfirmStep() {
         body: JSON.stringify({
           phone: draft.phone,
           name: draft.name,
-          email: draft.email,
           studio: draft.studio,
           session_type: draft.sessionType,
           session_details: sessionDetails,

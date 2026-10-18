@@ -47,6 +47,7 @@ async function verifyAdminToken(request: NextRequest) {
     .select("*")
     .eq("id", user.id)
     .eq("is_active", true)
+    .in("role", ["admin", "super_admin"])
     .single();
 
   if (adminError || !adminUser) {

@@ -39,7 +39,7 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 | **Supabase**            | PostgreSQL database & authentication   |
 | **Google Calendar API** | Calendar integration for bookings      |
 | **Google Sheets API**   | Booking logs & reporting               |
-| **Resend**              | Email notifications & OTP verification |
+| **Resend**              | Optional operational email notifications |
 
 ### Authentication & Security
 
@@ -47,7 +47,7 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 | ------------------------- | ------------------------------- |
 | **Supabase Auth**         | Admin & Staff authentication    |
 | **bcryptjs**              | Password/OTP hashing            |
-| **OTP-based Auth**        | Email verification (via Resend) |
+| **Mobile/name flow**      | Customer identification and booking access |
 | **Device Fingerprinting** | Trusted device management       |
 | **Cookie Sessions**       | Secure HttpOnly auth tokens     |
 | **Auto-login**            | Seamless trusted device access  |
@@ -85,13 +85,13 @@ A modern, full-stack studio booking application built for Resonance Studio. This
          │                                └─────────────────┘
          ▼
     ┌──────────────┐     ┌──────────────┐     ┌─────────────────┐
-    │  Enter Phone │────▶│  Verify OTP  │────▶│  Review &       │
-    │  & Email     │     │  (Email)     │     │  Confirm        │
+    │ Enter Mobile │────▶│  Enter Name  │────▶│  Review &       │
+    │  Number      │     │  (Required)  │     │  Confirm        │
     └──────────────┘     └──────────────┘     └────────┬────────┘
                                                        │
                                                        ▼
     ┌──────────────────────────────────────────────────────────────────┐
-    │  ✅ Booking Confirmed + Email Sent + Calendar Event Created      │
+    │  ✅ Booking Confirmed + WhatsApp Message + Calendar Event Created│
     │     + Logged to Google Sheets                                    │
     └──────────────────────────────────────────────────────────────────┘
 ```
@@ -142,13 +142,13 @@ A modern, full-stack studio booking application built for Resonance Studio. This
      - Studio capacity
    - Manual studio selection available
 
-6. **Phone & Email Verification**
+6. **Mobile Number & Name**
 
-   - Enter phone number and email address
-   - Receive 6-digit OTP via Email (Resend)
-   - OTP expires in 5 minutes
-   - Verify OTP to confirm identity
-   - Trusted device option for faster future logins
+   - Enter a numbers-only 10-digit mobile number
+   - Enter the customer name; both fields are mandatory
+   - Returning devices can auto-populate saved details
+   - Use Edit and Continue to update saved details
+   - Details are used for WhatsApp confirmations and one-day advance reminders
 
 7. **Review & Confirmation**
 
@@ -159,7 +159,7 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 8. **Booking Confirmation**
    - Booking saved to database
    - Google Calendar event created
-   - Email confirmation sent
+   - WhatsApp confirmation message is prepared
    - Booking logged to Google Sheets
    - Redirect to confirmation page with details
 
@@ -243,20 +243,21 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 └─────────────────────────────────────────────────────────────────────────┘
 
     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-    │ Enter Email  │────▶│ View Bookings│────▶│ Select to    │
+    │ Enter Mobile │────▶│ View Bookings│────▶│ Select to    │
     │              │     │              │     │ Edit         │
     └──────────────┘     └──────────────┘     └──────────────┘
                                                      │
                                                      ▼
     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-    │  Edit Done   │◀────│  Redirect to │◀────│  Verify OTP  │
+    │  Edit Done   │◀────│  Redirect to │◀────│  Enter Name  │
     │              │     │  Booking     │     │              │
     └──────────────┘     └──────────────┘     └──────────────┘
 ```
 
 **Edit Restrictions:**
 
-- Confirmed bookings: Can edit up to 48 hours before
+- Confirmed bookings: Public online changes are allowed more than 24 hours before
+- Within 24 hours: contact the studio directly; staff/admin can change at any time
 - Cancelled/completed/no_show: Cannot edit
 
 ### Cancel Booking Flow
@@ -267,21 +268,22 @@ A modern, full-stack studio booking application built for Resonance Studio. This
 └─────────────────────────────────────────────────────────────────────────┘
 
     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-    │ Enter Email  │────▶│ View Bookings│────▶│ Select to    │
+    │ Enter Mobile │────▶│ View Bookings│────▶│ Select to    │
     │              │     │              │     │ Cancel       │
     └──────────────┘     └──────────────┘     └──────────────┘
                                                      │
                                                      ▼
     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-    │  Cancelled   │◀────│  Confirm     │◀────│  Verify OTP  │
-    │  + Email     │     │  Cancellation│     │              │
+    │  Cancelled   │◀────│  Confirm     │◀────│  Enter Name  │
+    │  + WhatsApp  │     │  Cancellation│     │              │
     └──────────────┘     └──────────────┘     └──────────────┘
 ```
 
 **Cancel Restrictions:**
 
-- Same time restrictions as edit booking
-- Email confirmation sent upon cancellation
+- Free online cancellation is allowed more than 24 hours before
+- Within 24 hours, a 50% charge applies; no-shows are charged 100%
+- Admin/staff can cancel at any time
 
 ### Staff Portal Workflow
 
@@ -430,8 +432,7 @@ Text Colors:
 │   │   │   ├── ParticipantsStep.tsx  # Participant configuration
 │   │   │   ├── TimeStep.tsx          # Date/time selection
 │   │   │   ├── StudioStep.tsx        # Studio selection
-│   │   │   ├── PhoneStep.tsx         # Phone/email input
-│   │   │   ├── OTPStep.tsx           # OTP verification
+│   │   │   ├── PhoneStep.tsx         # Mobile/name and device recognition
 │   │   │   ├── ReviewStep.tsx        # Review booking
 │   │   │   ├── ConfirmStep.tsx       # Confirmation
 │   │   │   ├── StepLayout.tsx        # Step wrapper
@@ -445,7 +446,7 @@ Text Colors:
 │   ├── confirmation/           # Booking confirmation page
 │   ├── view-bookings/          # View bookings (secure auth required)
 │   ├── my-bookings/            # User booking history
-│   ├── edit-booking/           # Edit existing bookings with OTP
+│   ├── edit-booking/           # Edit existing bookings with mobile/name checks
 │   ├── cancel-booking/         # Cancel bookings with verification
 │   │
 │   ├── admin/                  # Admin section
@@ -479,8 +480,8 @@ Text Colors:
 │   │
 │   ├── api/                    # API routes
 │   │   ├── auth/               # Authentication
-│   │   │   ├── send-otp/       # Send OTP email
-│   │   │   ├── verify-otp/     # Verify OTP code
+│   │   │   ├── send-otp/       # Legacy OTP compatibility endpoint
+│   │   │   ├── verify-otp/     # Legacy OTP compatibility endpoint
 │   │   │   ├── verify-device/  # Device verification
 │   │   │   ├── status/         # Check auth status
 │   │   │   ├── auto-login/     # Auto-login for trusted devices
@@ -524,7 +525,7 @@ Text Colors:
 │   │   ├── Footer.tsx          # Site footer
 │   │   ├── MainContent.tsx     # Main content wrapper
 │   │   ├── OTPLogin.tsx        # OTP login component
-│   │   ├── OTPVerification.tsx # OTP verification component
+│   │   ├── OTPVerification.tsx # Legacy OTP compatibility component
 │   │   └── ClearCache.tsx      # Cache clearing utility
 │   │
 │   ├── display/                # Public display page
@@ -581,12 +582,11 @@ Text Colors:
 - ✅ **Prompt Payment Discount** ("Pay Now & Save")
 - ✅ **Loyalty Program** - Earn points for bookings and redeem them
 - ✅ Smart studio suggestions based on group size
-- ✅ OTP-based email verification
-- ✅ Email booking confirmations
+- ✅ Mobile-first customer flow with 10-digit validation
+- ✅ WhatsApp booking confirmations and reminders
 - ✅ Trusted device management for faster logins
 - ✅ View and cancel bookings
-- ✅ Edit bookings with OTP verification
-- ✅ Cancel bookings with OTP verification
+- ✅ Edit and cancel bookings with mobile/name and session checks
 - ✅ Duplicate booking prevention
 - ✅ Responsive design (mobile-first)
 - ✅ Smooth animations with reduced motion support
@@ -639,15 +639,14 @@ Text Colors:
 - ✅ Performance-optimized motion components
 - ✅ SEO optimization (structured data, sitemap, meta tags)
 
-### Email Notification Types
+### Operational Email Notification Types
 
 | Email Type                     | Purpose                                   |
 | ------------------------------ | ----------------------------------------- |
-| **OTP Verification**           | 6-digit code for login verification       |
-| **Booking Confirmation**       | Confirmation of new booking with details  |
-| **Admin Booking Confirmation** | Confirmation for bookings created by team |
-| **Booking Update**             | Notification when booking is modified     |
-| **Booking Cancellation**       | Confirmation of cancelled booking         |
+| **Booking Confirmation**       | Optional operational confirmation         |
+| **Admin Booking Confirmation** | Optional confirmation for team bookings   |
+| **Booking Update**             | Optional notification when modified      |
+| **Booking Cancellation**       | Optional cancellation notification       |
 
 ---
 
@@ -663,7 +662,7 @@ Text Colors:
 | `bookings`           | All booking records (status, payment_status, is_prompt_payment)    |
 | `availability_slots` | Blocked time slots per studio                                      |
 | `booking_settings`   | System configuration (min/max hours, buffer, etc.)                 |
-| `login_otps`         | OTP verification records (bcrypt hashed)                           |
+| `login_otps`         | Legacy OTP compatibility records (bcrypt hashed)                   |
 | `rate_cards`         | Pricing per studio, session type, and sub-option                   |
 | `audit_logs`         | Admin action tracking for accountability                           |
 | `trusted_devices`    | Verified device fingerprints                                       |
@@ -693,8 +692,8 @@ Text Colors:
 
 | Method | Endpoint                  | Description                    |
 | ------ | ------------------------- | ------------------------------ |
-| `POST` | `/api/auth/send-otp`      | Send OTP to email address      |
-| `POST` | `/api/auth/verify-otp`    | Verify OTP code                |
+| `POST` | `/api/auth/send-otp`      | Legacy OTP compatibility endpoint |
+| `POST` | `/api/auth/verify-otp`    | Legacy OTP compatibility endpoint |
 | `POST` | `/api/auth/verify-device` | Verify trusted device          |
 | `GET`  | `/api/auth/status`        | Check authentication status    |
 | `POST` | `/api/auth/auto-login`    | Auto-login for trusted devices |
@@ -746,7 +745,7 @@ Text Colors:
 | `PUT`    | `/api/admin/settings`     | Update settings       |
 | `POST`   | `/api/admin/book`         | Admin creates booking |
 | `POST`   | `/api/admin/whatsapp-reminder` | Mark reminder sent |
-| `GET`    | `/api/admin/cashback`     | Get loyalty/cashback data |
+| `GET`    | `/api/loyalty/all`        | Get loyalty/cashback data |
 | `GET`    | `/api/admin/investors`    | Get investor data         |
 
 ### Staff
@@ -825,12 +824,9 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ### Authentication
 
-- **Customer Auth**: Email-based OTP verification
-  - 6-digit OTP sent via Resend Email
-  - OTP expires in 5 minutes
-  - Maximum 5 verification attempts per OTP
-  - Bcrypt-hashed OTP storage (10 salt rounds)
-  - Old OTPs deleted before generating new ones
+- **Customer Auth**: 10-digit mobile number and name
+  - Returning devices can use trusted-device auto-login
+  - Private booking fields require an authenticated customer session
 - **Admin Auth**: Supabase Auth + JWT
   - Supabase handles email/password authentication
   - Access token verification for all admin API routes
@@ -854,13 +850,14 @@ The application enforces the following security headers via `next.config.ts`:
 - **X-Content-Type-Options: nosniff** - Prevents MIME-type sniffing
 - **Referrer-Policy: strict-origin-when-cross-origin** - Controls referrer information
 - **Permissions-Policy** - Restricts browser feature access
+- **Content-Security-Policy** - Restricts scripts, frames, images, and connections
 - **X-DNS-Prefetch-Control** - Controls DNS prefetching
 
 ### Input Validation & Sanitization
 
 - All user inputs are validated server-side
 - Phone numbers validated (10 digits only)
-- OTP format validated (6 digits)
+- Mobile numbers validated (10 digits, numbers only)
 - Contact form inputs sanitized against XSS (`<` and `>` removed)
 - Input length limits enforced (1000 chars default, 5000 for messages)
 - Email format validation with length limits (254 chars max)
@@ -868,8 +865,8 @@ The application enforces the following security headers via `next.config.ts`:
 ### Database Security
 
 - Row Level Security (RLS) policies on all tables
-- Users can only view/edit their own data
-- Admins have elevated access via policy checks
+- Private user and booking data is accessed through authenticated server APIs
+- Browser sessions do not receive broad direct table access
 - Service role key for server-side operations only
 - UUID primary keys (non-sequential, non-guessable)
 - Enum types for constrained values (status fields)
@@ -877,14 +874,14 @@ The application enforces the following security headers via `next.config.ts`:
 ### Device Trust
 
 - Device fingerprinting for trusted devices
-- Skip OTP for verified devices
+- Trusted devices can skip repeated customer verification
 - Device trust can be revoked
 - Fingerprints stored with phone association
 
 ### Rate Limiting & Protection
 
-- OTP request cooldown prevents email bombing
-- Maximum 5 attempts before OTP invalidation
+- Database-backed endpoint and client-key rate limiting
+- Rate-limit failures fail closed
 - Audit logging for security events
 - All admin actions logged with user ID and timestamp
 
@@ -899,7 +896,7 @@ The application enforces the following security headers via `next.config.ts`:
 
 - No SQL injection possible (Supabase client handles parameterization)
 - JWT secrets minimum 32 characters recommended
-- Passwords never stored (OTP-based auth for customers)
+- Customer access uses mobile/name flow with trusted-device sessions
 - Admin passwords hashed by Supabase Auth
 
 ### Invoice Generation Security
@@ -948,17 +945,24 @@ The application enforces the following security headers via `next.config.ts`:
 | ----------------------- | ------------ | ----------------- | ------- |
 | **Karaoke**             | 30 people    | Sound system      | A, B, C |
 | **Live with Musicians** | 12 people    | Full setup        | A, B, C |
-| **Only Drum Practice**  | 1 person     | Drums only        | A       |
+| **Only Drum Practice**  | 1 person     | Drums only; sticks ₹50/hour extra | A only |
 | **Band**                | 6 people     | Configurable      | A, B, C |
 | **Recording**           | 4 people     | Pro equipment     | A       |
 | **Meetings / Classes**  | Flexible     | No Sound Operator | A, B, C |
 
+Karaoke group brackets are 1–8, 9–12, 13–20, and 21–30 people. Standard operating hours are 8:00 AM–9:30 PM. Tea, snacks, lunch, and dinner can be arranged on request at extra cost.
+
 ### Band Equipment Options
 
-- Drum Only (₹350-400/hr)
-- Drum + Amps (₹400-500/hr)
-- Drum + Amps + Guitars (₹450-600/hr)
-- Full Setup (₹600/hr)
+- College Students Band: fixed ₹500/hour in Studio A
+- Includes drums, keyboard, 2 electric guitars, 2 guitar amps, and 1 bass amp
+- Drum sticks are optional at ₹50/hour extra
+
+Drum Practice is available in Studio A only.
+
+### Loyalty Cashback
+
+Book for 50 hours within any three months and earn ₹2,000 as Cashback.
 
 ### Recording Options
 
@@ -1010,7 +1014,7 @@ See the [Color Palette section](#-color-palette) above for the complete design s
 
 - [ ] Set up error monitoring (Sentry, LogRocket)
 - [ ] Enable Supabase logging
-- [ ] Monitor email delivery rates (Resend dashboard)
+- [ ] Monitor WhatsApp operations and optional email delivery rates (Resend dashboard)
 - [ ] Set up uptime monitoring
 
 ---
@@ -1024,6 +1028,6 @@ For technical support or questions about the booking system, please contact:
 
 ---
 
-_Last updated: January 2026_
+_Last updated: October 2026_
 
 _Built for Resonance Studio_

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
-import { getAdminUser, getSessionPhone, maskEmail, rateLimit } from "@/lib/apiSecurity";
+import { cleanText, getAdminUser, getSessionPhone, isPhone, rateLimit } from "@/lib/apiSecurity";
 
 interface CheckUserRequest {
   phone: string;
@@ -70,33 +70,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // If user exists, check if their email belongs to an admin/staff
+    // If user exists, only an authenticated owner/admin may receive account details.
     if (existingUser) {
-      let isAdminEmail = false;
-
-      // Check specific hardcoded email
-      if (existingUser.email === 'ranade9@gmail.com') {
-        isAdminEmail = true;
-      } else {
-        // Check if this email matches any admin/staff email
-        const { data: adminUser } = await supabaseServer
-          .from("admin_users")
-          .select("id")
-          .eq("email", existingUser.email)
-          .single();
-        
-        isAdminEmail = !!adminUser;
-      }
-      
       const canSeeDetails =
         (await getSessionPhone(request)) === phone || !!(await getAdminUser(request));
 
+      if (!canSeeDetails) {
+        // Do not let an unauthenticated caller enumerate customer records.
+        return NextResponse.json({ needsSignup: true });
+      }
+
       return NextResponse.json({
-        user: canSeeDetails
-          ? existingUser
-          : { phone_number: phone, name: existingUser.name, email: maskEmail(existingUser.email) },
-        emailMasked: !canSeeDetails,
-        isAdminEmail,
+        user: existingUser,
+        emailMasked: false,
       });
     }
 
@@ -108,5 +94,40 @@ export async function POST(request: Request) {
       { error: "An unexpected error occurred" },
       { status: 500 }
     );
+  }
+}
+
+// PATCH /api/check-user - Update the authenticated customer's saved name.
+export async function PATCH(request: Request) {
+  try {
+    const limited = await rateLimit(request, "update_user", 10, 600);
+    if (limited) return limited;
+
+    const body = await request.json().catch(() => ({}));
+    const phone = String(body.phone ?? "").replace(/\D/g, "");
+    const name = cleanText(body.name, 100);
+    const admin = await getAdminUser(request);
+    const sessionPhone = await getSessionPhone(request);
+
+    if (!isPhone(phone) || !name) {
+      return NextResponse.json({ error: "Valid phone number and name are required" }, { status: 400 });
+    }
+    if (!admin && sessionPhone !== phone) {
+      return NextResponse.json({ error: "Please verify this phone number first" }, { status: 403 });
+    }
+
+    const { data, error } = await supabaseServer
+      .from("users")
+      .update({ name })
+      .eq("phone_number", phone)
+      .select("phone_number, name, email")
+      .single();
+
+    if (error || !data) {
+      return NextResponse.json({ error: "Unable to update customer details" }, { status: 500 });
+    }
+    return NextResponse.json({ user: data });
+  } catch {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 }

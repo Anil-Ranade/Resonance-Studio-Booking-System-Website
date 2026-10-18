@@ -24,7 +24,7 @@ const spaces = [
     id: "studio-b",
     name: "Studio B",
     note: "Medium room for karaoke groups and small acoustic sets",
-    meta: "Up to 10 people · from ₹250/hr",
+    meta: "Up to 12 people · from ₹250/hr",
     bookable: true,
     photos: [
       "/studios/main/studio_b.jpeg",
@@ -37,7 +37,7 @@ const spaces = [
     id: "studio-c",
     name: "Studio C",
     note: "Compact room for recording, video and podcasts",
-    meta: "Up to 5 people · from ₹200/hr",
+    meta: "Up to 8 people · from ₹200/hr",
     bookable: true,
     photos: [
       "/studios/main/studio_c.jpeg",

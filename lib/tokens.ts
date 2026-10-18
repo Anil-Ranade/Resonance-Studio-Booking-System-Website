@@ -48,12 +48,7 @@ function getAccessTokenSecret(): string {
 function getRefreshTokenSecret(): string {
   const secret = process.env.REFRESH_TOKEN_SECRET;
   if (!secret) {
-    // Fall back to JWT_SECRET + suffix if REFRESH_TOKEN_SECRET not set
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      throw new Error('Neither REFRESH_TOKEN_SECRET nor JWT_SECRET environment variable is configured');
-    }
-    return jwtSecret + '_refresh';
+    throw new Error('REFRESH_TOKEN_SECRET environment variable is not configured');
   }
   return secret;
 }

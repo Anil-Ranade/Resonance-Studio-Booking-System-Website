@@ -78,12 +78,13 @@ const sessionTypes = [
 // Helper function to generate time options based on open/close times
 function generateTimeOptions(openTime: string, closeTime: string): string[] {
   const options: string[] = [];
-  const openHour = parseInt(openTime.split(':')[0], 10);
-  const closeHour = parseInt(closeTime.split(':')[0], 10);
-  
-  for (let hour = openHour; hour <= closeHour; hour++) {
-    options.push(`${hour.toString().padStart(2, '0')}:00`);
-    if (hour < closeHour) options.push(`${hour.toString().padStart(2, '0')}:30`);
+  const openMinutes = openTime.split(':').map(Number).reduce((hours, minutes) => hours * 60 + minutes);
+  const closeMinutes = closeTime.split(':').map(Number).reduce((hours, minutes) => hours * 60 + minutes);
+
+  for (let minutes = openMinutes; minutes <= closeMinutes; minutes += 30) {
+    const hour = Math.floor(minutes / 60);
+    const minute = minutes % 60;
+    options.push(`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`);
   }
   return options;
 }
@@ -93,7 +94,7 @@ export default function AvailabilityManagementPage() {
   const [loading, setLoading] = useState(true);
   const [selectedStudio, setSelectedStudio] = useState<string>('all');
   const [defaultOpenTime, setDefaultOpenTime] = useState('08:00');
-  const [defaultCloseTime, setDefaultCloseTime] = useState('22:00');
+  const [defaultCloseTime, setDefaultCloseTime] = useState('21:30');
   const [startDate, setStartDate] = useState<string>(() => todayIST());
   const [endDate, setEndDate] = useState<string>(() => addDaysYMD(todayIST(), 30)); // matches default advance booking window
 
@@ -110,7 +111,7 @@ export default function AvailabilityManagementPage() {
     studio: 'Studio A',
     date: todayIST(),
     start_time: '08:00',
-    end_time: '22:00',
+    end_time: '21:30',
     is_available: false, // Blocked slots have is_available = false
   });
 
@@ -133,7 +134,7 @@ export default function AvailabilityManagementPage() {
   const [bulkFormData, setBulkFormData] = useState({
     studio: 'Studio A',
     start_time: '08:00',
-    end_time: '22:00',
+    end_time: '21:30',
   });
 
   const [bulkMode, setBulkMode] = useState<'dates' | 'weekly'>('dates');
@@ -174,7 +175,7 @@ export default function AvailabilityManagementPage() {
         if (response.ok) {
           const data = await response.json();
           const openTime = data.defaultOpenTime || '08:00';
-          const closeTime = data.defaultCloseTime || '22:00';
+          const closeTime = data.defaultCloseTime || '21:30';
           setDefaultOpenTime(openTime);
           setDefaultCloseTime(closeTime);
           // Update form defaults with settings

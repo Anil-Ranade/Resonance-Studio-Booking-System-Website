@@ -90,8 +90,8 @@ export async function POST(request: Request) {
         success: true,
         message: 'OTP sent successfully',
         sentTo: maskEmail(email),
-        // Include OTP in response only for development
-        ...(process.env.NODE_ENV === 'development' && { debug_otp: otp }),
+        // Debug OTP must be explicitly enabled; NODE_ENV alone is not enough.
+        ...(process.env.NODE_ENV === 'development' && process.env.ALLOW_DEBUG_OTP === 'true' && { debug_otp: otp }),
       });
     }
 
