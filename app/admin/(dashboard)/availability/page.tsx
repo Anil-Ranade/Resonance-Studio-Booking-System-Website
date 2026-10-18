@@ -94,7 +94,7 @@ export default function AvailabilityManagementPage() {
   const [defaultOpenTime, setDefaultOpenTime] = useState('08:00');
   const [defaultCloseTime, setDefaultCloseTime] = useState('22:00');
   const [startDate, setStartDate] = useState<string>(() => todayIST());
-  const [endDate, setEndDate] = useState<string>(() => addDaysYMD(todayIST(), 7));
+  const [endDate, setEndDate] = useState<string>(() => addDaysYMD(todayIST(), 30)); // matches default advance booking window
 
   // Generate time options based on admin settings
   const timeOptions = generateTimeOptions(defaultOpenTime, defaultCloseTime);

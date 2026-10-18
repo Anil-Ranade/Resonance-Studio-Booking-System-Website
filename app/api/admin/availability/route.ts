@@ -248,6 +248,26 @@ export async function PUT(request: NextRequest) {
     if (end_time !== undefined) updates.end_time = end_time;
     if (is_available !== undefined) updates.is_available = is_available;
 
+    // Same overlap guard as POST, on the resulting slot
+    const next = { ...existingSlot, ...updates };
+    if (next.is_available === false) {
+      const { data: conflicts } = await supabase
+        .from("bookings")
+        .select("id")
+        .eq("studio", next.studio)
+        .eq("date", next.date)
+        .eq("status", "confirmed")
+        .lt("start_time", next.end_time)
+        .gt("end_time", next.start_time);
+
+      if (conflicts && conflicts.length > 0) {
+        return NextResponse.json(
+          { error: "Cannot block this slot - there is already a confirmed booking during this time" },
+          { status: 409 }
+        );
+      }
+    }
+
     const { data: slot, error } = await supabase
       .from("availability_slots")
       .update(updates)
