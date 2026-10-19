@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useBooking } from "../contexts/BookingContext";
 import StepLayout from "./StepLayout";
+import { takeReturnTo } from "../utils/returnTo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -199,6 +200,11 @@ export default function ConfirmStep() {
 
   const handleGoHome = () => {
     resetDraft();
+    const returnTo = takeReturnTo();
+    if (returnTo) {
+      router.push(returnTo);
+      return;
+    }
     // Navigate based on mode
     if (mode === "admin") {
       router.push("/admin/dashboard");

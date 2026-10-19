@@ -159,6 +159,9 @@ export async function PUT(request: NextRequest) {
     if (fetchError || !existingBooking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
+    if (existingBooking.created_by_staff_id !== staff.user.id) {
+      return NextResponse.json({ error: "You can only change bookings you created" }, { status: 403 });
+    }
 
     const updates: Record<string, any> = {};
     if (status) {
@@ -432,6 +435,9 @@ export async function DELETE(request: NextRequest) {
 
   if (!existingBooking) {
     return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+  }
+  if (existingBooking.created_by_staff_id !== staff.user.id) {
+    return NextResponse.json({ error: "You can only change bookings you created" }, { status: 403 });
   }
 
   // Delete Google Calendar event if it exists

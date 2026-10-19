@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import {
   BookingProvider,
@@ -16,10 +17,11 @@ import ConfirmStep from "@/app/booking/components/ConfirmStep";
 
 function BookingSteps() {
   const { currentStep, skipOtp, setStep, resetDraft } = useBooking();
+  const isEditFlow = useSearchParams().get("source") === "edit";
 
   // Ensure draft is reset on mount (new booking always starts fresh)
   useEffect(() => {
-    resetDraft();
+    if (!isEditFlow) resetDraft();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

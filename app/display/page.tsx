@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { getSession } from "@/lib/supabaseAuth";
 import {
   Loader2,
   ChevronLeft,
@@ -18,6 +20,8 @@ import {
   FileText,
   Users,
   CalendarDays,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { addDaysYMD, istDateTime, istNow, todayIST } from "@/lib/ist";
 
@@ -35,6 +39,7 @@ interface Booking {
   status: "pending" | "confirmed";
   total_amount: number | null;
   notes: string | null;
+  created_by_staff_id?: string | null;
 }
 
 interface BlockedSlot {
@@ -54,9 +59,11 @@ interface BookingBlock {
   startTime: string; // Actual start time string (HH:MM)
   endTime: string; // Actual end time string (HH:MM)
   booking: Booking;
+  group: Booking[]; // every booking merged into this block
 }
 
 export default function DisplayPage() {
+  const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [password, setPassword] = useState("");
@@ -75,6 +82,13 @@ export default function DisplayPage() {
   const [showPhoneNumbers, setShowPhoneNumbers] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  // Logged-in admin/staff (API returns it only for them) and who created each booking
+  const [viewer, setViewer] = useState<{ id: string; role: string } | null>(null);
+  const [staffNames, setStaffNames] = useState<Record<string, string>>({});
+  const [selectedGroup, setSelectedGroup] = useState<Booking[]>([]);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [actionError, setActionError] = useState("");
 
   // Always show all three studios
   const studios = ["Studio A", "Studio B", "Studio C"];
@@ -171,6 +185,8 @@ export default function DisplayPage() {
         }
         setBookings(data.bookings || []);
         setBlocked(data.blocked || []);
+        setViewer(data.viewer || null);
+        setStaffNames(data.staffNames || {});
       }
     } catch (error) {
       console.error("Error fetching bookings:", error);
@@ -214,6 +230,7 @@ export default function DisplayPage() {
           // Merge consecutive bookings from same user
           currentBlock.end = end;
           currentBlock.endTime = b.end_time; // Update to the latest booking's end time
+          currentBlock.group.push(b);
         } else {
           if (currentBlock) blocks.push(currentBlock);
           currentBlock = {
@@ -222,6 +239,7 @@ export default function DisplayPage() {
             startTime: b.start_time,
             endTime: b.end_time,
             booking: b,
+            group: [b],
           };
         }
       });
@@ -350,13 +368,68 @@ export default function DisplayPage() {
   };
 
   // Handle booking click
-  const handleBookingClick = (booking: Booking) => {
+  const handleBookingClick = (booking: Booking, group: Booking[]) => {
     setSelectedBooking(booking);
+    setSelectedGroup(group);
   };
 
   // Close modal
   const closeModal = () => {
     setSelectedBooking(null);
+    setConfirmCancel(false);
+    setActionError("");
+  };
+
+  // Admin: any booking. Staff: only ones they created.
+  const isAdminViewer = viewer?.role === "admin" || viewer?.role === "super_admin";
+  const panel = isAdminViewer ? "admin" : "staff";
+  const canManage = (b: Booking) => !!viewer && (isAdminViewer || b.created_by_staff_id === viewer.id);
+  const creatorLabel = (b: Booking) =>
+    b.created_by_staff_id ? staffNames[b.created_by_staff_id] || "another staff member" : "an admin / the customer";
+
+  const handleEdit = (b: Booking) => {
+    sessionStorage.setItem(
+      "editBookingData",
+      JSON.stringify({
+        editMode: true,
+        originalBookingId: b.id,
+        sessionType: b.session_type,
+        sessionDetails: b.session_details,
+        studio: b.studio,
+        date: b.date,
+        start_time: b.start_time,
+        end_time: b.end_time,
+        phone_number: b.phone_number,
+        name: b.name || "",
+        total_amount: b.total_amount,
+        group_size: b.group_size || 1,
+        otpVerified: true,
+      }),
+    );
+    sessionStorage.setItem("bookingReturnTo", "/display");
+    router.push(`/${panel}/booking/new?source=edit`);
+  };
+
+  const handleCancel = async (group: Booking[]) => {
+    setActionBusy(true);
+    setActionError("");
+    try {
+      const token = (await getSession())?.access_token;
+      for (const b of group) {
+        const res = await fetch(`/api/${panel}/bookings`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ id: b.id, status: "cancelled" }),
+        });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Failed to cancel booking");
+      }
+      closeModal();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Failed to cancel booking");
+    } finally {
+      setActionBusy(false);
+      fetchBookings(true);
+    }
   };
 
   // Show loading spinner while checking auth
@@ -716,7 +789,7 @@ export default function DisplayPage() {
                       return (
                         <button
                           key={idx}
-                          onClick={() => handleBookingClick(block.booking)}
+                          onClick={() => handleBookingClick(block.booking, block.group)}
                           className={`absolute left-0.5 right-0.5 md:left-1 md:right-1 ${getStudioColor(
                             studio,
                           )} text-white flex flex-col justify-center items-center px-1 md:px-2 z-10 rounded-md shadow-lg border border-white/30 overflow-hidden cursor-pointer hover:brightness-110 active:scale-[0.98] transition-all ${
@@ -946,7 +1019,53 @@ export default function DisplayPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-4 md:px-6 py-4 bg-zinc-800/50 border-t border-zinc-700">
+            <div className="px-4 md:px-6 py-4 bg-zinc-800/50 border-t border-zinc-700 space-y-3">
+              {viewer &&
+                (selectedGroup.every(canManage) ? (
+                  <>
+                    {actionError && <p className="text-sm text-red-400">{actionError}</p>}
+                    {confirmCancel ? (
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setConfirmCancel(false)}
+                          disabled={actionBusy}
+                          className="flex-1 py-3 px-4 bg-zinc-700 hover:bg-zinc-600 text-white font-medium rounded-xl transition-colors"
+                        >
+                          Keep booking
+                        </button>
+                        <button
+                          onClick={() => handleCancel(selectedGroup)}
+                          disabled={actionBusy}
+                          className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+                        >
+                          {actionBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                          Confirm cancel{selectedGroup.length > 1 ? ` (${selectedGroup.length})` : ""}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => handleEdit(selectedBooking)}
+                          disabled={selectedGroup.length > 1}
+                          title={selectedGroup.length > 1 ? "Merged consecutive bookings: cancel and rebook" : undefined}
+                          className="flex-1 py-3 px-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Pencil className="w-4 h-4" /> Edit
+                        </button>
+                        <button
+                          onClick={() => setConfirmCancel(true)}
+                          className="flex-1 py-3 px-4 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Trash2 className="w-4 h-4" /> Cancel booking
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-amber-400 text-center">
+                    Created by {creatorLabel(selectedGroup.find((b) => !canManage(b)) || selectedBooking)}. Only they or an admin can edit or cancel it.
+                  </p>
+                ))}
               <button
                 onClick={closeModal}
                 className="w-full py-3 px-4 bg-zinc-700 hover:bg-zinc-600 text-white font-medium rounded-xl transition-colors"

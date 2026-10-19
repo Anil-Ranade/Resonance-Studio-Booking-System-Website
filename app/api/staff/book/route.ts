@@ -486,6 +486,9 @@ export async function PUT(request: NextRequest) {
     if (fetchError || !existingBooking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
+    if (existingBooking.created_by_staff_id !== authResult.user!.id) {
+      return NextResponse.json({ error: "You can only change bookings you created" }, { status: 403 });
+    }
 
     // Use atomic update function
     const { data: result, error: rpcError } = await supabaseServer.rpc(

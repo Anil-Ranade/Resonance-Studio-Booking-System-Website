@@ -53,7 +53,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { booking_id } = body;
+    const { booking_id, type } = body;
+    const column = type === "confirmation" ? "whatsapp_confirmation_sent_at" : "whatsapp_reminder_sent_at";
 
     if (!booking_id) {
       return NextResponse.json(
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
     // Update the booking with the reminder sent timestamp
     const { data: booking, error } = await supabase
       .from("bookings")
-      .update({ whatsapp_reminder_sent_at: new Date().toISOString() })
+      .update({ [column]: new Date().toISOString() })
       .eq("id", booking_id)
       .select()
       .single();
@@ -80,15 +81,16 @@ export async function POST(request: NextRequest) {
     // Log the action
     await supabase.from("audit_logs").insert({
       admin_id: admin.user.id,
-      action: "whatsapp_reminder_sent",
+      action: type === "confirmation" ? "whatsapp_confirmation_sent" : "whatsapp_reminder_sent",
       entity_type: "booking",
       entity_id: booking_id,
-      new_data: { whatsapp_reminder_sent_at: booking.whatsapp_reminder_sent_at },
+      new_data: { [column]: booking[column] },
     });
 
     return NextResponse.json({ 
       success: true, 
-      whatsapp_reminder_sent_at: booking.whatsapp_reminder_sent_at 
+      sent_at: booking[column],
+      whatsapp_reminder_sent_at: booking.whatsapp_reminder_sent_at,
     });
   } catch (error) {
     return NextResponse.json(

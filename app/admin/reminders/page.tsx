@@ -20,11 +20,13 @@ import {
   EyeOff,
   Music2,
   LogOut,
+  Copy,
+  Check,
 } from "lucide-react";
 import { getSession, signInWithEmail, signOut } from "@/lib/supabaseAuth";
 import { useRouter } from "next/navigation";
 import { adminFetch } from "@/lib/adminFetch";
-import { istDateTime } from "@/lib/ist";
+import { istDateTime, todayIST } from "@/lib/ist";
 
 // --- Types ---
 
@@ -45,6 +47,7 @@ interface Booking {
   notes: string | null;
   created_at: string;
   whatsapp_reminder_sent_at: string | null;
+  whatsapp_confirmation_sent_at: string | null;
 }
 
 // --- Helper Functions ---
@@ -120,6 +123,7 @@ export default function StandaloneRemindersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"pending" | "sent">("pending");
+  const [section, setSection] = useState<"confirmation" | "reminder">("confirmation");
   
   const router = useRouter();
 
@@ -227,22 +231,13 @@ export default function StandaloneRemindersPage() {
     setLoading(true);
     try {
       const token = await getAccessToken();
-      const response = await fetch("/api/admin/bookings", {
+      const response = await fetch(`/api/admin/bookings?status=confirmed&startDate=${todayIST()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
         const data = await response.json();
-        const eligibleBookings = (data.bookings || []).filter(
-          (booking: Booking) =>
-            booking.status === "confirmed" &&
-            isWithin24HoursBeforeBooking(
-              booking.date,
-              booking.start_time,
-              booking.end_time
-            )
-        );
-        setBookings(eligibleBookings);
+        setBookings(data.bookings || []);
       }
     } catch (error) {
       console.error("Error fetching bookings:", error);
@@ -257,9 +252,7 @@ export default function StandaloneRemindersPage() {
     }
   }, [isAuthorized, fetchBookings]);
 
-  const sendConfirmation = async (booking: Booking) => {
-    // Open the tab now (inside the click) so the browser doesn't block it after the awaits below.
-    const waWindow = window.open("", "_blank");
+  const buildConfirmationMessage = async (booking: Booking): Promise<string> => {
     const phone = booking.phone_number.replace(/[^0-9]/g, "");
     const formattedDate = formatDate(booking.date);
     const formattedStartTime = formatTime(booking.start_time);
@@ -377,6 +370,14 @@ Strictly no noise after 10:00 pm
 We look forward to hosting you.
 Enjoy your session!`;
 
+    return message;
+  };
+
+  const sendConfirmation = async (booking: Booking) => {
+    // Open the tab now (inside the click) so the browser doesn't block it after the awaits below.
+    const waWindow = window.open("", "_blank");
+    const phone = booking.phone_number.replace(/[^0-9]/g, "");
+    const message = await buildConfirmationMessage(booking);
     const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(
       message
     )}`;
@@ -391,19 +392,14 @@ Enjoy your session!`;
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ booking_id: booking.id }),
+        body: JSON.stringify({ booking_id: booking.id, type: "confirmation" }),
       });
 
       if (response.ok) {
         const data = await response.json();
         setBookings((prev) =>
           prev.map((b) =>
-            b.id === booking.id
-              ? {
-                  ...b,
-                  whatsapp_reminder_sent_at: data.whatsapp_reminder_sent_at,
-                }
-              : b
+            b.id === booking.id ? { ...b, whatsapp_confirmation_sent_at: data.sent_at } : b
           )
         );
       }
@@ -412,8 +408,7 @@ Enjoy your session!`;
     }
   };
 
-  const sendReminder = async (booking: Booking) => {
-    const phone = booking.phone_number.replace(/[^0-9]/g, "");
+  const buildReminderMessage = (booking: Booking): string => {
     const formattedStartTime = formatTime(booking.start_time);
     const formattedEndTime = formatTime(booking.end_time);
 
@@ -455,9 +450,13 @@ Strictly no noise after 10:00 pm
 
 We look forward to hosting you.
 See you soon!`;
+    return message;
+  };
 
+  const sendReminder = async (booking: Booking) => {
+    const phone = booking.phone_number.replace(/[^0-9]/g, "");
     const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(
-      message
+      buildReminderMessage(booking)
     )}`;
     window.open(whatsappUrl, "_blank");
 
@@ -469,25 +468,42 @@ See you soon!`;
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ booking_id: booking.id }),
+        body: JSON.stringify({ booking_id: booking.id, type: "reminder" }),
       });
 
       if (response.ok) {
         const data = await response.json();
         setBookings((prev) =>
           prev.map((b) =>
-            b.id === booking.id
-              ? {
-                  ...b,
-                  whatsapp_reminder_sent_at: data.whatsapp_reminder_sent_at,
-                }
-              : b
+            b.id === booking.id ? { ...b, whatsapp_reminder_sent_at: data.sent_at } : b
           )
         );
       }
     } catch (error) {
       console.error("Failed to mark reminder as sent:", error);
     }
+  };
+
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const copyMessage = async (booking: Booking, kind: "confirmation" | "reminder") => {
+    try {
+      const message = kind === "confirmation" ? await buildConfirmationMessage(booking) : buildReminderMessage(booking);
+      await navigator.clipboard.writeText(message);
+      setCopiedId(booking.id);
+      setTimeout(() => setCopiedId((id) => (id === booking.id ? null : id)), 2000);
+    } catch (error) {
+      console.error("Failed to copy message:", error);
+    }
+  };
+
+  const handleSendConfirmation = async (booking: Booking) => {
+    if (
+      booking.whatsapp_confirmation_sent_at &&
+      !confirm("You have already sent a confirmation for this booking. Do you want to send it again?")
+    ) {
+      return;
+    }
+    await sendConfirmation(booking);
   };
 
   const handleSendReminder = async (booking: Booking) => {
@@ -615,31 +631,122 @@ See you soon!`;
     );
   }
 
-  // Authorized -> reminder queue
-  const filteredBookings = bookings
-    .filter((booking) => {
-      const searchLower = searchTerm.toLowerCase();
-      const matchesSearch =
-        booking.name?.toLowerCase().includes(searchLower) ||
-        booking.phone_number.includes(searchTerm);
 
-      if (!matchesSearch) return false;
+  // Authorized -> two independent queues
+  const isConfirmation = section === "confirmation";
+  const sentAt = (b: Booking) => (isConfirmation ? b.whatsapp_confirmation_sent_at : b.whatsapp_reminder_sent_at);
+  const startOf = (b: Booking) => istDateTime(b.date, b.start_time).getTime();
 
-      if (activeTab === "pending") {
-        return !booking.whatsapp_reminder_sent_at;
-      } else {
-        return booking.whatsapp_reminder_sent_at;
-      }
-    })
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const searchLower = searchTerm.toLowerCase();
+  const matches = (b: Booking) =>
+    !searchTerm || !!b.name?.toLowerCase().includes(searchLower) || b.phone_number.includes(searchTerm);
 
-  const pendingCount = bookings.filter((b) => !b.whatsapp_reminder_sent_at).length;
-  const sentCount = bookings.filter((b) => b.whatsapp_reminder_sent_at).length;
+  // Confirmation: every upcoming or in-progress booking; reminder: only the next 24h
+  const inScope = bookings.filter((b) => b.status === "confirmed" && !isBookingTimePassed(b.date, b.end_time)).filter((b) =>
+    isConfirmation ? true : isWithin24HoursBeforeBooking(b.date, b.start_time, b.end_time)
+  );
+  const pendingCount = inScope.filter((b) => !sentAt(b)).length;
+  const sentCount = inScope.filter((b) => sentAt(b)).length;
+
+  // Confirmation order: current hour first (e.g. 4:30 pm -> 4-5 pm), then later ones, then missed earlier ones
+  const HOUR = 60 * 60 * 1000;
+  const istHourStart = Math.floor((Date.now() + 5.5 * HOUR) / HOUR) * HOUR - 5.5 * HOUR;
+  const hourEnd = istHourStart + HOUR;
+  const hourLabel = `${formatTime(new Date(istHourStart + 5.5 * HOUR).toISOString().slice(11, 16))} – ${formatTime(
+    new Date(hourEnd + 5.5 * HOUR).toISOString().slice(11, 16)
+  )}`;
+
+  const visible = inScope.filter(matches);
+  const toSend = visible.filter((b) => !sentAt(b));
+  const groups: { title: string; hint?: string; items: Booking[] }[] =
+    activeTab === "sent"
+      ? [{ title: "", items: visible.filter((b) => sentAt(b)).sort((a, b) => startOf(b) - startOf(a)) }]
+      : isConfirmation
+        ? [
+            { title: `This hour · ${hourLabel}`, items: toSend.filter((b) => startOf(b) < hourEnd) },
+            { title: "Upcoming", items: toSend.filter((b) => startOf(b) >= hourEnd).sort((a, b) => startOf(a) - startOf(b)) },
+          ]
+        : [{ title: "", items: toSend.sort((a, b) => startOf(a) - startOf(b)) }];
+  const shown = groups.reduce((n, g) => n + g.items.length, 0);
 
   const tab = (active: boolean) =>
     `inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${
       active ? "bg-violet-400 text-navy" : "text-zinc-400 hover:text-white"
     }`;
+
+  const row = (booking: Booking) => {
+    const sent = !!sentAt(booking);
+    const hoursUntil = getHoursUntilBooking(booking.date, booking.start_time);
+    const started = hasEventStarted(booking.date, booking.start_time);
+    const isUrgent = !isConfirmation && hoursUntil <= 4 && !sent;
+    const left = Math.min(1, Math.max(0, hoursUntil / 24));
+    const when = started ? "Started" : hoursUntil <= 0 ? "< 1h" : `in ${hoursUntil}h`;
+
+    return (
+      <li key={booking.id} className="flex flex-col md:flex-row md:items-center gap-4 p-4 sm:p-5">
+        <div className="md:w-28 shrink-0 flex md:block items-center gap-3">
+          <p className={`text-xl font-bold tabular-nums ${isUrgent ? "text-amber-300" : started ? "text-zinc-400" : "text-white"}`}>{when}</p>
+          {!isConfirmation && (
+            <div className="h-1 w-20 md:w-full rounded-full bg-white/10 overflow-hidden md:mt-2" aria-hidden="true">
+              <div
+                className={`h-full rounded-full ${isUrgent ? "bg-amber-400" : sent ? "bg-emerald-400" : "bg-violet-400"}`}
+                style={{ width: `${left * 100}%` }}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0 grid sm:grid-cols-2 gap-x-6 gap-y-1">
+          <div className="min-w-0">
+            <p className="font-semibold truncate">
+              {booking.name || "Unknown"}
+              {isUrgent && (
+                <span className="ml-2 align-middle px-1.5 py-0.5 rounded bg-amber-400/15 text-amber-300 text-[11px] font-medium">Urgent</span>
+              )}
+            </p>
+            <a href={`tel:${booking.phone_number}`} className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white tabular-nums">
+              <Phone className="w-3.5 h-3.5" />
+              {booking.phone_number}
+            </a>
+          </div>
+          <div className="min-w-0 text-sm">
+            <p className="text-zinc-200 tabular-nums">
+              {formatDate(booking.date)} · {formatTime(booking.start_time)} – {formatTime(booking.end_time)}
+            </p>
+            <p className="text-zinc-400 truncate">
+              {booking.studio}
+              {booking.session_type ? ` · ${booking.session_type}` : ""}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 md:justify-end shrink-0">
+          {sent && (
+            <span className="inline-flex items-center gap-1.5 text-xs text-emerald-300 mr-1">
+              <CheckCircle className="w-3.5 h-3.5" />
+              {isConfirmation ? "Confirmation sent" : "Reminder sent"}
+            </span>
+          )}
+          <button
+            onClick={() => copyMessage(booking, section)}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-sm font-medium transition-colors"
+          >
+            {copiedId === booking.id ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
+            {copiedId === booking.id ? "Copied" : "Copy message"}
+          </button>
+          <button
+            onClick={() => (isConfirmation ? handleSendConfirmation(booking) : handleSendReminder(booking))}
+            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              sent ? "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white" : "bg-emerald-500 hover:bg-emerald-400 text-white"
+            }`}
+          >
+            {sent ? <Send className="w-4 h-4" /> : isConfirmation ? <BadgeCheck className="w-4 h-4" /> : <MessageCircle className="w-4 h-4" />}
+            {sent ? "Send again" : isConfirmation ? "Send confirmation" : "Send reminder"}
+          </button>
+        </div>
+      </li>
+    );
+  };
 
   return (
     <div className="min-h-screen text-white">
@@ -659,8 +766,8 @@ See you soon!`;
       <main className="max-w-6xl mx-auto px-4 lg:px-8 py-8 space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-medium uppercase tracking-[0.16em] text-zinc-500 mb-1">WhatsApp reminders</p>
-            <h1 className="text-3xl font-bold tracking-tight">Sessions in the next 24 hours</h1>
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-zinc-500 mb-1">WhatsApp messages</p>
+            <h1 className="text-3xl font-bold tracking-tight">{isConfirmation ? "Booking confirmations" : "24-hour reminders"}</h1>
           </div>
           <button
             onClick={fetchBookings}
@@ -672,9 +779,43 @@ See you soon!`;
           </button>
         </div>
 
+        <div className="grid sm:grid-cols-2 gap-3" role="tablist" aria-label="Message type">
+          {([
+            ["confirmation", "Confirmations", "Send after a booking is made", BadgeCheck],
+            ["reminder", "24-hour reminders", "Sessions starting in the next 24 hours", Clock],
+          ] as const).map(([key, title, sub, Icon]) => (
+            <button
+              key={key}
+              role="tab"
+              aria-selected={section === key}
+              onClick={() => {
+                setSection(key);
+                setActiveTab("pending");
+              }}
+              className={`text-left rounded-2xl border p-4 transition-colors ${
+                section === key ? "border-violet-400 bg-violet-400/10" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
+              }`}
+            >
+              <span className="flex items-center gap-2 font-semibold">
+                <Icon className="w-4 h-4 text-violet-400" />
+                {title}
+                <span className="ml-auto text-xs tabular-nums text-amber-300">
+                  {bookings.filter((b) => b.status === "confirmed" && !isBookingTimePassed(b.date, b.end_time)).filter((b) =>
+                    key === "confirmation"
+                      ? !b.whatsapp_confirmation_sent_at
+                      : isWithin24HoursBeforeBooking(b.date, b.start_time, b.end_time) && !b.whatsapp_reminder_sent_at
+                  ).length}{" "}
+                  to send
+                </span>
+              </span>
+              <span className="block text-sm text-zinc-400 mt-1">{sub}</span>
+            </button>
+          ))}
+        </div>
+
         <dl className="grid grid-cols-3 rounded-2xl border border-white/10 bg-white/[0.03] divide-x divide-white/10">
           {[
-            { label: "In window", value: bookings.length, tone: "text-white" },
+            { label: isConfirmation ? "Bookings" : "In window", value: inScope.length, tone: "text-white" },
             { label: "To send", value: pendingCount, tone: pendingCount ? "text-amber-300" : "text-white" },
             { label: "Sent", value: sentCount, tone: "text-emerald-300" },
           ].map((s) => (
@@ -711,103 +852,41 @@ See you soon!`;
           <div className="flex items-center justify-center py-20" role="status">
             <Loader2 className="w-8 h-8 animate-spin text-violet-400" />
           </div>
-        ) : filteredBookings.length === 0 ? (
+        ) : shown === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-16 text-center">
             <MessageCircle className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
             <h2 className="text-lg font-semibold mb-1">
-              {bookings.length === 0 ? "Nothing to send right now" : activeTab === "pending" && !searchTerm ? "All reminders sent" : "No matches"}
+              {inScope.length === 0 ? "Nothing to send right now" : activeTab === "pending" && !searchTerm ? "All sent" : "No matches"}
             </h2>
             <p className="text-sm text-zinc-400">
-              {bookings.length === 0
-                ? "No confirmed sessions start in the next 24 hours. Refresh later."
+              {inScope.length === 0
+                ? isConfirmation
+                  ? "No confirmed bookings found. Refresh later."
+                  : "No confirmed sessions start in the next 24 hours. Refresh later."
                 : activeTab === "pending" && !searchTerm
-                  ? "Every session in the window has had its reminder."
+                  ? "Nothing left to send here."
                   : "No sessions match this search."}
             </p>
           </div>
         ) : (
-          <ul className="rounded-2xl border border-white/10 bg-white/[0.03] divide-y divide-white/[0.06] overflow-hidden mb-10">
-            {filteredBookings.map((booking) => {
-              const hoursUntil = getHoursUntilBooking(booking.date, booking.start_time);
-              const sent = !!booking.whatsapp_reminder_sent_at;
-              const isUrgent = hoursUntil <= 4 && !sent;
-              const started = hasEventStarted(booking.date, booking.start_time);
-              const left = Math.min(1, Math.max(0, hoursUntil / 24)); // share of the 24h window remaining
-
-              return (
-                <li key={booking.id} className="flex flex-col md:flex-row md:items-center gap-4 p-4 sm:p-5">
-                  {/* Countdown */}
-                  <div className="md:w-28 shrink-0 flex md:block items-center gap-3">
-                    <p className={`text-xl font-bold tabular-nums ${isUrgent ? "text-amber-300" : "text-white"}`}>
-                      {hoursUntil <= 0 ? "< 1h" : `in ${hoursUntil}h`}
-                    </p>
-                    <div className="h-1 w-20 md:w-full rounded-full bg-white/10 overflow-hidden md:mt-2" aria-hidden="true">
-                      <div
-                        className={`h-full rounded-full ${isUrgent ? "bg-amber-400" : sent ? "bg-emerald-400" : "bg-violet-400"}`}
-                        style={{ width: `${left * 100}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Who and when */}
-                  <div className="flex-1 min-w-0 grid sm:grid-cols-2 gap-x-6 gap-y-1">
-                    <div className="min-w-0">
-                      <p className="font-semibold truncate">
-                        {booking.name || "Unknown"}
-                        {isUrgent && (
-                          <span className="ml-2 align-middle px-1.5 py-0.5 rounded bg-amber-400/15 text-amber-300 text-[11px] font-medium">
-                            Urgent
-                          </span>
-                        )}
-                      </p>
-                      <a href={`tel:${booking.phone_number}`} className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white tabular-nums">
-                        <Phone className="w-3.5 h-3.5" />
-                        {booking.phone_number}
-                      </a>
-                    </div>
-                    <div className="min-w-0 text-sm">
-                      <p className="text-zinc-200 tabular-nums">
-                        {formatDate(booking.date)} · {formatTime(booking.start_time)} – {formatTime(booking.end_time)}
-                      </p>
-                      <p className="text-zinc-400 truncate">
-                        {booking.studio}
-                        {booking.session_type ? ` · ${booking.session_type}` : ""}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-wrap items-center gap-2 md:justify-end shrink-0">
-                    {sent && (
-                      <span className="inline-flex items-center gap-1.5 text-xs text-emerald-300 mr-1">
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        Reminder sent
-                      </span>
-                    )}
-                    <button
-                      onClick={() => sendConfirmation(booking)}
-                      disabled={started}
-                      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      <BadgeCheck className="w-4 h-4 text-violet-400" />
-                      {started ? "Session started" : "Send confirmation"}
-                    </button>
-                    <button
-                      onClick={() => handleSendReminder(booking)}
-                      className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                        sent
-                          ? "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white"
-                          : "bg-emerald-500 hover:bg-emerald-400 text-white"
-                      }`}
-                    >
-                      {sent ? <Send className="w-4 h-4" /> : <MessageCircle className="w-4 h-4" />}
-                      {sent ? "Send again" : "Send reminder"}
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="space-y-6 mb-10">
+            {groups
+              .filter((g) => g.items.length)
+              .map((g) => (
+                <section key={g.title || "all"}>
+                  {g.title && (
+                    <h2 className="flex items-baseline gap-2 mb-2 text-sm font-semibold text-zinc-300">
+                      {g.title}
+                      <span className="tabular-nums text-xs text-zinc-500">{g.items.length}</span>
+                      {g.hint && <span className="text-xs font-normal text-zinc-500">{g.hint}</span>}
+                    </h2>
+                  )}
+                  <ul className="rounded-2xl border border-white/10 bg-white/[0.03] divide-y divide-white/[0.06] overflow-hidden">
+                    {g.items.map(row)}
+                  </ul>
+                </section>
+              ))}
+          </div>
         )}
       </main>
     </div>

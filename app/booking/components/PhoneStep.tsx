@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
+import { takeReturnTo } from "../utils/returnTo";
 import {
   getDeviceFingerprint,
   isPhoneTrustedLocally,
@@ -436,7 +437,11 @@ export default function PhoneStep() {
   };
 
   const handleBack = () => {
-    if (draft.isEditMode) {
+    const returnTo = takeReturnTo();
+    if (returnTo) {
+      resetDraft();
+      router.push(returnTo);
+    } else if (draft.isEditMode) {
       resetDraft();
       router.push(mode === "customer" ? "/my-bookings" : `/${mode}/bookings`);
     } else {
@@ -548,7 +553,7 @@ export default function PhoneStep() {
       showBack={true}
       showNext={true}
       onBack={handleBack}
-      onExit={() => router.push(mode === "customer" ? "/booking" : `/${mode}/booking`)}
+      onExit={() => router.push(takeReturnTo() ?? (mode === "customer" ? "/booking" : `/${mode}/booking`))}
       onNext={handleNext}
       isLoading={isSavingDetails}
       isNextDisabled={!isValid || isCheckingUser}
