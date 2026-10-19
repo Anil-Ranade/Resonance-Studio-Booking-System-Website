@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     // Logged-in admin/staff also get edit/cancel data and who created each booking
     const viewer = hasDisplaySession(request) ? await getAdminUser(request) : null;
     const fields = viewer
-      ? "id, name, phone_number, start_time, end_time, status, session_type, session_details, studio, date, group_size, total_amount, notes, created_by_staff_id"
+      ? "id, name, phone_number, start_time, end_time, status, session_type, session_details, studio, date, total_amount, notes, created_by_staff_id"
       : hasDisplaySession(request)
         ? "id, name, phone_number, start_time, end_time, status, session_type, session_details, studio, date"
         : "id, start_time, end_time, status, session_type, studio, date";

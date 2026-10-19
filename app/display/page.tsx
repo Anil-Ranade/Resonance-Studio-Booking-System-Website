@@ -173,8 +173,11 @@ export default function DisplayPage() {
     if (!isRefresh) setLoading(true);
 
     try {
+      // Auto-refreshed Supabase token (the login cookie's copy expires after ~1h); absent for plain display screens
+      const token = (await getSession().catch(() => null))?.access_token;
       const response = await fetch(
         `/api/display/bookings?date=${formattedDate}`,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
       );
       if (response.ok) {
         const data = await response.json();
