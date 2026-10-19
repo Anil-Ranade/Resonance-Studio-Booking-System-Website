@@ -29,8 +29,8 @@ const bookingSteps = [
     description: "We suggest the best room for your session type.",
     details: [
       "Studio A (large): up to 30 people, from ₹350/hr",
-      "Studio B (medium): up to 10 people, from ₹250/hr",
-      "Studio C (compact): up to 5 people, from ₹200/hr",
+      "Studio B (medium): up to 12 people, from ₹250/hr",
+      "Studio C (compact): up to 8 people, from ₹200/hr",
     ],
   },
   {
@@ -38,9 +38,9 @@ const bookingSteps = [
     description: "Only free dates and slots are shown.",
     details: [
       "Unavailable dates are greyed out on the calendar",
-      "Free time appears in blocks, e.g. 8 AM-2 PM, 4 PM-10 PM",
+      "Free time appears in blocks, e.g. 8 AM-2 PM, 4 PM-9:30 PM",
       "Choose a start time first, then an end time",
-      "Minimum booking is 1 hour; we're open 8 AM-10 PM",
+      "Minimum booking is 1 hour; we're open 8 AM-9:30 PM",
     ],
   },
   {

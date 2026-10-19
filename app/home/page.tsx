@@ -338,7 +338,7 @@ export default function HomePage() {
               className="inline-flex items-center gap-2 text-sm font-medium text-violet-300 mb-6"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              Open daily · 8 AM - 10 PM
+              Open daily · 8 AM - 9:30 PM
             </p>
 
             <h1
@@ -364,21 +364,21 @@ export default function HomePage() {
                   Start here
                 </span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  ["New", "/booking/new"],
-                  ["Change", "/edit-booking"],
-                  ["Cancel", "/cancel-booking"],
-                  ["View", "/view-bookings"],
+                  ["New Booking", "/booking/new"],
+                  ["Change Booking", "/edit-booking"],
+                  ["Cancel Booking", "/cancel-booking"],
+                  ["View Booking", "/view-bookings"],
                   ["Explore Studios", "/studios"],
                 ].map(([label, href]) => (
                   <Link
                     key={label}
                     href={href}
                     className={`group inline-flex min-h-14 items-center justify-center rounded-2xl border px-2.5 py-3 text-xs sm:text-sm font-semibold whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 focus-visible:ring-offset-2 focus-visible:ring-offset-navy ${
-                      label === "Explore Studios" ? "col-span-2" : ""
+                      label === "Explore Studios" ? "col-span-2 sm:col-span-4" : ""
                     } ${
-                      label === "New"
+                      label === "New Booking"
                         ? "border-violet-300 bg-violet-300 text-navy shadow-[0_8px_24px_rgba(167,139,250,0.18)] hover:bg-violet-200"
                         : "border-white/15 bg-white/[0.03] text-white hover:border-violet-300/60 hover:bg-white/[0.08]"
                     }`}
@@ -634,7 +634,7 @@ export default function HomePage() {
           <div className="ticket-notches relative grid md:grid-cols-[1fr_auto] rounded-[2rem] bg-gradient-to-br from-violet-300 via-violet-400 to-violet-500 text-navy">
             <div className="p-8 sm:p-12">
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-navy/60 mb-4">
-                Admit your band · Open daily 8 AM - 10 PM
+                Admit your band · Open daily 8 AM - 9:30 PM
               </p>
               <h2 className="text-4xl sm:text-5xl font-bold leading-[1.05] mb-5">
                 Ready to make
@@ -1158,7 +1158,7 @@ export default function HomePage() {
 }
 
 const OPEN_HOUR = 8;
-const CLOSE_HOUR = 22;
+const CLOSE_HOUR = 21.5;
 
 // Today's opening hours as a DAW-style timeline with a playhead at the current IST time.
 function OpenHoursBar() {
@@ -1184,20 +1184,20 @@ function OpenHoursBar() {
 
   const open = now !== null && now >= OPEN_HOUR && now < CLOSE_HOUR;
   const progress = open ? ((now - OPEN_HOUR) / (CLOSE_HOUR - OPEN_HOUR)) * 100 : 0;
-  const ticks = [8, 10, 12, 14, 16, 18, 20, 22];
-  const label = (h: number) => `${h % 12 || 12} ${h < 12 ? "AM" : "PM"}`;
+  const ticks = [8, 10, 12, 14, 16, 18, 21.5];
+  const label = (h: number) => `${Math.floor(h) % 12 || 12}${h % 1 ? ":30" : ""} ${h < 12 ? "AM" : "PM"}`;
 
   return (
     <div className="border-t border-white/10 px-6 py-7">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-5">
-        <p className="text-white font-semibold">Open every day, 8 AM - 10 PM</p>
+        <p className="text-white font-semibold">Open every day, 8 AM - 9:30 PM</p>
         {now !== null && (
           <p className="inline-flex items-center gap-2 text-sm font-medium">
             <span
               className={`w-2 h-2 rounded-full ${open ? "bg-emerald-400" : "bg-fuchsia-400"}`}
             />
             <span className={open ? "text-emerald-300" : "text-fuchsia-300"}>
-              {open ? "Open now · closes 10 PM" : "Closed now · opens 8 AM"}
+              {open ? "Open now · closes 9:30 PM" : "Closed now · opens 8 AM"}
             </span>
           </p>
         )}

@@ -21,7 +21,8 @@ export type SessionType =
 export type SoundOperatorOption = "Required" | "Not Required";
 export type KaraokeOption = "1_8" | "9_12" | "13_20" | "21_30";
 export type LiveMusicianOption = "1_2" | "3_4" | "5" | "6_8" | "9_12";
-export type BandEquipment = "drum" | "amps" | "guitars" | "keyboard";
+// "sticks" = optional studio-provided drum sticks, charged ₹50/hr (see getStudioRate)
+export type BandEquipment = "drum" | "amps" | "guitars" | "keyboard" | "sticks";
 export type RecordingOption =
   | "audio_recording"
   | "video_recording"
@@ -218,8 +219,11 @@ export function BookingProvider({
       if (detailsLower.includes("amp")) bandEquipment.push("amps");
       if (detailsLower.includes("guitar")) bandEquipment.push("guitars");
       if (detailsLower.includes("keyboard")) bandEquipment.push("keyboard");
+      if (detailsLower.includes("stick")) bandEquipment.push("sticks");
       // If nothing parsed, default to drum
       if (bandEquipment.length === 0) bandEquipment.push("drum");
+    } else if (sessionType === "Only Drum Practice") {
+      if (sessionDetails.toLowerCase().includes("stick")) bandEquipment.push("sticks");
     } else if (sessionType === "Recording") {
       const detailsLower = sessionDetails.toLowerCase();
       if (detailsLower.includes("audio")) recordingOption = "audio_recording";

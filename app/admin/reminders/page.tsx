@@ -258,6 +258,8 @@ export default function StandaloneRemindersPage() {
   }, [isAuthorized, fetchBookings]);
 
   const sendConfirmation = async (booking: Booking) => {
+    // Open the tab now (inside the click) so the browser doesn't block it after the awaits below.
+    const waWindow = window.open("", "_blank");
     const phone = booking.phone_number.replace(/[^0-9]/g, "");
     const formattedDate = formatDate(booking.date);
     const formattedStartTime = formatTime(booking.start_time);
@@ -378,7 +380,8 @@ Enjoy your session!`;
     const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(
       message
     )}`;
-    window.open(whatsappUrl, "_blank");
+    if (waWindow) waWindow.location.href = whatsappUrl;
+    else window.open(whatsappUrl, "_blank");
 
     try {
       const token = await getAccessToken();

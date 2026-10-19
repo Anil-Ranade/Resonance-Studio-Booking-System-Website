@@ -11,25 +11,21 @@ import { getStudioRate, isStudioAllowed } from "../utils/studioSuggestion";
 
 const STUDIOS: {
   name: StudioName;
-  description: string;
   capacity: string;
   features: string[];
 }[] = [
   {
     name: "Studio C",
-    description: "Cozy space for small groups",
-    capacity: "5 participants",
+    capacity: "8 participants",
     features: ["Perfect for duets", "Intimate setting"],
   },
   {
     name: "Studio B",
-    description: "Medium-sized versatile space",
-    capacity: "10 participants",
+    capacity: "12 participants",
     features: ["Band rehearsal ready", "Karaoke setup"],
   },
   {
     name: "Studio A",
-    description: "Our largest studio for big groups",
     capacity: "30 participants",
     features: ["Full band setup", "Recording equipment"],
   },
@@ -155,9 +151,9 @@ export default function StudioStep() {
                   {isRecommended && isAllowed && !isOriginal && <Badge>Recommended</Badge>}
                   {!isAllowed && <Lock className="text-muted-foreground" />}
                 </span>
-                <span className="block text-xs text-muted-foreground truncate">
-                  {isRecording ? "Professional recording studio" : studio.description}
-                </span>
+                {isRecording && (
+                  <span className="block text-xs text-muted-foreground truncate">Professional recording studio</span>
+                )}
                 <Badge variant="secondary" className="font-normal">
                   {isRecording ? "Recording equipment" : `Up to ${studio.capacity}`}
                 </Badge>

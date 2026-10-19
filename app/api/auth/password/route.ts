@@ -10,7 +10,8 @@ import { rateLimit } from "@/lib/apiSecurity";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 const validPhone = (phone: string) => /^\d{10}$/.test(phone);
-const validPassword = (password: string) => password.length >= 8 && password.length <= 128;
+// Existing accounts may still have older passwords; new ones must be a 6-digit PIN.
+const validPassword = (password: string) => password.length >= 1 && password.length <= 128;
 
 /** Customer password registration/login. Plaintext exists only during this request. */
 export async function POST(request: Request) {
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
   if (!validPhone(phone)) return NextResponse.json({ error: "Enter a valid 10-digit WhatsApp number." }, { status: 400 });
   const phoneLimited = await rateLimit(request, "customer_password_phone", 10, 900, `phone:${phone}`);
   if (phoneLimited) return phoneLimited;
-  if (!validPassword(password)) return NextResponse.json({ error: "Password must be 8–128 characters." }, { status: 400 });
+  if (!validPassword(password)) return NextResponse.json({ error: "Please enter your password or PIN." }, { status: 400 });
 
   const { data: user, error: lookupError } = await supabase.from("users").select("phone_number, name, email, password_hash").eq("phone_number", phone).maybeSingle();
   if (lookupError) return NextResponse.json({ error: "Unable to verify your details." }, { status: 500 });
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
     if (!(await bcrypt.compare(password, user.password_hash))) return NextResponse.json({ error: "Incorrect password. If this is another device, use Forgot password." }, { status: 401 });
   } else {
     if (!name) return NextResponse.json({ error: "Name is required." }, { status: 400 });
+    if (!/^\d{6}$/.test(password)) return NextResponse.json({ error: "Please use a 6-digit PIN (numbers only)." }, { status: 400 });
     if (password !== confirmPassword) return NextResponse.json({ error: "Passwords do not match." }, { status: 400 });
     const passwordHash = await bcrypt.hash(password, 12);
     const result = user

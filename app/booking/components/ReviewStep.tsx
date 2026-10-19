@@ -79,8 +79,13 @@ export default function ReviewStep() {
         amps: "Amps",
         guitars: "Guitars",
         keyboard: "Keyboard",
+        sticks: "Drum sticks",
       };
       return draft.bandEquipment.map((e) => equipmentLabels[e]).join(", ");
+    }
+
+    if (draft.sessionType === "Only Drum Practice" && draft.bandEquipment.includes("sticks")) {
+      return "Drum sticks";
     }
 
     if (draft.sessionType === "Recording" && draft.recordingOption) {

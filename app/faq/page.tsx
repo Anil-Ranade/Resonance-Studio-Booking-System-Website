@@ -55,7 +55,7 @@ function generateFaqData(openTime: string, closeTime: string, advanceBookingDays
       items: [
         {
           question: "Which studio should I choose?",
-          answer: "Studio A is our largest space (capacity 30), ideal for big bands and recordings. Studio B (capacity 10) is perfect for medium bands and karaoke. Studio C (capacity 5) is cozy and great for duets, small groups, or solo practice."
+          answer: "Studio A is our largest space (capacity 30), ideal for big bands and recordings. Studio B (capacity 12) is perfect for medium bands and karaoke. Studio C (capacity 8) is great for duets, small groups, or solo practice."
         },
         {
           question: "Do you provide instruments?",

@@ -161,6 +161,7 @@ const BAND_EQUIPMENT_OPTIONS: { value: BandEquipment; label: string }[] = [
   { value: "amps", label: "Amps" },
   { value: "guitars", label: "Guitars" },
   { value: "keyboard", label: "Keyboard" },
+  { value: "sticks", label: "Drum sticks (+₹50/hr)" },
 ];
 
 const RECORDING_OPTIONS: { value: RecordingOption; label: string }[] = [
@@ -1550,6 +1551,8 @@ See you soon!`;
                     <p className="text-zinc-400 text-sm mb-3">Send Confirmation</p>
                     <button
                       onClick={async () => {
+                        // Open the tab inside the click so the browser doesn't block it after the awaits below.
+                        const waWindow = window.open("", "_blank");
                         const phone = selectedBooking.phone_number.replace(/[^0-9]/g, "");
                         const formattedDate = formatDate(selectedBooking.date);
                         const formattedStartTime = formatTime(selectedBooking.start_time);
@@ -1657,7 +1660,8 @@ Enjoy your session!`;
 
                         const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
                         setWhatsappMessage(message);
-                        window.open(whatsappUrl, "_blank");
+                        if (waWindow) waWindow.location.href = whatsappUrl;
+                        else window.open(whatsappUrl, "_blank");
                       }}
                       className="w-full py-3 rounded-xl bg-violet-500/20 text-violet-400 hover:bg-violet-500/30 transition-colors flex items-center justify-center gap-2"
                     >

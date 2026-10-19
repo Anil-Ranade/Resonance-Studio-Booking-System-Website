@@ -93,10 +93,16 @@ export default function ConfirmStep() {
           amps: "Amps",
           guitars: "Guitars",
           keyboard: "Keyboard",
+          sticks: "Drum sticks",
         };
         sessionDetails = draft.bandEquipment
           .map((e) => equipmentLabels[e])
           .join(", ");
+      } else if (
+        draft.sessionType === "Only Drum Practice" &&
+        draft.bandEquipment.includes("sticks")
+      ) {
+        sessionDetails = "Drum sticks";
       } else if (draft.sessionType === "Recording" && draft.recordingOption) {
         const labels: Record<string, string> = {
           audio_recording: "Audio Recording",

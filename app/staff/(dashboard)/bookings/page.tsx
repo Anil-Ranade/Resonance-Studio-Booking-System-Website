@@ -154,6 +154,7 @@ const BAND_EQUIPMENT_OPTIONS: { value: BandEquipment; label: string }[] = [
   { value: "amps", label: "Amps" },
   { value: "guitars", label: "Guitars" },
   { value: "keyboard", label: "Keyboard" },
+  { value: "sticks", label: "Drum sticks (+₹50/hr)" },
 ];
 
 const RECORDING_OPTIONS: { value: RecordingOption; label: string }[] = [

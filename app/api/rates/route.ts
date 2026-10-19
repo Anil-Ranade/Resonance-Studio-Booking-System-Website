@@ -16,7 +16,7 @@ export type KaraokeOption = "1_8" | "9_12" | "13_20" | "21_30";
 export type LiveMusicianOption = "1_2" | "3_4" | "5" | "6_8" | "9_12";
 
 // Band equipment
-export type BandEquipment = "drum" | "amps" | "guitars" | "keyboard";
+export type BandEquipment = "drum" | "amps" | "guitars" | "keyboard" | "sticks";
 
 // Recording options
 export type RecordingOption =

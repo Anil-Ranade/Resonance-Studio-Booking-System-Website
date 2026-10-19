@@ -13,7 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { optionCard } from "./optionStyles";
 import { Button } from "@/components/ui/button";
-import { getStudioSuggestion, getStudioRate } from "../utils/studioSuggestion";
+import { getStudioSuggestion, getStudioRate, DRUM_STICKS_RATE } from "../utils/studioSuggestion";
 
 const KARAOKE_OPTIONS: {
   value: KaraokeOption;
@@ -63,6 +63,27 @@ const RECORDING_OPTIONS: {
 
 export default function ParticipantsStep() {
   const { draft, updateDraft, nextStep } = useBooking();
+
+  const sticks = draft.bandEquipment.includes("sticks");
+  const sticksToggle = (
+    <label className="flex items-center gap-2 text-sm cursor-pointer">
+      <input
+        type="checkbox"
+        checked={sticks}
+        onChange={(e) => {
+          const on = e.target.checked;
+          const rest = draft.bandEquipment.filter((x) => x !== "sticks");
+          updateDraft({
+            bandEquipment: on ? [...rest, "sticks"] : rest,
+            ratePerHour:
+              (draft.sessionType === "Band" ? 500 : 350) + (on ? DRUM_STICKS_RATE : 0),
+          });
+        }}
+        className="size-4 accent-violet-400"
+      />
+      I need drum sticks from the studio (+₹{DRUM_STICKS_RATE}/hour)
+    </label>
+  );
 
   const handleKaraokeSelect = (option: KaraokeOption) => {
     const suggestion = getStudioSuggestion("Karaoke", {
@@ -174,8 +195,9 @@ export default function ParticipantsStep() {
               </div>
               <h3 className="text-sm font-semibold">Drum Practice Session</h3>
               <p className="text-muted-foreground text-xs max-w-xs">
-                Drums are available in Studio A only. Drum sticks can be rented for ₹50/hour.
+                Drums are available in Studio A only. Drum sticks are not provided; if the studio provides them, ₹50/hour is charged extra.
               </p>
+              {sticksToggle}
               <Badge className="text-sm h-7 px-3">₹350/hour</Badge>
             </CardContent>
           </Card>
@@ -188,16 +210,19 @@ export default function ParticipantsStep() {
               <CardContent className="space-y-2 text-sm">
                 <h3 className="font-semibold">College Students Band · ₹500/hour</h3>
                 <p className="text-muted-foreground">Includes drums, keyboard, 2 electric guitars, 2 guitar amps, and 1 bass amp.</p>
-                <p className="text-muted-foreground">Drum sticks are not included; rental is ₹50/hour.</p>
+                <p className="text-muted-foreground">Drum sticks are not provided. If the studio provides them, ₹50/hour is charged extra.</p>
+                {sticksToggle}
               </CardContent>
             </Card>
             <Button className="w-full" onClick={() => {
               updateDraft({
-                bandEquipment: ["drum", "keyboard", "guitars", "amps"],
+                bandEquipment: sticks
+                  ? ["drum", "keyboard", "guitars", "amps", "sticks"]
+                  : ["drum", "keyboard", "guitars", "amps"],
                 recommendedStudio: "Studio A",
                 allowedStudios: ["Studio A"],
                 studio: "Studio A",
-                ratePerHour: 500,
+                ratePerHour: 500 + (sticks ? DRUM_STICKS_RATE : 0),
               });
               nextStep();
             }}>Continue with College Students Band</Button>

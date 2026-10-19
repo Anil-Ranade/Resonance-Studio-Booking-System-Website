@@ -249,6 +249,8 @@ export const STUDIO_RATES: Record<StudioName, Record<string, number>> = {
   },
 };
 
+export const DRUM_STICKS_RATE = 50;
+
 export function getStudioRate(
   studio: StudioName,
   sessionType: SessionType,
@@ -308,6 +310,14 @@ export function getStudioRate(
 
     default:
       baseRate = 300;
+  }
+
+  // Drum sticks from the studio: ₹50/hr extra (drums are never lent sticks for free)
+  if (
+    (sessionType === "Band" || sessionType === "Only Drum Practice") &&
+    options.bandEquipment?.includes("sticks")
+  ) {
+    baseRate += DRUM_STICKS_RATE;
   }
 
   // Apply Sound Operator Discount
