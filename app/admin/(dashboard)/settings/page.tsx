@@ -32,6 +32,9 @@ export default function SettingsPage() {
     advanceBookingDays: 30,
   });
 
+  // Durations stored in hours; admin edits them in minutes
+  const [durationMinutes, setDurationMinutes] = useState({ min: 60, max: 480 });
+
   // Helper to get the current access token
   const getAccessToken = useCallback(async (): Promise<string | null> => {
     try {
@@ -57,6 +60,10 @@ export default function SettingsPage() {
         if (response.ok) {
           const data = await response.json();
           setSettings(data);
+          setDurationMinutes({
+            min: Math.round(data.minBookingDuration * 60),
+            max: Math.round(data.maxBookingDuration * 60),
+          });
         }
       } catch (err) {
         console.error('Failed to load settings:', err);
@@ -80,7 +87,11 @@ export default function SettingsPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(settings),
+        body: JSON.stringify({
+          ...settings,
+          minBookingDuration: durationMinutes.min / 60,
+          maxBookingDuration: durationMinutes.max / 60,
+        }),
       });
 
       const data = await response.json();
@@ -178,32 +189,34 @@ export default function SettingsPage() {
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label htmlFor="min-booking-duration" className="block text-sm text-zinc-400 mb-2.5">
-              Minimum Booking Duration (hours)
+              Minimum Booking Duration (minutes)
             </label>
             <input
               type="number"
               id="min-booking-duration"
-              min="1"
-              max="12"
-              value={settings.minBookingDuration}
+              min="15"
+              max="720"
+              step="15"
+              value={durationMinutes.min}
               onChange={(e) =>
-                setSettings({ ...settings, minBookingDuration: parseInt(e.target.value) })
+                setDurationMinutes({ ...durationMinutes, min: parseInt(e.target.value) || 0 })
               }
               className="input"
             />
           </div>
           <div>
             <label htmlFor="max-booking-duration" className="block text-sm text-zinc-400 mb-2.5">
-              Maximum Booking Duration (hours)
+              Maximum Booking Duration (minutes)
             </label>
             <input
               type="number"
               id="max-booking-duration"
-              min="1"
-              max="24"
-              value={settings.maxBookingDuration}
+              min="15"
+              max="1440"
+              step="15"
+              value={durationMinutes.max}
               onChange={(e) =>
-                setSettings({ ...settings, maxBookingDuration: parseInt(e.target.value) })
+                setDurationMinutes({ ...durationMinutes, max: parseInt(e.target.value) || 0 })
               }
               className="input"
             />

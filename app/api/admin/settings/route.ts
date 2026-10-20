@@ -137,15 +137,15 @@ export async function PUT(request: NextRequest) {
     } = body;
 
     // Validate settings
-    if (minBookingDuration < 1 || minBookingDuration > 24) {
+    if (minBookingDuration < 0.25 || minBookingDuration > 24) {
       return NextResponse.json(
-        { error: 'Minimum booking duration must be between 1 and 24 hours' },
+        { error: 'Minimum booking duration must be between 15 and 1440 minutes' },
         { status: 400 }
       );
     }
-    if (maxBookingDuration < 1 || maxBookingDuration > 24) {
+    if (maxBookingDuration < 0.25 || maxBookingDuration > 24) {
       return NextResponse.json(
-        { error: 'Maximum booking duration must be between 1 and 24 hours' },
+        { error: 'Maximum booking duration must be between 15 and 1440 minutes' },
         { status: 400 }
       );
     }
