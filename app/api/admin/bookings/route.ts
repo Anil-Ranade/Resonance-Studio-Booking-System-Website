@@ -72,7 +72,6 @@ export async function GET(request: NextRequest) {
   const date = searchParams.get("date");
   const startDate = searchParams.get("startDate");
   const endDate = searchParams.get("endDate");
-  const investorId = searchParams.get("investorId");
   const phone = searchParams.get("phone");
 
   const supabase = supabaseAdmin();
@@ -84,10 +83,6 @@ export async function GET(request: NextRequest) {
 
   if (phone) {
     query = query.ilike("phone_number", `%${phone}%`);
-  }
-
-  if (investorId) {
-    query = query.eq("investor_id", investorId);
   }
 
   if (status && status !== "all") {
@@ -145,7 +140,6 @@ export async function PUT(request: NextRequest) {
       session_type,
       session_details,
       name,
-      payment_status,
     } = body;
 
     if (!id) {
@@ -184,7 +178,6 @@ export async function PUT(request: NextRequest) {
         }
       }
     }
-    if (payment_status) updates.payment_status = payment_status;
     if (notes !== undefined) updates.notes = notes;
     if (studio !== undefined) updates.studio = studio;
     if (date !== undefined) updates.date = date;

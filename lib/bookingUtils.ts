@@ -1,6 +1,6 @@
 import { supabaseServer } from "@/lib/supabaseServer";
 
-export const PLACEHOLDER_EMAIL = 'ranade9@gmail.com';
+const PLACEHOLDER_EMAIL = 'ranade9@gmail.com';
 
 /**
  * Checks if an email is considered a placeholder (admin/staff email used for user bookings).

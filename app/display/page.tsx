@@ -406,7 +406,6 @@ export default function DisplayPage() {
         name: b.name || "",
         total_amount: b.total_amount,
         group_size: b.group_size || 1,
-        otpVerified: true,
       }),
     );
     sessionStorage.setItem("bookingReturnTo", "/display");

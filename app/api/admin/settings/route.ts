@@ -13,7 +13,7 @@ interface BookingSettings {
 }
 
 // GET /api/admin/settings - Get all booking settings
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const { data: settings, error } = await supabaseServer
       .from('booking_settings')

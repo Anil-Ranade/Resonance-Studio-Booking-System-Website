@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, CalendarPlus, Edit, XCircle, Eye, Building2 } from 'lucide-react';
+import { CalendarPlus, Edit, XCircle, Eye, Building2 } from 'lucide-react';
 import Link from 'next/link';
 
 const menuOptions = [
@@ -96,7 +96,7 @@ export default function AdminBookingMenu() {
       <div
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
-        {menuOptions.map((option, index) => {
+        {menuOptions.map((option) => {
           const colors = colorClasses[option.color as keyof typeof colorClasses];
           const Icon = option.icon;
           
@@ -123,7 +123,7 @@ export default function AdminBookingMenu() {
         className="glass rounded-xl p-4 text-center"
       >
         <p className="text-zinc-400 text-sm">
-          As an admin, you can create, modify, and cancel bookings without OTP verification.
+          As an admin, you can create, modify, and cancel bookings without customer verification.
         </p>
       </div>
     </div>

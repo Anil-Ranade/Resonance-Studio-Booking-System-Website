@@ -1,7 +1,7 @@
 // Booking shown as a session ticket: date stub, perforated edge, details.
 // Used by view-bookings, edit-booking and cancel-booking.
 
-export const ticketStatus = {
+const ticketStatus = {
   pending: { label: "Pending", dot: "bg-amber-400", text: "text-amber-300" },
   confirmed: { label: "Confirmed", dot: "bg-emerald-400", text: "text-emerald-300" },
   cancelled: { label: "Cancelled", dot: "bg-red-400", text: "text-red-300" },

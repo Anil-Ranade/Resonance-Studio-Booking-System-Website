@@ -6,7 +6,7 @@ import { logBookingCancellation, logOriginalBooking } from "@/lib/googleSheets";
 import { cleanText, isUuid, rateLimit, requireCustomer } from "@/lib/apiSecurity";
 import { istDateTime } from "@/lib/ist";
 
-// POST /api/bookings/cancel - Cancel your own booking (requires an OTP-verified session)
+// POST /api/bookings/cancel - Cancel your own booking (requires a signed-in session)
 export async function POST(request: NextRequest) {
   try {
     const limited = await rateLimit(request, "booking_cancel", 10, 600);

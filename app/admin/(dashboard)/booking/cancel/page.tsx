@@ -398,7 +398,7 @@ export default function AdminCancelBookingPage() {
           </div>
 
           <div className="space-y-4">
-            {bookings.map((booking, index) => {
+            {bookings.map((booking) => {
               const config = statusConfig[booking.status] || statusConfig.confirmed;
               const StatusIcon = config.icon;
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { userMessage } from "@/lib/errors";
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getSession } from '@/lib/supabaseAuth';
@@ -12,7 +12,6 @@ import {
   Calendar,
   Clock,
   Building2,
-  Users,
   Mic,
   Loader2,
   AlertCircle,
@@ -130,8 +129,6 @@ export default function AdminEditBookingPage() {
       email: selectedBooking.email || '',
       total_amount: selectedBooking.total_amount,
       group_size: selectedBooking.group_size || 1,
-      // Mark as already verified (admin doesn't need OTP)
-      otpVerified: true,
     };
     
     sessionStorage.setItem('editBookingData', JSON.stringify(editData));
@@ -345,7 +342,7 @@ export default function AdminEditBookingPage() {
           </div>
 
           <div className="space-y-4">
-            {bookings.map((booking, index) => {
+            {bookings.map((booking) => {
               const config = statusConfig[booking.status] || statusConfig.confirmed;
               const StatusIcon = config.icon;
 

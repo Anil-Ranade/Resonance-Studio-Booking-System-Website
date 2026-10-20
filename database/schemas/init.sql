@@ -243,28 +243,9 @@ INSERT INTO booking_settings (key, value, description) VALUES
 ON CONFLICT (key) DO NOTHING;
 
 -- =====================================================
--- TABLE: login_otps
--- Description: OTP verification records (bcrypt hashed)
--- =====================================================
-CREATE TABLE IF NOT EXISTS login_otps (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    phone VARCHAR(15) NOT NULL,
-    email VARCHAR(255),
-    code_hash VARCHAR(255) NOT NULL,
-    attempts INTEGER DEFAULT 0,
-    expires_at TIMESTAMPTZ NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create indexes on login_otps
-CREATE INDEX IF NOT EXISTS idx_login_otps_phone ON login_otps(phone);
-CREATE INDEX IF NOT EXISTS idx_login_otps_expires_at ON login_otps(expires_at);
-CREATE INDEX IF NOT EXISTS idx_login_otps_phone_expires ON login_otps(phone, expires_at);
-
--- =====================================================
 -- TABLE: trusted_devices
 -- Description: Verified device fingerprints for trusted
--- device login (skip OTP)
+-- device login
 -- =====================================================
 CREATE TABLE IF NOT EXISTS trusted_devices (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -364,34 +345,6 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_entity_id ON audit_logs(entity_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
 
 -- =====================================================
--- TABLE: contact_submissions
--- Description: Contact form submissions
--- =====================================================
-CREATE TABLE IF NOT EXISTS contact_submissions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100),
-    email VARCHAR(255) NOT NULL,
-    phone VARCHAR(15),
-    subject VARCHAR(255),
-    message TEXT NOT NULL,
-    status VARCHAR(20) DEFAULT 'pending',
-    responded_at TIMESTAMPTZ,
-    responded_by UUID REFERENCES admin_users(id) ON DELETE SET NULL,
-    notes TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Constraints
-    CONSTRAINT chk_contact_status CHECK (status IN ('pending', 'responded', 'closed', 'spam'))
-);
-
--- Create indexes on contact_submissions
-CREATE INDEX IF NOT EXISTS idx_contact_submissions_email ON contact_submissions(email);
-CREATE INDEX IF NOT EXISTS idx_contact_submissions_status ON contact_submissions(status);
-CREATE INDEX IF NOT EXISTS idx_contact_submissions_created_at ON contact_submissions(created_at DESC);
-
--- =====================================================
 -- UPDATE TRIGGERS
 -- =====================================================
 
@@ -453,13 +406,6 @@ CREATE TRIGGER update_rate_cards_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- Trigger for contact_submissions
-DROP TRIGGER IF EXISTS update_contact_submissions_updated_at ON contact_submissions;
-CREATE TRIGGER update_contact_submissions_updated_at
-    BEFORE UPDATE ON contact_submissions
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
 -- =====================================================
 -- SECURE FUNCTIONS (For RLS)
 -- =====================================================
@@ -502,12 +448,10 @@ ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE availability_slots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE booking_settings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE login_otps ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trusted_devices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reminders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rate_cards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE contact_submissions ENABLE ROW LEVEL SECURITY;
 
 -- Studios Policies (Public read, Admin write)
 DROP POLICY IF EXISTS "Studios are viewable by everyone" ON studios;
@@ -573,11 +517,6 @@ CREATE POLICY "Booking settings managed by admins" ON booking_settings
         auth.uid() IN (SELECT id FROM admin_users WHERE is_active = true)
     );
 
--- Login OTPs Policies (Service role only)
-DROP POLICY IF EXISTS "OTPs managed by service role" ON login_otps;
-CREATE POLICY "OTPs managed by service role" ON login_otps
-    FOR ALL USING (auth.role() = 'service_role');
-
 -- Trusted Devices Policies (Service role only)
 DROP POLICY IF EXISTS "Trusted devices managed by service role" ON trusted_devices;
 CREATE POLICY "Trusted devices managed by service role" ON trusted_devices
@@ -609,23 +548,6 @@ CREATE POLICY "Audit logs viewable by admins" ON audit_logs
 DROP POLICY IF EXISTS "Audit logs insertable by service role" ON audit_logs;
 CREATE POLICY "Audit logs insertable by service role" ON audit_logs
     FOR INSERT WITH CHECK (auth.role() = 'service_role');
-
--- Contact Submissions Policies
-DROP POLICY IF EXISTS "Contact submissions insertable by everyone" ON contact_submissions;
-CREATE POLICY "Contact submissions insertable by everyone" ON contact_submissions
-    FOR INSERT WITH CHECK (true);
-
-DROP POLICY IF EXISTS "Contact submissions viewable by admins" ON contact_submissions;
-CREATE POLICY "Contact submissions viewable by admins" ON contact_submissions
-    FOR SELECT USING (
-        auth.uid() IN (SELECT id FROM admin_users WHERE is_active = true)
-    );
-
-DROP POLICY IF EXISTS "Contact submissions updatable by admins" ON contact_submissions;
-CREATE POLICY "Contact submissions updatable by admins" ON contact_submissions
-    FOR UPDATE USING (
-        auth.uid() IN (SELECT id FROM admin_users WHERE is_active = true)
-    );
 
 -- =====================================================
 -- SAMPLE DATA (Optional - for development/testing)
@@ -786,18 +708,6 @@ $$ LANGUAGE plpgsql;
 -- =====================================================
 -- CLEANUP JOBS (To be run periodically via Supabase cron)
 -- =====================================================
-
--- Function to cleanup expired OTPs (recommended to run every 5 minutes)
-CREATE OR REPLACE FUNCTION cleanup_expired_otps()
-RETURNS INTEGER AS $$
-DECLARE
-    deleted_count INTEGER;
-BEGIN
-    DELETE FROM login_otps WHERE expires_at < NOW();
-    GET DIAGNOSTICS deleted_count = ROW_COUNT;
-    RETURN deleted_count;
-END;
-$$ LANGUAGE plpgsql;
 
 -- Function to mark past bookings as completed (recommended to run daily)
 CREATE OR REPLACE FUNCTION complete_past_bookings()

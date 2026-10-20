@@ -113,7 +113,7 @@ function emailWrapper(content: string): string {
 /**
  * Base email sending function
  */
-export async function sendEmail(
+async function sendEmail(
   to: string,
   subject: string,
   html: string
@@ -244,30 +244,6 @@ const ARRIVE = 'Please arrive 10 minutes before your session. Park inside the bu
 const VIEW = { href: `${SITE_URL}/view-bookings`, label: 'View your bookings' };
 
 /**
- * Send an OTP verification email
- */
-export async function sendOTPEmail(
-  to: string,
-  otp: string
-): Promise<{ success: true; id: string } | { success: false; error: string }> {
-  const subject = 'Your Resonance Studio Verification Code';
-
-  const content = `
-    ${statusLine(C.champagne, 'Verification code')}
-    <h1 style="margin: 0 0 12px 0; color: ${C.pearl}; font-size: 24px; font-weight: 700; line-height: 30px;">Your code</h1>
-    <p style="margin: 0 0 20px 0; color: ${C.muted}; font-size: 15px; line-height: 22px;">Enter this code to continue.</p>
-    <div style="background-color: ${C.stub}; border: 1px solid ${C.line}; border-radius: 12px; padding: 22px; text-align: center;">
-      <span style="font-size: 34px; font-weight: 700; color: ${C.champagne}; letter-spacing: 10px;">${esc(otp)}</span>
-    </div>
-    <p style="margin: 20px 0 0 0; color: ${C.muted}; font-size: 13px; line-height: 20px;">
-      This code expires in 5 minutes. Don't share it with anyone. If you didn't ask for it, you can ignore this email.
-    </p>
-  `;
-
-  return sendEmail(to, subject, emailWrapper(content));
-}
-
-/**
  * Send a booking confirmation email
  */
 export async function sendBookingConfirmationEmail(
@@ -326,28 +302,6 @@ export async function sendBookingUpdateEmail(
       intro: 'here are the updated details. Please use these from now on.',
       booking,
       footnote: ARRIVE,
-      cta: VIEW,
-    }),
-  );
-}
-
-/**
- * Send a booking reminder email (24h before session)
- */
-export async function sendBookingReminderEmail(
-  to: string,
-  booking: EmailBooking
-): Promise<{ success: true; id: string } | { success: false; error: string }> {
-  return sendEmail(
-    to,
-    'Reminder: Your Session Tomorrow - Resonance Studio',
-    bookingEmail({
-      status: STATUS.reminder,
-      heading: 'See you soon.',
-      intro: 'this is a reminder that your session is coming up.',
-      booking,
-      highlightWhen: true,
-      footnote: `${ARRIVE} Please keep noise down after 10 PM.`,
       cta: VIEW,
     }),
   );

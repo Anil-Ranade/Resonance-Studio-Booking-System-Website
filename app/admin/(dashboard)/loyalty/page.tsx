@@ -5,11 +5,8 @@ import { useState, useEffect } from 'react';
 import { 
   Search, 
   Loader2, 
-  Award, 
   Gift, 
-  TrendingUp, 
   AlertCircle,
-  CheckCircle2,
   Phone
 } from 'lucide-react';
 import { adminFetch } from "@/lib/adminFetch";

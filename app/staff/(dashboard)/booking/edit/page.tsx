@@ -132,8 +132,6 @@ export default function StaffEditBookingPage() {
       email: selectedBooking.email || "",
       total_amount: selectedBooking.total_amount,
       group_size: selectedBooking.group_size || 1,
-      // Mark as already verified (staff doesn't need OTP)
-      otpVerified: true,
     };
 
     sessionStorage.setItem("editBookingData", JSON.stringify(editData));
@@ -339,7 +337,7 @@ export default function StaffEditBookingPage() {
             Select a booking to edit
           </h3>
           <div className="space-y-4">
-            {bookings.map((booking, index) => {
+            {bookings.map((booking) => {
               const config =
                 statusConfig[booking.status] || statusConfig.confirmed;
               const StatusIcon = config.icon;

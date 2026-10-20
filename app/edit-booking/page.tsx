@@ -42,7 +42,7 @@ export default function EditBookingPage() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [step, setStep] = useState<Step>("search");
 
-  // Trusted devices skip OTP and load bookings straight away
+  // Trusted devices load bookings straight away
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -112,7 +112,6 @@ export default function EditBookingPage() {
       name: selectedBooking.name || "",
       total_amount: selectedBooking.total_amount,
       group_size: selectedBooking.group_size || 1,
-      otpVerified: true,
     };
 
     sessionStorage.setItem("editBookingData", JSON.stringify(editData));

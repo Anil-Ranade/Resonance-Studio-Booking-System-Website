@@ -10,7 +10,6 @@ import {
   X,
   Loader2,
   CheckCircle,
-  XCircle,
   Clock,
   Phone,
   User,
@@ -309,8 +308,6 @@ export default function StaffBookingsPage() {
     }
   };
 
-  const handleConfirm = (bookingId: string) =>
-    updateBookingStatus(bookingId, "confirmed");
   const handleCancel = (bookingId: string) => {
     if (confirm("Are you sure you want to cancel this booking?")) {
       updateBookingStatus(bookingId, "cancelled");
@@ -673,7 +670,6 @@ export default function StaffBookingsPage() {
       email: booking.email || "",
       total_amount: booking.total_amount,
       group_size: booking.group_size || 1,
-      otpVerified: true,
     }));
     window.location.href = "/staff/booking/new?source=edit";
   };

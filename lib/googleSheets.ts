@@ -31,7 +31,7 @@ const SHEET_HEADERS = [
   "Notes",
 ];
 
-export interface BookingLogEntry {
+interface BookingLogEntry {
   bookingId: string;
   action: "NEW" | "UPDATED" | "CANCELLED" | "COMPLETED" | "ORIGINAL";
   date: string;
@@ -85,7 +85,7 @@ async function ensureSheetHeaders(): Promise<void> {
 /**
  * Appends a booking entry to the Google Sheet
  */
-export async function appendBookingToSheet(
+async function appendBookingToSheet(
   entry: BookingLogEntry
 ): Promise<boolean> {
   const sheetId = process.env.GOOGLE_SHEET_ID;

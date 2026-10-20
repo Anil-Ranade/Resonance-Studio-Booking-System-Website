@@ -1,7 +1,7 @@
 "use client";
 
 import { userMessage } from "@/lib/errors";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -12,14 +12,11 @@ import {
   Video,
   Calendar,
   ArrowRight,
-  Headphones,
-  Award,
   Clock,
   Users,
   Guitar,
   Speaker,
   MonitorPlay,
-  Plus,
   Edit3,
   X,
   Eye,
@@ -29,8 +26,6 @@ import {
   CheckCircle2,
   Building2,
   Check,
-  Shield,
-  RefreshCw,
   EyeOff,
   Eye as EyeIcon,
 } from "lucide-react";
@@ -175,7 +170,7 @@ export default function HomePage() {
     }
   };
 
-  // Cancel booking directly without OTP
+  // Cancel booking directly
   const handleConfirmCancel = async () => {
     if (!selectedBooking) {
       setError("No booking selected");
@@ -395,7 +390,7 @@ export default function HomePage() {
                 href="/how-to-book"
                 className="text-amber-400 hover:text-amber-300 underline underline-offset-4"
               >
-                How to book &amp; exclusive schemes
+                How to book
               </Link>
             </p>
           </div>

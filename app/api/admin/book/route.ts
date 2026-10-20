@@ -424,7 +424,6 @@ export async function PUT(request: NextRequest) {
       end_time,
       rate_per_hour,
       notes,
-      is_prompt_payment,
       send_notification = true,
     } = body;
 
@@ -514,7 +513,6 @@ export async function PUT(request: NextRequest) {
         p_start_time: start_time,
         p_end_time: end_time,
         p_total_amount: total_amount,
-        p_is_prompt_payment: is_prompt_payment,
       }
     ) as { data: { success: boolean; error?: string; booking_id?: string; booking?: any } | null; error: any };
 

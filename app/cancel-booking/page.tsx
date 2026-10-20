@@ -47,7 +47,7 @@ export default function CancelBookingPage() {
   const [step, setStep] = useState<Step>("search");
   const [isCancelling, setIsCancelling] = useState(false);
 
-  // Trusted devices skip OTP and load bookings straight away
+  // Trusted devices load bookings straight away
   useEffect(() => {
     const checkAuth = async () => {
       try {

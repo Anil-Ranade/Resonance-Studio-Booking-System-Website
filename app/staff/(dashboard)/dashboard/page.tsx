@@ -3,19 +3,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   Calendar,
-  Clock,
-  CheckCircle,
-  XCircle,
   Loader2,
   Plus,
-  Building2,
   ChevronDown,
   X,
   Phone,
   User,
   FileText,
   IndianRupee,
-  Filter,
   ArrowUpDown,
   RotateCcw,
 } from 'lucide-react';
@@ -84,7 +79,6 @@ const getDateRange = (preset: DatePreset): { startDate: string; endDate: string 
   }
 };
 
-import InvestorDashboard from './InvestorDashboard';
 
 // ... (other imports)
 
@@ -145,7 +139,6 @@ export default function StaffDashboard() {
     // Wait for user to be loaded
     if (!currentUser) return;
     
-    // Skip if not staff (e.g. investor)
     if (currentUser.role !== 'staff') return;
 
     setLoading(true);
@@ -263,12 +256,6 @@ export default function StaffDashboard() {
     return grouped;
   };
 
-  // Group today's bookings by time
-  const getBookingsByTime = () => {
-    const sorted = [...todayBookings].sort((a, b) => a.start_time.localeCompare(b.start_time));
-    return sorted;
-  };
-
   // Sort recent bookings
   const getSortedRecentBookings = () => {
     const sorted = [...recentBookings].sort((a, b) => {
@@ -304,7 +291,6 @@ export default function StaffDashboard() {
   const hasActiveFilters = datePreset !== 'all' || filterStudio !== 'all' || useCustomDates;
 
   const bookingsByStudio = getBookingsByStudio();
-  const bookingsByTime = getBookingsByTime();
   const sortedRecentBookings = getSortedRecentBookings();
 
   const statCards = [
@@ -347,10 +333,6 @@ export default function StaffDashboard() {
       active ? 'bg-violet-400 text-navy' : 'text-zinc-400 hover:text-white'
     }`;
   const field = 'bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-violet-400';
-
-  if (currentUser?.role === 'investor') {
-    return <InvestorDashboard user={currentUser} />;
-  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">

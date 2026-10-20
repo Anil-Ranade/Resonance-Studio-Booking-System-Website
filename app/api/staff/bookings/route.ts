@@ -47,7 +47,7 @@ async function verifyStaffToken(request: NextRequest) {
     .select("*")
     .eq("id", user.id)
     .eq("is_active", true)
-    .in("role", ["staff", "investor"])
+    .eq("role", "staff")
     .single();
 
   if (staffError || !staffUser) {

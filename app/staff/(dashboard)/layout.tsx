@@ -18,7 +18,7 @@ const navItems = [
     label: 'Dashboard', 
     href: '/staff/dashboard', 
     icon: LayoutDashboard,
-    allowedRoles: ['staff', 'investor'] 
+    allowedRoles: ['staff'] 
   },
   { 
     label: 'Bookings', 

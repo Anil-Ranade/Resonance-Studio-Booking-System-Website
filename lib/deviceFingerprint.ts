@@ -3,7 +3,7 @@
 /**
  * Device Fingerprint Utility
  * Generates a unique fingerprint for the current device/browser combination
- * This is used to identify trusted devices for OTP-less verification
+ * This is used to identify trusted devices for passwordless re-login
  */
 
 interface DeviceInfo {
@@ -189,27 +189,6 @@ export async function getDeviceFingerprint(): Promise<DeviceInfo> {
 }
 
 /**
- * Check if device fingerprint exists
- */
-export function hasDeviceFingerprint(): boolean {
-  if (typeof window === "undefined") {
-    return false;
-  }
-  return !!localStorage.getItem(DEVICE_FINGERPRINT_KEY);
-}
-
-/**
- * Clear device fingerprint (useful for logout or device untrust)
- */
-export function clearDeviceFingerprint(): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-  localStorage.removeItem(DEVICE_FINGERPRINT_KEY);
-  localStorage.removeItem(DEVICE_NAME_KEY);
-}
-
-/**
  * Store trusted phone numbers for this device
  */
 const TRUSTED_PHONES_KEY = "resonance_trusted_phones";
@@ -226,7 +205,7 @@ export function getTrustedPhones(): string[] {
   }
 }
 
-export function addTrustedPhone(phone: string): void {
+function addTrustedPhone(phone: string): void {
   if (typeof window === "undefined") {
     return;
   }
@@ -241,16 +220,6 @@ export function addTrustedPhone(phone: string): void {
 export function isPhoneTrustedLocally(phone: string): boolean {
   const normalizedPhone = phone.replace(/\D/g, "");
   return getTrustedPhones().includes(normalizedPhone);
-}
-
-export function removeTrustedPhone(phone: string): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-  const phones = getTrustedPhones();
-  const normalizedPhone = phone.replace(/\D/g, "");
-  const filtered = phones.filter((p) => p !== normalizedPhone);
-  localStorage.setItem(TRUSTED_PHONES_KEY, JSON.stringify(filtered));
 }
 
 /**

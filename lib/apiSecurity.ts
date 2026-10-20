@@ -1,5 +1,5 @@
 // Server-side helpers shared by API routes: client IP, rate limiting,
-// customer session (OTP cookie), admin bearer check, input validators.
+// customer session cookie, admin bearer check, input validators.
 
 import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
@@ -17,14 +17,14 @@ import {
 
 // ---------- client IP + rate limiting ----------
 
-export function getClientIp(request: Request): string {
+function getClientIp(request: Request): string {
   // Vercel overwrites x-real-ip; do not trust a caller-supplied forwarded chain.
   return request.headers.get("x-real-ip")?.trim() || "unknown";
 }
 
 /**
  * Returns a 429 response when `key` exceeded `limit` hits in `windowSeconds`, else null.
- * key defaults to the client IP; pass e.g. `otp:<phone>` to limit per target instead.
+ * key defaults to the client IP; pass e.g. `contact:<phone>` to limit per target instead.
  */
 export async function rateLimit(
   request: Request,
@@ -43,7 +43,7 @@ export async function rateLimit(
 
 // ---------- customer session (device login when available) ----------
 
-/** Phone number of the OTP-verified customer making this request, or null. */
+/** Phone number of the signed-in customer making this request, or null. */
 export async function getSessionPhone(request: Request): Promise<string | null> {
   const cookies = parseCookies(request.headers.get("cookie"));
 
@@ -169,13 +169,6 @@ export const escapeLike = (v: string) => v.replace(/[\\%_]/g, (c) => `\\${c}`);
 export const cleanText = (v: unknown, max = 200): string =>
   typeof v === "string" ? v.replace(/[<>]/g, "").trim().slice(0, max) : "";
 
-/** a****@gmail.com - enough to recognise, not enough to harvest. */
-export function maskEmail(email?: string | null): string {
-  if (!email || !email.includes("@")) return "";
-  const [user, domain] = email.split("@");
-  return `${user.slice(0, 2)}${"*".repeat(Math.max(user.length - 2, 3))}@${domain}`;
-}
-
 /** Booking row without personal or internal fields, for unauthenticated callers. */
 export function publicBooking<T extends Record<string, unknown>>(b: T) {
   const {
@@ -188,57 +181,6 @@ export function publicBooking<T extends Record<string, unknown>>(b: T) {
     ...rest
   } = b;
   return rest;
-}
-
-// ---------- OTP recipient ----------
-
-/**
- * Who gets an OTP. Existing customers always get it at their stored email, so a
- * stranger can't type someone's phone plus their own email and log in as them.
- * The typed email is only used for new customers, or when the stored email is an
- * admin placeholder. With only an email, the phone is looked up from it.
- */
-export async function resolveOtpTarget(
-  phoneInput?: string,
-  emailInput?: string,
-): Promise<{ phone: string; email: string } | { error: string; status: number }> {
-  const { isPlaceholderEmail } = await import("@/lib/bookingUtils");
-  const typedEmail = emailInput?.trim();
-
-  let phone = phoneInput?.replace(/\D/g, "");
-  if (!phone) {
-    if (!isEmail(typedEmail)) return { error: "A valid email address is required", status: 400 };
-    const pattern = escapeLike(typedEmail);
-    const { data: user } = await supabaseServer
-      .from("users")
-      .select("phone_number")
-      .ilike("email", pattern)
-      .limit(1)
-      .maybeSingle();
-    const { data: booking } = user
-      ? { data: null }
-      : await supabaseServer
-          .from("bookings")
-          .select("phone_number")
-          .ilike("email", pattern)
-          .limit(1)
-          .maybeSingle();
-    phone = user?.phone_number || booking?.phone_number;
-    if (!phone) return { error: "No bookings found for this email address", status: 404 };
-  }
-  if (!isPhone(phone)) return { error: "Invalid phone number", status: 400 };
-
-  const { data: user } = await supabaseServer
-    .from("users")
-    .select("email")
-    .eq("phone_number", phone)
-    .maybeSingle();
-
-  if (user?.email && !(await isPlaceholderEmail(user.email))) {
-    return { phone, email: user.email };
-  }
-  if (!isEmail(typedEmail)) return { error: "A valid email address is required", status: 400 };
-  return { phone, email: typedEmail };
 }
 
 // ---------- display screen session ----------

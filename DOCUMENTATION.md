@@ -179,18 +179,18 @@ A modern, full-stack studio booking application built for Resonance Studio. This
     └──────────────┘     └──────────────┘     └──────────────┘
                                │
            ┌───────────────────┼───────────────────┐
-            ▼                   ▼                   ▼                   ▼
-    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-    │ Availability │    │   Booking    │    │   Settings   │    │   Payments   │
-    │  Management  │    │   History    │    │  & Config    │    │ Verification │
-    └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
-           │                   │                   │                   │
-           ▼                   ▼                   ▼                   ▼
-    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-    │ Block/Unblock│    │ View/Cancel/ │    │ Min/Max Hours│    │ Verify       │
-    │ Time Slots   │    │ Confirm      │    │ Buffer Time  │    │ Payments     │
-    │ Bulk Ops     │    │ Bookings     │    │ Advance Days │    │              │
-    └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
+           ▼                   ▼                   ▼
+    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+    │ Availability │    │   Booking    │    │   Settings   │
+    │  Management  │    │   History    │    │  & Config    │
+    └──────────────┘    └──────────────┘    └──────────────┘
+           │                   │                   │
+           ▼                   ▼                   ▼
+    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+    │ Block/Unblock│    │ View/Cancel/ │    │ Min/Max Hours│
+    │ Time Slots   │    │ Confirm      │    │ Buffer Time  │
+    │ Bulk Ops     │    │ Bookings     │    │ Advance Days │
+    └──────────────┘    └──────────────┘    └──────────────┘
 ```
 
 ### Admin Features
@@ -230,10 +230,6 @@ A modern, full-stack studio booking application built for Resonance Studio. This
   - Booking buffer time (minutes)
   - Advance booking days limit
   - Operating hours configuration
-- **Payments** (`/admin/payments`)
-  - View bookings with "Pay Now" discount
-  - Verify payment status (Pending -> Verified)
-
 - **Reminders** (`/admin/reminders`)
   - View bookings requiring reminders
   - Send WhatsApp reminders manually
@@ -425,7 +421,6 @@ Text Colors:
 ```
 ├── app/
 │   ├── layout.tsx              # Root layout with metadata
-│   ├── page.tsx                # Root page (redirects to /home)
 │   ├── loading.tsx             # Global loading state
 │   ├── globals.css             # Global styles & CSS variables
 │   ├── sitemap.ts              # Dynamic sitemap generator
@@ -437,6 +432,7 @@ Text Colors:
 │   ├── booking/                # Booking flow
 │   │   ├── page.tsx            # Main booking page
 │   │   ├── layout.tsx          # Booking layout
+│   │   ├── BookingClientWrapper.tsx # Client wrapper for the booking provider
 │   │   ├── components/         # Step components
 │   │   │   ├── SessionStep.tsx       # Session type selection
 │   │   │   ├── ParticipantsStep.tsx  # Participant configuration
@@ -446,7 +442,8 @@ Text Colors:
 │   │   │   ├── ReviewStep.tsx        # Review booking
 │   │   │   ├── ConfirmStep.tsx       # Confirmation
 │   │   │   ├── StepLayout.tsx        # Step wrapper
-│   │   │   └── index.ts              # Component exports
+│   │   │   ├── FlowShell.tsx         # Progress bar and navigation shell
+│   │   │   └── optionStyles.ts       # Shared option styling
 │   │   ├── new/                      # New booking flow
 │   │   ├── contexts/
 │   │   │   └── BookingContext.tsx    # Booking state management
@@ -458,6 +455,8 @@ Text Colors:
 │   ├── my-bookings/            # User booking history
 │   ├── edit-booking/           # Edit existing bookings with mobile/name checks
 │   ├── cancel-booking/         # Cancel bookings with verification
+│   ├── forgot-password/        # Customer password reset request
+│   ├── how-to-book/            # Booking guide
 │   │
 │   ├── admin/                  # Admin section
 │   │   ├── layout.tsx          # Admin layout
@@ -470,8 +469,6 @@ Text Colors:
 │   │       ├── layout.tsx      # Dashboard layout with nav
 │   │       ├── dashboard/      # Overview stats
 │   │       ├── bookings/       # Booking management + WhatsApp
-│   │       ├── payments/       # Payment verification
-│   │       ├── investors/      # Investor management
 │   │       ├── loyalty/        # Loyalty program management
 │   │       ├── availability/   # Slot management
 │   │       ├── staff/          # Staff management
@@ -486,13 +483,10 @@ Text Colors:
 │   │   └── (dashboard)/        # Protected staff routes
 │   │       ├── layout.tsx      # Staff dashboard layout
 │   │       ├── dashboard/      # Staff overview stats
-│   │       │   └── InvestorDashboard.tsx # Investor view component
 │   │       └── bookings/       # Staff booking management
 │   │
 │   ├── api/                    # API routes
 │   │   ├── auth/               # Authentication
-│   │   │   ├── send-otp/       # Legacy OTP compatibility endpoint
-│   │   │   ├── verify-otp/     # Legacy OTP compatibility endpoint
 │   │   │   ├── verify-device/  # Device verification
 │   │   │   ├── status/         # Check auth status
 │   │   │   ├── auto-login/     # Auto-login for trusted devices
@@ -508,10 +502,8 @@ Text Colors:
 │   │   │   └── upcoming/       # Upcoming bookings
 │   │   ├── availability/       # Check availability
 │   │   ├── check-user/         # User verification
-│   │   ├── contact/            # Contact form
 │   │   ├── rates/              # Rate card data
 │   │   ├── settings/           # Public settings
-│   │   ├── studios/            # Studio information
 │   │   ├── display/            # Display endpoints
 │   │   │   └── bookings/
 │   │   ├── loyalty/            # Loyalty program endpoints
@@ -537,9 +529,13 @@ Text Colors:
 │   │   ├── Navigation.tsx      # Main navigation
 │   │   ├── Footer.tsx          # Site footer
 │   │   ├── MainContent.tsx     # Main content wrapper
-│   │   ├── OTPLogin.tsx        # OTP login component
-│   │   ├── OTPVerification.tsx # Legacy OTP compatibility component
-│   │   └── ClearCache.tsx      # Cache clearing utility
+│   │   ├── ClearCache.tsx      # Clears legacy cached browser data
+│   │   ├── ManageBooking.tsx   # View/edit/cancel booking UI
+│   │   ├── SessionTicket.tsx   # Booking ticket card
+│   │   ├── PanelShell.tsx      # Admin/staff panel layout shell
+│   │   ├── Preloader.tsx       # Initial page preloader
+│   │   ├── SiteMotion.tsx      # Shared GSAP animations
+│   │   └── StructuredData.tsx  # SEO JSON-LD
 │   │
 │   ├── display/                # Public display page
 │   ├── studios/                # Studio information page
@@ -547,25 +543,27 @@ Text Colors:
 │   ├── availability/           # Public availability view
 │   ├── gallery/                # Photo gallery
 │   ├── about/                  # About page
-│   ├── contact/                # Contact form
-│   ├── review/                 # Review page
+│   ├── contact/                # Contact details
 │   ├── faq/                    # FAQs
 │   └── policies/               # Terms & policies
 │
 ├── lib/                        # Utility libraries
-│   ├── supabase.ts             # Supabase client (server)
-│   ├── supabaseClient.ts       # Supabase client (browser)
+│   ├── supabase.ts             # Supabase admin client factory
+│   ├── adminFetch.ts           # Authenticated fetch for admin/staff UI
+│   ├── apiSecurity.ts          # Rate limit, sessions, validators, display auth
+│   ├── rateLimit.ts            # Database-backed rate limiter
+│   ├── bookingUtils.ts         # Booking helpers
+│   ├── errors.ts               # Error helpers
+│   ├── ist.ts                  # IST date/time helpers
+│   ├── seo.ts                  # SEO metadata helpers
 │   ├── supabaseServer.ts       # Supabase server utilities
 │   ├── supabaseAuth.ts         # Auth utilities
 │   ├── googleCalendar.ts       # Google Calendar integration
 │   ├── googleSheets.ts         # Google Sheets integration for booking logs
 │   ├── email.ts                # Resend email service
-│   ├── otpStore.ts             # OTP management
 │   ├── tokens.ts               # Auth token management
 │   ├── authClient.ts           # Client-side auth utilities
-│   ├── deviceFingerprint.ts    # Device fingerprinting
-│   ├── OptimizedMotion.tsx     # Performance-optimized animations
-│   └── useDevicePerformance.ts # Device performance hook
+│   └── deviceFingerprint.ts    # Device fingerprinting
 │
 ├── database/
 │   ├── schemas/                # Base database schema
@@ -573,7 +571,7 @@ Text Colors:
 │   └── functions/              # Complex database functions
 │
 ├── scripts/
-│   └── get_refresh_token.js    # Google OAuth token helper
+│   └── get_refresh_token.js    # Google OAuth refresh token helper
 │
 └── public/                     # Static assets
     ├── favicon.ico             # Favicon
@@ -592,7 +590,6 @@ Text Colors:
 - ✅ Interactive multi-step booking wizard
 - ✅ Real-time availability checking
 - ✅ Multiple session types (Karaoke, Band, Recording, etc.)
-- ✅ **Prompt Payment Discount** ("Pay Now & Save")
 - ✅ **Loyalty Program** - Earn points for bookings and redeem them
 - ✅ Smart studio suggestions based on group size
 - ✅ Mobile-first customer flow with 10-digit validation
@@ -610,9 +607,7 @@ Text Colors:
 - ✅ Dashboard with booking statistics & revenue
 - ✅ Booking management (confirm, cancel, no_show, view details)
 - ✅ Admin booking creation for walk-in customers
-- ✅ **Payment Verification** - Verify prompt payment bookings
 - ✅ **Admin Reminders** - Standalone page for managing WhatsApp reminders
-- ✅ **Investor Management** - Manage investor accounts
 - ✅ **Loyalty Management** - Manage loyalty program settings
 - ✅ WhatsApp reminder messages (24-hour time window before booking)
 - ✅ Invoice printing for bookings
@@ -631,13 +626,6 @@ Text Colors:
 - ✅ Staff booking creation for walk-in customers
 - ✅ Invoice printing for bookings
 - ✅ Booking deletion (cancelled/no-show bookings)
-- ✅ **Investor Portal** - Special view for investors to manage their bookings
-
-### Investor Features
-
-- ✅ Dashboard with revenue tracking
-- ✅ Manage bookings assigned to them (View/Edit/Cancel)
-- ✅ Dedicated view within Staff Portal
 
 ### Technical Features
 
@@ -671,14 +659,16 @@ Text Colors:
 | -------------------- | ------------------------------------------------------------------ |
 | `studios`            | Studio information (name, type, capacity, hourly rates, amenities) |
 | `users`              | Customer information, including bcrypt password hashes              |
-| `admin_users`        | Admin user accounts (roles: admin, super_admin, staff, investor)   |
-| `bookings`           | All booking records (status, payment_status, is_prompt_payment)    |
+| `admin_users`        | Admin user accounts (roles: admin, super_admin, staff)   |
+| `bookings`           | All booking records (status, etc.)            |
 | `availability_slots` | Blocked time slots per studio                                      |
 | `booking_settings`   | System configuration (min/max hours, buffer, etc.)                 |
-| `login_otps`         | Legacy OTP compatibility records (bcrypt hashed)                   |
 | `rate_cards`         | Pricing per studio, session type, and sub-option                   |
 | `audit_logs`         | Admin action tracking for accountability                           |
 | `trusted_devices`    | Verified device fingerprints                                       |
+| `reminders`          | Scheduled booking reminders                                        |
+| `loyalty_rewards`    | Loyalty cashback claims                                            |
+| `first_booking_bonuses` | First-booking bonus tracking                                    |
 | `refresh_tokens`     | Hashed customer refresh tokens and revocation state                |
 | `password_reset_requests` | Customer forgot-password requests and resolution state        |
 
@@ -707,8 +697,6 @@ Text Colors:
 
 | Method | Endpoint                  | Description                    |
 | ------ | ------------------------- | ------------------------------ |
-| `POST` | `/api/auth/send-otp`      | Legacy OTP compatibility endpoint |
-| `POST` | `/api/auth/verify-otp`    | Legacy OTP compatibility endpoint |
 | `POST` | `/api/auth/verify-device` | Verify trusted device          |
 | `GET`  | `/api/auth/status`        | Check authentication status    |
 | `POST` | `/api/auth/auto-login`    | Auto-login for trusted devices |
@@ -733,7 +721,6 @@ Text Colors:
 | Method | Endpoint            | Description               |
 | ------ | ------------------- | ------------------------- |
 | `GET`  | `/api/availability` | Check studio availability |
-| `GET`  | `/api/studios`      | Get studio information    |
 | `GET`  | `/api/rates`        | Get rate card data        |
 
 ### Public
@@ -741,8 +728,8 @@ Text Colors:
 | Method | Endpoint              | Description                    |
 | ------ | --------------------- | ------------------------------ |
 | `GET`  | `/api/settings`       | Get public booking settings    |
-| `POST` | `/api/contact`        | Submit contact form            |
 | `POST` | `/api/check-user`     | Check if user exists           |
+| `POST` | `/api/display/auth`   | Display page password login    |
 | `GET`  | `/api/display/bookings` | Get bookings for display page |
 | `GET`  | `/api/loyalty/status` | Get loyalty points/tier        |
 | `POST` | `/api/loyalty/claim`  | Claim loyalty reward           |
@@ -755,15 +742,17 @@ Text Colors:
 | `GET`    | `/api/admin/stats`        | Dashboard statistics  |
 | `GET`    | `/api/admin/bookings`     | Get all bookings      |
 | `PUT`    | `/api/admin/bookings`     | Update booking status |
+| `DELETE` | `/api/admin/bookings`     | Permanently delete a booking |
 | `GET`    | `/api/admin/availability` | Get blocked slots     |
 | `POST`   | `/api/admin/availability` | Block time slots      |
 | `DELETE` | `/api/admin/availability` | Unblock time slots    |
+| `POST`   | `/api/admin/availability/bulk` | Bulk block/unblock slots |
+| `GET`    | `/api/admin/availability/with-bookings` | Blocked slots with bookings |
 | `GET`    | `/api/admin/settings`     | Get all settings      |
 | `PUT`    | `/api/admin/settings`     | Update settings       |
 | `POST`   | `/api/admin/book`         | Admin creates booking |
 | `POST`   | `/api/admin/whatsapp-reminder` | Mark reminder sent |
 | `GET`    | `/api/loyalty/all`        | Get loyalty/cashback data |
-| `GET`    | `/api/admin/investors`    | Get investor data         |
 | `GET`    | `/api/admin/password-requests` | List password reset requests |
 | `PATCH`  | `/api/admin/password-requests` | Set password and resolve request |
 
@@ -774,6 +763,8 @@ Text Colors:
 | `POST` | `/api/staff/login`    | Staff authentication       |
 | `GET`  | `/api/staff/stats`    | Staff dashboard statistics |
 | `GET`  | `/api/staff/bookings` | Get bookings for staff     |
+| `PUT`  | `/api/staff/bookings` | Update booking status      |
+| `DELETE` | `/api/staff/bookings` | Permanently delete a booking |
 | `POST` | `/api/staff/book`     | Staff creates booking      |
 
 ### Admin Staff Management
@@ -809,7 +800,8 @@ RESEND_FROM_EMAIL=noreply@yourdomain.com
 GOOGLE_CLIENT_ID=your_client_id
 GOOGLE_CLIENT_SECRET=your_client_secret
 GOOGLE_REFRESH_TOKEN=your_refresh_token
-GOOGLE_CALENDAR_ID=your_calendar_id
+OWNER_CALENDAR_ID=your_calendar_id
+CALENDAR_TIMEZONE=Asia/Kolkata  # optional, defaults to Asia/Kolkata
 
 GOOGLE_SHEET_ID=your_google_sheet_id
 
@@ -822,9 +814,10 @@ JWT_SECRET=your_jwt_secret_min_32_chars_random
 REFRESH_TOKEN_SECRET=your_refresh_token_secret_min_32_chars_random
 
 # ===================
-# APP CONFIG
+# DISPLAY PAGE
 # ===================
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+# Shared password for the /display studio monitors
+DISPLAY_PASSWORD=your_display_password
 ```
 
 ### Environment Variable Security Notes
@@ -877,8 +870,7 @@ The application enforces the following security headers via `next.config.ts`:
 - All user inputs are validated server-side
 - Phone numbers validated (10 digits only)
 - Mobile numbers validated (10 digits, numbers only)
-- Contact form inputs sanitized against XSS (`<` and `>` removed)
-- Input length limits enforced (1000 chars default, 5000 for messages)
+- Input length limits enforced (1000 chars default)
 - Email format validation with length limits (254 chars max)
 
 ### Database Security

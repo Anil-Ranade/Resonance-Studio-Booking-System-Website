@@ -9,12 +9,12 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
 // Token expiry configuration
-export const ACCESS_TOKEN_EXPIRY = '15m'; // 15 minutes
-export const REFRESH_TOKEN_EXPIRY_DAYS = 60; // 60 days
-export const REFRESH_TOKEN_EXPIRY = `${REFRESH_TOKEN_EXPIRY_DAYS}d`;
+const ACCESS_TOKEN_EXPIRY = '15m'; // 15 minutes
+const REFRESH_TOKEN_EXPIRY_DAYS = 60; // 60 days
+const REFRESH_TOKEN_EXPIRY = `${REFRESH_TOKEN_EXPIRY_DAYS}d`;
 
 // Cookie configuration
-export const COOKIE_OPTIONS = {
+const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'strict' as const,

@@ -64,9 +64,6 @@ interface Booking {
   notes: string | null;
   created_at: string;
   whatsapp_reminder_sent_at: string | null;
-  is_prompt_payment: boolean;
-  payment_status: "pending" | "verified" | "failed";
-  investor_id?: string | null;
 }
 
 interface BookingFormData {
@@ -193,7 +190,6 @@ const getEffectiveStatus = (booking: Booking): Booking["status"] => {
 
 export default function BookingsManagementPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [investors, setInvestors] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -241,21 +237,6 @@ export default function BookingsManagementPage() {
     }
   }, []);
 
-  const fetchInvestors = useCallback(async () => {
-    try {
-      const token = await getAccessToken();
-      const response = await fetch("/api/admin/investors", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setInvestors(data.investors || []);
-      }
-    } catch (error) {
-      console.error("Error fetching investors:", error);
-    }
-  }, [getAccessToken]);
-
   const fetchBookings = useCallback(async () => {
     setLoading(true);
     try {
@@ -277,8 +258,7 @@ export default function BookingsManagementPage() {
 
   useEffect(() => {
     fetchBookings();
-    fetchInvestors();
-  }, [fetchBookings, fetchInvestors]);
+  }, [fetchBookings]);
 
   const updateBookingStatus = async (
     bookingId: string,
@@ -325,100 +305,6 @@ export default function BookingsManagementPage() {
         }
       } else {
         throw new Error(data.error || "Failed to update booking");
-      }
-    } catch (error: any) {
-      setMessage({ type: "error", text: userMessage(error) });
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const updatePaymentStatus = async (
-    bookingId: string,
-    newStatus: "verified" | "pending" | "failed"
-  ) => {
-    setUpdating(true);
-    setMessage(null);
-
-    try {
-      const token = await getAccessToken();
-      const response = await fetch("/api/admin/bookings", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ id: bookingId, payment_status: newStatus }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        setMessage({
-          type: "success",
-          text: `Payment marked as ${newStatus}!`,
-        });
-        // Update local state
-        setBookings((prev) =>
-          prev.map((b) =>
-            b.id === bookingId
-              ? { ...b, payment_status: newStatus }
-              : b
-          )
-        );
-        if (selectedBooking?.id === bookingId) {
-          setSelectedBooking({
-            ...selectedBooking,
-            payment_status: newStatus,
-          });
-        }
-      } else {
-        throw new Error(data.error || "Failed to update payment status");
-      }
-    } catch (error: any) {
-      setMessage({ type: "error", text: userMessage(error) });
-      setUpdating(false);
-    }
-  };
-
-  const assignInvestor = async (bookingId: string, investorId: string | null) => {
-    setUpdating(true);
-    setMessage(null);
-
-    try {
-      const token = await getAccessToken();
-      const response = await fetch("/api/admin/bookings", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ id: bookingId, investor_id: investorId }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        setMessage({
-          type: "success",
-          text: investorId ? "Investor assigned successfully!" : "Investor assignment removed!",
-        });
-        // Update local state
-        setBookings((prev) =>
-          prev.map((b) =>
-            b.id === bookingId
-              ? { ...b, investor_id: investorId }
-              : b
-          )
-        );
-        if (selectedBooking?.id === bookingId) {
-          setSelectedBooking({
-            ...selectedBooking,
-            investor_id: investorId,
-          });
-        }
-      } else {
-        throw new Error(data.error || "Failed to update investor assignment");
       }
     } catch (error: any) {
       setMessage({ type: "error", text: userMessage(error) });
@@ -802,7 +688,6 @@ export default function BookingsManagementPage() {
       email: booking.email || "",
       total_amount: booking.total_amount,
       group_size: booking.group_size || 1,
-      otpVerified: true,
     }));
     window.location.href = "/admin/booking/new?source=edit";
   };
@@ -1355,48 +1240,6 @@ export default function BookingsManagementPage() {
                         : "N/A"}
                     </p>
                   </div>
-                  
-                  <div className="p-4 bg-white/5 rounded-xl">
-                    <p className="text-zinc-400 text-sm mb-1">Assigned Investor</p>
-                    <select
-                      value={selectedBooking.investor_id || ""}
-                      onChange={(e) => assignInvestor(selectedBooking.id, e.target.value || null)}
-                      className="w-full bg-zinc-900 border border-white/10 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-violet-500 cursor-pointer"
-                      disabled={updating}
-                    >
-                      <option value="">None</option>
-                      {investors.map((investor) => (
-                        <option key={investor.id} value={investor.id} className="bg-zinc-800">
-                          {investor.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {selectedBooking.is_prompt_payment && (
-                     <div className="p-4 bg-white/5 rounded-xl border border-amber-500/20 col-span-2 sm:col-span-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-amber-400/80 text-sm font-medium">Prompt Payment</p>
-                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                            selectedBooking.payment_status === 'verified' 
-                            ? 'bg-emerald-500/20 text-emerald-400' 
-                            : 'bg-zinc-500/20 text-zinc-400'
-                         }`}>
-                           {selectedBooking.payment_status || 'Pending'}
-                         </span>
-                      </div>
-                      
-                      {selectedBooking.payment_status !== 'verified' && (
-                        <button
-                          onClick={() => updatePaymentStatus(selectedBooking.id, 'verified')}
-                          disabled={updating}
-                          className="mt-2 w-full py-2 bg-emerald-500 text-white rounded-lg text-xs font-medium hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
-                        >
-                           {updating ? <Loader2 className="w-3 h-3 animate-spin"/> : <CheckCircle className="w-3 h-3" />}
-                           Mark Payment Received
-                        </button>
-                      )}
-                    </div>
-                  )}
                 </div>
 
                 {selectedBooking.notes && (
@@ -1418,9 +1261,6 @@ export default function BookingsManagementPage() {
                             const phone = selectedBooking.phone_number.replace(
                               /[^0-9]/g,
                               ""
-                            );
-                            const formattedDate = formatDate(
-                              selectedBooking.date
                             );
                             const formattedStartTime = formatTime(
                               selectedBooking.start_time
@@ -1582,42 +1422,13 @@ See you soon!`;
                         const endParts = selectedBooking.end_time.split(':').map(Number);
                         const duration = (endParts[0] * 60 + endParts[1] - (startParts[0] * 60 + startParts[1])) / 60;
                         
-                        // Determine Base Rate & Discounts
-                        let promptDiscount = 0;
-                        let soundDiscount = 0;
-                        
-                        // Prompt Payment Discount: 20 Rs/hr
-                        if (selectedBooking.is_prompt_payment) {
-                          promptDiscount = 20 * duration;
-                        }
-                        
-                        // "No Sound Operator" Logic
-                        const isNoSoundOperator = selectedBooking.session_details?.toLowerCase().includes("no sound operator") || selectedBooking.session_type === "Meetings / Classes";
-                        if (isNoSoundOperator) {
-                          soundDiscount = 50 * duration;
-                        }
-                        
                         const currentTotal = selectedBooking.total_amount || 0;
-                        // Infer Base Rate
-                        const inferredBaseAmount = currentTotal + promptDiscount + soundDiscount;
-                        const inferredBaseRate = Math.round(inferredBaseAmount / duration);
-                        
-                        const basicAmount = inferredBaseRate * duration;
-                        const instantDiscount = promptDiscount + soundDiscount;
-                        
-                        // Helpers
-                        const fmtMoney = (n: number) => `₹ ${n.toLocaleString()}`;
-                        const fmtNegMoney = (n: number) => `- ₹ ${n.toLocaleString()}`;
+                        const rate = Math.round(currentTotal / duration);
 
-                        // Build Invoice Table
-                        let tableRows = `Basic Amount                    ${inferredBaseRate} × ${duration}             ${fmtMoney(basicAmount)}`;
-                        if (soundDiscount > 0) {
-                          tableRows += `\nNo Sound Operator Discount       50 × ${duration}              ${fmtNegMoney(soundDiscount)}`;
-                        }
-                        if (promptDiscount > 0) {
-                          tableRows += `\nPrompt Payment Discount          20 × ${duration}              ${fmtNegMoney(promptDiscount)}`;
-                        }
-                        
+                        const fmtMoney = (n: number) => `₹ ${n.toLocaleString()}`;
+
+                        const tableRows = `Basic Amount                    ${rate} × ${duration}             ${fmtMoney(currentTotal)}`;
+
                         // Message Construction Logic
                         const isLive = selectedBooking.session_type === "Live with musicians";
                         const sessionTypeDisplay = isLive
@@ -1644,7 +1455,6 @@ ${tableRows}
 Final Amount                                        ${fmtMoney(currentTotal)}
 \`\`\`
 
-You have earned an instant discount of ${fmtMoney(instantDiscount)}.
 Book for 50 hours within any three months and earn ₹2,000 as Cashback.${loyaltyMessagePart}
 
 *Please note and inform all your group members:*

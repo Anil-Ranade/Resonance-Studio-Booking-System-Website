@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import PanelShell from "@/app/components/PanelShell";
-import { LayoutDashboard, Calendar, Clock, Users, Settings, Gift, CreditCard, KeyRound } from "lucide-react";
+import { LayoutDashboard, Calendar, Clock, Users, Settings, Gift, KeyRound } from "lucide-react";
 import { signOut, getSession } from "@/lib/supabaseAuth";
 
 interface AdminInfo {
@@ -19,7 +19,7 @@ const navItems = [
     group: "Operate",
     href: "/admin/dashboard", 
     icon: LayoutDashboard,
-    allowedRoles: ['admin', 'super_admin', 'staff', 'investor'] 
+    allowedRoles: ['admin', 'super_admin', 'staff'] 
   },
   { 
     label: "Availability",
@@ -33,21 +33,7 @@ const navItems = [
     group: "Operate",
     href: "/admin/bookings", 
     icon: Calendar,
-    allowedRoles: ['admin', 'super_admin', 'staff', 'investor']
-  },
-  { 
-    label: "Payments",
-    group: "Business",
-    href: "/admin/payments", 
-    icon: CreditCard,
-    allowedRoles: ['admin', 'super_admin']
-  },
-  { 
-    label: "Investors",
-    group: "Business",
-    href: "/admin/investors", 
-    icon: Users,
-    allowedRoles: ['admin', 'super_admin']
+    allowedRoles: ['admin', 'super_admin', 'staff']
   },
   { 
     label: "Loyalty",
@@ -68,7 +54,7 @@ const navItems = [
     group: "System",
     href: "/admin/settings", 
     icon: Settings,
-    allowedRoles: ['admin', 'super_admin', 'staff', 'investor']
+    allowedRoles: ['admin', 'super_admin', 'staff']
   },
   {
     label: "Password Requests",

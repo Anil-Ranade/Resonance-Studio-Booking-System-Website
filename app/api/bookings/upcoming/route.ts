@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const email = searchParams.get("email");
-    const phone = searchParams.get("phone"); // Keep phone support for backward compatibility
+    const phone = searchParams.get("phone");
 
     if (!email && !phone) {
       return NextResponse.json(

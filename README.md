@@ -30,7 +30,6 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - Configurable booking duration limits (min/max hours)
 - Advance booking restrictions (up to 30 days)
 - Booking buffer time between sessions
-- **Prompt Payment Discount** - "Pay Now & Save" logic with calculated discounts
 - **Loyalty Program** - Earn points for bookings and redeem them for rewards
 
 
@@ -98,11 +97,9 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - **Staff management** - Create and manage staff members
 - **Password Requests** - Review and resolve customer forgot-password requests
 - Availability slot management (block/unblock)
-- Payment verification management
 - Bulk availability operations
 
 - Configurable booking settings
-- **Payment Verification** - Verify prompt payment bookings (`payments/`)
 - **Admin Reminders** - Standalone page for managing WhatsApp reminders
 - Audit logging for all admin actions
 
@@ -116,14 +113,6 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 - ✅ **Invoice printing** - Generate invoices for bookings
 - ✅ **Booking deletion** - Remove cancelled/no-show bookings
 - Limited permissions compared to admin
-
-### 💼 Investor Portal
-
-- Special role for investors
-- View total revenue and booking stats
-- Manage bookings assigned to the investor
-- Edit/Cancel own bookings
-
 
 ### 💰 Rate Card
 
@@ -141,7 +130,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 
 ### 📞 Contact & Support
 
-- Contact form
+- Contact details page
 - Comprehensive FAQ section
 - Policies page
 
@@ -224,17 +213,17 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
    GOOGLE_CLIENT_ID=your_client_id
    GOOGLE_CLIENT_SECRET=your_client_secret
    GOOGLE_REFRESH_TOKEN=your_refresh_token
-   GOOGLE_CALENDAR_ID=your_calendar_id
+   OWNER_CALENDAR_ID=your_calendar_id
 
    #Google Sheets
    GOOGLE_SHEET_ID=your_google_sheet_id
 
+   # Display page (shared password for /display)
+   DISPLAY_PASSWORD=your_display_password
+
    # JWT (use strong, random strings - min 32 characters)
    JWT_SECRET=your_jwt_secret_min_32_chars
    REFRESH_TOKEN_SECRET=your_refresh_token_secret_min_32_chars
-
-   # Local development only; never enable in production
-   ALLOW_DEBUG_OTP=false
    ```
 
    > ⚠️ **Security Note**: Never commit `.env.local` to version control. Use strong, randomly generated secrets for JWT_SECRET (minimum 32 characters). Rotate secrets periodically.
@@ -273,14 +262,13 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 ```
 ├── app/
 │   ├── layout.tsx              # Root layout with metadata
-│   ├── page.tsx                # Root page (redirects to /home)
 │   ├── globals.css             # Global styles & CSS variables
 │   ├── loading.tsx             # Global loading state
 │   ├── sitemap.ts              # Dynamic sitemap generator
 │   │
 │   ├── home/                   # Landing page
 │   ├── booking/                # Booking wizard
-│   │   ├── components/         # Step components (10 steps)
+│   │   ├── components/         # Step components
 │   │   ├── contexts/           # Booking context
 │   │   ├── new/                # New booking flow
 │   │   └── utils/              # Helper utilities
@@ -289,6 +277,8 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   ├── my-bookings/            # User booking history
 │   ├── edit-booking/           # Edit existing bookings
 │   ├── cancel-booking/         # Cancel bookings with verification
+│   ├── forgot-password/        # Customer password reset request
+│   ├── how-to-book/            # Booking guide
 │   │
 │   ├── admin/                  # Admin section
 │   │   ├── login/              # Admin login
@@ -298,9 +288,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │       ├── bookings/       # Booking management
 │   │       ├── availability/   # Slot management
 │   │       ├── staff/          # Staff management
-│   │       ├── investors/      # Investor management
 │   │       ├── loyalty/        # Loyalty program management
-│   │       ├── payments/       # Payment verification
 │   │       ├── password-requests/ # Customer reset requests
 │   │       └── settings/       # Configuration
 │   │
@@ -312,8 +300,6 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │
 │   ├── api/                    # API routes
 │   │   ├── auth/               # Authentication endpoints
-│   │   │   ├── send-otp/       # Legacy OTP compatibility endpoint
-│   │   │   ├── verify-otp/     # Legacy OTP compatibility endpoint
 │   │   │   ├── verify-device/  # Verify trusted device
 │   │   │   ├── status/         # Check auth status
 │   │   │   ├── auto-login/     # Auto-login for trusted devices
@@ -342,9 +328,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │   │   ├── bookings/       # Staff booking ops
 │   │   │   └── book/           # Staff booking creation
 │   │   ├── rates/              # Rate card data
-│   │   ├── studios/            # Studio information
 │   │   ├── settings/           # Public settings
-│   │   ├── contact/            # Contact form
 │   │   ├── check-user/         # User verification
 │   │   ├── display/            # Display endpoints
 │   │   └── loyalty/            # Loyalty program endpoints
@@ -353,35 +337,41 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   │   ├── Navigation.tsx      # Main navigation
 │   │   ├── Footer.tsx          # Site footer
 │   │   ├── MainContent.tsx     # Main content wrapper
-│   │   ├── OTPLogin.tsx        # OTP login component
-│   │   ├── OTPVerification.tsx # Legacy OTP compatibility component
-│   │   └── ClearCache.tsx      # Cache clearing utility
+│   │   ├── ClearCache.tsx      # Clears legacy cached browser data
+│   │   ├── ManageBooking.tsx   # View/edit/cancel booking UI
+│   │   ├── SessionTicket.tsx   # Booking ticket card
+│   │   ├── PanelShell.tsx      # Admin/staff panel layout shell
+│   │   ├── Preloader.tsx       # Initial page preloader
+│   │   ├── SiteMotion.tsx      # Shared GSAP animations
+│   │   └── StructuredData.tsx  # SEO JSON-LD
 │   │
 │   ├── studios/                # Studio information
 │   ├── rate-card/              # Pricing display
 │   ├── availability/           # Public availability view
 │   ├── gallery/                # Photo gallery
 │   ├── about/                  # About page
-│   ├── contact/                # Contact form
-│   ├── review/                 # Review page
+│   ├── contact/                # Contact details
 │   ├── display/                # Public display page
 │   ├── faq/                    # FAQs
 │   └── policies/               # Terms & policies
 │
 ├── lib/                        # Utility libraries
-│   ├── supabase.ts             # Supabase client (server)
-│   ├── supabaseClient.ts       # Supabase client (browser)
+│   ├── supabase.ts             # Supabase admin client factory
+│   ├── adminFetch.ts           # Authenticated fetch for admin/staff UI
+│   ├── apiSecurity.ts          # Rate limit, sessions, validators, display auth
+│   ├── rateLimit.ts            # Database-backed rate limiter
+│   ├── bookingUtils.ts         # Booking helpers
+│   ├── errors.ts               # Error helpers
+│   ├── ist.ts                  # IST date/time helpers
+│   ├── seo.ts                  # SEO metadata helpers
 │   ├── supabaseServer.ts       # Supabase server utilities
 │   ├── supabaseAuth.ts         # Auth utilities
 │   ├── googleCalendar.ts       # Google Calendar integration
 │   ├── googleSheets.ts         # Google Sheets integration for booking logs
 │   ├── email.ts                # Resend email service
-│   ├── otpStore.ts             # OTP management
 │   ├── tokens.ts               # Auth token management
 │   ├── authClient.ts           # Client-side auth utilities
-│   ├── deviceFingerprint.ts    # Device fingerprinting
-│   ├── OptimizedMotion.tsx     # Performance-optimized animations
-│   └── useDevicePerformance.ts # Device performance hook
+│   └── deviceFingerprint.ts    # Device fingerprinting
 │
 ├── database/
 │   ├── schemas/                # Base database schema
@@ -389,7 +379,7 @@ Resonance Studio Booking is a comprehensive booking system that allows customers
 │   └── functions/              # Complex database functions
 │
 ├── scripts/
-│   └── get_refresh_token.js    # Google OAuth token helper
+│   └── get_refresh_token.js    # Google OAuth refresh token helper
 │
 └── public/                     # Static assets
     ├── favicon.ico             # Favicon

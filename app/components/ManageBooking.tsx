@@ -79,7 +79,7 @@ export async function signInCustomer(phone: string, name: string, password: stri
 }
 
 /** Why a booking can't be changed: hidden (invalid/past), locked (<24h), or "" if allowed. */
-export function changeBlockReason(booking: Booking) {
+function changeBlockReason(booking: Booking) {
   if (booking.status?.toLowerCase() !== "confirmed") return "Invalid status";
 
   const t = booking.start_time;
@@ -93,7 +93,7 @@ export function changeBlockReason(booking: Booking) {
   return "";
 }
 
-export const formatDate = (dateStr: string) =>
+const formatDate = (dateStr: string) =>
   new Date(`${dateStr}T00:00:00+05:30`).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata",
     weekday: "short",
     day: "numeric",
@@ -101,7 +101,7 @@ export const formatDate = (dateStr: string) =>
     year: "numeric",
   });
 
-export const formatTime = (time: string) => {
+const formatTime = (time: string) => {
   const [hours, minutes] = time.split(":").map(Number);
   const period = hours >= 12 ? "PM" : "AM";
   const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;

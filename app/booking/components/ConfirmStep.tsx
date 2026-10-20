@@ -25,7 +25,7 @@ export default function ConfirmStep() {
   const router = useRouter();
   const { draft, resetDraft, mode } = useBooking();
   const [isBooking, setIsBooking] = useState(true);
-  const [bookingComplete, setBookingComplete] = useState(false);
+  const [, setBookingComplete] = useState(false);
   const [error, setError] = useState("");
   const [bookingId, setBookingId] = useState("");
 
@@ -114,11 +114,6 @@ export default function ConfirmStep() {
           labels[draft.recordingOption] || draft.sessionType || "";
       }
 
-      // Sound Operator details removed
-      // if (draft.soundOperator) {
-      //   sessionDetails += ` | Sound Operator: ${draft.soundOperator}`;
-      // }
-
       // Select API endpoint based on mode
       const getApiUrl = () => {
         if (mode === "admin") return "/api/admin/book";
@@ -162,7 +157,6 @@ export default function ConfirmStep() {
             bandEquipment: draft.bandEquipment,
             recordingOption: draft.recordingOption || undefined,
           },
-          is_prompt_payment: draft.isPromptPayment,
           original_booking_id: isModification
             ? draft.originalBookingId
             : undefined,
@@ -244,7 +238,7 @@ export default function ConfirmStep() {
     });
   };
 
-  // Context counts OTP and confirm as one visible step, so pin progress to the last step.
+  // Confirm sits past totalSteps; the progress bar clamps to the last step.
   const lastStep = 7;
 
   if (isBooking) {
@@ -355,9 +349,7 @@ export default function ConfirmStep() {
                 ₹{(draft.ratePerHour * draft.duration).toLocaleString("en-IN")}
               </span>
             </div>
-            {!draft.isPromptPayment && (
-              <p className="text-xs text-muted-foreground">Pay at the studio</p>
-            )}
+            <p className="text-xs text-muted-foreground">Pay at the studio</p>
           </CardContent>
         </Card>
 

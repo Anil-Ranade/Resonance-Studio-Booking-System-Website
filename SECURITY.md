@@ -18,7 +18,6 @@
 - Customer data is used for WhatsApp booking confirmations and one-day advance reminders
 - **Cookie-based session management** with HttpOnly secure cookies
 - **Auto-login** for trusted devices with valid session cookies
-- Legacy OTP endpoints remain available only for compatibility; they are not part of the current customer booking UI
 
 #### Admin Authentication
 - **Supabase Auth** handles email/password authentication
@@ -33,11 +32,6 @@
 - Access tokens verified on every staff API request
 - Staff has limited permissions compared to admin
 - Successful staff login stores the Supabase session in an HttpOnly cookie
-
-#### Investor Authentication
-- **Supabase Auth** handles investor email/password authentication
-- Investor status verified against `admin_users` table (role: `investor`)
-- Can only access dashboards and bookings specifically assigned to them
 
 
 #### Secure Booking Page Access

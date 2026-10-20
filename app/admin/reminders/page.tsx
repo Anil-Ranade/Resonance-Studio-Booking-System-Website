@@ -8,8 +8,6 @@ import {
   Loader2,
   Clock,
   Phone,
-  User,
-  Calendar,
   CheckCircle,
   RefreshCw,
   Send,
@@ -24,7 +22,6 @@ import {
   Check,
 } from "lucide-react";
 import { getSession, signInWithEmail, signOut } from "@/lib/supabaseAuth";
-import { useRouter } from "next/navigation";
 import { adminFetch } from "@/lib/adminFetch";
 import { istDateTime, todayIST } from "@/lib/ist";
 
@@ -124,9 +121,6 @@ export default function StandaloneRemindersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"pending" | "sent">("pending");
   const [section, setSection] = useState<"confirmation" | "reminder">("confirmation");
-  
-  const router = useRouter();
-
   // ... (keeping other auth logic same, skipping to render part for brevity in thought but must match file)
   // Since I can't skip lines in replace_file_content easily without matching context, I need to be precise.
   // Actually, I should target the `const [filter, setFilter]` line first.
@@ -282,53 +276,12 @@ export default function StandaloneRemindersPage() {
     const e = booking.end_time.split(':').map(Number);
     const duration = (e[0] * 60 + e[1] - (s[0] * 60 + s[1])) / 60;
     
-    // Determine Base Rate & Discounts logic (Inferred)
-    // We don't have is_prompt_payment in the local Booking interface in this file? 
-    // Wait, the interface Booking above has total_amount but NOT is_prompt_payment in lines 29-46 of view_file output?
-    // Let me check lines 29-46 again.
-    // Line 46: whatsapp_reminder_sent_at: string | null;
-    // It seems 'is_prompt_payment' is missing from the Booking interface in this file.
-    // However, the api/admin/bookings likely returns it. 
-    // I should cast it or update the interface if I can, but for now I will check if I can safely access it via (booking as any).is_prompt_payment 
-    // or assume standard logic.
-    // The previous implementation on bookings page had is_prompt_payment in the interface.
-    // I'll assume it's available in the data object even if typed loosely here, or I'll default to 0 if undefined.
-    
-    let promptDiscount = 0;
-    let soundDiscount = 0;
-    
-    // Cast to any to access potentially un-typed property or just update interface later
-    // For safety in this replace block, I'll use (booking as any)
-    if ((booking as any).is_prompt_payment) {
-      promptDiscount = 20 * duration;
-    }
-    
-    // "No Sound Operator" Logic
-    const isNoSoundOperator = booking.session_details?.toLowerCase().includes("no sound operator") || booking.session_type === "Meetings / Classes";
-    if (isNoSoundOperator) {
-      soundDiscount = 50 * duration;
-    }
-    
     const currentTotal = booking.total_amount || 0;
-    // Infer Base Rate
-    const inferredBaseAmount = currentTotal + promptDiscount + soundDiscount;
-    const inferredBaseRate = Math.round(inferredBaseAmount / duration);
-    
-    const basicAmount = inferredBaseRate * duration;
-    const instantDiscount = promptDiscount + soundDiscount;
-    
-    // Helpers
-    const fmtMoney = (n: number) => `₹ ${n.toLocaleString()}`;
-    const fmtNegMoney = (n: number) => `- ₹ ${n.toLocaleString()}`;
+    const rate = Math.round(currentTotal / duration);
 
-    // Build Invoice Table
-    let tableRows = `Basic Amount                    ${inferredBaseRate} × ${duration}             ${fmtMoney(basicAmount)}`;
-    if (soundDiscount > 0) {
-      tableRows += `\nNo Sound Operator Discount       50 × ${duration}              ${fmtNegMoney(soundDiscount)}`;
-    }
-    if (promptDiscount > 0) {
-      tableRows += `\nPrompt Payment Discount          20 × ${duration}              ${fmtNegMoney(promptDiscount)}`;
-    }
+    const fmtMoney = (n: number) => `₹ ${n.toLocaleString()}`;
+
+    const tableRows = `Basic Amount                    ${rate} × ${duration}             ${fmtMoney(currentTotal)}`;
 
     // Message Construction Logic
     const isLive = booking.session_type === "Live with musicians";
@@ -356,7 +309,6 @@ ${tableRows}
 Final Amount                                        ${fmtMoney(currentTotal)}
 \`\`\`
 
-You have earned an instant discount of ${fmtMoney(instantDiscount)}.
 Book for 50 hours within any three months and earn ₹2,000 as Cashback.${loyaltyMessagePart}
 
 *Please note and inform all your group members:*

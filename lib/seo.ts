@@ -1,11 +1,11 @@
 // Shared SEO settings for resonancejamroom.in.
 
 export const SITE_URL = "https://resonancejamroom.in";
-export const SITE_NAME = "Resonance Jam Room";
+const SITE_NAME = "Resonance Jam Room";
 
 // Social share image. Next replaces (not merges) a parent's openGraph, so every
 // layout that sets its own openGraph spreads OG_BASE to keep these fields.
-export const OG_IMAGE = {
+const OG_IMAGE = {
   url: "/og-image.png",
   width: 1731,
   height: 909,

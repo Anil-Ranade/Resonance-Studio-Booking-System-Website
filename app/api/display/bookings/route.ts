@@ -2,19 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { getAdminUser, hasDisplaySession, isDate, isStudio, rateLimit } from "@/lib/apiSecurity";
 
-interface Booking {
-  id: string;
-  name: string | null;
-  phone_number: string;
-  start_time: string;
-  end_time: string;
-  status: string;
-  session_type: string | null;
-  session_details: string | null;
-  studio: string;
-  date: string;
-}
-
 // GET /api/display/bookings - Bookings for a date. Public callers (availability page)
 // get times only; the password-unlocked display screen also gets names and phones.
 export async function GET(request: NextRequest) {

@@ -62,9 +62,9 @@ const bookingSteps = [
   },
   {
     title: "Confirm",
-    description: "Verify your number and you're booked.",
+    description: "Sign in and you're booked.",
     details: [
-      "Enter the OTP sent to your mobile",
+      "Sign in with your password",
       "Your confirmation shows on screen straight away",
       "You get a WhatsApp/SMS with your booking ID",
       "An email follows if you gave one",
@@ -98,7 +98,7 @@ const manage = [
     steps: [
       "Enter the mobile number and name used for your booking",
       "Pick the booking to change",
-      "Verify with an OTP if asked",
+      "Sign in with your password if asked",
       "Choose a new date, time or room and confirm",
     ],
     note: "Free online changes are available more than 24 hours before the session. Within 24 hours, contact the studio directly.",
@@ -110,7 +110,7 @@ const manage = [
     steps: [
       "Enter the mobile number and name used for your booking",
       "Pick the booking to cancel",
-      "Verify with an OTP if asked",
+      "Sign in with your password if asked",
       "Confirm the cancellation",
     ],
     note: "Free cancellation with more than 24 hours’ notice. Within 24 hours, contact the studio directly; late cancellation is 50%.",

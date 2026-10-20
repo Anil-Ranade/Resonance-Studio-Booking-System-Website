@@ -16,19 +16,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 export default function ReviewStep() {
-  const { draft, nextStep, hasChangesFromOriginal, updateDraft } = useBooking();
+  const { draft, nextStep, hasChangesFromOriginal } = useBooking();
 
   // Check if there are changes in edit mode
   const hasChanges = hasChangesFromOriginal();
-
-  // Format phone for display
-  const formatPhone = (phone: string) => {
-    const digits = phone.replace(/\D/g, "");
-    if (digits.length === 10) {
-      return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
-    }
-    return phone;
-  };
 
   // Format time for display in 12-hour format
   const formatTime = (time: string) => {
@@ -190,11 +181,9 @@ export default function ReviewStep() {
                 ₹{totalAmount.toLocaleString("en-IN")}
               </span>
             </div>
-            {!draft.isPromptPayment && (
-              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <CreditCard className="size-3.5" /> Pay at the studio
-              </p>
-            )}
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <CreditCard className="size-3.5" /> Pay at the studio
+            </p>
           </CardContent>
         </Card>
 

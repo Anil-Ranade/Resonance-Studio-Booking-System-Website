@@ -33,10 +33,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if role is 'staff' or 'investor'
-    if (staffUser.role !== "staff" && staffUser.role !== "investor") {
+    if (staffUser.role !== "staff") {
       return NextResponse.json(
-        { error: "Unauthorized - This login is for staff and investors only. Admins should use /admin" },
+        { error: "Unauthorized - This login is for staff only. Admins should use /admin" },
         { status: 403 }
       );
     }

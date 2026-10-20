@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle, Mail, Clock, Sparkles, ArrowRight, Calendar, X, Plus, Award, CheckCircle2 } from "lucide-react";
+import { CheckCircle, Mail, Clock, Sparkles, Calendar, X, Plus, Award, CheckCircle2 } from "lucide-react";
 
 interface VerifiedUser {
   id: string;
@@ -13,7 +13,7 @@ interface VerifiedUser {
 
 export default function ConfirmationPage() {
   const router = useRouter();
-  const [verifiedUser, setVerifiedUser] = useState<VerifiedUser | null>(null);
+  const [, setVerifiedUser] = useState<VerifiedUser | null>(null);
 
   const [loyaltyStatus, setLoyaltyStatus] = useState<any>(null);
 

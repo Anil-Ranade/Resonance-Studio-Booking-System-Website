@@ -8,8 +8,6 @@ import {
   Edit2,
   Calendar,
   Clock,
-  ChevronLeft,
-  ChevronRight,
   Save,
   X,
   Loader2,

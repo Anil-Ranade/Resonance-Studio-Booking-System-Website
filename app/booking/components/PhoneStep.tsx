@@ -47,7 +47,7 @@ export default function PhoneStep() {
   const [phone, setPhone] = useState(() => formatPhoneForDisplay(draft.phone));
   const [name, setName] = useState(draft.name);
   const [isTrustedDevice, setIsTrustedDevice] = useState(false);
-  const [isCheckingDevice, setIsCheckingDevice] = useState(true);
+  const [, setIsCheckingDevice] = useState(true);
   const [isCheckingUser, setIsCheckingUser] = useState(false);
   const [isExistingUser, setIsExistingUser] = useState(draft.isExistingUser);
   const [userChecked, setUserChecked] = useState(false);
@@ -181,7 +181,6 @@ export default function PhoneStep() {
               name: storedDetails.name,
               isExistingUser: false,
               deviceTrusted: false,
-              otpVerified: false,
             });
             return;
           }
@@ -204,7 +203,6 @@ export default function PhoneStep() {
             email: "",
             isExistingUser: true,
             deviceTrusted: true,
-            otpVerified: true, // Skip OTP since device is trusted
           });
 
           // Don't auto-proceed - let user confirm
@@ -232,7 +230,6 @@ export default function PhoneStep() {
               // Update draft with authentication flags
               updateDraft({
                 deviceTrusted: true,
-                otpVerified: true, // Skip OTP since this is a returning trusted user
               });
 
               // Don't show manual entry - show welcome screen instead
@@ -309,7 +306,7 @@ export default function PhoneStep() {
     const checkDevice = async () => {
       setIsCheckingDevice(true);
       try {
-        const { fingerprint, deviceName } = await getDeviceFingerprint();
+        const { fingerprint } = await getDeviceFingerprint();
         updateDraft({ deviceFingerprint: fingerprint });
 
         // Check if device is trusted locally
@@ -355,7 +352,7 @@ export default function PhoneStep() {
     updateDraft({ phone: limited });
 
     if (draft.phone.replace(/\D/g, "") !== limited) {
-      updateDraft({ otpVerified: false, deviceTrusted: false });
+      updateDraft({ deviceTrusted: false });
     }
 
     // Reset user check state when phone changes
@@ -431,7 +428,7 @@ export default function PhoneStep() {
       } catch {
         // Device persistence is best effort; booking flow remains usable.
       }
-      updateDraft({ phone: digits, name, email: "", isExistingUser, otpVerified: true });
+      updateDraft({ phone: digits, name, email: "", isExistingUser });
       nextStep();
     }
   };

@@ -34,7 +34,6 @@ import {
   Check,
   Edit3,
   Shield,
-  Gift,
   Award,
   TrendingUp,
   Eye,
@@ -607,7 +606,7 @@ export default function MyBookingsPage() {
           >
             {bookings && bookings.length > 0 ? (
               <div className="space-y-4">
-                {bookings.map((booking, index) => {
+                {bookings.map((booking) => {
                   const config = statusConfig[booking.status] || statusConfig.confirmed;
                   const StatusIcon = config.icon;
                   const canCancel = canCancelBooking(booking);

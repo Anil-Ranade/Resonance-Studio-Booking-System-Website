@@ -40,7 +40,7 @@ interface StudioSuggestionResult {
  * - Studio A only
  */
 
-export function getKaraokeStudioSuggestion(
+function getKaraokeStudioSuggestion(
   option: KaraokeOption
 ): StudioSuggestionResult {
   switch (option) {
@@ -81,7 +81,7 @@ export function getKaraokeStudioSuggestion(
   }
 }
 
-export function getLiveStudioSuggestion(
+function getLiveStudioSuggestion(
   option: LiveMusicianOption
 ): StudioSuggestionResult {
   switch (option) {
@@ -129,7 +129,7 @@ export function getLiveStudioSuggestion(
   }
 }
 
-export function getBandStudioSuggestion(
+function getBandStudioSuggestion(
   equipment: BandEquipment[]
 ): StudioSuggestionResult {
   const hasDrum = equipment.includes("drum");
@@ -219,7 +219,7 @@ export function isStudioAllowed(
 /**
  * Get the studio rates based on session type and studio
  */
-export const STUDIO_RATES: Record<StudioName, Record<string, number>> = {
+const STUDIO_RATES: Record<StudioName, Record<string, number>> = {
   "Studio A": {
     karaoke_standard: 400,
     karaoke_large: 500,
@@ -319,12 +319,6 @@ export function getStudioRate(
   ) {
     baseRate += DRUM_STICKS_RATE;
   }
-
-  // Apply Sound Operator Discount
-  // Sound Operator discount disabled
-  // if (options.soundOperator === "Not Required") {
-  //   return Math.max(0, baseRate - 50);
-  // }
 
   return baseRate;
 }

@@ -6,16 +6,12 @@ import {
   Clock,
   IndianRupee,
   TrendingUp,
-  CheckCircle,
-  XCircle,
   Loader2,
-  Building2,
   ChevronDown,
   X,
   Phone,
   User,
   FileText,
-  Filter,
   ArrowUpDown,
   RotateCcw,
 } from 'lucide-react';
@@ -138,7 +134,7 @@ export default function AdminDashboard() {
   }, []);
 
   const fetchDashboardData = useCallback(async () => {
-    if (!currentUser || currentUser.role === 'investor') return; // Skip fetch for investors
+    if (!currentUser) return;
 
     setLoading(true);
     try {
@@ -255,12 +251,6 @@ export default function AdminDashboard() {
     return grouped;
   };
 
-  // Group today's bookings by time
-  const getBookingsByTime = () => {
-    const sorted = [...todayBookings].sort((a, b) => a.start_time.localeCompare(b.start_time));
-    return sorted;
-  };
-
   // Sort recent bookings
   const getSortedRecentBookings = () => {
     const sorted = [...recentBookings].sort((a, b) => {
@@ -296,7 +286,6 @@ export default function AdminDashboard() {
   const hasActiveFilters = datePreset !== 'all' || filterStudio !== 'all' || useCustomDates;
 
   const bookingsByStudio = getBookingsByStudio();
-  const bookingsByTime = getBookingsByTime();
   const sortedRecentBookings = getSortedRecentBookings();
 
   const statCards = [

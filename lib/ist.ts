@@ -1,5 +1,5 @@
 // All studio times are Asia/Kolkata, regardless of the viewer's or server's timezone.
-export const IST = "Asia/Kolkata";
+const IST = "Asia/Kolkata";
 
 const fmt = new Intl.DateTimeFormat("en-CA", {
   timeZone: IST,
@@ -38,15 +38,3 @@ export const dayOfWeekYMD = (ymd: string) => new Date(`${ymd.slice(0, 10)}T00:00
 export const istDateTime = (date: string, time = "00:00") =>
   new Date(`${date.slice(0, 10)}T${time.slice(0, 5)}:00+05:30`);
 
-/** Format a "YYYY-MM-DD" date or ISO timestamp in IST. */
-export function formatIST(
-  value: string | Date,
-  options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" },
-  locale = "en-IN"
-) {
-  const d =
-    typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value.slice(0, 10)) && value.length <= 10
-      ? istDateTime(value)
-      : new Date(value);
-  return d.toLocaleDateString(locale, { timeZone: IST, ...options });
-}

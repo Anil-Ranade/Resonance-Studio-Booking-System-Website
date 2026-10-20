@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
-import { createEvent, deleteEvent, updateEvent } from "@/lib/googleCalendar";
+import { createEvent, updateEvent } from "@/lib/googleCalendar";
 import {
   sendBookingConfirmationEmail,
   sendBookingUpdateEmail,
@@ -25,7 +25,6 @@ interface BookRequest {
   rate_per_hour?: number;
   is_modification?: boolean;
   original_booking_id?: string; // For updating existing booking
-  is_prompt_payment?: boolean;
   /** Choices the price depends on; the rate itself is always computed here. */
   options?: {
     karaokeOption?: string;
@@ -152,7 +151,7 @@ export async function POST(request: Request) {
     // Normalize phone to digits only
     const phone = String(body.phone ?? "").replace(/\D/g, "");
 
-    // Only the OTP-verified owner of this phone can book under it
+    // Only the signed-in owner of this phone can book under it
     const auth = await requireCustomer(request, phone, name);
     if (auth instanceof NextResponse) return auth;
 
@@ -261,7 +260,6 @@ export async function POST(request: Request) {
         p_total_amount: total_amount,
         p_notes: null,
         p_created_by_staff_id: null,
-        p_is_prompt_payment: body.is_prompt_payment || false,
       },
     )) as {
       data: {
@@ -470,7 +468,7 @@ export async function PUT(request: Request) {
     // Normalize phone to digits only
     const phone = String(body.phone ?? "").replace(/\D/g, "");
 
-    // Only the OTP-verified owner can change their booking
+    // Only the signed-in owner can change their booking
     const auth = await requireCustomer(request, phone, name);
     if (auth instanceof NextResponse) return auth;
 
@@ -636,7 +634,6 @@ export async function PUT(request: Request) {
         p_start_time: start_time,
         p_end_time: end_time,
         p_total_amount: total_amount,
-        p_is_prompt_payment: body.is_prompt_payment,
       },
     )) as {
       data: {

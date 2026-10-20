@@ -16,7 +16,7 @@ import ReviewStep from "@/app/booking/components/ReviewStep";
 import ConfirmStep from "@/app/booking/components/ConfirmStep";
 
 function BookingSteps() {
-  const { currentStep, skipOtp, setStep, resetDraft } = useBooking();
+  const { currentStep, resetDraft } = useBooking();
   const isEditFlow = useSearchParams().get("source") === "edit";
 
   // Ensure draft is reset on mount (new booking always starts fresh)
@@ -25,21 +25,7 @@ function BookingSteps() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // For admin/staff, skip OTP step - go directly from review to confirm
-  const effectiveStep =
-    currentStep === "otp" && skipOtp ? "confirm" : currentStep;
-
-  // If we're on OTP step but should skip, move to confirm
-  if (currentStep === "otp" && skipOtp) {
-    setStep("confirm");
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-zinc-900 via-zinc-900 to-black">
-        <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
-      </div>
-    );
-  }
-
-  switch (effectiveStep) {
+  switch (currentStep) {
     case "phone":
       return <PhoneStep />;
     case "session":

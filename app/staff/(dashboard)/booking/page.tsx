@@ -98,7 +98,7 @@ export default function StaffBookingMenu() {
       <div
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
-        {menuOptions.map((option, index) => {
+        {menuOptions.map((option) => {
           const colors =
             colorClasses[option.color as keyof typeof colorClasses];
           const Icon = option.icon;

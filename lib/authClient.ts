@@ -1,13 +1,10 @@
 /**
  * Client-side Authentication Utilities
  * 
- * Provides methods for checking authentication status,
- * logging out, and refreshing tokens from the client.
+ * Provides a method for checking authentication status from the client.
  */
 
 'use client';
-
-import { clearDeviceFingerprint } from '@/lib/deviceFingerprint';
 
 interface AuthStatus {
   authenticated: boolean;
@@ -46,67 +43,3 @@ export async function checkAuthStatus(): Promise<AuthStatus> {
   }
 }
 
-/**
- * Attempt to refresh the access token using the refresh token
- * This is called when an API request returns 401
- */
-export async function refreshAuth(): Promise<boolean> {
-  try {
-    const response = await fetch('/api/auth/refresh', {
-      method: 'POST',
-      credentials: 'include', // Important: include cookies
-    });
-
-    return response.ok;
-  } catch (error) {
-    console.error('[Auth Client] Failed to refresh auth:', error);
-    return false;
-  }
-}
-
-/**
- * Log out the current user
- * This clears the authentication cookies and revokes the refresh token
- */
-export async function logout(): Promise<boolean> {
-  try {
-    const response = await fetch('/api/auth/logout', {
-      method: 'POST',
-      credentials: 'include', // Important: include cookies
-    });
-
-    clearDeviceFingerprint();
-
-    return response.ok;
-  } catch (error) {
-    console.error('[Auth Client] Failed to logout:', error);
-    return false;
-  }
-}
-
-/**
- * Make an authenticated API request with automatic token refresh
- * If the request fails with 401, attempts to refresh the token and retry
- */
-export async function authenticatedFetch(
-  url: string,
-  options: RequestInit = {}
-): Promise<Response> {
-  const fetchOptions: RequestInit = {
-    ...options,
-    credentials: 'include', // Always include cookies
-  };
-
-  let response = await fetch(url, fetchOptions);
-
-  // If unauthorized, try to refresh and retry
-  if (response.status === 401) {
-    const refreshed = await refreshAuth();
-    if (refreshed) {
-      // Retry the original request
-      response = await fetch(url, fetchOptions);
-    }
-  }
-
-  return response;
-}

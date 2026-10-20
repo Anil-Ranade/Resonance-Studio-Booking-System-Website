@@ -1,6 +1,6 @@
 "use client";
 
-import React, {
+import {
   createContext,
   useContext,
   useState,
@@ -28,29 +28,15 @@ export type RecordingOption =
   | "video_recording"
   | "chroma_key";
 export type StudioName = "Studio A" | "Studio B" | "Studio C";
-export type BookingMode = "customer" | "admin" | "staff";
+type BookingMode = "customer" | "admin" | "staff";
 
 export interface TimeSlot {
   start: string;
   end: string;
 }
 
-export interface EditBookingData {
-  originalBookingId: string;
-  sessionType: string;
-  sessionDetails: string;
-  studio: string;
-  date: string;
-  start_time: string;
-  end_time: string;
-  phone_number: string;
-  name: string;
-  total_amount: number;
-  group_size?: number;
-}
-
 // Store original booking choices for edit mode
-export interface OriginalBookingChoices {
+interface OriginalBookingChoices {
   sessionType: SessionType | "";
   soundOperator?: SoundOperatorOption;
   sessionDetails: string;
@@ -95,10 +81,7 @@ export interface BookingDraft {
   deviceTrusted: boolean;
 
   // Payment
-  isPromptPayment: boolean;
 
-  // OTP verified
-  otpVerified: boolean;
 
   // Edit mode
   isEditMode: boolean;
@@ -113,7 +96,6 @@ export type BookingStep =
   | "studio"
   | "time"
   | "review"
-  | "otp"
   | "confirm";
 
 const STEP_ORDER: BookingStep[] = [
@@ -146,8 +128,6 @@ const initialDraft: BookingDraft = {
   duration: 1,
   deviceFingerprint: "",
   deviceTrusted: false,
-  isPromptPayment: false,
-  otpVerified: false,
   isEditMode: false,
   originalBookingId: "",
   originalChoices: null,
@@ -170,7 +150,6 @@ interface BookingContextType {
   totalSteps: number;
   loadEditData: () => void;
   hasChangesFromOriginal: () => boolean;
-  skipOtp: boolean;
 }
 
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
@@ -499,8 +478,6 @@ export function BookingProvider({
           return draft.date !== "" && draft.selectedSlot !== null;
         case "review":
           return true;
-        case "otp":
-          return true;
         case "confirm":
           return true;
         default:
@@ -586,7 +563,6 @@ export function BookingProvider({
         totalSteps: 6,
         loadEditData,
         hasChangesFromOriginal,
-        skipOtp: true,
       }}
     >
       {children}

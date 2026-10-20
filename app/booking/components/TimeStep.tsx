@@ -33,8 +33,6 @@ interface AvailableSlot extends TimeSlot {
 interface ContinuousSlab {
   start: string;
   end: string;
-  startHour: number;
-  endHour: number;
   duration: number;
   label: string;
 }
@@ -258,8 +256,6 @@ export default function TimeStep() {
           slabs.push({
             start: currentSlabStart,
             end: slabEndTime,
-            startHour: currentSlabStartMinutes / 60, // Keep for backward compat if needed, but duration is better
-            endHour: previousEndMinutes / 60,
             duration,
             label: `${formatTimeDisplay(
               currentSlabStart
@@ -278,8 +274,6 @@ export default function TimeStep() {
           slabs.push({
             start: currentSlabStart,
             end: slabEndTime,
-            startHour: currentSlabStartMinutes / 60,
-            endHour: previousEndMinutes / 60,
             duration,
             label: `${formatTimeDisplay(
               currentSlabStart
@@ -299,8 +293,6 @@ export default function TimeStep() {
       slabs.push({
         start: currentSlabStart,
         end: slabEndTime,
-        startHour: currentSlabStartMinutes / 60,
-        endHour: previousEndMinutes / 60,
         duration,
         label: `${formatTimeDisplay(currentSlabStart)} - ${formatTimeDisplay(
           slabEndTime
